@@ -22,10 +22,14 @@ import { SearchBar } from 'components/navbar/searchBar/SearchBar';
 import { SidebarResponsive } from 'components/sidebar/Sidebar';
 // Assets
 import navImage from '/public/img/layout/Navbar.png';
-import { FaEthereum } from 'react-icons/fa';
 import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import { MdInfoOutline, MdNotificationsNone } from 'react-icons/md';
 import routes from 'routes';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useSellerSession } from '@/lib/supabase/useSellerSession';
+import { PATH_APPS } from '@/lib/paths';
+
 export default function HeaderLinks(props: {
   secondary: boolean;
   onOpen: boolean | any;
@@ -33,6 +37,17 @@ export default function HeaderLinks(props: {
 }) {
   const { secondary } = props;
   const { colorMode, toggleColorMode } = useColorMode();
+  const router = useRouter();
+  const { email, businessName } = useSellerSession();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/auth/signin');
+    router.refresh();
+  };
+
+  const initial = (businessName ?? email ?? '?').charAt(0).toUpperCase();
   // Chakra Color Mode
   const navbarIcon = useColorModeValue('gray.400', 'white');
   let menuBg = useColorModeValue('white', 'navy.800');
@@ -69,40 +84,7 @@ export default function HeaderLinks(props: {
         me="10px"
         borderRadius="30px"
       />
-      <Flex
-        bg={ethBg}
-        display={secondary ? 'flex' : 'none'}
-        borderRadius="30px"
-        ms="auto"
-        p="6px"
-        align="center"
-        me="6px"
-      >
-        <Flex
-          align="center"
-          justify="center"
-          bg={ethBox}
-          h="29px"
-          w="29px"
-          borderRadius="30px"
-          me="7px"
-        >
-          <Icon color={ethColor} w="9px" h="14px" as={FaEthereum} />
-        </Flex>
-        <Text
-          w="max-content"
-          color={ethColor}
-          fontSize="sm"
-          fontWeight="700"
-          me="6px"
-        >
-          1,924
-          <Text as="span" display={{ base: 'none', md: 'unset' }}>
-            {' '}
-            ETH
-          </Text>
-        </Text>
-      </Flex>
+      <Box ms="auto" />
       <SidebarResponsive routes={routes} />
       <Menu>
         <MenuButton p="0px">
@@ -255,7 +237,7 @@ export default function HeaderLinks(props: {
           />
           <Center top={0} left={0} position={'absolute'} w={'100%'} h={'100%'}>
             <Text fontSize={'xs'} fontWeight="bold" color={'white'}>
-              AP
+              {initial}
             </Text>
           </Center>
         </MenuButton>
@@ -267,44 +249,47 @@ export default function HeaderLinks(props: {
           bg={menuBg}
           border="none"
         >
-          <Flex w="100%" mb="0px">
+          <Flex w="100%" mb="0px" flexDirection="column">
             <Text
               ps="20px"
               pt="16px"
-              pb="10px"
               w="100%"
-              borderBottom="1px solid"
-              borderColor={borderColor}
               fontSize="sm"
               fontWeight="700"
               color={textColor}
             >
-              👋&nbsp; Hey, Adela
+              {businessName ?? 'Your store'}
+            </Text>
+            <Text
+              ps="20px"
+              pb="10px"
+              w="100%"
+              borderBottom="1px solid"
+              borderColor={borderColor}
+              fontSize="xs"
+              color={textColor}
+            >
+              {email ?? ''}
             </Text>
           </Flex>
           <Flex flexDirection="column" p="10px">
-            <MenuItem
-              _hover={{ bg: 'none' }}
-              _focus={{ bg: 'none' }}
-              borderRadius="8px"
-              px="14px"
-            >
-              <Text fontSize="sm">Profile Settings</Text>
-            </MenuItem>
-            <MenuItem
-              _hover={{ bg: 'none' }}
-              _focus={{ bg: 'none' }}
-              borderRadius="8px"
-              px="14px"
-            >
-              <Text fontSize="sm">Newsletter Settings</Text>
-            </MenuItem>
+            <Link href={PATH_APPS.settings}>
+              <MenuItem
+                _hover={{ bg: 'none' }}
+                _focus={{ bg: 'none' }}
+                borderRadius="8px"
+                px="14px"
+              >
+                <Text fontSize="sm">Settings</Text>
+              </MenuItem>
+            </Link>
             <MenuItem
               _hover={{ bg: 'none' }}
               _focus={{ bg: 'none' }}
               color="red.400"
               borderRadius="8px"
               px="14px"
+              onClick={handleLogout}
             >
               <Text fontSize="sm">Log out</Text>
             </MenuItem>
