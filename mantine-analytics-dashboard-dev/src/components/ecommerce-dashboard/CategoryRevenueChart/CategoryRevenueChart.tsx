@@ -4,8 +4,8 @@ import { ErrorAlert } from '@/components';
 
 interface CategoryRevenue {
   category: string;
-  revenue: number;
-  orders: number;
+  value: number;
+  products: number;
   percentage: number;
   color: string;
 }
@@ -36,21 +36,21 @@ export const CategoryRevenueChart: React.FC<CategoryRevenueChartProps> = ({
 
   const chartData = data.map((item) => ({
     category: item.category,
-    revenue: item.revenue,
-    orders: item.orders,
+    value: item.value,
+    products: item.products,
   }));
 
-  const totalRevenue = data.reduce((sum, item) => sum + item.revenue, 0);
+  const totalValue = data.reduce((sum, item) => sum + item.value, 0);
 
   return (
     <Stack gap="lg">
       <Group justify="space-between">
         <div>
           <Text size="lg" fw={600}>
-            Revenue by Category
+            Inventory Value by Category
           </Text>
           <Text size="sm" c="dimmed">
-            Total: ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            Total: ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </Text>
         </div>
       </Group>
@@ -60,7 +60,7 @@ export const CategoryRevenueChart: React.FC<CategoryRevenueChartProps> = ({
         data={chartData}
         dataKey="category"
         series={[
-          { name: 'revenue', label: 'Revenue', color: 'blue.6' },
+          { name: 'value', label: 'Inventory Value', color: 'blue.6' },
         ]}
         tickLine="y"
         gridAxis="y"

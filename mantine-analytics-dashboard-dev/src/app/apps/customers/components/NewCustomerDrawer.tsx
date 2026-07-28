@@ -6,27 +6,19 @@ import {
   Button,
   Drawer,
   DrawerProps,
-  Grid,
   LoadingOverlay,
-  Select,
+  NumberInput,
   Stack,
   TextInput,
-  Title,
 } from '@mantine/core';
-import { isEmail, isNotEmpty, useForm } from '@mantine/form';
+import { isEmail, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 
 interface NewCustomerFormValues {
-  name: string;
+  externalCustomerId: string;
   email: string;
-  phone: string;
-  company: string;
-  street: string;
-  city: string;
-  state: string;
-  country: string;
-  zipCode: string;
-  status: number;
+  ordersCount: number;
+  totalSpent: number;
 }
 
 type NewCustomerDrawerProps = Omit<DrawerProps, 'title' | 'children'> & {
@@ -42,44 +34,40 @@ export const NewCustomerDrawer = ({
   const form = useForm<NewCustomerFormValues>({
     mode: 'controlled',
     initialValues: {
-      name: '',
+      externalCustomerId: '',
       email: '',
-      phone: '',
-      company: '',
-      street: '',
-      city: '',
-      state: '',
-      country: 'USA',
-      zipCode: '',
-      status: 1, // Active
+      ordersCount: 0,
+      totalSpent: 0,
     },
     validate: {
-      name: isNotEmpty('Name cannot be empty'),
       email: isEmail('Invalid email'),
-      phone: isNotEmpty('Phone cannot be empty'),
     },
   });
 
   const handleSubmit = async (values: NewCustomerFormValues) => {
     setLoading(true);
     try {
-      // Note: In this mock template, customers are read-only from JSON files
-      // For a real implementation, you would send a POST request here
+      const response = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.succeeded) {
+        throw new Error(data.message || 'Failed to create customer');
+      }
+
       notifications.show({
-        title: 'Mock Data System',
-        message: 'This template uses mock data. Customer creation is simulated.',
-        color: 'blue',
+        title: 'Success',
+        message: 'Customer created successfully',
+        color: 'green',
       });
 
       form.reset();
-
-      if (drawerProps.onClose) {
-        drawerProps.onClose();
-      }
-
-      if (onCustomerCreated) {
-        onCustomerCreated();
-      }
+      drawerProps.onClose?.();
+      onCustomerCreated?.();
     } catch (error) {
       notifications.show({
         title: 'Error',
@@ -92,102 +80,33 @@ export const NewCustomerDrawer = ({
     }
   };
 
-  const statusOptions = [
-    { value: '1', label: 'Active' },
-    { value: '2', label: 'Inactive' },
-    { value: '3', label: 'Blocked' },
-  ];
-
   return (
-    <Drawer {...drawerProps} title="Create a new customer" size="lg">
+    <Drawer {...drawerProps} title="Add a customer" size="md">
       <LoadingOverlay visible={loading} />
       <form onSubmit={form.onSubmit(handleSubmit)}>
         <Stack>
-          <Title order={4}>Customer Information</Title>
-          <TextInput
-            label="Name"
-            placeholder="Enter customer name"
-            key={form.key('name')}
-            {...form.getInputProps('name')}
-            required
-          />
           <TextInput
             label="Email"
             placeholder="customer@email.com"
             key={form.key('email')}
             {...form.getInputProps('email')}
-            required
           />
           <TextInput
-            label="Phone"
-            placeholder="+1 (555) 000-0000"
-            key={form.key('phone')}
-            {...form.getInputProps('phone')}
-            required
+            label="External customer ID"
+            placeholder="ID from your store platform"
+            key={form.key('externalCustomerId')}
+            {...form.getInputProps('externalCustomerId')}
           />
-          <TextInput
-            label="Company"
-            placeholder="Enter company name (optional)"
-            key={form.key('company')}
-            {...form.getInputProps('company')}
+          <NumberInput
+            label="Orders count"
+            {...form.getInputProps('ordersCount')}
           />
-
-          <Title order={4} mt="md">
-            Address
-          </Title>
-          <TextInput
-            label="Street"
-            placeholder="123 Main St"
-            key={form.key('street')}
-            {...form.getInputProps('street')}
+          <NumberInput
+            label="Total spent"
+            {...form.getInputProps('totalSpent')}
           />
-          <Grid>
-            <Grid.Col span={6}>
-              <TextInput
-                label="City"
-                placeholder="City"
-                key={form.key('city')}
-                {...form.getInputProps('city')}
-              />
-            </Grid.Col>
-            <Grid.Col span={6}>
-              <TextInput
-                label="State"
-                placeholder="State"
-                key={form.key('state')}
-                {...form.getInputProps('state')}
-              />
-            </Grid.Col>
-          </Grid>
-          <Grid>
-            <Grid.Col span={6}>
-              <TextInput
-                label="Country"
-                placeholder="Country"
-                key={form.key('country')}
-                {...form.getInputProps('country')}
-              />
-            </Grid.Col>
-            <Grid.Col span={6}>
-              <TextInput
-                label="Zip Code"
-                placeholder="00000"
-                key={form.key('zipCode')}
-                {...form.getInputProps('zipCode')}
-              />
-            </Grid.Col>
-          </Grid>
-
-          <Select
-            label="Status"
-            data={statusOptions}
-            key={form.key('status')}
-            {...form.getInputProps('status')}
-            required
-          />
-
           <Button type="submit" mt="md" loading={loading}>
-            Create Customer
+            Add Customer
           </Button>
         </Stack>
       </form>

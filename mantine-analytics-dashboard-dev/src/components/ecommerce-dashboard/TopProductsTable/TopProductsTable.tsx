@@ -1,27 +1,14 @@
-import {
-  Avatar,
-  Badge,
-  Group,
-  Progress,
-  Skeleton,
-  Stack,
-  Table,
-  Text,
-} from '@mantine/core';
-import { IconTrendingDown, IconTrendingUp, IconMinus } from '@tabler/icons-react';
+import { Badge, Group, Progress, Skeleton, Stack, Table, Text } from '@mantine/core';
 import { ErrorAlert } from '@/components';
 
 interface Product {
-  id: number;
-  name: string;
+  id: string;
+  title: string;
   sku: string;
   category: string;
-  price: number;
-  sales: number;
-  revenue: number;
-  stock: number;
-  image: string;
-  trend: 'up' | 'down' | 'stable';
+  sellPrice: number;
+  stockQty: number;
+  inventoryValue: number;
 }
 
 interface TopProductsTableProps {
@@ -29,28 +16,6 @@ interface TopProductsTableProps {
   loading?: boolean;
   error?: Error | null;
 }
-
-const getTrendIcon = (trend: string) => {
-  switch (trend) {
-    case 'up':
-      return <IconTrendingUp size={16} color="var(--mantine-color-teal-6)" />;
-    case 'down':
-      return <IconTrendingDown size={16} color="var(--mantine-color-red-6)" />;
-    default:
-      return <IconMinus size={16} color="var(--mantine-color-gray-6)" />;
-  }
-};
-
-const getTrendColor = (trend: string) => {
-  switch (trend) {
-    case 'up':
-      return 'teal';
-    case 'down':
-      return 'red';
-    default:
-      return 'gray';
-  }
-};
 
 export const TopProductsTable: React.FC<TopProductsTableProps> = ({
   data = [],
@@ -76,22 +41,25 @@ export const TopProductsTable: React.FC<TopProductsTableProps> = ({
     );
   }
 
-  const maxRevenue = Math.max(...data.map((p) => p.revenue));
+  if (!data.length) {
+    return (
+      <Text size="sm" c="dimmed">
+        No active products yet.
+      </Text>
+    );
+  }
+
+  const maxValue = Math.max(...data.map((p) => p.inventoryValue), 1);
 
   const rows = data.map((product) => (
     <Table.Tr key={product.id}>
       <Table.Td>
-        <Group gap="sm">
-          <Avatar src={product.image} size={40} radius="sm" />
-          <div>
-            <Text size="sm" fw={500}>
-              {product.name}
-            </Text>
-            <Text size="xs" c="dimmed">
-              {product.sku}
-            </Text>
-          </div>
-        </Group>
+        <Text size="sm" fw={500}>
+          {product.title}
+        </Text>
+        <Text size="xs" c="dimmed">
+          {product.sku || 'No SKU'}
+        </Text>
       </Table.Td>
       <Table.Td>
         <Badge variant="light" color="blue">
@@ -99,47 +67,36 @@ export const TopProductsTable: React.FC<TopProductsTableProps> = ({
         </Badge>
       </Table.Td>
       <Table.Td>
-        <Text size="sm">${product.price.toFixed(2)}</Text>
-      </Table.Td>
-      <Table.Td>
-        <Group gap={4}>
-          {getTrendIcon(product.trend)}
-          <Text size="sm">{product.sales}</Text>
-        </Group>
+        <Text size="sm">${product.sellPrice.toFixed(2)}</Text>
       </Table.Td>
       <Table.Td>
         <Stack gap={4}>
           <Text size="sm" fw={500}>
-            ${product.revenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            ${product.inventoryValue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </Text>
-          <Progress
-            value={(product.revenue / maxRevenue) * 100}
-            size="xs"
-            color={getTrendColor(product.trend)}
-          />
+          <Progress value={(product.inventoryValue / maxValue) * 100} size="xs" color="blue" />
         </Stack>
       </Table.Td>
       <Table.Td>
         <Badge
           variant="light"
-          color={product.stock > 100 ? 'teal' : product.stock > 50 ? 'yellow' : 'red'}
+          color={product.stockQty > 100 ? 'teal' : product.stockQty > 50 ? 'yellow' : 'red'}
         >
-          {product.stock} units
+          {product.stockQty} units
         </Badge>
       </Table.Td>
     </Table.Tr>
   ));
 
   return (
-    <Table.ScrollContainer minWidth={800}>
+    <Table.ScrollContainer minWidth={700}>
       <Table verticalSpacing="sm" highlightOnHover>
         <Table.Thead>
           <Table.Tr>
             <Table.Th>Product</Table.Th>
             <Table.Th>Category</Table.Th>
             <Table.Th>Price</Table.Th>
-            <Table.Th>Sales</Table.Th>
-            <Table.Th>Revenue</Table.Th>
+            <Table.Th>Inventory Value</Table.Th>
             <Table.Th>Stock</Table.Th>
           </Table.Tr>
         </Table.Thead>

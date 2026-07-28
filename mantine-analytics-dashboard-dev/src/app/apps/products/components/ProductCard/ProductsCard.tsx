@@ -12,9 +12,6 @@ interface ProductsCardProps extends Omit<PaperProps, 'children'> {
 }
 
 export function ProductsCard({ data, onEdit, ...props }: ProductsCardProps) {
-  // Auth removed - all users can edit for demo purposes
-  const isCreator = true;
-
   return (
     <Surface {...props}>
       <Group justify="space-between" mb="xs">
@@ -24,20 +21,16 @@ export function ProductsCard({ data, onEdit, ...props }: ProductsCardProps) {
         </Badge>
       </Group>
 
-      <Text lineClamp={2} mb="md" size="sm" c="dimmed">
-        {data.description}
-      </Text>
-
       <Group>
-        <Text fw={500}>Price: ${data.price.toFixed(2)}</Text>
-        <Text>Stock: {data.quantityInStock}</Text>
+        <Text fw={500}>
+          Price:{' '}
+          {data.sellPrice != null ? `$${data.sellPrice.toFixed(2)}` : 'N/A'}
+        </Text>
+        <Text>Stock: {data.stockQty ?? 'N/A'}</Text>
       </Group>
 
       <Text size="sm" mt="md">
-        Category:{' '}
-        {data.categoryName ||
-          (data.category && data.category.title) ||
-          'Uncategorized'}
+        Category: {data.categoryName || 'Uncategorized'}
       </Text>
 
       <Text size="xs" c="dimmed" mt="sm" mb="md">
@@ -49,13 +42,6 @@ export function ProductsCard({ data, onEdit, ...props }: ProductsCardProps) {
           variant="subtle"
           leftSection={<IconEdit size={16} />}
           onClick={() => onEdit && onEdit(data)}
-          // Show edit button for all but only enable for creator
-          disabled={!isCreator}
-          title={
-            isCreator
-              ? 'Edit product'
-              : 'Only the creator can edit this product'
-          }
         >
           Edit
         </Button>

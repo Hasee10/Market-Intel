@@ -51,6 +51,12 @@ function Page() {
     loading: categoriesLoading,
   } = useFetch<IApiResponse<any[]>>('/api/ecommerce/categories');
 
+  const {
+    data: revenueTrendData,
+    error: revenueTrendError,
+    loading: revenueTrendLoading,
+  } = useFetch<IApiResponse<any[]>>('/api/ecommerce/revenue-trend');
+
   return (
     <>
       <>
@@ -73,7 +79,12 @@ function Page() {
 
           <Grid>
             <Grid.Col span={{ base: 12, md: 8 }}>
-              <RevenueChart {...PAPER_PROPS} />
+              <RevenueChart
+                data={revenueTrendData?.data || []}
+                error={revenueTrendError}
+                loading={revenueTrendLoading}
+                {...PAPER_PROPS}
+              />
             </Grid.Col>
             <Grid.Col span={{ base: 12, md: 4 }}>
               <Surface {...PAPER_PROPS}>
@@ -102,7 +113,7 @@ function Page() {
               <Surface {...PAPER_PROPS}>
                 <Group justify="space-between" mb="md">
                   <Text size="lg" fw={600}>
-                    Top Products
+                    Top Products by Inventory Value
                   </Text>
                 </Group>
                 <TopProductsTable

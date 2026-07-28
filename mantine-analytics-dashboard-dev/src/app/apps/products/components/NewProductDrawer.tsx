@@ -11,23 +11,20 @@ import {
   Select,
   Stack,
   TextInput,
-  Textarea,
 } from '@mantine/core';
-import { DateInput } from '@mantine/dates';
 import { isNotEmpty, useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 
-
 import { IProductCategory } from '@/types/products';
 
-type NewProjectDrawerProps = Omit<DrawerProps, 'title' | 'children'> & {
+type NewProductDrawerProps = Omit<DrawerProps, 'title' | 'children'> & {
   onProductCreated?: () => void;
 };
 
 export const NewProductDrawer = ({
   onProductCreated,
   ...drawerProps
-}: NewProjectDrawerProps) => {
+}: NewProductDrawerProps) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<
     { value: string; label: string }[]
@@ -37,20 +34,14 @@ export const NewProductDrawer = ({
   const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
     try {
-      const response = await fetch('/api/product-categories', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
+      const response = await fetch('/api/product-categories');
       const result = await response.json();
 
       if (result.succeeded && result.data) {
         const categoryOptions = result.data.map(
           (category: IProductCategory) => ({
             value: category.id,
-            label: category.title,
+            label: category.name,
           }),
         );
         setCategories(categoryOptions);
@@ -62,7 +53,6 @@ export const NewProductDrawer = ({
     }
   }, []);
 
-  // Fetch categories when drawer opens
   useEffect(() => {
     if (drawerProps.opened) {
       fetchCategories();
@@ -73,18 +63,14 @@ export const NewProductDrawer = ({
     mode: 'controlled',
     initialValues: {
       title: '',
-      description: '',
-      price: 0,
-      quantityInStock: 0,
+      sellPrice: 0,
+      costPrice: 0,
+      stockQty: 0,
       sku: '',
-      status: 1,
       categoryId: '',
     },
     validate: {
       title: isNotEmpty('Product title cannot be empty'),
-      description: isNotEmpty('Product description cannot be empty'),
-      price: isNotEmpty('Price cannot be empty'),
-      quantityInStock: isNotEmpty('Quantity in stock cannot be empty'),
       categoryId: isNotEmpty('Category cannot be empty'),
     },
   });
@@ -92,46 +78,28 @@ export const NewProductDrawer = ({
   const handleSubmit = async (values: typeof form.values) => {
     setLoading(true);
     try {
-      const payload = {
-        ...values,
-        createdById: 'user-demo-001',
-      };
-
       const response = await fetch('/api/products', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create product');
+      if (!response.ok || !data.succeeded) {
+        throw new Error(data.message || 'Failed to create product');
       }
 
-      // Show success notification
       notifications.show({
         title: 'Success',
         message: 'Product created successfully',
         color: 'green',
       });
 
-      // Reset form
       form.reset();
-
-      // Close drawer
-      if (drawerProps.onClose) {
-        drawerProps.onClose();
-      }
-
-      // Trigger refresh of products list
-      if (onProductCreated) {
-        onProductCreated();
-      }
+      drawerProps.onClose?.();
+      onProductCreated?.();
     } catch (error) {
-      // Show error notification
       notifications.show({
         title: 'Error',
         message:
@@ -155,24 +123,20 @@ export const NewProductDrawer = ({
             {...form.getInputProps('title')}
             required
           />
-          <Textarea
-            label="Description"
-            placeholder="description"
-            key={form.key('description')}
-            {...form.getInputProps('description')}
-            required
+          <NumberInput
+            label="Sell price"
+            placeholder="sell price"
+            {...form.getInputProps('sellPrice')}
           />
           <NumberInput
-            label="Price"
-            placeholder="price"
-            {...form.getInputProps('price')}
-            required
+            label="Cost price"
+            placeholder="cost price"
+            {...form.getInputProps('costPrice')}
           />
           <NumberInput
-            label="Quantity in stock"
-            placeholder="quantity in stock"
-            {...form.getInputProps('quantityInStock')}
-            required
+            label="Stock quantity"
+            placeholder="stock quantity"
+            {...form.getInputProps('stockQty')}
           />
           <TextInput
             label="SKU"

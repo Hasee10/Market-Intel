@@ -18,14 +18,12 @@ export const PATH_DASHBOARD = {
   products: path(ROOTS_DASHBOARD, '/products'),
   customers: path(ROOTS_DASHBOARD, '/customers'),
   market: path(ROOTS_DASHBOARD, '/market'),
-  alerts: path(ROOTS_DASHBOARD, '/alerts'),
   settings: path(ROOTS_DASHBOARD, '/settings'),
 };
 
 export const PATH_APPS = {
   root: ROOT_APPS,
   customers: path(ROOT_APPS, '/customers'),
-  notifications: path(ROOT_APPS, '/notifications'),
   settings: path(ROOT_APPS, '/settings'),
   products: {
     root: path(ROOT_APPS, ROOTS_PRODUCTS),

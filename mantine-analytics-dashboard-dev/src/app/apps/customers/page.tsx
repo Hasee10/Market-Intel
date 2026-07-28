@@ -71,17 +71,11 @@ function Customers() {
     editCustomerOpen();
   };
 
-  const handleViewCustomer = (customer: CustomerDto) => {
-    setSelectedCustomer(customer);
-    editCustomerOpen();
-  };
-
   const customerItems = customersData?.data?.map((customer: CustomerDto) => (
     <CustomerCard
       key={customer.id}
       data={customer}
       onEdit={handleEditCustomer}
-      onView={handleViewCustomer}
     />
   ));
 
@@ -103,7 +97,6 @@ function Customers() {
             data={[]}
             loading={true}
             onEdit={handleEditCustomer}
-            onView={handleViewCustomer}
           />
         </Surface>
       );
@@ -150,7 +143,6 @@ function Customers() {
           data={customersData.data}
           loading={false}
           onEdit={handleEditCustomer}
-          onView={handleViewCustomer}
         />
       </Surface>
     );

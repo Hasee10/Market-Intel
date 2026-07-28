@@ -2,19 +2,9 @@
 
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 
-import {
-  ActionIcon,
-  Avatar,
-  Badge,
-  Group,
-  MantineColor,
-  MultiSelect,
-  Text,
-  TextInput,
-  Tooltip,
-} from '@mantine/core';
+import { ActionIcon, Group, Text, TextInput, Tooltip } from '@mantine/core';
 import { useDebouncedValue } from '@mantine/hooks';
-import { IconEdit, IconEye, IconSearch } from '@tabler/icons-react';
+import { IconEdit, IconSearch } from '@tabler/icons-react';
 import sortBy from 'lodash/sortBy';
 import {
   DataTable,
@@ -23,37 +13,7 @@ import {
 } from 'mantine-datatable';
 
 import { ErrorAlert } from '@/components';
-import type { CustomerDto, CustomerStatus } from '@/types';
-
-type StatusBadgeProps = {
-  status?: CustomerStatus;
-};
-
-const StatusBadge = ({ status }: StatusBadgeProps) => {
-  if (!status)
-    return (
-      <Badge color="gray" variant="filled" radius="sm">
-        Unknown
-      </Badge>
-    );
-
-  const statusMap: Record<number, { label: string; color: MantineColor }> = {
-    1: { label: 'Active', color: 'green' },
-    2: { label: 'Inactive', color: 'gray' },
-    3: { label: 'Blocked', color: 'red' },
-  };
-
-  const statusInfo = statusMap[status as number] || {
-    label: 'Unknown',
-    color: 'gray',
-  };
-
-  return (
-    <Badge color={statusInfo.color} variant="filled" radius="sm">
-      {statusInfo.label}
-    </Badge>
-  );
-};
+import type { CustomerDto } from '@/types';
 
 const PAGE_SIZES = [5, 10, 20];
 
@@ -62,7 +22,14 @@ type CustomersTableProps = {
   error?: ReactNode;
   loading?: boolean;
   onEdit?: (customer: CustomerDto) => void;
-  onView?: (customer: CustomerDto) => void;
+};
+
+const formatCurrency = (amount?: number) => {
+  if (!amount) return '$0.00';
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(amount);
 };
 
 const CustomersTable = ({
@@ -70,151 +37,91 @@ const CustomersTable = ({
   loading,
   error,
   onEdit,
-  onView,
 }: CustomersTableProps) => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZES[0]);
   const [selectedRecords, setSelectedRecords] = useState<CustomerDto[]>([]);
   const [records, setRecords] = useState<CustomerDto[]>(data.slice(0, pageSize));
   const [sortStatus, setSortStatus] = useState<DataTableSortStatus<CustomerDto>>({
-    columnAccessor: 'name',
+    columnAccessor: 'email',
     direction: 'asc',
   });
   const [query, setQuery] = useState('');
   const [debouncedQuery] = useDebouncedValue(query, 200);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
 
-  const statuses = useMemo(() => {
-    const statusMap: Record<number, string> = {
-      1: 'Active',
-      2: 'Inactive',
-      3: 'Blocked',
-    };
-    const uniqueStatuses = new Set(
-      data.map((e) => statusMap[e.status as number] || 'Unknown'),
-    );
-    return Array.from(uniqueStatuses);
-  }, [data]);
-
-  const formatCurrency = (amount?: number) => {
-    if (!amount) return '$0.00';
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(amount);
-  };
-
-  const getStatusLabel = (status?: CustomerStatus): string => {
-    if (!status) return 'Unknown';
-    const statusMap: Record<number, string> = {
-      1: 'Active',
-      2: 'Inactive',
-      3: 'Blocked',
-    };
-    return statusMap[status as number] || 'Unknown';
-  };
-
-  const columns: DataTableProps<CustomerDto>['columns'] = [
-    {
-      accessor: 'name',
-      sortable: true,
-      filter: (
-        <TextInput
-          label="Customers"
-          description="Show customers whose names include the specified text"
-          placeholder="Search customers..."
-          leftSection={<IconSearch size={16} />}
-          value={query}
-          onChange={(e) => setQuery(e.currentTarget.value)}
-        />
-      ),
-      filtering: query !== '',
-      render: (item: CustomerDto) => (
-        <Group gap="sm">
-          <Avatar src={item.avatar} alt={item.name} radius="xl" size="sm" />
+  const columns: DataTableProps<CustomerDto>['columns'] = useMemo(
+    () => [
+      {
+        accessor: 'email',
+        sortable: true,
+        filter: (
+          <TextInput
+            label="Customers"
+            description="Show customers whose email includes the specified text"
+            placeholder="Search customers..."
+            leftSection={<IconSearch size={16} />}
+            value={query}
+            onChange={(e) => setQuery(e.currentTarget.value)}
+          />
+        ),
+        filtering: query !== '',
+        render: (item: CustomerDto) => (
           <div>
             <Text size="sm" fw={500}>
-              {item.name || 'N/A'}
+              {item.email || 'N/A'}
             </Text>
-            {item.company && (
+            {item.externalCustomerId && (
               <Text size="xs" c="dimmed">
-                {item.company}
+                {item.externalCustomerId}
               </Text>
             )}
           </div>
-        </Group>
-      ),
-    },
-    {
-      accessor: 'email',
-      sortable: true,
-    },
-    {
-      accessor: 'phone',
-      title: 'Phone',
-    },
-    {
-      accessor: 'totalOrders',
-      title: 'Orders',
-      sortable: true,
-      render: (item: CustomerDto) => item.totalOrders || 0,
-    },
-    {
-      accessor: 'totalSpent',
-      title: 'Total Spent',
-      sortable: true,
-      render: (item: CustomerDto) => formatCurrency(item.totalSpent),
-    },
-    {
-      accessor: 'status',
-      render: (item: CustomerDto) => <StatusBadge status={item.status} />,
-      filter: (
-        <MultiSelect
-          label="Status"
-          description="Show all customers with status"
-          data={statuses}
-          value={selectedStatuses}
-          placeholder="Search statuses…"
-          onChange={setSelectedStatuses}
-          leftSection={<IconSearch size={16} />}
-          clearable
-          searchable
-        />
-      ),
-      filtering: selectedStatuses.length > 0,
-    },
-    {
-      accessor: 'actions',
-      title: 'Actions',
-      textAlign: 'right',
-      render: (item: CustomerDto) => (
-        <Group gap="xs" justify="flex-end">
-          {onView && (
-            <Tooltip label="View">
-              <ActionIcon
-                variant="subtle"
-                color="blue"
-                onClick={() => onView(item)}
-              >
-                <IconEye size={16} />
-              </ActionIcon>
-            </Tooltip>
-          )}
-          {onEdit && (
-            <Tooltip label="Edit">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={() => onEdit(item)}
-              >
-                <IconEdit size={16} />
-              </ActionIcon>
-            </Tooltip>
-          )}
-        </Group>
-      ),
-    },
-  ];
+        ),
+      },
+      {
+        accessor: 'ordersCount',
+        title: 'Orders',
+        sortable: true,
+        render: (item: CustomerDto) => item.ordersCount || 0,
+      },
+      {
+        accessor: 'totalSpent',
+        title: 'Total Spent',
+        sortable: true,
+        render: (item: CustomerDto) => formatCurrency(item.totalSpent),
+      },
+      {
+        accessor: 'lastOrderAt',
+        title: 'Last Order',
+        sortable: true,
+        render: (item: CustomerDto) =>
+          item.lastOrderAt
+            ? new Date(item.lastOrderAt).toLocaleDateString()
+            : 'N/A',
+      },
+      {
+        accessor: 'actions',
+        title: 'Actions',
+        textAlign: 'right',
+        render: (item: CustomerDto) => (
+          <Group gap="xs" justify="flex-end">
+            {onEdit && (
+              <Tooltip label="Edit">
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  onClick={() => onEdit(item)}
+                >
+                  <IconEdit size={16} />
+                </ActionIcon>
+              </Tooltip>
+            )}
+          </Group>
+        ),
+      },
+    ],
+    [query, onEdit],
+  );
 
   useEffect(() => {
     setPage(1);
@@ -227,30 +134,16 @@ const CustomersTable = ({
     const dd = d.slice(from, to) as CustomerDto[];
     let filtered = sortStatus.direction === 'desc' ? dd.reverse() : dd;
 
-    if (debouncedQuery || selectedStatuses.length) {
+    if (debouncedQuery) {
       filtered = data
-        .filter(({ name, status }) => {
-          if (
-            debouncedQuery !== '' &&
-            name &&
-            !name.toLowerCase().includes(debouncedQuery.trim().toLowerCase())
-          ) {
-            return false;
-          }
-
-          if (selectedStatuses.length && status) {
-            const statusLabel = getStatusLabel(status);
-            if (!selectedStatuses.includes(statusLabel)) {
-              return false;
-            }
-          }
-          return true;
-        })
+        .filter(({ email }) =>
+          email?.toLowerCase().includes(debouncedQuery.trim().toLowerCase()),
+        )
         .slice(from, to);
     }
 
     setRecords(filtered);
-  }, [sortStatus, data, page, pageSize, debouncedQuery, selectedStatuses]);
+  }, [sortStatus, data, page, pageSize, debouncedQuery]);
 
   return error ? (
     <ErrorAlert title="Error loading customers" message={error.toString()} />
@@ -263,11 +156,7 @@ const CustomersTable = ({
       records={records}
       selectedRecords={selectedRecords}
       onSelectedRecordsChange={setSelectedRecords}
-      totalRecords={
-        debouncedQuery || selectedStatuses.length > 0
-          ? records.length
-          : data.length
-      }
+      totalRecords={debouncedQuery ? records.length : data.length}
       recordsPerPage={pageSize}
       page={page}
       onPageChange={(p) => setPage(p)}

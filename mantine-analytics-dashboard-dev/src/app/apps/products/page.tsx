@@ -26,7 +26,6 @@ import { IProduct } from '@/types/products';
 
 const items = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
-  { title: 'Apps', href: '#' },
   { title: 'Products', href: '#' },
 ].map((item, index) => (
   <Anchor href={item.href} key={index}>

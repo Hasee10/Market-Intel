@@ -18,7 +18,10 @@ function mapCustomer(row: any): CustomerDto {
   };
 }
 
-export async function GET() {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   const seller = await getCurrentSeller();
   if (!seller) {
     return NextResponse.json(
@@ -27,55 +30,27 @@ export async function GET() {
     );
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('seller_customers')
-    .select('id, external_customer_id, email, first_order_at, last_order_at, orders_count, total_spent, created_at, updated_at')
-    .eq('seller_id', seller.id)
-    .order('last_order_at', { ascending: false, nullsFirst: false });
-
-  if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to fetch customers' },
-      { status: 500 },
-    );
-  }
-
-  return NextResponse.json({
-    succeeded: true,
-    data: (data ?? []).map(mapCustomer),
-    errors: [],
-    message: 'Customers retrieved successfully',
-  });
-}
-
-export async function POST(request: NextRequest) {
-  const seller = await getCurrentSeller();
-  if (!seller) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: ['Not authenticated'], message: 'Not authenticated' },
-      { status: 401 },
-    );
-  }
-
+  const { id } = await params;
   const body = await request.json();
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('seller_customers')
-    .insert({
-      seller_id: seller.id,
+    .update({
       external_customer_id: body.externalCustomerId || null,
       email: body.email || null,
       orders_count: body.ordersCount ?? 0,
       total_spent: body.totalSpent ?? 0,
+      updated_at: new Date().toISOString(),
     })
+    .eq('id', id)
+    .eq('seller_id', seller.id)
     .select('id, external_customer_id, email, first_order_at, last_order_at, orders_count, total_spent, created_at, updated_at')
     .single();
 
   if (error) {
     return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to create customer' },
+      { succeeded: false, data: null, errors: [error.message], message: 'Failed to update customer' },
       { status: 400 },
     );
   }
@@ -84,6 +59,42 @@ export async function POST(request: NextRequest) {
     succeeded: true,
     data: mapCustomer(data),
     errors: [],
-    message: 'Customer created successfully',
+    message: 'Customer updated successfully',
+  });
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const seller = await getCurrentSeller();
+  if (!seller) {
+    return NextResponse.json(
+      { succeeded: false, data: null, errors: ['Not authenticated'], message: 'Not authenticated' },
+      { status: 401 },
+    );
+  }
+
+  const { id } = await params;
+  const supabase = await createClient();
+
+  const { error } = await supabase
+    .from('seller_customers')
+    .delete()
+    .eq('id', id)
+    .eq('seller_id', seller.id);
+
+  if (error) {
+    return NextResponse.json(
+      { succeeded: false, data: null, errors: [error.message], message: 'Failed to delete customer' },
+      { status: 400 },
+    );
+  }
+
+  return NextResponse.json({
+    succeeded: true,
+    data: null,
+    errors: [],
+    message: 'Customer deleted successfully',
   });
 }
