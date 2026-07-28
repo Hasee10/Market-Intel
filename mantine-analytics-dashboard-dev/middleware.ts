@@ -1,9 +1,44 @@
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import { updateSession } from './src/lib/supabase/middleware';
+const PROTECTED_PREFIXES = ['/dashboard', '/apps', '/onboarding'];
+const AUTH_PREFIX = '/auth';
 
-export default function middleware(req: NextRequest) {
-  return updateSession(req);
+// Supabase stores its session as `sb-<project-ref>-auth-token`, optionally
+// chunked into `.0`, `.1`, ... when the JWT exceeds the 4KB cookie limit.
+const SUPABASE_AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
+
+// Deliberately dependency-free: this file has to bundle standalone as the
+// middleware entrypoint. Importing @supabase/ssr here pulled a Node-only
+// dependency graph into the middleware bundle, which Next 16 + Turbopack
+// mis-compiled - every request died with MIDDLEWARE_INVOCATION_FAILED.
+//
+// This is a redirect-UX gate, not a security boundary. Real identity is
+// verified server-side via createClient().auth.getUser() in pages and route
+// handlers, where RLS is enforced.
+export default function middleware(request: NextRequest) {
+  const hasSession = request.cookies
+    .getAll()
+    .some((cookie) => SUPABASE_AUTH_COOKIE.test(cookie.name));
+
+  const { pathname } = request.nextUrl;
+  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
+  const isAuthRoute = pathname.startsWith(AUTH_PREFIX);
+
+  if (!hasSession && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/signin';
+    url.searchParams.set('callbackUrl', pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (hasSession && isAuthRoute) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/dashboard/overview';
+    url.search = '';
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 // See "Matching Paths" below to learn more
@@ -14,5 +49,4 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
-  runtime: 'nodejs',
 };
