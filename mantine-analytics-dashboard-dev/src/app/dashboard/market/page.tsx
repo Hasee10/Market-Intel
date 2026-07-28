@@ -16,8 +16,17 @@ import { IconInfoCircle } from '@tabler/icons-react';
 
 import { PageHeader, StatsGrid, Surface } from '@/components';
 import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
+import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
 import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
 import { PATH_ONBOARDING } from '@/routes';
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('en-PK', {
+    style: 'currency',
+    currency: 'PKR',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 const PAPER_PROPS: PaperProps = {
   p: 'md',
@@ -34,6 +43,7 @@ async function Page() {
 
   const benchmarks = domain ? await getDomainBenchmarks(domain.categoryId) : [];
   const peers = domain && seller ? await getDomainPeers(domain.categoryId, seller.id) : [];
+  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug) : null;
 
   // The scraper-side aggregation job that populates domain_benchmarks
   // hasn't run yet for most categories - sample_size on any one metric row
@@ -124,6 +134,56 @@ async function Page() {
                 ))}
               </Table.Tbody>
             </Table>
+          </Surface>
+
+          <Surface {...PAPER_PROPS}>
+            <Group justify="space-between" mb="md">
+              <Text size="lg" fw={600}>
+                Category pricing (market-wide)
+              </Text>
+              {domain && !categoryPricing && (
+                <Badge variant="light" color="gray">
+                  No market pricing data for this category yet
+                </Badge>
+              )}
+            </Group>
+            {categoryPricing ? (
+              <>
+                <Table striped highlightOnHover>
+                  <Table.Thead>
+                    <Table.Tr>
+                      <Table.Th>Min</Table.Th>
+                      <Table.Th>P25</Table.Th>
+                      <Table.Th>Median</Table.Th>
+                      <Table.Th>P75</Table.Th>
+                      <Table.Th>Max</Table.Th>
+                      <Table.Th>Average</Table.Th>
+                      <Table.Th>Listings tracked</Table.Th>
+                    </Table.Tr>
+                  </Table.Thead>
+                  <Table.Tbody>
+                    <Table.Tr>
+                      <Table.Td>{formatCurrency(categoryPricing.minPrice)}</Table.Td>
+                      <Table.Td>{formatCurrency(categoryPricing.p25)}</Table.Td>
+                      <Table.Td>{formatCurrency(categoryPricing.median)}</Table.Td>
+                      <Table.Td>{formatCurrency(categoryPricing.p75)}</Table.Td>
+                      <Table.Td>{formatCurrency(categoryPricing.maxPrice)}</Table.Td>
+                      <Table.Td>{formatCurrency(categoryPricing.avgPrice)}</Table.Td>
+                      <Table.Td>{categoryPricing.count}</Table.Td>
+                    </Table.Tr>
+                  </Table.Tbody>
+                </Table>
+                <Text size="xs" c="dimmed" mt="xs">
+                  Scraped from {categoryPricing.samplePlatforms.join(', ')} - refreshed
+                  automatically every 2 days.
+                </Text>
+              </>
+            ) : (
+              <Text size="sm" c="dimmed">
+                We haven&apos;t scraped competitor pricing for this category yet. Coverage is
+                expanding source by source.
+              </Text>
+            )}
           </Surface>
 
           <Surface {...PAPER_PROPS}>

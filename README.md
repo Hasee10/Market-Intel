@@ -19,10 +19,15 @@ standalone app — see "What's missing to run standalone" below.
 
 ## What's here
 
-- `scraper/` — the entire scraper package, unchanged, fully self-contained
-  (own `package.json`, own Supabase tables `market_*`/`market_accounts`, own
-  migrations `migrations/001-010`, own GitHub Actions workflow). This part
-  already ran independently of the job-portal app even before the extraction.
+- `scraper/` — the entire scraper package, fully self-contained (own
+  `package.json`, own Supabase tables `market_*`/`market_accounts`, own
+  migrations `migrations/001-010`). This part already ran independently of
+  the job-portal app even before the extraction. As of 2026-07-28 it's
+  repointed at the same Supabase project as the seller portal
+  (`mantine-analytics-dashboard-dev`, see "Database" below) and its GitHub
+  Actions workflow is now active at `.github/workflows/market-scraper.yml`
+  (repo root) - the copy in `workflows/market-scraper.yml` below is now stale
+  and only kept as a historical reference.
 - `web/app/intel/` — Next.js pages: landing (`page.tsx`), dashboard, sign-in,
   sign-up, product detail (`products/[id]/page.tsx`).
 - `web/app/api/market-intel/` — waitlist, signup, watchlist API routes.
@@ -40,12 +45,13 @@ standalone app — see "What's missing to run standalone" below.
 - `web/lib/auth/market-accounts.ts` — market analyst account creation/login
   (bcrypt, own `market_accounts` Supabase table).
 - `workflows/market-scraper.yml`, `workflows/market-alerts-cron.yml` — the
-  two GitHub Actions workflows that ran this feature on a schedule. Paths
-  inside them were updated to `market-intel/scraper` to match this archive's
-  layout, but they are **not active** — GitHub only runs workflows physically
-  located at `.github/workflows/` of a repo, and `market-alerts-cron.yml`'s
-  `PORTAL_URL` still points at the old JobLo Vercel deployment, which no
-  longer serves `/api/cron/market-alerts`.
+  original two GitHub Actions workflows. **Only `market-scraper.yml` is
+  active**, and as `.github/workflows/market-scraper.yml` at the repo root
+  (working-directory fixed to `scraper`), not this stale copy.
+  `market-alerts-cron.yml` calls the dead `web/app/api/cron/market-alerts`
+  route (`PORTAL_URL` still points at the old JobLo Vercel deployment, which
+  no longer serves it) and hasn't been activated - `web/` as a whole is still
+  archive-only, see "What's missing to run standalone".
 - `overview.md`, `research.md` — the original product/build planning docs
   (unedited).
 
@@ -75,11 +81,16 @@ you'd need to supply:
 
 ## Database
 
-Still lives in the **same Supabase project** as JobLo, in tables prefixed
-`market_` plus `market_accounts` — these were always isolated by naming, not
-by a separate database, and moving them wasn't part of this extraction. If
-Market Intel becomes a genuinely separate deployment, decide then whether it
-needs its own Supabase project or can keep sharing this one.
+As of 2026-07-28, `scraper/` points at the **market-intel seller-portal
+Supabase project** (the same one `mantine-analytics-dashboard-dev` uses),
+not the old JobLo project — `market_*`/`market_accounts` tables there are
+still isolated purely by naming (no separate schema), same as before. To
+apply the scraper's migrations (001-010) to this project, run
+`scraper/migrations/_pending_apply_to_new_project.sql` once via the Supabase
+SQL Editor, then delete that file. `web/`'s Supabase tables
+(`market_intel_waitlist` etc.) are unaffected and still live on the old
+JobLo project - that archive hasn't been migrated since it doesn't run
+standalone yet anyway.
 
 ## What changed on the JobLo side
 
