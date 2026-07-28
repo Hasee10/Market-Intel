@@ -6,6 +6,7 @@ import {
   PaperProps,
   Stack,
   Text,
+  Title,
   Group,
 } from '@mantine/core';
 
@@ -77,53 +78,61 @@ function Page() {
             paperProps={PAPER_PROPS}
           />
 
-          <Grid>
-            <Grid.Col span={{ base: 12, md: 8 }}>
-              <RevenueChart
-                data={revenueTrendData?.data || []}
-                error={revenueTrendError}
-                loading={revenueTrendLoading}
-                {...PAPER_PROPS}
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 4 }}>
-              <Surface {...PAPER_PROPS}>
-                <Text size="lg" fw={600} mb="md">
-                  Order Status
-                </Text>
-                <OrderStatusChart
-                  data={ordersData?.data || []}
-                  error={ordersError}
-                  loading={ordersLoading}
+          <Stack gap="sm">
+            <Title order={4}>Revenue & fulfillment</Title>
+            <Grid>
+              <Grid.Col span={{ base: 12, md: 8 }}>
+                <RevenueChart
+                  data={revenueTrendData?.data || []}
+                  error={revenueTrendError}
+                  loading={revenueTrendLoading}
+                  {...PAPER_PROPS}
                 />
-              </Surface>
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <Surface {...PAPER_PROPS}>
-                <CategoryRevenueChart
-                  data={categoriesData?.data || []}
-                  error={categoriesError}
-                  loading={categoriesLoading}
-                />
-              </Surface>
-            </Grid.Col>
-
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <Surface {...PAPER_PROPS}>
-                <Group justify="space-between" mb="md">
-                  <Text size="lg" fw={600}>
-                    Top Products by Inventory Value
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, md: 4 }}>
+                <Surface {...PAPER_PROPS}>
+                  <Text size="lg" fw={600} mb="md">
+                    Order Status
                   </Text>
-                </Group>
-                <TopProductsTable
-                  data={productsData?.data?.slice(0, 5) || []}
-                  error={productsError}
-                  loading={productsLoading}
-                />
-              </Surface>
-            </Grid.Col>
-          </Grid>
+                  <OrderStatusChart
+                    data={ordersData?.data || []}
+                    error={ordersError}
+                    loading={ordersLoading}
+                  />
+                </Surface>
+              </Grid.Col>
+            </Grid>
+          </Stack>
+
+          <Stack gap="sm">
+            <Title order={4}>Products & inventory</Title>
+            <Grid>
+              <Grid.Col span={{ base: 12, md: 5 }}>
+                <Surface {...PAPER_PROPS}>
+                  <CategoryRevenueChart
+                    data={categoriesData?.data || []}
+                    error={categoriesError}
+                    loading={categoriesLoading}
+                  />
+                </Surface>
+              </Grid.Col>
+
+              <Grid.Col span={{ base: 12, md: 7 }}>
+                <Surface {...PAPER_PROPS}>
+                  <Group justify="space-between" mb="md">
+                    <Text size="lg" fw={600}>
+                      Top Products by Inventory Value
+                    </Text>
+                  </Group>
+                  <TopProductsTable
+                    data={productsData?.data?.slice(0, 5) || []}
+                    error={productsError}
+                    loading={productsLoading}
+                  />
+                </Surface>
+              </Grid.Col>
+            </Grid>
+          </Stack>
         </Stack>
       </Container>
     </>

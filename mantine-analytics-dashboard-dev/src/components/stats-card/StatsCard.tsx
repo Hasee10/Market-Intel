@@ -1,29 +1,53 @@
-import { Badge, Group, PaperProps, Text } from '@mantine/core';
-import { IconArrowDownRight, IconArrowUpRight } from '@tabler/icons-react';
+import { Group, PaperProps, Text, ThemeIcon } from '@mantine/core';
+import {
+  IconArrowDownRight,
+  IconArrowUpRight,
+  IconChartLine,
+  IconCurrencyDollar,
+  IconReceipt,
+  IconShoppingCart,
+  IconShoppingCartOff,
+  IconUsers,
+} from '@tabler/icons-react';
 
 import { Surface } from '@/components';
 
 import classes from './StatsCard.module.css';
 
+const ICONS: Record<string, typeof IconChartLine> = {
+  'currency-dollar': IconCurrencyDollar,
+  'shopping-cart': IconShoppingCart,
+  'shopping-cart-off': IconShoppingCartOff,
+  receipt: IconReceipt,
+  users: IconUsers,
+  'chart-line': IconChartLine,
+};
+
 type StatsCardProps = {
-  data: { title: string; value: string; diff: number; period?: string };
+  data: {
+    title: string;
+    value: string;
+    diff: number;
+    period?: string;
+    icon?: string;
+    color?: string;
+  };
 } & PaperProps;
 
 const StatsCard = ({ data, ...others }: StatsCardProps) => {
-  const { title, value, period, diff } = data;
+  const { title, value, period, diff, icon, color } = data;
   const DiffIcon = diff > 0 ? IconArrowUpRight : IconArrowDownRight;
+  const Icon = (icon && ICONS[icon]) || IconChartLine;
 
   return (
     <Surface {...others}>
-      <Group justify="space-between">
+      <Group justify="space-between" align="flex-start">
         <Text size="xs" className={classes.title}>
           {title}
         </Text>
-        {period && (
-          <Badge variant="filled" radius="sm">
-            {period}
-          </Badge>
-        )}
+        <ThemeIcon size="lg" radius="md" variant="light" color={color || 'blue'}>
+          <Icon size={18} />
+        </ThemeIcon>
       </Group>
 
       <Group align="flex-end" gap="xs" mt={25}>
@@ -39,9 +63,11 @@ const StatsCard = ({ data, ...others }: StatsCardProps) => {
         </Text>
       </Group>
 
-      <Text fz="xs" mt={7}>
-        Compared to previous month
-      </Text>
+      {period && (
+        <Text fz="xs" c="dimmed" mt={7}>
+          {period}
+        </Text>
+      )}
     </Surface>
   );
 };

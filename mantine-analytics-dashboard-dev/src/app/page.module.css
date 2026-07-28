@@ -1,5 +1,10 @@
 .hero {
-  background-color: var(--mantine-color-black);
+  background: radial-gradient(
+      circle at 50% 0%,
+      var(--mantine-color-blue-9) 0%,
+      transparent 55%
+    ),
+    var(--mantine-color-black);
   color: var(--mantine-color-white);
   padding: calc(var(--mantine-spacing-xl) * 4);
 
@@ -8,14 +13,24 @@
   }
 }
 
+.heroBadge {
+  text-transform: none;
+}
+
+.heroMeta {
+  @media (max-width: $mantine-breakpoint-sm) {
+    display: none;
+  }
+}
+
 .title {
   font-weight: 800;
-  font-size: rem(40);
-  letter-spacing: rem(-1);
+  font-size: rem(48);
+  letter-spacing: rem(-1.5);
   margin-bottom: var(--mantine-spacing-xs);
 
   @media (max-width: $mantine-breakpoint-sm) {
-    font-size: rem(28);
+    font-size: rem(30);
     text-align: left;
   }
 }
@@ -95,7 +110,17 @@
 }
 
 .featureCard {
-  background-color: transparent;
+  height: 100%;
+  transition: all ease 150ms;
+
+  @mixin hover {
+    transform: translateY(-2px);
+    border-color: var(--mantine-primary-color-filled);
+  }
+}
+
+.ctaBand {
+  background-color: var(--mantine-color-dark-8);
 }
 
 .section {

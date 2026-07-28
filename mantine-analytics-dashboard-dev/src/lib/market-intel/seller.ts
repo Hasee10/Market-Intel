@@ -1,6 +1,6 @@
 'server-only';
 
-import { createClient } from '@/lib/supabase/server';
+import { createClient, isBypassedNoSession } from '@/lib/supabase/server';
 
 export type Seller = {
   id: string;
@@ -22,6 +22,30 @@ export type SellerDomain = {
 // time. Returns null only if the caller isn't signed in.
 export async function getCurrentSeller(): Promise<Seller | null> {
   const supabase = await createClient();
+
+  // Dev-only: BYPASS_AUTH=1 with no session - createClient() already handed
+  // back a service-role client above, so just grab the first seller instead
+  // of resolving a real auth.uid(). Remove once Clerk auth is wired up.
+  if (await isBypassedNoSession()) {
+    const { data, error } = await supabase
+      .from('sellers')
+      .select('id, user_id, business_name, email, plan_tier, onboarded_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error || !data) return null;
+
+    return {
+      id: data.id,
+      userId: data.user_id,
+      businessName: data.business_name,
+      email: data.email,
+      planTier: data.plan_tier,
+      onboardedAt: data.onboarded_at,
+    };
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
