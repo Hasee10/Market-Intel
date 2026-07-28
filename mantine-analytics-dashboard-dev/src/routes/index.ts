@@ -18,6 +18,8 @@ const ROOTS_AUTH_PROVIDERS = '/authProviders';
 const ROOTS_ABOUT = '/pages/about';
 const ROOTS_PRODUCTS = '/products';
 
+export const PATH_ONBOARDING = '/onboarding';
+
 export const PATH_DASHBOARD = {
   root: ROOTS_DASHBOARD,
   // 'default' is kept as an alias for 'overview' so existing breadcrumb

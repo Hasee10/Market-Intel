@@ -1,8 +1,9 @@
-'use client';
+import Link from 'next/link';
 
 import {
   Alert,
   Badge,
+  Button,
   Container,
   Grid,
   Group,
@@ -14,29 +15,43 @@ import {
 import { IconInfoCircle } from '@tabler/icons-react';
 
 import { PageHeader, StatsGrid, Surface } from '@/components';
+import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
+import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
+import { PATH_ONBOARDING } from '@/routes';
 
 const PAPER_PROPS: PaperProps = {
   p: 'md',
   style: { minHeight: '100%' },
 };
 
-// Placeholder benchmark figures until domain_benchmarks is wired up (see
-// migrations/011-013 + Task #6). Peer rows only ever show fields a seller
-// has opted into via seller_public_profile - never raw competitor data.
-const DOMAIN_STATS = [
-  { title: 'Your domain', value: 'Coffee & Beverages', diff: 0 },
-  { title: 'Sellers in domain', value: '18', diff: 0 },
-  { title: 'Your rank (revenue)', value: '#4', diff: 0 },
-  { title: 'Avg. peer rating', value: '4.3 / 5', diff: 2.1 },
-];
+function formatMetric(metricName: string) {
+  return metricName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
-const PEER_ROWS = [
-  { name: 'Peer A', rating: 4.6, priceIndex: 'Similar', responseTime: 'Fast' },
-  { name: 'Peer B', rating: 4.2, priceIndex: 'Lower', responseTime: 'Average' },
-  { name: 'Peer C', rating: 4.5, priceIndex: 'Higher', responseTime: 'Fast' },
-];
+async function Page() {
+  const seller = await getCurrentSeller();
+  const domain = seller ? await getPrimaryDomain(seller.id) : null;
 
-function Page() {
+  const benchmarks = domain ? await getDomainBenchmarks(domain.categoryId) : [];
+  const peers = domain && seller ? await getDomainPeers(domain.categoryId, seller.id) : [];
+
+  // The scraper-side aggregation job that populates domain_benchmarks
+  // hasn't run yet for most categories - sample_size on any one metric row
+  // is a reasonable stand-in for "sellers in domain" until we track that
+  // directly (see 011_create_seller_platform_tables.sql / 012 policies).
+  const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
+
+  const domainStats = [
+    { title: 'Your domain', value: domain?.categoryName ?? 'Not set', diff: 0 },
+    { title: 'Sellers in domain', value: sellersInDomain != null ? String(sellersInDomain) : '—', diff: 0 },
+    { title: 'Peers visible to you', value: String(peers.length), diff: 0 },
+    {
+      title: 'Benchmarks tracked',
+      value: String(benchmarks.length),
+      diff: 0,
+    },
+  ];
+
   return (
     <>
       <>
@@ -56,38 +71,88 @@ function Page() {
             variant="light"
             title="Peer benchmarking, not surveillance"
           >
-            You only see aggregate or seller-opted-in fields for other sellers
-            in your domain (e.g. rating, price positioning, response time).
-            Nothing private about a competitor&apos;s business is ever shown.
+            You only see aggregate or seller-opted-in fields for other sellers in your domain
+            (e.g. rating, price positioning, response time). Nothing private about a
+            competitor&apos;s business is ever shown.
           </Alert>
 
-          <StatsGrid data={DOMAIN_STATS} error={null} paperProps={PAPER_PROPS} />
+          {!domain && (
+            <Alert color="yellow" title="Pick your domain to see benchmarks">
+              <Group justify="space-between" align="center">
+                <Text size="sm">
+                  You haven&apos;t set a domain yet, so we can&apos;t show you peer benchmarks.
+                </Text>
+                <Button component={Link} href={PATH_ONBOARDING} size="xs">
+                  Choose domain
+                </Button>
+              </Group>
+            </Alert>
+          )}
+
+          <StatsGrid data={domainStats} error={null} paperProps={PAPER_PROPS} />
+
+          <Surface {...PAPER_PROPS}>
+            <Group justify="space-between" mb="md">
+              <Text size="lg" fw={600}>
+                Domain benchmarks
+              </Text>
+              {domain && benchmarks.length === 0 && (
+                <Badge variant="light" color="gray">
+                  No benchmarks computed for this domain yet
+                </Badge>
+              )}
+            </Group>
+            <Table striped highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th>Metric</Table.Th>
+                  <Table.Th>P25</Table.Th>
+                  <Table.Th>Median</Table.Th>
+                  <Table.Th>P75</Table.Th>
+                  <Table.Th>Sample size</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {benchmarks.map((row) => (
+                  <Table.Tr key={row.metricName}>
+                    <Table.Td>{formatMetric(row.metricName)}</Table.Td>
+                    <Table.Td>{row.p25 ?? '—'}</Table.Td>
+                    <Table.Td>{row.median ?? '—'}</Table.Td>
+                    <Table.Td>{row.p75 ?? '—'}</Table.Td>
+                    <Table.Td>{row.sampleSize}</Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Surface>
 
           <Surface {...PAPER_PROPS}>
             <Group justify="space-between" mb="md">
               <Text size="lg" fw={600}>
                 Peers in your domain
               </Text>
-              <Badge variant="light" color="gray">
-                Sample data - connects to live benchmarks next
-              </Badge>
+              {domain && peers.length === 0 && (
+                <Badge variant="light" color="gray">
+                  No peers have opted in to be visible yet
+                </Badge>
+              )}
             </Group>
             <Table striped highlightOnHover>
               <Table.Thead>
                 <Table.Tr>
                   <Table.Th>Seller</Table.Th>
-                  <Table.Th>Rating</Table.Th>
-                  <Table.Th>Price positioning</Table.Th>
-                  <Table.Th>Response time</Table.Th>
+                  <Table.Th>Shares rating</Table.Th>
+                  <Table.Th>Shares price positioning</Table.Th>
+                  <Table.Th>Shares category rank</Table.Th>
                 </Table.Tr>
               </Table.Thead>
               <Table.Tbody>
-                {PEER_ROWS.map((row) => (
-                  <Table.Tr key={row.name}>
-                    <Table.Td>{row.name}</Table.Td>
-                    <Table.Td>{row.rating.toFixed(1)}</Table.Td>
-                    <Table.Td>{row.priceIndex}</Table.Td>
-                    <Table.Td>{row.responseTime}</Table.Td>
+                {peers.map((peer) => (
+                  <Table.Tr key={peer.sellerId}>
+                    <Table.Td>{peer.displayName ?? 'Anonymous seller'}</Table.Td>
+                    <Table.Td>{peer.showRating ? 'Yes' : 'No'}</Table.Td>
+                    <Table.Td>{peer.showPricePosition ? 'Yes' : 'No'}</Table.Td>
+                    <Table.Td>{peer.showCategoryRank ? 'Yes' : 'No'}</Table.Td>
                   </Table.Tr>
                 ))}
               </Table.Tbody>
@@ -101,9 +166,9 @@ function Page() {
                   Opt in to be visible to peers
                 </Text>
                 <Text size="sm" c="dimmed">
-                  Choose which of your own stats (rating, price range,
-                  response time) other sellers in your domain can see.
-                  Manage this from Settings &rarr; Public profile.
+                  Choose which of your own stats (rating, price range, response time) other
+                  sellers in your domain can see. Manage this from Settings &rarr; Public
+                  profile.
                 </Text>
               </Surface>
             </Grid.Col>
@@ -113,9 +178,9 @@ function Page() {
                   Where this data comes from
                 </Text>
                 <Text size="sm" c="dimmed">
-                  Benchmarks are computed from anonymized, aggregated seller
-                  data in your domain - never a direct feed of another
-                  seller&apos;s private orders, customers, or churn.
+                  Benchmarks are computed from anonymized, aggregated seller data in your
+                  domain - never a direct feed of another seller&apos;s private orders,
+                  customers, or churn.
                 </Text>
               </Surface>
             </Grid.Col>
