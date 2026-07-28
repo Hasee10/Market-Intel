@@ -22,6 +22,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Surface } from '@/components';
+import { createClient } from '@/lib/supabase/client';
 import { PATH_AUTH, PATH_DASHBOARD } from '@/routes';
 
 import classes from './page.module.css';
@@ -38,7 +39,7 @@ function Page() {
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm({
-    initialValues: { email: 'demo@example.com', password: 'demo123' },
+    initialValues: { email: '', password: '' },
     validate: {
       email: (value: string) =>
         /^\S+@\S+$/.test(value) ? null : 'Invalid email',
@@ -54,15 +55,19 @@ function Page() {
       setIsLoading(true);
       setError(null);
 
-      // Simple demo login - just redirect to dashboard
-      // In a real application, implement your auth logic here with Clerk or Auth0
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: values.email,
+        password: values.password,
+      });
 
-      // Simulate a brief loading state
-      await new Promise(resolve => setTimeout(resolve, 500));
+      if (signInError) {
+        setError(signInError.message);
+        return;
+      }
 
-      // Redirect to dashboard
-      router.push(PATH_DASHBOARD.default);
-
+      router.push(callbackUrl);
+      router.refresh();
     } catch (error) {
       setError('An unexpected error occurred');
       console.error('Sign in error:', error);
@@ -97,14 +102,14 @@ function Page() {
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <TextInput
             label="Email"
-            placeholder="demo@example.com"
+            placeholder="you@yourstore.com"
             required
             classNames={{ label: classes.label }}
             {...form.getInputProps('email')}
           />
           <PasswordInput
             label="Password"
-            placeholder="demo123"
+            placeholder="Your password"
             required
             mt="md"
             classNames={{ label: classes.label }}

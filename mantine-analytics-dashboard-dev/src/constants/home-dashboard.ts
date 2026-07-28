@@ -3,22 +3,22 @@ import { PATH_DASHBOARD } from '@/routes';
 export const HOME_DASHBOARDS = [
   {
     img: '/showcase/dashboard-default.png',
-    title: 'default',
-    link: PATH_DASHBOARD.default,
+    title: 'overview',
+    link: PATH_DASHBOARD.overview,
   },
   {
     img: '/showcase/dashboard-analytics.png',
-    title: 'analytics',
-    link: PATH_DASHBOARD.analytics,
+    title: 'products',
+    link: PATH_DASHBOARD.products,
   },
   {
     img: '/showcase/dashboard-saas.png',
-    title: 'saas',
-    link: PATH_DASHBOARD.saas,
+    title: 'market & peers',
+    link: PATH_DASHBOARD.market,
   },
   {
     img: '/showcase/dashboard-default-dark.png',
-    title: 'dark mode',
-    link: PATH_DASHBOARD.default,
+    title: 'customers & churn',
+    link: PATH_DASHBOARD.customers,
   },
 ];

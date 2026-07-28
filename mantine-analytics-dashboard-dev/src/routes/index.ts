@@ -20,19 +20,15 @@ const ROOTS_PRODUCTS = '/products';
 
 export const PATH_DASHBOARD = {
   root: ROOTS_DASHBOARD,
-  default: path(ROOTS_DASHBOARD, '/default'),
-  analytics: path(ROOTS_DASHBOARD, '/analytics'),
-  saas: path(ROOTS_DASHBOARD, '/saas'),
-  ecommerce: path(ROOTS_DASHBOARD, '/ecommerce'),
-  crm: path(ROOTS_DASHBOARD, '/crm'),
-  finance: path(ROOTS_DASHBOARD, '/finance'),
-  marketing: path(ROOTS_DASHBOARD, '/marketing'),
-  healthcare: path(ROOTS_DASHBOARD, '/healthcare'),
-  education: path(ROOTS_DASHBOARD, '/education'),
-  logistics: path(ROOTS_DASHBOARD, '/logistics'),
-  hr: path(ROOTS_DASHBOARD, '/hr'),
-  realEstate: path(ROOTS_DASHBOARD, '/real-estate'),
-  llm: path(ROOTS_DASHBOARD, '/llm'),
+  // 'default' is kept as an alias for 'overview' so existing breadcrumb
+  // links (PATH_DASHBOARD.default) across reused /apps pages keep working.
+  default: path(ROOTS_DASHBOARD, '/overview'),
+  overview: path(ROOTS_DASHBOARD, '/overview'),
+  products: path(ROOTS_DASHBOARD, '/products'),
+  customers: path(ROOTS_DASHBOARD, '/customers'),
+  market: path(ROOTS_DASHBOARD, '/market'),
+  alerts: path(ROOTS_DASHBOARD, '/alerts'),
+  settings: path(ROOTS_DASHBOARD, '/settings'),
 };
 
 export const PATH_APPS = {

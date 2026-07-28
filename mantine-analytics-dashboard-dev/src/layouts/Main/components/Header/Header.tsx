@@ -32,8 +32,9 @@ import { LanguagePicker } from '@/components';
 import { MESSAGES } from '@/constants/messages';
 import { NOTIFICATIONS } from '@/constants/notifications';
 import { HeaderVariant, useSidebarConfig } from '@/contexts/theme-customizer';
+import { createClient } from '@/lib/supabase/client';
+import { useSellerSession } from '@/lib/supabase/useSellerSession';
 import { useRouter } from 'next/navigation';
-import UserProfileData from '@public/mocks/UserProfile.json';
 
 const ICON_SIZE = 20;
 
@@ -59,6 +60,14 @@ const HeaderNav = (props: HeaderNavProps) => {
   const mobile_match = useMediaQuery('(max-width: 425px)');
   const sidebarConfig = useSidebarConfig();
   const router = useRouter();
+  const { email, businessName } = useSellerSession();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/auth/signin');
+    router.refresh();
+  };
 
   // Determine text color based on header variant
   const getTextColor = () => {
@@ -279,11 +288,9 @@ const HeaderNav = (props: HeaderNavProps) => {
                 }
                 style={{ borderRadius: '50%' }}
               >
-                <Avatar
-                  src={UserProfileData.avatar}
-                  alt={UserProfileData.name}
-                  size="sm"
-                />
+                <Avatar alt={businessName ?? email ?? 'Seller'} size="sm">
+                  {(businessName ?? email ?? '?').charAt(0).toUpperCase()}
+                </Avatar>
               </ActionIcon>
             </Tooltip>
           </Menu.Target>
@@ -291,9 +298,9 @@ const HeaderNav = (props: HeaderNavProps) => {
             <Menu.Label>
               <Stack gap={4}>
                 <Text size="sm" fw={500}>
-                  {UserProfileData.name}
+                  {businessName ?? 'Your store'}
                 </Text>
-                <Text size="xs">{UserProfileData.email}</Text>
+                <Text size="xs">{email ?? ''}</Text>
               </Stack>
             </Menu.Label>
             <Menu.Divider />
@@ -305,7 +312,7 @@ const HeaderNav = (props: HeaderNavProps) => {
             <Menu.Item
               leftSection={<IconPower size={16} />}
               color="red"
-              onClick={() => router.push('/')}
+              onClick={handleLogout}
             >
               Logout
             </Menu.Item>

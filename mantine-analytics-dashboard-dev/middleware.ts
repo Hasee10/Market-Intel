@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Auth middleware removed - all routes are now public for demo purposes
+import { updateSession } from '@/lib/supabase/middleware';
+
 export default function middleware(req: NextRequest) {
-  return NextResponse.next();
+  return updateSession(req);
 }
 
 // See "Matching Paths" below to learn more
