@@ -12,6 +12,11 @@ const SUPABASE_AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
 // dependency graph into the middleware bundle, which Next 16 + Turbopack
 // mis-compiled - every request died with MIDDLEWARE_INVOCATION_FAILED.
 //
+// runtime: 'nodejs' below (not Edge): Next 16's own vendored
+// @opentelemetry/api bundle references __dirname unconditionally, which
+// Vercel's Edge isolate doesn't define, crashing every request regardless of
+// what this file imports. The Node.js runtime doesn't hit that path.
+//
 // This is a redirect-UX gate, not a security boundary. Real identity is
 // verified server-side via createClient().auth.getUser() in pages and route
 // handlers, where RLS is enforced.
@@ -49,4 +54,5 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
+  runtime: 'nodejs',
 };
