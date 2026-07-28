@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 
-import { updateSession } from '@/lib/supabase/middleware';
+import { updateSession } from './src/lib/supabase/middleware';
 
 export default function middleware(req: NextRequest) {
   return updateSession(req);
