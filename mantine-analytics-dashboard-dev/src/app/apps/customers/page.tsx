@@ -102,11 +102,15 @@ function Customers() {
       );
     }
 
-    if (customersError) {
+    if (customersError || (customersData && !customersData.succeeded)) {
       return (
         <ErrorAlert
           title="Error loading customers"
-          message={customersError?.message || 'Failed to load customers'}
+          message={
+            customersData?.errors?.join(', ') ||
+            customersError?.message ||
+            'Failed to load customers'
+          }
         />
       );
     }

@@ -11,6 +11,7 @@ import {
 } from '@mantine/core';
 
 import {
+  ErrorAlert,
   PageHeader,
   StatsGrid,
   Surface,
@@ -57,6 +58,20 @@ function Page() {
     error: revenueTrendError,
     loading: revenueTrendLoading,
   } = useFetch<IApiResponse<any[]>>('/api/ecommerce/revenue-trend');
+
+  const allLoaded = ![statsLoading, productsLoading, ordersLoading, categoriesLoading, revenueTrendLoading].some(Boolean);
+  const authFailed = allLoaded && [statsData, productsData, ordersData, categoriesData, revenueTrendData].every(
+    (res) => res && res.succeeded === false
+  );
+
+  if (authFailed) {
+    return (
+      <ErrorAlert
+        title="Error loading dashboard"
+        message={statsData?.errors?.join(', ') || 'Not authenticated'}
+      />
+    );
+  }
 
   return (
     <>

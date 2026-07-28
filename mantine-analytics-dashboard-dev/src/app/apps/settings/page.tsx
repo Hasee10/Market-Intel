@@ -19,7 +19,7 @@ import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 import { IconDeviceFloppy } from '@tabler/icons-react';
 
-import { PageHeader, Surface } from '@/components';
+import { ErrorAlert, PageHeader, Surface } from '@/components';
 import { useProfile } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/routes';
 
@@ -44,6 +44,7 @@ function Settings() {
 
   const { data: profileData, loading: profileLoading, refetch } = useProfile();
   const profile = profileData?.data;
+  const authFailed = !profileLoading && profileData && profileData.succeeded === false;
 
   const businessForm = useForm({
     initialValues: {
@@ -110,6 +111,15 @@ function Settings() {
       setSaving(false);
     }
   };
+
+  if (authFailed) {
+    return (
+      <ErrorAlert
+        title="Error loading settings"
+        message={profileData?.errors?.join(', ') || 'Not authenticated'}
+      />
+    );
+  }
 
   return (
     <>
