@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server';
 
 import { updateSession } from './src/lib/supabase/middleware';
 
-export default function proxy(req: NextRequest) {
+export default function middleware(req: NextRequest) {
   return updateSession(req);
 }
 
@@ -14,4 +14,5 @@ export const config = {
     // Always run for API routes
     '/(api|trpc)(.*)',
   ],
+  runtime: 'nodejs',
 };
