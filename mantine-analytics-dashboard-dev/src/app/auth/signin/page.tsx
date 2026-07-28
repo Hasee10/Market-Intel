@@ -78,7 +78,7 @@ function Page() {
 
   return (
     <>
-      <title>Sign in | DesignSparx</title>
+      <title>Sign in | Market Intel</title>
       <meta
         name="description"
         content="Sign in to your account to access the dashboard."

@@ -17,7 +17,7 @@ import { useColorScheme } from '@mantine/hooks';
 import { IconRefresh } from '@tabler/icons-react';
 
 import { FilterDateMenu, Surface } from '@/components';
-import UserProfileData from '@public/mocks/UserProfile.json';
+import { useSellerSession } from '@/lib/supabase/useSellerSession';
 
 type PageHeaderProps = {
   title: string;
@@ -36,7 +36,7 @@ const PageHeader = (props: PageHeaderProps) => {
     actionContent,
     ...others
   } = props;
-  const user = UserProfileData;
+  const { businessName } = useSellerSession();
 
   const theme = useMantineTheme();
   const colorScheme = useColorScheme();
@@ -98,7 +98,7 @@ const PageHeader = (props: PageHeaderProps) => {
           >
             <Stack gap={4}>
               <Title order={3}>{title}</Title>
-              <Text>Welcome back, {user?.name}!</Text>
+              <Text>Welcome back{businessName ? `, ${businessName}` : ''}!</Text>
             </Stack>
             {renderActions()}
           </Flex>

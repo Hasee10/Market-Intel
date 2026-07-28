@@ -1,1 +1,0 @@
-export { InvoicesTable } from './InvoicesTable';

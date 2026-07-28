@@ -140,10 +140,10 @@ function Products() {
   return (
     <>
       <>
-        <title>Products | DesignSparx</title>
+        <title>Products | Market Intel</title>
         <meta
           name="description"
-          content="Explore our versatile dashboard website template featuring a stunning array of themes and meticulously crafted components."
+          content="Manage your product catalog."
         />
       </>
       <PageHeader

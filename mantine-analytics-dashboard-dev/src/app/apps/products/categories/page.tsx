@@ -148,7 +148,7 @@ function Categories() {
   return (
     <>
       <>
-        <title>Product Categories | DesignSparx</title>
+        <title>Product Categories | Market Intel</title>
         <meta
           name="description"
           content="Manage product categories in your dashboard"

@@ -36,7 +36,6 @@ type FilterType = 'all' | 'unread' | 'mentions' | 'comments' | 'updates';
 
 const items = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
-  { title: 'Apps', href: '#' },
   { title: 'Notifications', href: '#' },
 ].map((item, index) => (
   <Anchor href={item.href} key={index}>
@@ -169,7 +168,7 @@ function Notifications() {
 
   return (
     <>
-      <title>Notifications | DesignSparx</title>
+      <title>Notifications | Market Intel</title>
       <meta name="description" content="View and manage your notifications" />
 
       <PageHeader

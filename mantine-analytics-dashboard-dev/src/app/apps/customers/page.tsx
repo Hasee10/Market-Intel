@@ -34,7 +34,6 @@ type ViewMode = 'grid' | 'table';
 
 const items = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
-  { title: 'Apps', href: '#' },
   { title: 'Customers', href: '#' },
 ].map((item, index) => (
   <Anchor href={item.href} key={index}>
@@ -160,7 +159,7 @@ function Customers() {
   return (
     <>
       <>
-        <title>Customers | DesignSparx</title>
+        <title>Customers | Market Intel</title>
         <meta name="description" content="Manage customers in your dashboard" />
       </>
       <PageHeader

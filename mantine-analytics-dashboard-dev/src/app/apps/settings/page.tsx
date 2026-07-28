@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 
 import {
   Anchor,
+  Avatar,
   Box,
   Button,
   Container,
   FileButton,
   Grid,
   Group,
-  Image,
   PaperProps,
   Stack,
   Text,
@@ -26,7 +26,6 @@ import { PATH_DASHBOARD } from '@/routes';
 
 const items = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
-  { title: 'Apps', href: '#' },
   { title: 'Settings', href: '#' },
 ].map((item, index) => (
   <Anchor href={item.href} key={index}>
@@ -41,10 +40,7 @@ const PAPER_PROPS: PaperProps = {
   style: { minHeight: '100%' },
 };
 
-const BIO =
-  'A dynamic software engineering graduate from Nairobi, Kenya with 5+ years of experience. Passionate about turning creative sparks into seamless applications through technological experimentation. Experienced in crafting intuitive solutions and translating innovative concepts into user-friendly applications. Thrives on transforming the way we experience technology, one line of code at a time.\n' +
-  '\n' +
-  'Enthusiastic pioneer, constantly seeking the next big thing in tech. Eager to apply my passion and skills at Alternate Limited to bring ideas to life.';
+const BIO = '';
 
 function Settings() {
   const [file, setFile] = useState<File | null>(null);
@@ -112,11 +108,8 @@ function Settings() {
   return (
     <>
       <>
-        <title>Settings | DesignSparx</title>
-        <meta
-          name="description"
-          content="Explore our versatile dashboard website template featuring a stunning array of themes and meticulously crafted components. Elevate your web project with seamless integration, customizable themes, and a rich variety of components for a dynamic user experience. Effortlessly bring your data to life with our intuitive dashboard template, designed to streamline development and captivate users. Discover endless possibilities in design and functionality today!"
-        />
+        <title>Settings | Market Intel</title>
+        <meta name="description" content="Manage your account and profile settings." />
       </>
       <Container fluid>
         <Stack gap="lg">
@@ -146,16 +139,9 @@ function Settings() {
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, md: 6, lg: 3, xl: 3 }}>
                     <Stack align="center">
-                      <Image
-                        src={
-                          profile?.avatar ||
-                          'https://res.cloudinary.com/ddh7hfzso/image/upload/v1700303804/me/ovqjhhs79u3g2fwbl2dd.jpg'
-                        }
-                        h={128}
-                        w={128}
-                        radius="50%"
-                        alt=""
-                      />
+                      <Avatar src={profile?.avatar} size={128} radius="50%">
+                        {profile?.name?.[0]?.toUpperCase()}
+                      </Avatar>
                       <FileButton
                         onChange={setFile}
                         accept="image/png,image/jpeg"
