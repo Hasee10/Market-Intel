@@ -1,0 +1,45 @@
+name: Market Alerts Cron
+
+# Archived out of the JobLo repo (job-portal) into market-intel/ as its own
+# product - this workflow isn't active anywhere until it's copied into
+# .github/workflows/ of wherever Market Intel actually gets deployed, and
+# PORTAL_URL below is repointed at that deployment (it still points at the
+# old JobLo Vercel URL, which no longer serves this route).
+#
+# Calls the market-intel price-alert endpoint (app/api/cron/market-alerts),
+# same call-an-HTTP-endpoint pattern as job-alerts-cron.yml. Scheduled ~45
+# minutes after market-scraper.yml's runs (which land at :30 every 12h) so
+# fresh market_price_history rows exist to compare against. Requires a
+# CRON_SECRET repository secret - the endpoint rejects requests without one
+# (unlike the job-alerts endpoint, this one has no legacy "open" fallback).
+
+on:
+  schedule:
+    - cron: "15 1,13 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  trigger-alerts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call market alerts cron endpoint
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PORTAL_URL: ${{ vars.PORTAL_URL || 'https://job-portal-ten-pi.vercel.app' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error::CRON_SECRET repository secret is not set - app/api/cron/market-alerts requires it and will reject this call."
+            exit 1
+          fi
+          status=$(curl -sS -o response.json -w "%{http_code}" \
+            -X GET "$PORTAL_URL/api/cron/market-alerts" \
+            -H "Authorization: Bearer $CRON_SECRET")
+          echo "HTTP $status"
+          cat response.json
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Market alerts cron call failed with HTTP $status"
+            exit 1
+          fi

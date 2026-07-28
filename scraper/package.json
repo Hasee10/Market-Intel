@@ -1,0 +1,23 @@
+{
+  "name": "market-scraper",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone Pakistani e-commerce scraper for JobLo Market Intel. Separate from job-scraper (Python) - own process, own schedule, own Supabase tables, zero shared code.",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/run.ts",
+    "match-products": "tsx src/match-products.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "cloakbrowser": "^0.4.7",
+    "dotenv": "^16.4.5",
+    "playwright-core": "^1.48.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

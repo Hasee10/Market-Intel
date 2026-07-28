@@ -1,0 +1,58 @@
+name: Market Scraper
+
+# Archived out of the JobLo repo (job-portal) into market-intel/ as its own
+# product - this workflow isn't active anywhere until it's copied into
+# .github/workflows/ of wherever Market Intel actually gets deployed, at
+# which point working-directory below likely becomes "." instead of
+# "market-intel/scraper" (path here reflects this archive's current layout).
+#
+# Runs every 2 days on GitHub's own cloud runners. Writes to market_* Supabase
+# tables only - fully separate from job-portal data, see
+# market-intel/scraper/migrations/001_create_market_tables.sql.
+# Note: cron's day-of-month step (*/2) resets at the start of each month, so
+# the gap is "every 2 days" in practice but can shrink to 1 day across a
+# month boundary (e.g. day 31 -> day 1) - not worth a workaround for this cadence.
+on:
+  schedule:
+    - cron: "30 3 */2 * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: market-intel/scraper
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: market-intel/scraper/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --prefer-offline
+
+      - name: Install Chromium OS dependencies (for CloakBrowser)
+        run: npx playwright-core install-deps chromium
+
+      - name: Run market scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLOAKBROWSER_LICENSE_KEY: ${{ secrets.CLOAKBROWSER_LICENSE_KEY }}
+          SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
+          PRICEOYE_CATEGORIES: mobiles,laptops
+          TELEMART_COLLECTIONS: mobiles-tablets,laptops-1
+          SHOPHIVE_CATEGORIES: apple/iphone,laptops-computers/laptops
+          ISHOPPING_CATEGORIES: mobiles,laptops
+          GOTO_CATEGORIES: computing-gaming,mens-fashion,womens-fashion
+          SAPPHIREONLINE_CATEGORIES: ready-to-wear,unstitched
+          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470
+        run: npm run start

@@ -1,0 +1,6 @@
+CREDENTIALS.txt
+*.env
+.env*
+!.env.example
+node_modules/
+.next/

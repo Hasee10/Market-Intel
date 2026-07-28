@@ -1,0 +1,7 @@
+{
+  "id": "user-demo-001",
+  "avatar": "/assets/default_user.jpg",
+  "name": "Demo User",
+  "email": "demo@example.com",
+  "job": "Experienced Software Engineer | Tech stack: Javascript, Typescript, React, Nextjs, Nodejs | UI/UX Designer"
+}
