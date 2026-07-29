@@ -1,25 +1,71 @@
 'use client';
 
-import { Badge, Box, Button, Container, Flex, Heading, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Container, Flex, Heading, Icon, Stack, Text } from '@chakra-ui/react';
+import { MdNotificationsActive, MdVerified } from 'react-icons/md';
 import NextLink from 'next/link';
 
 import { PATH_AUTH } from '@/lib/paths';
 
-// The hero graphic is a plain Chakra mockup of the Market page, not a
-// literal screenshot or stock illustration - deliberately abstract, in
-// brand colors, so it reads as "this is what the product actually shows
-// you" without needing a real design asset.
+// Organic blurred blob shapes behind the composition - the same energy as
+// the isometric-illustration references (soft colored shapes framing the
+// device/screen mockups), without literal stock-illustration people. Stays
+// honest to what this product actually is (a real analytics dashboard) while
+// borrowing the layered, colorful, dynamic composition style.
+function DecorativeBlobs() {
+  return (
+    <>
+      <Box
+        position="absolute"
+        top="-60px"
+        right="-40px"
+        w="360px"
+        h="360px"
+        borderRadius="full"
+        bg="radial-gradient(circle, rgba(67,24,255,0.16) 0%, rgba(67,24,255,0) 70%)"
+        filter="blur(2px)"
+        zIndex={0}
+      />
+      <Box
+        position="absolute"
+        bottom="-40px"
+        left="-30px"
+        w="220px"
+        h="220px"
+        borderRadius="full"
+        bg="radial-gradient(circle, rgba(5,205,153,0.16) 0%, rgba(5,205,153,0) 70%)"
+        zIndex={0}
+      />
+      <Box
+        position="absolute"
+        top="30%"
+        right="-10px"
+        w="140px"
+        h="140px"
+        borderRadius="full"
+        bg="radial-gradient(circle, rgba(255,181,71,0.18) 0%, rgba(255,181,71,0) 70%)"
+        zIndex={0}
+      />
+    </>
+  );
+}
+
+// The primary "screen" of the composition - a dashboard mockup, not a
+// literal screenshot, so it reads as "this is what the product actually
+// shows you" without needing a real design asset.
 function DashboardMockup() {
   return (
     <Box
       w="100%"
-      maxW="480px"
+      maxW="440px"
       bg="white"
       borderRadius="20px"
-      boxShadow="0px 30px 60px rgba(17, 28, 78, 0.15)"
+      boxShadow="0px 30px 60px rgba(17, 28, 78, 0.18)"
       border="1px solid"
       borderColor="gray.100"
       p="24px"
+      transform="rotate(-2deg)"
+      transition="transform 0.3s ease"
+      _hover={{ transform: 'rotate(0deg)' }}
     >
       <Flex justify="space-between" align="center" mb="16px">
         <Text fontWeight="700" fontSize="sm" color="#111C4E">
@@ -70,11 +116,67 @@ function DashboardMockup() {
   );
 }
 
+// A smaller "floating notification" card offset behind the main mockup -
+// the equivalent of the secondary phone/tablet devices layered around the
+// big screen in the reference compositions.
+function FloatingAlertCard() {
+  return (
+    <Box
+      position="absolute"
+      bottom={{ base: '-24px', md: '-32px' }}
+      left={{ base: '-8px', md: '-40px' }}
+      w="220px"
+      bg="white"
+      borderRadius="16px"
+      boxShadow="0px 20px 40px rgba(17, 28, 78, 0.16)"
+      border="1px solid"
+      borderColor="gray.100"
+      p="16px"
+      transform="rotate(4deg)"
+      zIndex={2}
+    >
+      <Flex align="center" gap="10px" mb="6px">
+        <Flex w="28px" h="28px" borderRadius="8px" bg="#FFF4E5" align="center" justify="center">
+          <Icon as={MdNotificationsActive} boxSize="16px" color="#FFB547" />
+        </Flex>
+        <Text fontSize="xs" fontWeight="700" color="#111C4E">
+          Price alert
+        </Text>
+      </Flex>
+      <Text fontSize="xs" color="gray.600">
+        Competitor dropped price 12% on a watched item
+      </Text>
+    </Box>
+  );
+}
+
+// A small floating "verified/trusted" badge, echoing the small circular
+// accent icons that float around the isometric reference illustrations.
+function FloatingVerifiedBadge() {
+  return (
+    <Flex
+      position="absolute"
+      top={{ base: '-16px', md: '-24px' }}
+      left={{ base: '30%', md: '20px' }}
+      w="52px"
+      h="52px"
+      borderRadius="full"
+      bg="white"
+      boxShadow="0px 12px 24px rgba(17, 28, 78, 0.14)"
+      align="center"
+      justify="center"
+      zIndex={2}
+    >
+      <Icon as={MdVerified} boxSize="26px" color="#05CD99" />
+    </Flex>
+  );
+}
+
 export function LandingHero() {
   return (
-    <Box bg="linear-gradient(180deg, #F7F8FF 0%, #FFFFFF 100%)" pt={{ base: '60px', md: '90px' }} pb={{ base: '60px', md: '100px' }}>
+    <Box bg="linear-gradient(180deg, #F7F8FF 0%, #FFFFFF 100%)" pt={{ base: '60px', md: '90px' }} pb={{ base: '90px', md: '120px' }} overflow="hidden">
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Flex direction={{ base: 'column', lg: 'row' }} align="center" gap={{ base: '50px', lg: '60px' }}>
+        <Flex direction={{ base: 'column', lg: 'row' }} align="center" gap={{ base: '70px', lg: '60px' }}>
           <Box flex="1">
             <Badge
               borderRadius="full"
@@ -111,19 +213,12 @@ export function LandingHero() {
               </Button>
             </Stack>
           </Box>
-          <Flex flex="1" justify="center" position="relative">
-            <Box
-              position="absolute"
-              top="-40px"
-              right="-20px"
-              w="320px"
-              h="320px"
-              borderRadius="full"
-              bg="radial-gradient(circle, rgba(67,24,255,0.14) 0%, rgba(67,24,255,0) 70%)"
-              zIndex={0}
-            />
-            <Box position="relative" zIndex={1}>
+          <Flex flex="1" justify="center" position="relative" mt={{ base: '20px', lg: '0' }}>
+            <DecorativeBlobs />
+            <Box position="relative" zIndex={1} maxW="440px" w="100%">
+              <FloatingVerifiedBadge />
               <DashboardMockup />
+              <FloatingAlertCard />
             </Box>
           </Flex>
         </Flex>
