@@ -15,7 +15,7 @@ export function PricingTeaser() {
             <Heading as="h2" fontSize={{ base: '24px', md: '28px' }} color="#111C4E" mb="8px">
               Free to start. Grows with how deep you want to go.
             </Heading>
-            <Text color="gray.600">Free, Paid, and Premium tiers - see exactly what's included in each.</Text>
+            <Text color="gray.600">Free, Paid, and Premium tiers - see exactly what&apos;s included in each.</Text>
           </Box>
           <Button as={NextLink} href="/pricing" variant="brand" size="lg" px="32px" flexShrink={0}>
             See full pricing
