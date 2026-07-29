@@ -7,6 +7,7 @@ import {
   MdGroup,
   MdSettings,
   MdOutlineVisibility,
+  MdReceiptLong,
 } from 'react-icons/md';
 
 import { IRoute } from 'types/navigation';
@@ -51,6 +52,12 @@ const routes: IRoute[] = [
     layout: '',
     path: '/apps/products/categories',
     icon: <Icon as={MdCategory} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Orders',
+    layout: '',
+    path: '/apps/orders',
+    icon: <Icon as={MdReceiptLong} width="20px" height="20px" color="inherit" />,
   },
   {
     name: 'Customers',

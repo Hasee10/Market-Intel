@@ -72,7 +72,23 @@ async function scrapeCategoryPage(categoryPath: string, page: number): Promise<R
   }
   const html = await res.text();
   const $ = cheerio.load(html);
-  return parseListings($, categoryPath);
+  const listings = parseListings($, categoryPath);
+
+  // Selectors were verified against a real fetch of this exact category
+  // (a[href^="/item/"], li[aria-label="Listing"] etc. all present) - a
+  // 200 response with zero listings on page 1 most likely means OLX served
+  // a different page to this request (bot-detection serving a challenge/
+  // empty variant to datacenter IPs like GitHub's runners) rather than a
+  // markup change. Log a snippet so a real run's logs can confirm which.
+  if (page === 1 && listings.length === 0) {
+    console.warn(
+      `[olx] category "${categoryPath}" page 1: 0 listings parsed from a ${html.length}-byte response. ` +
+        `Title tag: ${$('title').first().text().trim() || '(none)'}. ` +
+        `First 300 chars of body text: ${$('body').text().trim().slice(0, 300).replace(/\s+/g, ' ')}`,
+    );
+  }
+
+  return listings;
 }
 
 async function scrapeCategory(categoryPath: string): Promise<RawClassifiedListing[]> {

@@ -3,13 +3,15 @@
 import { useCallback, useState } from 'react';
 
 import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Text } from '@chakra-ui/react';
-import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdViewList } from 'react-icons/md';
+import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
+import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { CustomersTable } from '@/components/marketintel/CustomersTable';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { PageHeader } from '@/components/marketintel/PageHeader';
+import { RetentionPanel } from '@/components/marketintel/RetentionPanel';
 import { useCustomers } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import type { CustomerDto } from '@/types/customer';
@@ -25,11 +27,19 @@ const breadcrumbItems = [
   { title: 'Customers', href: '#' },
 ];
 
+const IMPORT_FIELDS: ImportField[] = [
+  { key: 'externalCustomerId', label: 'Customer ID', required: true },
+  { key: 'email', label: 'Email' },
+  { key: 'ordersCount', label: 'Orders count', type: 'number' },
+  { key: 'totalSpent', label: 'Total spent', type: 'number' },
+];
+
 export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDto | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [newOpen, setNewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
 
   const {
     data: customersData,
@@ -125,35 +135,42 @@ export default function CustomersPage() {
         title="Customers"
         breadcrumbItems={breadcrumbItems}
         actionButton={
-          customersData?.data && customersData.data.length > 0 ? (
-            <Flex gap="8px">
-              <Button
-                variant={viewMode === 'grid' ? 'brand' : 'outline'}
-                onClick={() => setViewMode('grid')}
-                p="0"
-                w="40px"
-              >
-                <Icon as={MdGridView} />
-              </Button>
-              <Button
-                variant={viewMode === 'table' ? 'brand' : 'outline'}
-                onClick={() => setViewMode('table')}
-                p="0"
-                w="40px"
-              >
-                <Icon as={MdViewList} />
-              </Button>
-              <Button
-                variant="brand"
-                leftIcon={<Icon as={MdAddCircleOutline} />}
-                onClick={() => setNewOpen(true)}
-              >
-                New Customer
-              </Button>
-            </Flex>
-          ) : undefined
+          <Flex gap="8px">
+            {customersData?.data && customersData.data.length > 0 && (
+              <>
+                <Button
+                  variant={viewMode === 'grid' ? 'brand' : 'outline'}
+                  onClick={() => setViewMode('grid')}
+                  p="0"
+                  w="40px"
+                >
+                  <Icon as={MdGridView} />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'brand' : 'outline'}
+                  onClick={() => setViewMode('table')}
+                  p="0"
+                  w="40px"
+                >
+                  <Icon as={MdViewList} />
+                </Button>
+              </>
+            )}
+            <Button variant="outline" leftIcon={<Icon as={MdUploadFile} />} onClick={() => setImportOpen(true)}>
+              Import CSV
+            </Button>
+            <Button
+              variant="brand"
+              leftIcon={<Icon as={MdAddCircleOutline} />}
+              onClick={() => setNewOpen(true)}
+            >
+              New Customer
+            </Button>
+          </Flex>
         }
       />
+
+      <RetentionPanel />
 
       {renderContent()}
 
@@ -168,6 +185,15 @@ export default function CustomersPage() {
         onClose={() => setEditOpen(false)}
         customer={selectedCustomer}
         onCustomerUpdated={handleCustomerUpdated}
+      />
+
+      <BulkImportDrawer
+        isOpen={importOpen}
+        onClose={() => setImportOpen(false)}
+        title="customers"
+        fields={IMPORT_FIELDS}
+        apiEndpoint="/api/customers/bulk-import"
+        onImported={handleCustomerCreated}
       />
     </>
   );

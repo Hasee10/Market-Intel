@@ -109,3 +109,36 @@ export async function listCategories() {
 
   return data;
 }
+
+export type SellerDomainRow = {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  isPrimary: boolean;
+};
+
+// All of a seller's category links, not just the primary one -
+// seller_domains has always supported many-to-many (see
+// 011_create_seller_platform_tables.sql's unique(seller_id, category_id)),
+// only the onboarding flow ever surfaced a single "primary" pick.
+export async function listSellerDomains(sellerId: string): Promise<SellerDomainRow[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('seller_domains')
+    .select('id, category_id, is_primary, seller_categories(name)')
+    .eq('seller_id', sellerId)
+    .order('is_primary', { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row: any) => {
+    const category = Array.isArray(row.seller_categories) ? row.seller_categories[0] : row.seller_categories;
+    return {
+      id: row.id,
+      categoryId: row.category_id,
+      categoryName: category?.name ?? 'Unknown',
+      isPrimary: row.is_primary,
+    };
+  });
+}

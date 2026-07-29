@@ -18,6 +18,7 @@ import { MdSave } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
+import { DomainsManager } from '@/components/marketintel/DomainsManager';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { useProfile } from '@/lib/hooks/useApi';
@@ -195,6 +196,8 @@ export default function SettingsPage() {
             />
           </Flex>
         </Card>
+
+        <DomainsManager />
       </Grid>
 
       <Button

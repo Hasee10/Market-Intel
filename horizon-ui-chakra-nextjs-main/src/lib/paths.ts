@@ -20,6 +20,7 @@ export const PATH_DASHBOARD = {
 export const PATH_APPS = {
   root: ROOT_APPS,
   customers: path(ROOT_APPS, '/customers'),
+  orders: path(ROOT_APPS, '/orders'),
   settings: path(ROOT_APPS, '/settings'),
   products: {
     root: path(ROOT_APPS, ROOTS_PRODUCTS),
