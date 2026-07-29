@@ -63,7 +63,18 @@ function SignInForm() {
       });
 
       if (signInError) {
-        setError(signInError.message);
+        // Supabase deliberately returns the same "Invalid login
+        // credentials" message whether the password is wrong OR no
+        // account exists for that email - that's intentional (telling
+        // people "no account exists" would let anyone enumerate which
+        // emails are registered). So instead of guessing which one it is,
+        // the error itself surfaces both possibilities with a direct path
+        // to sign up - see the alert's CTA below.
+        setError(
+          signInError.message.toLowerCase().includes('invalid login credentials')
+            ? 'invalid_credentials'
+            : signInError.message,
+        );
         return;
       }
 
@@ -84,7 +95,24 @@ function SignInForm() {
       illustrationSrc="/assets/ryvl-signin-illustration.png"
       illustrationAlt="Secure sign in to your Ryvl seller account"
     >
-      {error && (
+      {error === 'invalid_credentials' && (
+        <Alert status="error" borderRadius="12px" mb="20px" flexDirection="column" alignItems="flex-start">
+          <Flex>
+            <AlertIcon />
+            <Box>
+              <AlertTitle>That email/password combination didn&apos;t work</AlertTitle>
+              <AlertDescription>
+                Double-check your password, or if you haven&apos;t created an account yet, sign up
+                below - it only takes a minute.
+              </AlertDescription>
+            </Box>
+          </Flex>
+          <Button as={Link} href={PATH_AUTH.signup} variant="brand" size="sm" mt="12px">
+            Create an account instead
+          </Button>
+        </Alert>
+      )}
+      {error && error !== 'invalid_credentials' && (
         <Alert status="error" borderRadius="12px" mb="20px">
           <AlertIcon />
           <Box>
