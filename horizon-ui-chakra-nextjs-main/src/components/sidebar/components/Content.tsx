@@ -16,7 +16,7 @@ function SidebarContent(props: SidebarContentProps) {
 	const { routes, isCollapsed } = props;
 	// SIDEBAR
 	return (
-		<Flex direction='column' height='100%' pt='25px' borderRadius='30px'>
+		<Flex direction='column' height='100%' pt='12px' borderRadius='30px'>
 			<Brand isCollapsed={isCollapsed} />
 			<Stack direction='column' mt='8px' mb='auto'>
 				<Box ps={isCollapsed ? '0px' : '20px'} pe={isCollapsed ? '0px' : { lg: '16px', '2xl': '16px' }}>

@@ -17,7 +17,7 @@ export function SidebarBrand({ isCollapsed }: SidebarBrandProps) {
 
 	return (
 		<Flex alignItems='center' flexDirection='column'>
-			<Flex alignItems='center' gap='10px' mt='48px' mb='20px'>
+			<Flex alignItems='center' gap='10px' mt='40px' mb='16px'>
 				<RyvlMark size={isCollapsed ? 26 : 30} />
 				{!isCollapsed && (
 					<Text fontWeight='bold' fontSize='22px' color={textColor}>
