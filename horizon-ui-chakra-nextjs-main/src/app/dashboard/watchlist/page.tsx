@@ -19,7 +19,7 @@ async function Page() {
 
   return (
     <>
-      <title>Watchlist | Market Intel</title>
+      <title>Watchlist | Ryvl</title>
       <meta
         name="description"
         content="Track competitor products and get alerted when their price or stock changes."

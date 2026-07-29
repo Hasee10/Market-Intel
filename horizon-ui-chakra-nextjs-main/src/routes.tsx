@@ -13,7 +13,7 @@ import {
 
 import { IRoute } from 'types/navigation';
 
-// Market Intel seller dashboard nav. Routes live directly under
+// Ryvl seller dashboard nav. Routes live directly under
 // /dashboard, /apps and /onboarding (no /admin prefix) to match
 // middleware.ts's PROTECTED_PREFIXES.
 const routes: IRoute[] = [

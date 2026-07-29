@@ -3,22 +3,16 @@ type RyvlMarkProps = {
   color?: string;
 };
 
-// The Ryvl brand mark - two overlapping right-facing chevrons, the second
-// with a vertical foot reading as an "R". Hand-built to closely match the
-// approved logo (see chat history), not traced pixel-for-pixel from the
-// source image - if an exported SVG from that image ever becomes available,
-// swap the <path> data below for it directly.
+// The real Ryvl brand mark, exactly as approved (see ryvl-icon.svg /
+// ryvl-logo-horizontal.svg at the repo root) - two overlapping right-facing
+// chevrons, the second with a foot reading as an "R".
 export function RyvlMark({ size = 32, color = '#4318FF' }: RyvlMarkProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M8 14 L38 14 L64 44 L38 74 L38 60 L20 74 L8 74 L8 14 Z"
-        fill={color}
-      />
-      <path
-        d="M38 14 L60 14 L92 44 L60 74 L38 74 L64 44 Z"
-        fill={color}
-      />
+    <svg width={size} height={size} viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <g stroke={color} strokeWidth="34" strokeLinecap="square" strokeLinejoin="round">
+        <path d="M35 38 L103 106 L35 174" />
+        <path d="M113 38 L181 106 L131 156 L185 210" />
+      </g>
     </svg>
   );
 }

@@ -72,7 +72,7 @@ export default function AdminShell(props: AdminShellProps) {
             <Box>
               <Navbar
                 onOpen={onOpen}
-                logoText={'Market Intel'}
+                logoText={'Ryvl'}
                 brandText={getActiveRoute(routes, pathname)}
                 secondary={getActiveNavbar(routes, pathname)}
                 message={getActiveNavbarText(routes, pathname)}

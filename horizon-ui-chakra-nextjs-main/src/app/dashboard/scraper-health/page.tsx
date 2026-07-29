@@ -7,7 +7,7 @@ async function Page() {
 
   return (
     <>
-      <title>Data Health | Market Intel</title>
+      <title>Data Health | Ryvl</title>
       <meta name="description" content="Scraper reliability per competitor data source." />
       <ScraperHealthView platforms={platforms} />
     </>

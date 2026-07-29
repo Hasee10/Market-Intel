@@ -1,5 +1,9 @@
-<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="100" height="100" rx="20" fill="white"/>
-  <path d="M14 20 L40 20 L64 46 L40 72 L40 59 L23 72 L14 72 L14 20 Z" fill="#4318FF"/>
-  <path d="M40 20 L59 20 L88 46 L59 72 L40 72 L64 46 Z" fill="#4318FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title desc">
+  <title id="title">Ryvl icon</title>
+  <desc id="desc">A geometric double-chevron R monogram representing competition and forward movement.</desc>
+  <g fill="none" stroke="#4318FF" stroke-width="34"
+     stroke-linecap="square" stroke-linejoin="round">
+    <path d="M35 38 L103 106 L35 174"/>
+    <path d="M113 38 L181 106 L131 156 L185 210"/>
+  </g>
 </svg>
