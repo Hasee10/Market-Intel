@@ -6,11 +6,12 @@ import { PATH_AUTH } from '@/lib/paths';
 
 // Only links to pages that actually exist - no placeholder About/Careers/
 // Privacy/Terms links to nowhere. Add those columns back once those pages
-// are real.
+// are real. Anchors are `/`-prefixed (see LandingHeader's note) so they
+// still resolve when this footer renders on /pricing, not just the homepage.
 const PRODUCT_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing', href: '#pricing' },
-  { label: 'How it works', href: '#trust' },
+  { label: 'Features', href: '/#features' },
+  { label: 'Pricing', href: '/pricing' },
+  { label: 'How it works', href: '/#trust' },
 ];
 
 const ACCOUNT_LINKS = [
@@ -42,7 +43,7 @@ export function LandingFooter() {
             </Text>
             <Stack spacing="10px">
               {PRODUCT_LINKS.map((link) => (
-                <ChakraLink key={link.href} href={link.href} fontSize="sm" color="whiteAlpha.700" _hover={{ color: 'white' }}>
+                <ChakraLink key={link.href} as={NextLink} href={link.href} fontSize="sm" color="whiteAlpha.700" _hover={{ color: 'white' }}>
                   {link.label}
                 </ChakraLink>
               ))}

@@ -1,9 +1,10 @@
+import { AnnouncementBar } from '@/components/landing/AnnouncementBar';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
-import { PricingSection } from '@/components/landing/PricingSection';
+import { PricingTeaser } from '@/components/landing/PricingTeaser';
 import { StatsBar } from '@/components/landing/StatsBar';
 import { TrustSection } from '@/components/landing/TrustSection';
 
@@ -19,12 +20,13 @@ export default function Home() {
         name="description"
         content="Competitive pricing benchmarks, peer comparisons, and demand signals for online sellers."
       />
+      <AnnouncementBar />
       <LandingHeader />
       <LandingHero />
       <StatsBar />
       <FeaturesSection />
       <TrustSection />
-      <PricingSection />
+      <PricingTeaser />
       <CTABanner />
       <LandingFooter />
     </>

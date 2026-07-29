@@ -6,10 +6,14 @@ import NextLink from 'next/link';
 import { RyvlMark } from 'components/icons/RyvlMark';
 import { PATH_AUTH } from '@/lib/paths';
 
+// Anchors are prefixed with `/` so they still resolve correctly from pages
+// other than the homepage (e.g. from /pricing, "#features" alone would try
+// to scroll /pricing itself instead of navigating back to the homepage
+// section). Pricing is a real separate route, not an anchor.
 const NAV_LINKS = [
-  { label: 'Features', href: '#features' },
-  { label: 'How it works', href: '#trust' },
-  { label: 'Pricing', href: '#pricing' },
+  { label: 'Features', href: '/#features' },
+  { label: 'How it works', href: '/#trust' },
+  { label: 'Pricing', href: '/pricing' },
 ];
 
 export function LandingHeader() {
