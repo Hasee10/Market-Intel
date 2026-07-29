@@ -114,7 +114,12 @@ function SignUpForm() {
   };
 
   return (
-    <AuthCard title="Welcome!" subtitle="Create your seller account to continue">
+    <AuthCard
+      title="Welcome!"
+      subtitle="Create your seller account to continue"
+      illustrationSrc="/assets/ryvl-signup-illustration.png"
+      illustrationAlt="Create your Ryvl seller account"
+    >
       {error && (
         <Alert status="error" borderRadius="12px" mb="20px">
           <AlertIcon />

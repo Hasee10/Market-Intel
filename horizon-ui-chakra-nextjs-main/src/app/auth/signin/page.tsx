@@ -78,7 +78,12 @@ function SignInForm() {
   };
 
   return (
-    <AuthCard title="Welcome back!" subtitle="Sign in to your account to continue">
+    <AuthCard
+      title="Welcome back!"
+      subtitle="Sign in to your account to continue"
+      illustrationSrc="/assets/ryvl-signin-illustration.png"
+      illustrationAlt="Secure sign in to your Ryvl seller account"
+    >
       {error && (
         <Alert status="error" borderRadius="12px" mb="20px">
           <AlertIcon />
