@@ -76,7 +76,20 @@ export function LandingHero() {
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Flex direction={{ base: 'column', lg: 'row' }} align="center" gap={{ base: '50px', lg: '60px' }}>
           <Box flex="1">
-            <Badge colorScheme="purple" borderRadius="full" px="12px" py="4px" mb="20px" fontSize="xs">
+            <Badge
+              borderRadius="full"
+              px="14px"
+              py="6px"
+              mb="24px"
+              fontSize="xs"
+              fontWeight="700"
+              letterSpacing="0.04em"
+              bg="#F4F1FF"
+              color="#4318FF"
+              border="1px solid"
+              borderColor="#E4DBFF"
+              textTransform="uppercase"
+            >
               For online sellers
             </Badge>
             <Heading as="h1" fontSize={{ base: '36px', md: '52px' }} lineHeight="1.1" color="#111C4E" mb="20px">
@@ -93,13 +106,25 @@ export function LandingHero() {
               <Button as={NextLink} href={PATH_AUTH.signup} variant="brand" size="lg" px="32px">
                 Start free
               </Button>
-              <Button as={NextLink} href="#features" variant="outline" size="lg" px="32px">
+              <Button as={NextLink} href="/#features" variant="outline" size="lg" px="32px">
                 See how it works
               </Button>
             </Stack>
           </Box>
-          <Flex flex="1" justify="center">
-            <DashboardMockup />
+          <Flex flex="1" justify="center" position="relative">
+            <Box
+              position="absolute"
+              top="-40px"
+              right="-20px"
+              w="320px"
+              h="320px"
+              borderRadius="full"
+              bg="radial-gradient(circle, rgba(67,24,255,0.14) 0%, rgba(67,24,255,0) 70%)"
+              zIndex={0}
+            />
+            <Box position="relative" zIndex={1}>
+              <DashboardMockup />
+            </Box>
           </Flex>
         </Flex>
       </Container>

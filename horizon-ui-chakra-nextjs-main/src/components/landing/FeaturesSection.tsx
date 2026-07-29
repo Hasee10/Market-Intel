@@ -54,10 +54,20 @@ const FEATURES = [
 
 export function FeaturesSection() {
   return (
-    <Box id="features" py={{ base: '70px', md: '100px' }}>
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Box textAlign="center" mb="60px">
-          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color="#111C4E" mb="12px">
+    <Box id="features" bg="white" py={{ base: '80px', md: '120px' }} position="relative">
+      <Container maxW="1200px" px={{ base: '20px', md: '30px' }} position="relative">
+        <Box textAlign="center" mb={{ base: '50px', md: '72px' }}>
+          <Text
+            fontSize="xs"
+            fontWeight="700"
+            color="#4318FF"
+            letterSpacing="0.08em"
+            textTransform="uppercase"
+            mb="12px"
+          >
+            What you get
+          </Text>
+          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color="#111C4E" mb="16px" letterSpacing="-0.02em">
             Everything you need to sell with your eyes open
           </Heading>
           <Text color="gray.600" fontSize="lg" maxW="560px" mx="auto">
@@ -65,25 +75,41 @@ export function FeaturesSection() {
           </Text>
         </Box>
 
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing="32px">
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing="28px">
           {FEATURES.map((feature) => (
-            <Box key={feature.title} p="28px" borderRadius="16px" border="1px solid" borderColor="gray.100" bg="white">
+            <Box
+              key={feature.title}
+              position="relative"
+              p="32px"
+              borderRadius="20px"
+              border="1px solid"
+              borderColor="gray.100"
+              bg="white"
+              boxShadow="0px 4px 16px rgba(17, 28, 78, 0.04)"
+              transition="all 0.2s ease"
+              _hover={{
+                borderColor: '#4318FF',
+                boxShadow: '0px 20px 40px rgba(67, 24, 255, 0.12)',
+                transform: 'translateY(-4px)',
+              }}
+            >
               <Box
-                w="48px"
-                h="48px"
-                borderRadius="12px"
-                bg="#F4F1FF"
+                w="52px"
+                h="52px"
+                borderRadius="14px"
+                bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
                 display="flex"
                 alignItems="center"
                 justifyContent="center"
-                mb="16px"
+                mb="20px"
+                boxShadow="0px 8px 16px rgba(67, 24, 255, 0.25)"
               >
-                <Icon as={feature.icon} boxSize="24px" color="#4318FF" />
+                <Icon as={feature.icon} boxSize="26px" color="white" />
               </Box>
-              <Text fontWeight="700" fontSize="lg" color="#111C4E" mb="8px">
+              <Text fontWeight="700" fontSize="lg" color="#111C4E" mb="10px" letterSpacing="-0.01em">
                 {feature.title}
               </Text>
-              <Text color="gray.600" fontSize="sm">
+              <Text color="gray.600" fontSize="sm" lineHeight="1.6">
                 {feature.description}
               </Text>
             </Box>
