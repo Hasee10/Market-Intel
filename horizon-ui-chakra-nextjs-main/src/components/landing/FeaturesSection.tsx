@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Container, Heading, Icon, SimpleGrid, Text } from '@chakra-ui/react';
 import {
   MdBarChart,

@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Container, Heading, Text } from '@chakra-ui/react';
 
 // The top banner/hero for the dedicated /pricing page - separate from the

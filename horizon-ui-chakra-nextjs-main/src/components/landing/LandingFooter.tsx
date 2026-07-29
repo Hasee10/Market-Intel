@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Container, Flex, Link as ChakraLink, SimpleGrid, Stack, Text } from '@chakra-ui/react';
 import NextLink from 'next/link';
 

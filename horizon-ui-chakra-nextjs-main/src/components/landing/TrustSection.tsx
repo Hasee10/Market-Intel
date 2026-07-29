@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Container, Flex, Heading, SimpleGrid, Text } from '@chakra-ui/react';
 
 // Same wording as the "Peer benchmarking, not surveillance" alert on the

@@ -1,5 +1,5 @@
 import { Box } from '@chakra-ui/react';
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import React, { ReactNode } from 'react';
 import AppWrappers from './AppWrappers';
 
@@ -16,6 +16,11 @@ export const metadata: Metadata = {
     icon: '/icon.svg',
     apple: '/ryvl-icon.png',
   },
+};
+
+// themeColor moved out of `metadata` per Next 15 - it warns (not errors) if
+// left there, but would nag on every build going forward.
+export const viewport: Viewport = {
   themeColor: '#4318FF',
 };
 

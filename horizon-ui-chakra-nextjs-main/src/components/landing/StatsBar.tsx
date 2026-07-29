@@ -1,3 +1,5 @@
+'use client';
+
 import { Box, Container, SimpleGrid, Text } from '@chakra-ui/react';
 
 // Real, product-descriptive numbers (scraper coverage, refresh cadence) -
