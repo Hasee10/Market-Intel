@@ -2,30 +2,29 @@
 import { Flex, Text, useColorModeValue } from '@chakra-ui/react';
 
 // Custom components
+import { RyvlMark } from 'components/icons/RyvlMark';
 import { HSeparator } from 'components/separator/Separator';
 
 type SidebarBrandProps = {
 	isCollapsed?: boolean;
 };
 
-// Was the stock Horizon template logo (HorizonLogo SVG) - replaced with the
-// actual product name. Collapses to a "MI" monogram instead of hiding
-// entirely, so there's still a visible brand mark in the rail state.
+// Was the stock Horizon template logo, then a plain "Market Intel" text
+// mark - now the actual Ryvl brand mark + wordmark, collapsing to just the
+// mark (no text) in the rail state.
 export function SidebarBrand({ isCollapsed }: SidebarBrandProps) {
 	let textColor = useColorModeValue('navy.700', 'white');
 
 	return (
 		<Flex alignItems='center' flexDirection='column'>
-			<Text
-				fontWeight='bold'
-				fontSize={isCollapsed ? '18px' : '22px'}
-				color={textColor}
-				mt='48px'
-				mb='20px'
-				transition='font-size 0.2s ease'
-			>
-				{isCollapsed ? 'MI' : 'Market Intel'}
-			</Text>
+			<Flex alignItems='center' gap='10px' mt='48px' mb='20px'>
+				<RyvlMark size={isCollapsed ? 26 : 30} />
+				{!isCollapsed && (
+					<Text fontWeight='bold' fontSize='22px' color={textColor}>
+						Ryvl
+					</Text>
+				)}
+			</Flex>
 			<HSeparator mb='20px' />
 		</Flex>
 	);
