@@ -26,14 +26,17 @@ import LineChart from '@/components/charts/LineChart';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
-import type { CategoryPricing } from '@/lib/market-intel/category-pricing';
+import type { CompetitorPriceAnomaly } from '@/lib/market-intel/anomalies';
 import type { DomainBenchmark, DomainPeer } from '@/lib/market-intel/benchmarks';
+import type { CategoryPricing } from '@/lib/market-intel/category-pricing';
+import type { PriceForecast } from '@/lib/market-intel/forecast';
 import type {
   DemandSignal,
   PlatformFreshness,
   PriceTrendPoint,
   StockOutProduct,
 } from '@/lib/market-intel/market-insights';
+import type { PricingRecommendation } from '@/lib/market-intel/pricing-recommendation';
 import type { ProductMatch } from '@/lib/market-intel/product-matching';
 import type { SellerDomain } from '@/lib/market-intel/seller';
 import { PATH_ONBOARDING } from '@/lib/paths';
@@ -67,6 +70,9 @@ type MarketViewProps = {
   freshness: PlatformFreshness[];
   demandSignal: DemandSignal | null;
   productMatches: ProductMatch[];
+  pricingRecommendations: PricingRecommendation[];
+  priceForecast: PriceForecast | null;
+  priceAnomalies: CompetitorPriceAnomaly[];
 };
 
 export default function MarketView({
@@ -79,6 +85,9 @@ export default function MarketView({
   freshness,
   demandSignal,
   productMatches,
+  pricingRecommendations,
+  priceForecast,
+  priceAnomalies,
 }: MarketViewProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
@@ -219,10 +228,45 @@ export default function MarketView({
 
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
         <Card>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
-            Price trend (30 days)
-          </Text>
-          {priceTrend.length > 1 ? (
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Price trend {priceForecast ? '& 14-day forecast' : '(30 days)'}
+            </Text>
+            {priceForecast && (
+              <Badge colorScheme={priceForecast.trendDirection === 'up' ? 'red' : priceForecast.trendDirection === 'down' ? 'green' : 'gray'}>
+                {priceForecast.trendDirection === 'flat'
+                  ? 'Stable'
+                  : `${priceForecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(priceForecast.changePerWeek)}/wk`}
+              </Badge>
+            )}
+          </Flex>
+          {priceForecast ? (
+            <Box h="260px">
+              <LineChart
+                chartData={[
+                  {
+                    name: 'Median price',
+                    data: priceForecast.points.map((p) => (p.isProjected ? null : p.value)),
+                  },
+                  {
+                    name: 'Forecast',
+                    data: priceForecast.points.map((p, i) =>
+                      p.isProjected || i === priceForecast.points.findIndex((x) => x.isProjected) - 1
+                        ? p.value
+                        : null,
+                    ),
+                  },
+                ]}
+                chartOptions={{
+                  chart: { toolbar: { show: false } },
+                  xaxis: { categories: priceForecast.points.map((p) => p.date.slice(5)) },
+                  dataLabels: { enabled: false },
+                  stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
+                  colors: ['#4318FF', '#A3AED0'],
+                }}
+              />
+            </Box>
+          ) : priceTrend.length > 1 ? (
             <Box h="260px">
               <LineChart
                 chartData={[
@@ -346,6 +390,105 @@ export default function MarketView({
                     </Td>
                     <Td>{match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}</Td>
                     <Td>{Math.round(match.confidence * 100)}%</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
+      </Card>
+
+      <Card mb="20px">
+        <Flex justify="space-between" align="center" mb="12px">
+          <Text fontSize="lg" fontWeight="600" color={textColor}>
+            Pricing recommendations
+          </Text>
+          <Badge colorScheme="gray">Rule-based: competitor band + your margin floor</Badge>
+        </Flex>
+        {pricingRecommendations.length === 0 ? (
+          <Text fontSize="sm" color="secondaryGray.600">
+            Set both cost price and sell price on your active products to get pricing
+            recommendations here.
+          </Text>
+        ) : (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Product</Th>
+                  <Th isNumeric>Current price</Th>
+                  <Th isNumeric>Recommended</Th>
+                  <Th>Direction</Th>
+                  <Th>Why</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {pricingRecommendations.map((rec) => (
+                  <Tr key={rec.productId}>
+                    <Td>{rec.productTitle}</Td>
+                    <Td isNumeric>{formatCurrency(rec.currentPrice)}</Td>
+                    <Td isNumeric>{formatCurrency(rec.recommendedPrice)}</Td>
+                    <Td>
+                      <Badge
+                        colorScheme={rec.direction === 'increase' ? 'green' : rec.direction === 'decrease' ? 'red' : 'gray'}
+                      >
+                        {rec.direction}
+                      </Badge>
+                      {rec.marginConstrained && (
+                        <Badge colorScheme="orange" ml="4px">
+                          margin-constrained
+                        </Badge>
+                      )}
+                    </Td>
+                    <Td>
+                      <Text fontSize="xs" color="secondaryGray.600">
+                        {rec.rationale}
+                      </Text>
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
+      </Card>
+
+      <Card mb="20px">
+        <Flex justify="space-between" align="center" mb="12px">
+          <Text fontSize="lg" fontWeight="600" color={textColor}>
+            Competitor price anomalies
+          </Text>
+          <Badge colorScheme="gray">IQR outliers, last 7 days</Badge>
+        </Flex>
+        {priceAnomalies.length === 0 ? (
+          <Text fontSize="sm" color="secondaryGray.600">
+            No unusual competitor price moves detected in the last 7 days.
+          </Text>
+        ) : (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Product</Th>
+                  <Th>Platform</Th>
+                  <Th isNumeric>Was</Th>
+                  <Th isNumeric>Now</Th>
+                  <Th isNumeric>Change</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {priceAnomalies.map((a) => (
+                  <Tr key={a.productId}>
+                    <Td>{a.title}</Td>
+                    <Td>{a.platformName ?? '—'}</Td>
+                    <Td isNumeric>{formatCurrency(a.oldPrice)}</Td>
+                    <Td isNumeric>{formatCurrency(a.newPrice)}</Td>
+                    <Td isNumeric>
+                      <Badge colorScheme={a.pctChange > 0 ? 'red' : 'green'}>
+                        {a.pctChange > 0 ? '+' : ''}
+                        {a.pctChange}%
+                      </Badge>
+                    </Td>
                   </Tr>
                 ))}
               </Tbody>

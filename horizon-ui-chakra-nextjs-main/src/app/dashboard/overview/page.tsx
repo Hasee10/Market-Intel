@@ -1,6 +1,9 @@
 'use client';
 
 import {
+  Alert,
+  AlertIcon,
+  Badge,
   Box,
   Flex,
   Grid,
@@ -27,6 +30,8 @@ import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid, StatItem } from '@/components/marketintel/StatsGrid';
 import { useFetch } from '@/lib/hooks/useApi';
 import { IApiResponse } from '@/types/api-response';
+import type { OrderAnomaly } from '@/lib/market-intel/anomalies';
+import type { RevenueForecast } from '@/lib/market-intel/forecast';
 
 type OrderStatusRow = { status: string; count: number; value: number; percentage: number };
 type CategoryRow = { category: string; value: number; products: number; percentage: number };
@@ -75,6 +80,8 @@ export default function OverviewPage() {
   const { data: revenueTrendData, loading: revenueLoading } = useFetch<
     IApiResponse<RevenuePoint[]>
   >('/api/ecommerce/revenue-trend');
+  const { data: anomaliesData } = useFetch<IApiResponse<OrderAnomaly[]>>('/api/anomalies/revenue');
+  const { data: forecastData } = useFetch<IApiResponse<RevenueForecast | null>>('/api/forecast/revenue');
 
   const allLoaded = ![
     statsLoading,
@@ -103,6 +110,9 @@ export default function OverviewPage() {
   const categories = categoriesData?.data || [];
   const revenueTrend = revenueTrendData?.data || [];
   const topProducts = (productsData?.data || []).slice(0, 5);
+  const anomalies = anomaliesData?.data || [];
+  const recentAnomaly = anomalies[0];
+  const forecast = forecastData?.data ?? null;
 
   const lineChartData = [
     {
@@ -146,6 +156,18 @@ export default function OverviewPage() {
     <Box>
       <PageHeader title="Overview" />
 
+      {recentAnomaly && (
+        <Alert status={recentAnomaly.direction === 'spike' ? 'info' : 'warning'} borderRadius="16px" mb="20px">
+          <AlertIcon />
+          <Text fontSize="sm">
+            Revenue {recentAnomaly.direction === 'spike' ? 'spiked' : 'dropped'} on{' '}
+            {new Date(recentAnomaly.date).toLocaleDateString()} ({formatCurrency(recentAnomaly.revenue)}, expected
+            roughly {formatCurrency(recentAnomaly.expectedRange[0])}-{formatCurrency(recentAnomaly.expectedRange[1])}
+            ).
+          </Text>
+        </Alert>
+      )}
+
       <StatsGrid data={statsData?.data || []} loading={statsLoading} columns={3} />
 
       <Heading size="md" color={textColor} mb="12px" mt="8px">
@@ -153,11 +175,54 @@ export default function OverviewPage() {
       </Heading>
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
         <Card>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
-            Revenue trend (30 days)
-          </Text>
+          <Flex justify="space-between" align="center" mb="10px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Revenue trend {forecast ? '& 14-day forecast' : '(30 days)'}
+            </Text>
+            {forecast && (
+              <Badge colorScheme={forecast.trendDirection === 'up' ? 'green' : forecast.trendDirection === 'down' ? 'red' : 'gray'}>
+                {forecast.trendDirection === 'flat'
+                  ? 'Stable'
+                  : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek)}/wk`}
+              </Badge>
+            )}
+          </Flex>
           {revenueLoading ? (
             <Skeleton height="260px" />
+          ) : forecast ? (
+            <Box h="260px">
+              <LineChart
+                chartData={[
+                  {
+                    name: 'Revenue',
+                    data: forecast.points.map((p) => (p.isProjected ? null : Number(p.value.toFixed(2)))),
+                  },
+                  {
+                    name: 'Forecast',
+                    data: forecast.points.map((p, i) =>
+                      p.isProjected || i === forecast.points.findIndex((x) => x.isProjected) - 1
+                        ? Number(p.value.toFixed(2))
+                        : null,
+                    ),
+                  },
+                ]}
+                chartOptions={{
+                  chart: { toolbar: { show: false } },
+                  dataLabels: { enabled: false },
+                  stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
+                  xaxis: {
+                    categories: forecast.points.map((p) => p.date.slice(5)),
+                    labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
+                  },
+                  yaxis: { show: false },
+                  grid: { show: false },
+                  colors: ['#4318FF', '#A3AED0'],
+                  tooltip: { theme: 'dark' },
+                }}
+              />
+            </Box>
           ) : revenueTrend.length === 0 ? (
             <Text color="secondaryGray.600">No revenue data yet.</Text>
           ) : (

@@ -1,11 +1,14 @@
+import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/anomalies';
 import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
 import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
+import { getCategoryPriceForecast } from '@/lib/market-intel/forecast';
 import {
   getDataFreshness,
   getDemandSignal,
   getPriceTrend,
   getStockOuts,
 } from '@/lib/market-intel/market-insights';
+import { getPricingRecommendations } from '@/lib/market-intel/pricing-recommendation';
 import { findTopProductMatches } from '@/lib/market-intel/product-matching';
 import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
 
@@ -27,6 +30,10 @@ export default async function MarketPage() {
   const freshness = domain ? await getDataFreshness(domain.categorySlug) : [];
   const demandSignal = domain ? await getDemandSignal(domain.categorySlug) : null;
   const productMatches = domain && seller ? await findTopProductMatches(seller.id, domain.categorySlug) : [];
+  const pricingRecommendations =
+    domain && seller ? await getPricingRecommendations(seller.id, domain.categorySlug) : [];
+  const priceForecast = domain ? await getCategoryPriceForecast(domain.categorySlug) : null;
+  const priceAnomalies = domain ? await detectCompetitorPriceAnomalies(domain.categorySlug) : [];
 
   return (
     <MarketView
@@ -39,6 +46,9 @@ export default async function MarketPage() {
       freshness={freshness}
       demandSignal={demandSignal}
       productMatches={productMatches}
+      pricingRecommendations={pricingRecommendations}
+      priceForecast={priceForecast}
+      priceAnomalies={priceAnomalies}
     />
   );
 }
