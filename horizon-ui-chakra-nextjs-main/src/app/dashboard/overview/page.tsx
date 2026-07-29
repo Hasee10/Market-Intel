@@ -1,14 +1,17 @@
 'use client';
 
+import NextLink from 'next/link';
 import {
   Alert,
   AlertIcon,
   Badge,
   Box,
+  Button,
   Flex,
   Grid,
   GridItem,
   Heading,
+  Icon,
   SimpleGrid,
   Skeleton,
   Table,
@@ -20,18 +23,37 @@ import {
   Tr,
   useColorModeValue,
 } from '@chakra-ui/react';
+import { MdAddCircleOutline, MdOutlineInsertChart } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 import PieChart from 'components/charts/PieChart';
 import LineChart from 'components/charts/LineChart';
 
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
+import { OnboardingChecklist } from '@/components/marketintel/OnboardingChecklist';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid, StatItem } from '@/components/marketintel/StatsGrid';
 import { useFetch } from '@/lib/hooks/useApi';
+import { PATH_APPS } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import type { OrderAnomaly } from '@/lib/market-intel/anomalies';
 import type { RevenueForecast } from '@/lib/market-intel/forecast';
+
+// Shared empty-state pattern: icon + reason + a single next action, not
+// just flat "No X yet" text with nowhere to go.
+function ChartEmptyState({ message, ctaLabel, ctaHref }: { message: string; ctaLabel: string; ctaHref: string }) {
+  return (
+    <Flex direction="column" align="center" justify="center" h="260px" gap="10px">
+      <Icon as={MdOutlineInsertChart} boxSize="32px" color="secondaryGray.400" />
+      <Text color="secondaryGray.600" textAlign="center">
+        {message}
+      </Text>
+      <Button as={NextLink} href={ctaHref} size="sm" variant="outline" leftIcon={<Icon as={MdAddCircleOutline} />}>
+        {ctaLabel}
+      </Button>
+    </Flex>
+  );
+}
 
 type OrderStatusRow = { status: string; count: number; value: number; percentage: number };
 type CategoryRow = { category: string; value: number; products: number; percentage: number };
@@ -156,6 +178,8 @@ export default function OverviewPage() {
     <Box>
       <PageHeader title="Overview" />
 
+      <OnboardingChecklist />
+
       {recentAnomaly && (
         <Alert status={recentAnomaly.direction === 'spike' ? 'info' : 'warning'} borderRadius="16px" mb="20px">
           <AlertIcon />
@@ -224,7 +248,11 @@ export default function OverviewPage() {
               />
             </Box>
           ) : revenueTrend.length === 0 ? (
-            <Text color="secondaryGray.600">No revenue data yet.</Text>
+            <ChartEmptyState
+              message="No revenue data yet - record your first order to see a trend here."
+              ctaLabel="Add an order"
+              ctaHref={PATH_APPS.orders}
+            />
           ) : (
             <Box h="260px">
               <LineChart chartData={lineChartData} chartOptions={lineChartOptions} />
@@ -238,7 +266,11 @@ export default function OverviewPage() {
           {ordersLoading ? (
             <Skeleton height="260px" />
           ) : orders.length === 0 ? (
-            <Text color="secondaryGray.600">No orders yet.</Text>
+            <ChartEmptyState
+              message="No orders yet - add one to see fulfillment status here."
+              ctaLabel="Add an order"
+              ctaHref={PATH_APPS.orders}
+            />
           ) : (
             <Box h="260px">
               <PieChart chartData={orderPieData} chartOptions={orderPieOptions} />
@@ -258,7 +290,11 @@ export default function OverviewPage() {
           {categoriesLoading ? (
             <Skeleton height="260px" />
           ) : categories.length === 0 ? (
-            <Text color="secondaryGray.600">No active products yet.</Text>
+            <ChartEmptyState
+              message="No active products yet - add one to see category breakdown here."
+              ctaLabel="Add a product"
+              ctaHref={PATH_APPS.products.root}
+            />
           ) : (
             <Box h="260px">
               <PieChart chartData={categoryPieData} chartOptions={categoryPieOptions} />
@@ -272,7 +308,11 @@ export default function OverviewPage() {
           {productsLoading ? (
             <Skeleton height="260px" />
           ) : topProducts.length === 0 ? (
-            <Text color="secondaryGray.600">No products yet.</Text>
+            <ChartEmptyState
+              message="No products yet - add your catalog to rank by inventory value here."
+              ctaLabel="Add a product"
+              ctaHref={PATH_APPS.products.root}
+            />
           ) : (
             <Box overflowX="auto">
               <Table variant="simple">

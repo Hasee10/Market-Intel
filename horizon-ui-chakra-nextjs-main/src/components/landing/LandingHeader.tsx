@@ -12,7 +12,7 @@ import { PATH_AUTH } from '@/lib/paths';
 // section). Pricing is a real separate route, not an anchor.
 const NAV_LINKS = [
   { label: 'Features', href: '/#features' },
-  { label: 'How it works', href: '/#trust' },
+  { label: 'How it works', href: '/#how-it-works' },
   { label: 'Pricing', href: '/pricing' },
 ];
 

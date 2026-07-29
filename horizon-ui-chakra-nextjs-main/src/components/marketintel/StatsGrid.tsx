@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon, SimpleGrid, Skeleton } from '@chakra-ui/react';
-import { MdArrowUpward, MdArrowDownward } from 'react-icons/md';
+import { MdArrowUpward, MdArrowDownward, MdTrendingFlat } from 'react-icons/md';
 import MiniStatistics from 'components/card/MiniStatistics';
 import IconBox from 'components/icons/IconBox';
 
@@ -52,7 +52,7 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
                   <Icon
                     w="28px"
                     h="28px"
-                    as={diff < 0 ? MdArrowDownward : MdArrowUpward}
+                    as={diff < 0 ? MdArrowDownward : diff > 0 ? MdArrowUpward : MdTrendingFlat}
                     color={brandColor}
                   />
                 }

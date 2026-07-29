@@ -13,7 +13,7 @@ import { PATH_AUTH } from '@/lib/paths';
 const PRODUCT_LINKS = [
   { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'How it works', href: '/#trust' },
+  { label: 'How it works', href: '/#how-it-works' },
 ];
 
 const ACCOUNT_LINKS = [

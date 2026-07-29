@@ -1,6 +1,9 @@
 import { AnnouncementBar } from '@/components/landing/AnnouncementBar';
+import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { CTABanner } from '@/components/landing/CTABanner';
+import { FaqSection } from '@/components/landing/FaqSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
+import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
@@ -24,8 +27,11 @@ export default function Home() {
       <LandingHeader />
       <LandingHero />
       <StatsBar />
+      <HowItWorksSection />
       <FeaturesSection />
+      <ComparisonSection />
       <TrustSection />
+      <FaqSection />
       <PricingTeaser />
       <CTABanner />
       <LandingFooter />
