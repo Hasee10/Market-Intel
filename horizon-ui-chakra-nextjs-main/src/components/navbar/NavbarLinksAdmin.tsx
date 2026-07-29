@@ -43,7 +43,11 @@ export default function HeaderLinks(props: {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/auth/signin');
+    // Was routing to /auth/signin - a signed-out seller landing straight
+    // back on the sign-in form isn't wrong, but there was no way back to
+    // the actual marketing site from there (see AuthCard's new home link).
+    // Sending them to `/` matches how logging out normally works elsewhere.
+    router.push('/');
     router.refresh();
   };
 

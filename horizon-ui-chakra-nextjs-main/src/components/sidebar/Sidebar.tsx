@@ -7,7 +7,6 @@ import {
   Drawer,
   DrawerBody,
   Icon,
-  IconButton,
   useColorModeValue,
   DrawerOverlay,
   useDisclosure,
@@ -31,7 +30,6 @@ const Scrollbars = dynamic(
 
 // Assets
 import { IoMenuOutline } from 'react-icons/io5';
-import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { IRoute } from 'types/navigation';
 import { isWindowAvailable } from 'utils/navigation';
 
@@ -53,8 +51,6 @@ function Sidebar(props: SidebarProps) {
   );
   // Chakra Color Mode
   let sidebarBg = useColorModeValue('white', 'navy.800');
-  let toggleBg = useColorModeValue('white', 'navy.700');
-  let toggleBorder = useColorModeValue('gray.200', 'whiteAlpha.200');
   let sidebarMargins = '0px';
   const width = isCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
@@ -72,27 +68,16 @@ function Sidebar(props: SidebarProps) {
         boxShadow={shadow}
         position="relative"
       >
-        {/* Sits fully inside the sidebar's own box now - it previously used
-            a negative right offset that put half the button outside the
-            sidebar's edge, overlapping the page content next to it. */}
-        <IconButton
-          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          icon={<Icon as={isCollapsed ? MdChevronRight : MdChevronLeft} boxSize="18px" />}
-          size="sm"
-          borderRadius="full"
-          bg={toggleBg}
-          border="1px solid"
-          borderColor={toggleBorder}
-          boxShadow="0px 2px 8px rgba(0, 0, 0, 0.08)"
-          position="absolute"
-          top="18px"
-          right="12px"
-          zIndex="10"
-          onClick={() => setIsCollapsed?.((prev) => !prev)}
-          _hover={{ bg: 'brand.500', color: 'white', borderColor: 'brand.500' }}
-        />
+        {/* The collapse toggle now lives inline with the logo in Brand.tsx,
+            not as a separately absolute-positioned button here - that
+            floated disconnected above everything and needed a large top
+            margin elsewhere just to stay clear of it. */}
         <Scrollbars universal={true}>
-          <Content routes={routes} isCollapsed={!!isCollapsed} />
+          <Content
+            routes={routes}
+            isCollapsed={!!isCollapsed}
+            onToggleCollapse={() => setIsCollapsed?.((prev) => !prev)}
+          />
         </Scrollbars>
       </Box>
     </Box>
