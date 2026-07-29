@@ -24,10 +24,17 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Trigger domain benchmarks aggregation
+        # --fail alone (with --silent) swallows the JSON error body on a
+        # non-2xx response, which is exactly the info needed to debug a 500
+        # from the route handler - print the body first, then fail the step
+        # based on the actual HTTP status.
         run: |
-          curl --fail --silent --show-error \
+          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
             -X POST "${{ secrets.APP_URL }}/api/cron/benchmarks" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat response.json
+          echo "HTTP status: $status"
+          [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
 
   price-alerts:
     if: github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch'
@@ -36,6 +43,9 @@ jobs:
     steps:
       - name: Trigger price alerts diff job
         run: |
-          curl --fail --silent --show-error \
+          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
             -X POST "${{ secrets.APP_URL }}/api/cron/price-alerts" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat response.json
+          echo "HTTP status: $status"
+          [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
