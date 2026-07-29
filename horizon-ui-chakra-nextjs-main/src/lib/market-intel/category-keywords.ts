@@ -9,6 +9,7 @@
 // (category-pricing, trends, stock-outs, freshness, demand-signal) so
 // coverage expansion only needs updating in one place.
 export const CATEGORY_KEYWORDS: Record<string, RegExp> = {
-  'mobiles-and-electronics': /mobile|laptop|computing|iphone|tablet|electronic/i,
+  'mobiles-and-electronics':
+    /mobile|laptop|computing|iphone|tablet|electronic|smart-watch|earbud|power-bank|speaker/i,
   'fashion-and-apparel': /fashion|wear|unstitched|apparel|clothing/i,
 };

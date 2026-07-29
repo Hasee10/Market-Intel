@@ -1,0 +1,41 @@
+name: Market Intel Cron Jobs
+
+# Vercel Hobby plan only allows cron jobs that run once per day (see
+# vercel.com/docs/cron-jobs/usage-and-pricing) - the price-alerts job needs
+# to run more often than that (every 6 hours), so both jobs are triggered
+# from GitHub Actions instead of vercel.json, hitting the deployed app's
+# /api/cron/* route handlers over HTTPS. The routes themselves still live in
+# horizon-ui-chakra-nextjs-main and still require the CRON_SECRET bearer
+# token (see src/lib/supabase/server.ts's isAuthorizedCronRequest) - this
+# workflow is just the trigger, not the job logic.
+on:
+  schedule:
+    - cron: "0 3 * * *" # domain_benchmarks - once daily
+    - cron: "0 */6 * * *" # price-alerts diff job - every 6 hours
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  benchmarks:
+    if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger domain benchmarks aggregation
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.APP_URL }}/api/cron/benchmarks" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+
+  price-alerts:
+    if: github.event.schedule == '0 */6 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger price alerts diff job
+        run: |
+          curl --fail --silent --show-error \
+            -X POST "${{ secrets.APP_URL }}/api/cron/price-alerts" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"

@@ -45,11 +45,22 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           CLOAKBROWSER_LICENSE_KEY: ${{ secrets.CLOAKBROWSER_LICENSE_KEY }}
           SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
-          PRICEOYE_CATEGORIES: mobiles,laptops
-          TELEMART_COLLECTIONS: mobiles-tablets,laptops-1
-          SHOPHIVE_CATEGORIES: apple/iphone,laptops-computers/laptops
+          # Category/collection values here are literal per-site URL paths or
+          # IDs (see scraper/src/sources/*.ts), not free-form labels - each
+          # was verified live against the real site nav before being added.
+          # iShopping/Goto are left at their original 2 - both are blocked
+          # from casual verification (403 / expired TLS cert respectively,
+          # matches the Cloudflare/TLS friction already noted in
+          # new_implementation_doc.md's Phase 6). SapphireOnline is also
+          # unchanged: its public nav uses Shopify-style /collections/ paths,
+          # but the scraper (sapphireonline.ts) hits a Demandware endpoint
+          # keyed on internal `cgid` values, which aren't the same thing -
+          # applying the nav paths as cgids would likely just fail silently.
+          PRICEOYE_CATEGORIES: mobiles,laptops,tablets,smart-watches,wireless-earbuds,power-banks,bluetooth-speakers
+          TELEMART_COLLECTIONS: mobiles-tablets,laptops-1,mens-fashion,womens-fashion
+          SHOPHIVE_CATEGORIES: apple/iphone,laptops-computers/laptops,mobile-phones,tablets
           ISHOPPING_CATEGORIES: mobiles,laptops
           GOTO_CATEGORIES: computing-gaming,mens-fashion,womens-fashion
           SAPPHIREONLINE_CATEGORIES: ready-to-wear,unstitched
-          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470
+          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470,tablets_c1455,smart-watches_c1458,fashion-beauty_c87
         run: npm run start
