@@ -1,3 +1,6 @@
+import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
+import { PageHeader } from '@/components/marketintel/PageHeader';
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
 import { listWatchlists } from '@/lib/market-intel/watchlists';
 import { listNotifications } from '@/lib/notifications/list';
@@ -9,9 +12,10 @@ import WatchlistView from './WatchlistView';
 // stack (see dashboard/market/page.tsx's comment for the fuller story).
 async function Page() {
   const seller = await getCurrentSeller();
-  const domain = seller ? await getPrimaryDomain(seller.id) : null;
-  const watchlists = seller ? await listWatchlists(seller.id) : [];
-  const notifications = seller ? await listNotifications(seller.id, 20) : [];
+  const hasAccess = hasFeature(seller?.planTier ?? 'free', 'watchlists');
+  const domain = seller && hasAccess ? await getPrimaryDomain(seller.id) : null;
+  const watchlists = seller && hasAccess ? await listWatchlists(seller.id) : [];
+  const notifications = seller && hasAccess ? await listNotifications(seller.id, 20) : [];
 
   return (
     <>
@@ -20,11 +24,20 @@ async function Page() {
         name="description"
         content="Track competitor products and get alerted when their price or stock changes."
       />
-      <WatchlistView
-        categorySlug={domain?.categorySlug ?? null}
-        watchlists={watchlists}
-        notifications={notifications}
-      />
+      {hasAccess ? (
+        <WatchlistView
+          categorySlug={domain?.categorySlug ?? null}
+          watchlists={watchlists}
+          notifications={notifications}
+        />
+      ) : (
+        <>
+          <PageHeader title="Watchlist" />
+          <UpgradeGate hasAccess={false} requiredPlanLabel="Paid" featureName="Competitor watchlists & price alerts">
+            <div />
+          </UpgradeGate>
+        </>
+      )}
     </>
   );
 }

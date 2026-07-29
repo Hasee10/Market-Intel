@@ -21,6 +21,7 @@ import Card from 'components/card/Card';
 import { DomainsManager } from '@/components/marketintel/DomainsManager';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { PageHeader } from '@/components/marketintel/PageHeader';
+import { ReferralCard } from '@/components/marketintel/ReferralCard';
 import { useProfile } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
@@ -198,6 +199,7 @@ export default function SettingsPage() {
         </Card>
 
         <DomainsManager />
+        <ReferralCard />
       </Grid>
 
       <Button

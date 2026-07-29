@@ -26,6 +26,7 @@ import LineChart from '@/components/charts/LineChart';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
+import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
 import type { CompetitorPriceAnomaly } from '@/lib/market-intel/anomalies';
 import type { DomainBenchmark, DomainPeer } from '@/lib/market-intel/benchmarks';
 import type { CategoryPricing } from '@/lib/market-intel/category-pricing';
@@ -73,6 +74,13 @@ type MarketViewProps = {
   pricingRecommendations: PricingRecommendation[];
   priceForecast: PriceForecast | null;
   priceAnomalies: CompetitorPriceAnomaly[];
+  entitlements: {
+    peerBenchmarks: boolean;
+    productMatching: boolean;
+    pricingRecommendations: boolean;
+    forecasting: boolean;
+    anomalyDetection: boolean;
+  };
 };
 
 export default function MarketView({
@@ -88,6 +96,7 @@ export default function MarketView({
   pricingRecommendations,
   priceForecast,
   priceAnomalies,
+  entitlements,
 }: MarketViewProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
@@ -141,40 +150,42 @@ export default function MarketView({
 
       <StatsGrid data={domainStats} columns={4} />
 
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Domain benchmarks
-          </Text>
-          {domain && benchmarks.length === 0 && (
-            <Badge colorScheme="gray">No benchmarks computed for this domain yet</Badge>
-          )}
-        </Flex>
-        <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Metric</Th>
-                <Th>P25</Th>
-                <Th>Median</Th>
-                <Th>P75</Th>
-                <Th>Sample size</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {benchmarks.map((row) => (
-                <Tr key={row.metricName}>
-                  <Td>{formatMetric(row.metricName)}</Td>
-                  <Td>{row.p25 ?? '—'}</Td>
-                  <Td>{row.median ?? '—'}</Td>
-                  <Td>{row.p75 ?? '—'}</Td>
-                  <Td>{row.sampleSize}</Td>
+      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Paid" featureName="Domain benchmarks">
+        <Card mb="20px">
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Domain benchmarks
+            </Text>
+            {domain && benchmarks.length === 0 && (
+              <Badge colorScheme="gray">No benchmarks computed for this domain yet</Badge>
+            )}
+          </Flex>
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Metric</Th>
+                  <Th>P25</Th>
+                  <Th>Median</Th>
+                  <Th>P75</Th>
+                  <Th>Sample size</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      </Card>
+              </Thead>
+              <Tbody>
+                {benchmarks.map((row) => (
+                  <Tr key={row.metricName}>
+                    <Td>{formatMetric(row.metricName)}</Td>
+                    <Td>{row.p25 ?? '—'}</Td>
+                    <Td>{row.median ?? '—'}</Td>
+                    <Td>{row.p75 ?? '—'}</Td>
+                    <Td>{row.sampleSize}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        </Card>
+      </UpgradeGate>
 
       <Card mb="20px">
         <Flex justify="space-between" align="center" mb="12px">
@@ -353,182 +364,202 @@ export default function MarketView({
         )}
       </Card>
 
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Closest competitor match per product
-          </Text>
-          <Badge colorScheme="gray">Title-similarity match, MVP</Badge>
-        </Flex>
-        {productMatches.length === 0 ? (
-          <Text fontSize="sm" color="secondaryGray.600">
-            No confident matches found yet between your active products and scraped competitor
-            listings in this category.
-          </Text>
-        ) : (
-          <Box overflowX="auto">
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Your product</Th>
-                  <Th>Your price</Th>
-                  <Th>Closest match</Th>
-                  <Th>Their price</Th>
-                  <Th>Confidence</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {productMatches.map((match) => (
-                  <Tr key={match.sellerProductId}>
-                    <Td>{match.sellerProductTitle}</Td>
-                    <Td>{match.sellerPrice != null ? formatCurrency(match.sellerPrice) : '—'}</Td>
-                    <Td>
-                      <a href={match.matchedUrl} target="_blank" rel="noreferrer">
-                        {match.matchedTitle}
-                      </a>{' '}
-                      {match.matchedPlatformName && `(${match.matchedPlatformName})`}
-                    </Td>
-                    <Td>{match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}</Td>
-                    <Td>{Math.round(match.confidence * 100)}%</Td>
+      <UpgradeGate
+        hasAccess={entitlements.productMatching}
+        requiredPlanLabel="Premium"
+        featureName="Closest competitor match per product"
+      >
+        <Card mb="20px">
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Closest competitor match per product
+            </Text>
+            <Badge colorScheme="gray">Title-similarity match, MVP</Badge>
+          </Flex>
+          {productMatches.length === 0 ? (
+            <Text fontSize="sm" color="secondaryGray.600">
+              No confident matches found yet between your active products and scraped competitor
+              listings in this category.
+            </Text>
+          ) : (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Your product</Th>
+                    <Th>Your price</Th>
+                    <Th>Closest match</Th>
+                    <Th>Their price</Th>
+                    <Th>Confidence</Th>
                   </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-      </Card>
-
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Pricing recommendations
-          </Text>
-          <Badge colorScheme="gray">Rule-based: competitor band + your margin floor</Badge>
-        </Flex>
-        {pricingRecommendations.length === 0 ? (
-          <Text fontSize="sm" color="secondaryGray.600">
-            Set both cost price and sell price on your active products to get pricing
-            recommendations here.
-          </Text>
-        ) : (
-          <Box overflowX="auto">
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Product</Th>
-                  <Th isNumeric>Current price</Th>
-                  <Th isNumeric>Recommended</Th>
-                  <Th>Direction</Th>
-                  <Th>Why</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {pricingRecommendations.map((rec) => (
-                  <Tr key={rec.productId}>
-                    <Td>{rec.productTitle}</Td>
-                    <Td isNumeric>{formatCurrency(rec.currentPrice)}</Td>
-                    <Td isNumeric>{formatCurrency(rec.recommendedPrice)}</Td>
-                    <Td>
-                      <Badge
-                        colorScheme={rec.direction === 'increase' ? 'green' : rec.direction === 'decrease' ? 'red' : 'gray'}
-                      >
-                        {rec.direction}
-                      </Badge>
-                      {rec.marginConstrained && (
-                        <Badge colorScheme="orange" ml="4px">
-                          margin-constrained
-                        </Badge>
-                      )}
-                    </Td>
-                    <Td>
-                      <Text fontSize="xs" color="secondaryGray.600">
-                        {rec.rationale}
-                      </Text>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-      </Card>
-
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Competitor price anomalies
-          </Text>
-          <Badge colorScheme="gray">IQR outliers, last 7 days</Badge>
-        </Flex>
-        {priceAnomalies.length === 0 ? (
-          <Text fontSize="sm" color="secondaryGray.600">
-            No unusual competitor price moves detected in the last 7 days.
-          </Text>
-        ) : (
-          <Box overflowX="auto">
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Product</Th>
-                  <Th>Platform</Th>
-                  <Th isNumeric>Was</Th>
-                  <Th isNumeric>Now</Th>
-                  <Th isNumeric>Change</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {priceAnomalies.map((a) => (
-                  <Tr key={a.productId}>
-                    <Td>{a.title}</Td>
-                    <Td>{a.platformName ?? '—'}</Td>
-                    <Td isNumeric>{formatCurrency(a.oldPrice)}</Td>
-                    <Td isNumeric>{formatCurrency(a.newPrice)}</Td>
-                    <Td isNumeric>
-                      <Badge colorScheme={a.pctChange > 0 ? 'red' : 'green'}>
-                        {a.pctChange > 0 ? '+' : ''}
-                        {a.pctChange}%
-                      </Badge>
-                    </Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
-        )}
-      </Card>
-
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Peers in your domain
-          </Text>
-          {domain && peers.length === 0 && (
-            <Badge colorScheme="gray">No peers have opted in to be visible yet</Badge>
+                </Thead>
+                <Tbody>
+                  {productMatches.map((match) => (
+                    <Tr key={match.sellerProductId}>
+                      <Td>{match.sellerProductTitle}</Td>
+                      <Td>{match.sellerPrice != null ? formatCurrency(match.sellerPrice) : '—'}</Td>
+                      <Td>
+                        <a href={match.matchedUrl} target="_blank" rel="noreferrer">
+                          {match.matchedTitle}
+                        </a>{' '}
+                        {match.matchedPlatformName && `(${match.matchedPlatformName})`}
+                      </Td>
+                      <Td>{match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}</Td>
+                      <Td>{Math.round(match.confidence * 100)}%</Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
           )}
-        </Flex>
-        <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Seller</Th>
-                <Th>Shares rating</Th>
-                <Th>Shares price positioning</Th>
-                <Th>Shares category rank</Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {peers.map((peer) => (
-                <Tr key={peer.sellerId}>
-                  <Td>{peer.displayName ?? 'Anonymous seller'}</Td>
-                  <Td>{peer.showRating ? 'Yes' : 'No'}</Td>
-                  <Td>{peer.showPricePosition ? 'Yes' : 'No'}</Td>
-                  <Td>{peer.showCategoryRank ? 'Yes' : 'No'}</Td>
+        </Card>
+      </UpgradeGate>
+
+      <UpgradeGate
+        hasAccess={entitlements.pricingRecommendations}
+        requiredPlanLabel="Premium"
+        featureName="Pricing recommendations"
+      >
+        <Card mb="20px">
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Pricing recommendations
+            </Text>
+            <Badge colorScheme="gray">Rule-based: competitor band + your margin floor</Badge>
+          </Flex>
+          {pricingRecommendations.length === 0 ? (
+            <Text fontSize="sm" color="secondaryGray.600">
+              Set both cost price and sell price on your active products to get pricing
+              recommendations here.
+            </Text>
+          ) : (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Product</Th>
+                    <Th isNumeric>Current price</Th>
+                    <Th isNumeric>Recommended</Th>
+                    <Th>Direction</Th>
+                    <Th>Why</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {pricingRecommendations.map((rec) => (
+                    <Tr key={rec.productId}>
+                      <Td>{rec.productTitle}</Td>
+                      <Td isNumeric>{formatCurrency(rec.currentPrice)}</Td>
+                      <Td isNumeric>{formatCurrency(rec.recommendedPrice)}</Td>
+                      <Td>
+                        <Badge
+                          colorScheme={rec.direction === 'increase' ? 'green' : rec.direction === 'decrease' ? 'red' : 'gray'}
+                        >
+                          {rec.direction}
+                        </Badge>
+                        {rec.marginConstrained && (
+                          <Badge colorScheme="orange" ml="4px">
+                            margin-constrained
+                          </Badge>
+                        )}
+                      </Td>
+                      <Td>
+                        <Text fontSize="xs" color="secondaryGray.600">
+                          {rec.rationale}
+                        </Text>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
+        </Card>
+      </UpgradeGate>
+
+      <UpgradeGate
+        hasAccess={entitlements.anomalyDetection}
+        requiredPlanLabel="Premium"
+        featureName="Competitor price anomalies"
+      >
+        <Card mb="20px">
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Competitor price anomalies
+            </Text>
+            <Badge colorScheme="gray">IQR outliers, last 7 days</Badge>
+          </Flex>
+          {priceAnomalies.length === 0 ? (
+            <Text fontSize="sm" color="secondaryGray.600">
+              No unusual competitor price moves detected in the last 7 days.
+            </Text>
+          ) : (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Product</Th>
+                    <Th>Platform</Th>
+                    <Th isNumeric>Was</Th>
+                    <Th isNumeric>Now</Th>
+                    <Th isNumeric>Change</Th>
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {priceAnomalies.map((a) => (
+                    <Tr key={a.productId}>
+                      <Td>{a.title}</Td>
+                      <Td>{a.platformName ?? '—'}</Td>
+                      <Td isNumeric>{formatCurrency(a.oldPrice)}</Td>
+                      <Td isNumeric>{formatCurrency(a.newPrice)}</Td>
+                      <Td isNumeric>
+                        <Badge colorScheme={a.pctChange > 0 ? 'red' : 'green'}>
+                          {a.pctChange > 0 ? '+' : ''}
+                          {a.pctChange}%
+                        </Badge>
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
+        </Card>
+      </UpgradeGate>
+
+      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Paid" featureName="Peers in your domain">
+        <Card mb="20px">
+          <Flex justify="space-between" align="center" mb="12px">
+            <Text fontSize="lg" fontWeight="600" color={textColor}>
+              Peers in your domain
+            </Text>
+            {domain && peers.length === 0 && (
+              <Badge colorScheme="gray">No peers have opted in to be visible yet</Badge>
+            )}
+          </Flex>
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Seller</Th>
+                  <Th>Shares rating</Th>
+                  <Th>Shares price positioning</Th>
+                  <Th>Shares category rank</Th>
                 </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
-      </Card>
+              </Thead>
+              <Tbody>
+                {peers.map((peer) => (
+                  <Tr key={peer.sellerId}>
+                    <Td>{peer.displayName ?? 'Anonymous seller'}</Td>
+                    <Td>{peer.showRating ? 'Yes' : 'No'}</Td>
+                    <Td>{peer.showPricePosition ? 'Yes' : 'No'}</Td>
+                    <Td>{peer.showCategoryRank ? 'Yes' : 'No'}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        </Card>
+      </UpgradeGate>
 
       <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="20px">
         <Card>

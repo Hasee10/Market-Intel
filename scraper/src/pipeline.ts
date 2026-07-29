@@ -1,4 +1,4 @@
-import { saveClassifiedListings, saveProducts } from './db.js';
+import { saveClassifiedListings, saveProducts, saveScrapeRunSummary } from './db.js';
 import { BROWSER_SOURCES, CLASSIFIED_SOURCES, HTTP_SOURCES } from './sources/index.js';
 import type { ClassifiedSourceFn, ClassifiedSourceResult, SourceFn, SourceResult } from './types.js';
 
@@ -12,10 +12,12 @@ async function safeRun(source: SourceFn): Promise<SourceRunSummary> {
   try {
     const result: SourceResult = await source();
     await saveProducts(result.platformSlug, result.products);
+    await saveScrapeRunSummary(result.platformSlug, result.products.length);
     return { platformSlug: result.platformSlug, productCount: result.products.length };
   } catch (err) {
     const message = (err as Error).message;
     console.error('[pipeline] source failed:', message);
+    await saveScrapeRunSummary(source.name, 0, message);
     return { platformSlug: source.name, productCount: 0, error: message };
   }
 }
@@ -24,10 +26,12 @@ async function safeRunClassified(source: ClassifiedSourceFn): Promise<SourceRunS
   try {
     const result: ClassifiedSourceResult = await source();
     await saveClassifiedListings(result.platformSlug, result.listings);
+    await saveScrapeRunSummary(result.platformSlug, result.listings.length);
     return { platformSlug: result.platformSlug, productCount: result.listings.length };
   } catch (err) {
     const message = (err as Error).message;
     console.error('[pipeline] classified source failed:', message);
+    await saveScrapeRunSummary(source.name, 0, message);
     return { platformSlug: source.name, productCount: 0, error: message };
   }
 }

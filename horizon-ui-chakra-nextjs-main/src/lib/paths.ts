@@ -15,6 +15,7 @@ export const PATH_DASHBOARD = {
   overview: path(ROOTS_DASHBOARD, '/overview'),
   market: path(ROOTS_DASHBOARD, '/market'),
   watchlist: path(ROOTS_DASHBOARD, '/watchlist'),
+  scraperHealth: path(ROOTS_DASHBOARD, '/scraper-health'),
 };
 
 export const PATH_APPS = {

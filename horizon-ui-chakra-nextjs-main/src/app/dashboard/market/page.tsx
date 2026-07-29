@@ -1,6 +1,7 @@
 import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/anomalies';
 import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
 import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getCategoryPriceForecast } from '@/lib/market-intel/forecast';
 import {
   getDataFreshness,
@@ -21,19 +22,33 @@ import MarketView from './MarketView';
 export default async function MarketPage() {
   const seller = await getCurrentSeller();
   const domain = seller ? await getPrimaryDomain(seller.id) : null;
+  const planTier = seller?.planTier ?? 'free';
 
-  const benchmarks = domain ? await getDomainBenchmarks(domain.categoryId) : [];
-  const peers = domain && seller ? await getDomainPeers(domain.categoryId, seller.id) : [];
+  const entitlements = {
+    peerBenchmarks: hasFeature(planTier, 'peer_benchmarks'),
+    productMatching: hasFeature(planTier, 'product_matching'),
+    pricingRecommendations: hasFeature(planTier, 'pricing_recommendations'),
+    forecasting: hasFeature(planTier, 'forecasting'),
+    anomalyDetection: hasFeature(planTier, 'anomaly_detection'),
+  };
+
+  const benchmarks = domain && entitlements.peerBenchmarks ? await getDomainBenchmarks(domain.categoryId) : [];
+  const peers = domain && seller && entitlements.peerBenchmarks ? await getDomainPeers(domain.categoryId, seller.id) : [];
   const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug) : null;
   const priceTrend = domain ? await getPriceTrend(domain.categorySlug) : [];
   const stockOuts = domain ? await getStockOuts(domain.categorySlug) : [];
   const freshness = domain ? await getDataFreshness(domain.categorySlug) : [];
   const demandSignal = domain ? await getDemandSignal(domain.categorySlug) : null;
-  const productMatches = domain && seller ? await findTopProductMatches(seller.id, domain.categorySlug) : [];
+  const productMatches =
+    domain && seller && entitlements.productMatching ? await findTopProductMatches(seller.id, domain.categorySlug) : [];
   const pricingRecommendations =
-    domain && seller ? await getPricingRecommendations(seller.id, domain.categorySlug) : [];
-  const priceForecast = domain ? await getCategoryPriceForecast(domain.categorySlug) : null;
-  const priceAnomalies = domain ? await detectCompetitorPriceAnomalies(domain.categorySlug) : [];
+    domain && seller && entitlements.pricingRecommendations
+      ? await getPricingRecommendations(seller.id, domain.categorySlug)
+      : [];
+  const priceForecast =
+    domain && entitlements.forecasting ? await getCategoryPriceForecast(domain.categorySlug) : null;
+  const priceAnomalies =
+    domain && entitlements.anomalyDetection ? await detectCompetitorPriceAnomalies(domain.categorySlug) : [];
 
   return (
     <MarketView
@@ -49,6 +64,7 @@ export default async function MarketPage() {
       pricingRecommendations={pricingRecommendations}
       priceForecast={priceForecast}
       priceAnomalies={priceAnomalies}
+      entitlements={entitlements}
     />
   );
 }

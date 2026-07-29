@@ -36,6 +36,35 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 /**
+ * Persists one row per platform per run to scraper_runs - backs the
+ * internal scraper health dashboard (Phase 6: iShopping/Goto already have
+ * Cloudflare/TLS friction, this is what lets that be tracked over time
+ * instead of only visible in a single GitHub Actions log). Best-effort:
+ * a failure here shouldn't fail the whole scrape run over telemetry.
+ */
+export async function saveScrapeRunSummary(
+  platformSlug: string,
+  productCount: number,
+  error?: string,
+): Promise<void> {
+  try {
+    requireDatabase();
+    const res = await fetch(`${config.supabaseUrl}/rest/v1/scraper_runs`, {
+      method: 'POST',
+      headers: headers({ Prefer: 'return=minimal' }),
+      body: JSON.stringify([
+        { platform_slug: platformSlug, product_count: productCount, error: error ?? null },
+      ]),
+    });
+    if (!res.ok) {
+      console.error(`[db] failed to record scraper_runs for "${platformSlug}": ${res.status} ${await res.text()}`);
+    }
+  } catch (err) {
+    console.error(`[db] failed to record scraper_runs for "${platformSlug}":`, (err as Error).message);
+  }
+}
+
+/**
  * Upserts products into market_products (by platform_id + external_id) and
  * appends one row per product into market_price_history.
  */

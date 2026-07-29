@@ -8,6 +8,7 @@ import {
   MdSettings,
   MdOutlineVisibility,
   MdReceiptLong,
+  MdHealthAndSafety,
 } from 'react-icons/md';
 
 import { IRoute } from 'types/navigation';
@@ -70,6 +71,12 @@ const routes: IRoute[] = [
     layout: '',
     path: '/apps/settings',
     icon: <Icon as={MdSettings} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Data Health',
+    layout: '',
+    path: '/dashboard/scraper-health',
+    icon: <Icon as={MdHealthAndSafety} width="20px" height="20px" color="inherit" />,
   },
 ];
 

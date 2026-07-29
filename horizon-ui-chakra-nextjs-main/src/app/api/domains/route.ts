@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getCurrentSeller, listCategories, listSellerDomains } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 
@@ -46,6 +47,18 @@ export async function POST(request: NextRequest) {
     .select('id')
     .eq('seller_id', seller.id);
   const isFirstDomain = !existingDomains || existingDomains.length === 0;
+
+  if (!isFirstDomain && !hasFeature(seller.planTier, 'multi_domain')) {
+    return NextResponse.json(
+      {
+        succeeded: false,
+        data: null,
+        errors: ['Multiple domains require the Premium plan'],
+        message: 'Multiple domains require the Premium plan',
+      },
+      { status: 403 },
+    );
+  }
 
   const { error } = await supabase
     .from('seller_domains')

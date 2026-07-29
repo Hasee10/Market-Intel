@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getRevenueForecast } from '@/lib/market-intel/forecast';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 
@@ -10,6 +11,10 @@ export async function GET() {
       { succeeded: false, data: null, errors: ['Not authenticated'], message: 'Not authenticated' },
       { status: 401 },
     );
+  }
+
+  if (!hasFeature(seller.planTier, 'forecasting')) {
+    return NextResponse.json({ succeeded: true, data: null, errors: [], message: 'Requires premium plan' });
   }
 
   const forecast = await getRevenueForecast(seller.id);

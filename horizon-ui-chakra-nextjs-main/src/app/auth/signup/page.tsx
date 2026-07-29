@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 
 import {
   Alert,
@@ -16,14 +16,28 @@ import {
   Text,
 } from '@chakra-ui/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { AuthCard } from '@/components/marketintel/AuthCard';
 import { createClient } from '@/lib/supabase/client';
 import { PATH_AUTH, PATH_DASHBOARD } from '@/lib/paths';
 
+// useSearchParams() (for ?ref=CODE) forces this into a client-side-rendered
+// boundary during prerendering - Next.js requires that boundary to be
+// wrapped in Suspense, so the form itself lives in SignUpForm below and
+// this default export is just that wrapper.
 export default function SignUpPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignUpForm />
+    </Suspense>
+  );
+}
+
+function SignUpForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get('ref');
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,6 +81,18 @@ export default function SignUpPage() {
       if (signUpError) {
         setError(signUpError.message);
         return;
+      }
+
+      // Best-effort: the signup trigger (013_seller_signup_trigger.sql)
+      // needs to have created the sellers row first, which it has by the
+      // time signUp() resolves - see /api/referrals/record's comment for
+      // why this doesn't require a session. Never blocks signup on failure.
+      if (referralCode && data.user?.id) {
+        fetch('/api/referrals/record', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ referralCode, userId: data.user.id }),
+        }).catch(() => {});
       }
 
       // Email confirmation is on by default for a new Supabase project -
