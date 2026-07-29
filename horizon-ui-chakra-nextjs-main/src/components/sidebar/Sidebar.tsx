@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 
 // chakra imports
 import {
@@ -7,6 +7,7 @@ import {
   Drawer,
   DrawerBody,
   Icon,
+  IconButton,
   useColorModeValue,
   DrawerOverlay,
   useDisclosure,
@@ -14,6 +15,8 @@ import {
   DrawerCloseButton,
 } from '@chakra-ui/react';
 import Content from 'components/sidebar/components/Content';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth';
+import { SidebarContext } from 'contexts/SidebarContext';
 import {
   renderThumb,
   renderTrack,
@@ -28,6 +31,7 @@ const Scrollbars = dynamic(
 
 // Assets
 import { IoMenuOutline } from 'react-icons/io5';
+import { MdChevronLeft, MdChevronRight } from 'react-icons/md';
 import { IRoute } from 'types/navigation';
 import { isWindowAvailable } from 'utils/navigation';
 
@@ -41,31 +45,50 @@ interface SidebarProps extends SidebarResponsiveProps {
 
 function Sidebar(props: SidebarProps) {
   const { routes } = props;
+  const { isCollapsed, setIsCollapsed } = useContext(SidebarContext);
 
-  let variantChange = '0.2s linear';
   let shadow = useColorModeValue(
     '14px 17px 40px 4px rgba(112, 144, 176, 0.08)',
     'unset',
   );
   // Chakra Color Mode
   let sidebarBg = useColorModeValue('white', 'navy.800');
+  let toggleBg = useColorModeValue('white', 'navy.700');
+  let toggleBorder = useColorModeValue('gray.200', 'whiteAlpha.200');
   let sidebarMargins = '0px';
+  const width = isCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 
   // SIDEBAR
   return (
     <Box display={{ sm: 'none', xl: 'block' }} position="fixed" minH="100%">
       <Box
         bg={sidebarBg}
-        transition={variantChange}
-        w="300px"
+        transition="width 0.2s ease, box-shadow 0.2s ease"
+        w={`${width}px`}
         h="100vh"
         m={sidebarMargins}
         minH="100%"
         overflowX="hidden"
         boxShadow={shadow}
+        position="relative"
       >
+        <IconButton
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          icon={<Icon as={isCollapsed ? MdChevronRight : MdChevronLeft} boxSize="18px" />}
+          size="sm"
+          borderRadius="full"
+          bg={toggleBg}
+          border="1px solid"
+          borderColor={toggleBorder}
+          position="absolute"
+          top="28px"
+          right="-14px"
+          zIndex="10"
+          onClick={() => setIsCollapsed?.((prev) => !prev)}
+          _hover={{ bg: 'brand.500', color: 'white', borderColor: 'brand.500' }}
+        />
         <Scrollbars universal={true}>
-          <Content routes={routes} />
+          <Content routes={routes} isCollapsed={!!isCollapsed} />
         </Scrollbars>
       </Box>
     </Box>

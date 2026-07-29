@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 // chakra imports
-import { Box, Flex, HStack, Text, useColorModeValue } from '@chakra-ui/react';
+import { Box, Flex, HStack, Text, Tooltip, useColorModeValue } from '@chakra-ui/react';
 import Link from 'next/link';
 import { IRoute } from 'types/navigation';
 import { usePathname } from 'next/navigation';
@@ -9,10 +9,11 @@ import { useCallback } from 'react';
 
 interface SidebarLinksProps {
   routes: IRoute[];
+  isCollapsed?: boolean;
 }
 
 export function SidebarLinks(props: SidebarLinksProps) {
-  const { routes } = props;
+  const { routes, isCollapsed } = props;
 
   //   Chakra color mode
   const pathname = usePathname();
@@ -26,10 +27,12 @@ export function SidebarLinks(props: SidebarLinksProps) {
   let textColor = useColorModeValue('secondaryGray.500', 'white');
   let brandColor = useColorModeValue('brand.500', 'brand.400');
 
-  // verifies if routeName is the one active (in browser input)
+  // verifies if routeName is the one active (in browser input) - exact
+  // match, not substring: pathname.includes('/apps/products') was also
+  // true on /apps/products/categories, highlighting both links at once.
   const activeRoute = useCallback(
     (routeName: string) => {
-      return pathname?.includes(routeName);
+      return pathname === routeName;
     },
     [pathname],
   );
@@ -43,6 +46,20 @@ export function SidebarLinks(props: SidebarLinksProps) {
         route.layout === '/rtl' ||
         route.layout === ''
       ) {
+        const isActive = activeRoute(route.path.toLowerCase());
+
+        if (isCollapsed && route.icon) {
+          return (
+            <Tooltip key={index} label={route.name} placement="right" hasArrow>
+              <Link href={route.layout + route.path}>
+                <Flex justify="center" py="12px">
+                  <Box color={isActive ? activeIcon : textColor}>{route.icon}</Box>
+                </Flex>
+              </Link>
+            </Tooltip>
+          );
+        }
+
         return (
           <Link key={index} href={route.layout + route.path}>
             {route.icon ? (

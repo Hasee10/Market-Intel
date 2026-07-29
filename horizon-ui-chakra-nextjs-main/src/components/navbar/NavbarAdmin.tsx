@@ -2,16 +2,12 @@
 // Chakra Imports
 import {
   Box,
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
   Flex,
-  Link,
-  Text,
   useColorModeValue
 } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
 import AdminNavbarLinks from 'components/navbar/NavbarLinksAdmin'
+import { SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth'
 import { isWindowAvailable } from 'utils/navigation'
 
 export default function AdminNavbar (props: {
@@ -20,6 +16,7 @@ export default function AdminNavbar (props: {
   brandText: string
   logoText: string
   fixed: boolean
+  sidebarWidth?: number
   onOpen: (...args: any[]) => any
 }) {
   const [scrolled, setScrolled] = useState(false)
@@ -35,20 +32,21 @@ export default function AdminNavbar (props: {
     }
   })
 
-  const { secondary, message, brandText } = props
+  const { secondary, sidebarWidth = SIDEBAR_WIDTH_EXPANDED } = props
 
   // Here are all the props that may change depending on navbar's type or state.(secondary, variant, scrolled)
-  let mainText = useColorModeValue('navy.700', 'white')
-  let secondaryText = useColorModeValue('gray.700', 'white')
   let navbarPosition = 'fixed' as const
   let navbarFilter = 'none'
   let navbarBackdrop = 'blur(20px)'
-  let navbarShadow = 'none'
-  let navbarBg = useColorModeValue(
-    'rgba(244, 247, 254, 0.2)',
-    'rgba(11,20,55,0.5)'
-  )
-  let navbarBorder = 'transparent'
+  // Was translucent (0.2/0.5 alpha) at all times with an unused `scrolled`
+  // state - page content behind the navbar showed straight through it
+  // whether scrolled or not. Solid at all times fixes that; the extra
+  // shadow on scroll is what signals "you've scrolled" instead.
+  let navbarBg = useColorModeValue('white', 'navy.800')
+  let navbarShadow = scrolled
+    ? '0px 7px 23px rgba(0, 0, 0, 0.05)'
+    : 'none'
+  let navbarBorder = useColorModeValue('gray.200', 'whiteAlpha.100')
   let secondaryMargin = '0px'
   let paddingX = '15px'
   let gap = '0px'
@@ -99,8 +97,8 @@ export default function AdminNavbar (props: {
         base: 'calc(100vw - 6%)',
         md: 'calc(100vw - 8%)',
         lg: 'calc(100vw - 6%)',
-        xl: 'calc(100vw - 350px)',
-        '2xl': 'calc(100vw - 365px)'
+        xl: `calc(100vw - ${sidebarWidth + 60}px)`,
+        '2xl': `calc(100vw - ${sidebarWidth + 75}px)`
       }}
     >
       <Flex
@@ -110,43 +108,9 @@ export default function AdminNavbar (props: {
           md: 'row'
         }}
         alignItems={{ xl: 'center' }}
+        justifyContent='flex-end'
         mb={gap}
       >
-        <Box mb={{ sm: '8px', md: '0px' }}>
-          <Breadcrumb>
-            <BreadcrumbItem color={secondaryText} fontSize='sm' mb='5px'>
-              <BreadcrumbLink href='#' color={secondaryText}>
-                Pages
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-
-            <BreadcrumbItem color={secondaryText} fontSize='sm'>
-              <BreadcrumbLink href='#' color={secondaryText}>
-                {brandText}
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-          </Breadcrumb>
-          {/* Here we create navbar brand, based on route name */}
-          <Link
-            color={mainText}
-            href='#'
-            bg='inherit'
-            borderRadius='inherit'
-            fontWeight='bold'
-            fontSize='34px'
-            _hover={{ color: { mainText } }}
-            _active={{
-              bg: 'inherit',
-              transform: 'none',
-              borderColor: 'transparent'
-            }}
-            _focus={{
-              boxShadow: 'none'
-            }}
-          >
-            {brandText}
-          </Link>
-        </Box>
         <Box ms='auto' w={{ sm: '100%', md: 'unset' }}>
           <AdminNavbarLinks
             onOpen={props.onOpen}
@@ -154,7 +118,7 @@ export default function AdminNavbar (props: {
             fixed={props.fixed}
           />
         </Box>
-      </Flex> 
+      </Flex>
     </Box>
   )
 }

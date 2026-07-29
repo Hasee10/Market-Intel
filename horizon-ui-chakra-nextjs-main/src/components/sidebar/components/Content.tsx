@@ -9,17 +9,18 @@ import { IRoute } from 'types/navigation';
 
 interface SidebarContentProps {
 	routes: IRoute[];
+	isCollapsed?: boolean;
 }
 
 function SidebarContent(props: SidebarContentProps) {
-	const { routes } = props;
+	const { routes, isCollapsed } = props;
 	// SIDEBAR
 	return (
 		<Flex direction='column' height='100%' pt='25px' borderRadius='30px'>
-			<Brand />
+			<Brand isCollapsed={isCollapsed} />
 			<Stack direction='column' mt='8px' mb='auto'>
-				<Box ps='20px' pe={{ lg: '16px', '2xl': '16px' }}>
-					<Links routes={routes} />
+				<Box ps={isCollapsed ? '0px' : '20px'} pe={isCollapsed ? '0px' : { lg: '16px', '2xl': '16px' }}>
+					<Links routes={routes} isCollapsed={isCollapsed} />
 				</Box>
 			</Stack>
 		</Flex>
