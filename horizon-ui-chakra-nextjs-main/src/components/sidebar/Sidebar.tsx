@@ -72,6 +72,9 @@ function Sidebar(props: SidebarProps) {
         boxShadow={shadow}
         position="relative"
       >
+        {/* Sits fully inside the sidebar's own box now - it previously used
+            a negative right offset that put half the button outside the
+            sidebar's edge, overlapping the page content next to it. */}
         <IconButton
           aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           icon={<Icon as={isCollapsed ? MdChevronRight : MdChevronLeft} boxSize="18px" />}
@@ -80,9 +83,10 @@ function Sidebar(props: SidebarProps) {
           bg={toggleBg}
           border="1px solid"
           borderColor={toggleBorder}
+          boxShadow="0px 2px 8px rgba(0, 0, 0, 0.08)"
           position="absolute"
-          top="28px"
-          right="-14px"
+          top="18px"
+          right="12px"
           zIndex="10"
           onClick={() => setIsCollapsed?.((prev) => !prev)}
           _hover={{ bg: 'brand.500', color: 'white', borderColor: 'brand.500' }}

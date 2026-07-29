@@ -40,6 +40,7 @@ create index if not exists seller_referrals_code_idx on seller_referrals (referr
 
 alter table seller_referrals enable row level security;
 
+drop policy if exists seller_referrals_owner_all on seller_referrals;
 create policy seller_referrals_owner_all on seller_referrals
   for all using (
     referrer_seller_id in (select id from sellers where user_id = auth.uid())
@@ -70,5 +71,6 @@ create index if not exists scraper_runs_platform_run_idx on scraper_runs (platfo
 -- only by the scraper's service-role key.
 alter table scraper_runs enable row level security;
 
+drop policy if exists scraper_runs_select_all on scraper_runs;
 create policy scraper_runs_select_all on scraper_runs
   for select to authenticated using (true);

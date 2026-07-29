@@ -83,7 +83,17 @@ export default function AdminShell(props: AdminShellProps) {
             </Box>
           </Portal>
 
-          <Box mx="auto" p={{ base: '20px', md: '30px' }} pe="20px" minH="100vh" pt="50px">
+          {/* pt clears the fixed navbar's own footprint (top offset + its
+              minH + padding, ~109px on xl) - it was 50px before, which was
+              never actually enough; that only stayed invisible while the
+              navbar was translucent enough to see page content through it. */}
+          <Box
+            mx="auto"
+            p={{ base: '20px', md: '30px' }}
+            pe="20px"
+            minH="100vh"
+            pt={{ base: '140px', md: '120px', xl: '110px' }}
+          >
             {children}
           </Box>
           <Box>

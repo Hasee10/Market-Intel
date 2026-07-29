@@ -21,21 +21,26 @@ alter table seller_public_profile enable row level security;
 alter table domain_benchmarks enable row level security;
 
 -- sellers: a seller can only see/manage their own account row.
+drop policy if exists sellers_select_own on sellers;
 create policy sellers_select_own on sellers
   for select using (user_id = auth.uid());
+drop policy if exists sellers_insert_own on sellers;
 create policy sellers_insert_own on sellers
   for insert with check (user_id = auth.uid());
+drop policy if exists sellers_update_own on sellers;
 create policy sellers_update_own on sellers
   for update using (user_id = auth.uid());
 
 -- seller_categories: shared reference data, readable by any authenticated
 -- seller (needed for onboarding/category pickers). No insert/update policy
 -- for authenticated users - only the service role can maintain this list.
+drop policy if exists seller_categories_select_all on seller_categories;
 create policy seller_categories_select_all on seller_categories
   for select to authenticated using (true);
 
 -- seller_domains / seller_products / seller_customers / seller_orders /
 -- seller_churn_snapshots: strictly owner-only on every operation.
+drop policy if exists seller_domains_owner_all on seller_domains;
 create policy seller_domains_owner_all on seller_domains
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -43,6 +48,7 @@ create policy seller_domains_owner_all on seller_domains
     seller_id in (select id from sellers where user_id = auth.uid())
   );
 
+drop policy if exists seller_products_owner_all on seller_products;
 create policy seller_products_owner_all on seller_products
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -50,6 +56,7 @@ create policy seller_products_owner_all on seller_products
     seller_id in (select id from sellers where user_id = auth.uid())
   );
 
+drop policy if exists seller_customers_owner_all on seller_customers;
 create policy seller_customers_owner_all on seller_customers
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -57,6 +64,7 @@ create policy seller_customers_owner_all on seller_customers
     seller_id in (select id from sellers where user_id = auth.uid())
   );
 
+drop policy if exists seller_orders_owner_all on seller_orders;
 create policy seller_orders_owner_all on seller_orders
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -64,6 +72,7 @@ create policy seller_orders_owner_all on seller_orders
     seller_id in (select id from sellers where user_id = auth.uid())
   );
 
+drop policy if exists seller_churn_snapshots_owner_all on seller_churn_snapshots;
 create policy seller_churn_snapshots_owner_all on seller_churn_snapshots
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -75,6 +84,7 @@ create policy seller_churn_snapshots_owner_all on seller_churn_snapshots
 -- tables above - peers never query this table directly. Peer visibility is
 -- granted only through the view below, which exposes just the opted-in
 -- boolean/display fields and nothing else.
+drop policy if exists seller_public_profile_owner_all on seller_public_profile;
 create policy seller_public_profile_owner_all on seller_public_profile
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -107,5 +117,6 @@ grant select on seller_public_profiles_view to authenticated;
 -- insert/update/delete policy for authenticated/anon - only the service
 -- role (used by the backend aggregation job, which bypasses RLS entirely)
 -- can write to this table.
+drop policy if exists domain_benchmarks_select_all on domain_benchmarks;
 create policy domain_benchmarks_select_all on domain_benchmarks
   for select to authenticated using (true);

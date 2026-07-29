@@ -76,6 +76,7 @@ alter table seller_watchlist_items enable row level security;
 alter table seller_price_alerts enable row level security;
 alter table seller_notifications enable row level security;
 
+drop policy if exists seller_watchlists_owner_all on seller_watchlists;
 create policy seller_watchlists_owner_all on seller_watchlists
   for all using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -85,6 +86,7 @@ create policy seller_watchlists_owner_all on seller_watchlists
 
 -- seller_watchlist_items has no seller_id column directly - ownership is via
 -- its parent watchlist.
+drop policy if exists seller_watchlist_items_owner_all on seller_watchlist_items;
 create policy seller_watchlist_items_owner_all on seller_watchlist_items
   for all using (
     watchlist_id in (
@@ -101,6 +103,7 @@ create policy seller_watchlist_items_owner_all on seller_watchlist_items
 -- seller_price_alerts: sellers can read their own alerts, but only the
 -- service role (the cron job) writes rows - same pattern as
 -- domain_benchmarks in 012.
+drop policy if exists seller_price_alerts_select_own on seller_price_alerts;
 create policy seller_price_alerts_select_own on seller_price_alerts
   for select using (
     seller_id in (select id from sellers where user_id = auth.uid())
@@ -108,11 +111,13 @@ create policy seller_price_alerts_select_own on seller_price_alerts
 
 -- seller_notifications: sellers can read/update (mark read) their own rows;
 -- only the service role inserts.
+drop policy if exists seller_notifications_select_own on seller_notifications;
 create policy seller_notifications_select_own on seller_notifications
   for select using (
     seller_id in (select id from sellers where user_id = auth.uid())
   );
 
+drop policy if exists seller_notifications_update_own on seller_notifications;
 create policy seller_notifications_update_own on seller_notifications
   for update using (
     seller_id in (select id from sellers where user_id = auth.uid())

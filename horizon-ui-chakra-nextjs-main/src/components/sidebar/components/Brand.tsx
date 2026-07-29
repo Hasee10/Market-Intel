@@ -20,7 +20,8 @@ export function SidebarBrand({ isCollapsed }: SidebarBrandProps) {
 				fontWeight='bold'
 				fontSize={isCollapsed ? '18px' : '22px'}
 				color={textColor}
-				my='32px'
+				mt='48px'
+				mb='20px'
 				transition='font-size 0.2s ease'
 			>
 				{isCollapsed ? 'MI' : 'Market Intel'}
