@@ -1,6 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
+import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
 
 export type CategoryPricing = {
   categorySlug: string;
@@ -12,16 +13,6 @@ export type CategoryPricing = {
   maxPrice: number;
   avgPrice: number;
   samplePlatforms: string[];
-};
-
-// The scraper only covers a subset of seller_categories' 12 slugs so far
-// (mobiles-and-electronics, fashion-and-apparel) - see scraper/.env category
-// vars. Matched by keyword against market_products.category_slug (a raw
-// per-platform string like "mobiles-tablets" or "ready-to-wear"), not an FK,
-// since market_products lives in a separate scraper-owned namespace.
-const CATEGORY_KEYWORDS: Record<string, RegExp> = {
-  'mobiles-and-electronics': /mobile|laptop|computing|iphone|tablet|electronic/i,
-  'fashion-and-apparel': /fashion|wear|unstitched|apparel|clothing/i,
 };
 
 function percentile(sorted: number[], p: number): number {

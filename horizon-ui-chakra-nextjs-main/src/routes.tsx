@@ -6,6 +6,7 @@ import {
   MdCategory,
   MdGroup,
   MdSettings,
+  MdOutlineVisibility,
 } from 'react-icons/md';
 
 import { IRoute } from 'types/navigation';
@@ -25,6 +26,12 @@ const routes: IRoute[] = [
     layout: '',
     path: '/dashboard/market',
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Watchlist',
+    layout: '',
+    path: '/dashboard/watchlist',
+    icon: <Icon as={MdOutlineVisibility} width="20px" height="20px" color="inherit" />,
   },
   {
     name: 'Products',

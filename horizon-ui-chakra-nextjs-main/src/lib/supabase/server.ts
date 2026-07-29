@@ -28,6 +28,25 @@ function createServiceRoleClient() {
   );
 }
 
+// For cron/route handlers that run with no user session at all (the
+// benchmarks aggregation job, the price-alerts diff job) and need to bypass
+// RLS by design - domain_benchmarks/seller_notifications/seller_price_alerts
+// are only ever written by the service role, never by an authenticated
+// seller. Callers must gate access themselves (see requireCronAuth below).
+export function createAdminClient() {
+  return createServiceRoleClient();
+}
+
+// Shared guard for cron-triggered route handlers: requires a
+// `Authorization: Bearer <CRON_SECRET>` header so these endpoints can't be
+// hit by anyone who finds the URL. Returns true if the request is authorized.
+export function isAuthorizedCronRequest(request: Request): boolean {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) return false;
+  const header = request.headers.get('authorization');
+  return header === `Bearer ${secret}`;
+}
+
 // Server Components/Actions/Route Handlers client. Reads/writes the auth
 // cookie via Next's cookies() so RLS policies (auth.uid()) see the right
 // user. The set() calls are wrapped in try/catch because Server Components

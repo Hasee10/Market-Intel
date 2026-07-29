@@ -22,11 +22,19 @@ import {
 import Link from 'next/link';
 
 import Card from 'components/card/Card';
+import LineChart from '@/components/charts/LineChart';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import type { CategoryPricing } from '@/lib/market-intel/category-pricing';
 import type { DomainBenchmark, DomainPeer } from '@/lib/market-intel/benchmarks';
+import type {
+  DemandSignal,
+  PlatformFreshness,
+  PriceTrendPoint,
+  StockOutProduct,
+} from '@/lib/market-intel/market-insights';
+import type { ProductMatch } from '@/lib/market-intel/product-matching';
 import type { SellerDomain } from '@/lib/market-intel/seller';
 import { PATH_ONBOARDING } from '@/lib/paths';
 
@@ -42,14 +50,36 @@ function formatCurrency(value: number) {
   }).format(value);
 }
 
+function formatRelativeTime(iso: string) {
+  const hours = Math.round((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));
+  if (hours < 1) return 'less than an hour ago';
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.round(hours / 24)}d ago`;
+}
+
 type MarketViewProps = {
   domain: SellerDomain | null;
   benchmarks: DomainBenchmark[];
   peers: DomainPeer[];
   categoryPricing: CategoryPricing | null;
+  priceTrend: PriceTrendPoint[];
+  stockOuts: StockOutProduct[];
+  freshness: PlatformFreshness[];
+  demandSignal: DemandSignal | null;
+  productMatches: ProductMatch[];
 };
 
-export default function MarketView({ domain, benchmarks, peers, categoryPricing }: MarketViewProps) {
+export default function MarketView({
+  domain,
+  benchmarks,
+  peers,
+  categoryPricing,
+  priceTrend,
+  stockOuts,
+  freshness,
+  demandSignal,
+  productMatches,
+}: MarketViewProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
 
@@ -63,6 +93,16 @@ export default function MarketView({ domain, benchmarks, peers, categoryPricing 
   return (
     <Box>
       <PageHeader title="Market" />
+
+      {freshness.length > 0 && (
+        <Flex wrap="wrap" gap="8px" mb="16px">
+          {freshness.map((f) => (
+            <Badge key={f.platformName} colorScheme="gray" borderRadius="8px" px="8px" py="2px">
+              {f.platformName}: scraped {formatRelativeTime(f.lastScrapedAt)}
+            </Badge>
+          ))}
+        </Flex>
+      )}
 
       <Alert status="info" borderRadius="16px" mb="20px">
         <AlertIcon />
@@ -174,6 +214,143 @@ export default function MarketView({ domain, benchmarks, peers, categoryPricing 
             We haven&apos;t scraped competitor pricing for this category yet. Coverage is
             expanding source by source.
           </Text>
+        )}
+      </Card>
+
+      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
+        <Card>
+          <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
+            Price trend (30 days)
+          </Text>
+          {priceTrend.length > 1 ? (
+            <Box h="260px">
+              <LineChart
+                chartData={[
+                  {
+                    name: 'Median price',
+                    data: priceTrend.map((p) => p.medianPrice),
+                  },
+                ]}
+                chartOptions={{
+                  chart: { toolbar: { show: false } },
+                  xaxis: { categories: priceTrend.map((p) => p.date.slice(5)) },
+                  dataLabels: { enabled: false },
+                  stroke: { curve: 'smooth', width: 3 },
+                  colors: ['#4318FF'],
+                }}
+              />
+            </Box>
+          ) : (
+            <Text fontSize="sm" color="secondaryGray.600">
+              Not enough price history yet to chart a trend for this category.
+            </Text>
+          )}
+        </Card>
+
+        <Card>
+          <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
+            Demand signal (OLX)
+          </Text>
+          {demandSignal ? (
+            <Flex direction="column" gap="8px">
+              <Text fontSize="sm" color="secondaryGray.600">
+                Active listings
+              </Text>
+              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+                {demandSignal.activeListings}
+              </Text>
+              <Text fontSize="sm" color="secondaryGray.600">
+                {demandSignal.newListingsLast7Days} new in the last 7 days
+                {demandSignal.newListingsPrior7Days > 0 &&
+                  ` (vs ${demandSignal.newListingsPrior7Days} the week before)`}
+              </Text>
+            </Flex>
+          ) : (
+            <Text fontSize="sm" color="secondaryGray.600">
+              No OLX classifieds data for this category yet.
+            </Text>
+          )}
+        </Card>
+      </Grid>
+
+      <Card mb="20px">
+        <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
+          Competitor stock-outs
+        </Text>
+        {stockOuts.length === 0 ? (
+          <Text fontSize="sm" color="secondaryGray.600">
+            No tracked competitor is currently showing out of stock in your category.
+          </Text>
+        ) : (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Product</Th>
+                  <Th>Platform</Th>
+                  <Th>Last price</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {stockOuts.map((product) => (
+                  <Tr key={product.id}>
+                    <Td>
+                      <a href={product.url} target="_blank" rel="noreferrer">
+                        {product.title}
+                      </a>
+                    </Td>
+                    <Td>{product.platformName ?? '—'}</Td>
+                    <Td>{product.price != null ? formatCurrency(product.price) : '—'}</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
+        )}
+      </Card>
+
+      <Card mb="20px">
+        <Flex justify="space-between" align="center" mb="12px">
+          <Text fontSize="lg" fontWeight="600" color={textColor}>
+            Closest competitor match per product
+          </Text>
+          <Badge colorScheme="gray">Title-similarity match, MVP</Badge>
+        </Flex>
+        {productMatches.length === 0 ? (
+          <Text fontSize="sm" color="secondaryGray.600">
+            No confident matches found yet between your active products and scraped competitor
+            listings in this category.
+          </Text>
+        ) : (
+          <Box overflowX="auto">
+            <Table variant="simple">
+              <Thead>
+                <Tr>
+                  <Th>Your product</Th>
+                  <Th>Your price</Th>
+                  <Th>Closest match</Th>
+                  <Th>Their price</Th>
+                  <Th>Confidence</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {productMatches.map((match) => (
+                  <Tr key={match.sellerProductId}>
+                    <Td>{match.sellerProductTitle}</Td>
+                    <Td>{match.sellerPrice != null ? formatCurrency(match.sellerPrice) : '—'}</Td>
+                    <Td>
+                      <a href={match.matchedUrl} target="_blank" rel="noreferrer">
+                        {match.matchedTitle}
+                      </a>{' '}
+                      {match.matchedPlatformName && `(${match.matchedPlatformName})`}
+                    </Td>
+                    <Td>{match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}</Td>
+                    <Td>{Math.round(match.confidence * 100)}%</Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </Table>
+          </Box>
         )}
       </Card>
 

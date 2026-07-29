@@ -1,0 +1,21 @@
+1. Close loops that already have schema — the cheapest wins, because the tables exist but nothing populates/uses them:
+
+Domain benchmarks job: domain_benchmarks table + read path exist, but no job writes to it → Market/Peers page always shows empty peer data. Needs a scheduled aggregation job (cron/GH Action) computing percentiles from opted-in seller data.
+Watchlist + price alerts: market_watchlists, market_watchlist_items, market_alerts_sent exist with zero UI, zero writer, zero delivery. Needs: UI to watch a competitor product/category, a diff job against market_price_history, and a delivery channel.
+Notification pipeline: build once as shared infra (email + in-app), not per-feature — backs price alerts, low-stock, and churn-risk together.
+2. Deepen market intelligence — extends the scraper's value:
+
+Product matching beyond mobiles into fashion/other categories.
+Surface price-history trend charts (data's already collected, nothing shows it).
+Stock-out signals, category coverage expansion (home/kitchen, beauty, groceries currently 0% covered), OLX as a demand signal, and a data-freshness indicator.
+3. Seller operations — core SaaS gaps, seller-facing not market-facing:
+
+Orders page (no dashboard/CRUD yet despite seller_orders existing).
+Low-stock alerts, churn/RFM action surface ("at-risk customers"), bulk CSV import, and multi-domain UI (schema supports multiple category links, only "primary" is shown today).
+4. Analytics & forecasting — pricing recommendations using seller's own margin data + competitor pricing, demand/price forecasting, anomaly detection.
+
+5. Monetization & growth — gate features by plan_tier (free/paid/premium), decide fate of dormant market_accounts (buyer-side product or drop it), referral mechanic tied to the benchmark opt-in pool.
+
+6. Trust & compliance — internal scraper health dashboard (some sources already have Cloudflare/TLS friction), legal/ToS review before expanding scraper coverage further.
+
+The logical build order: 1 → 2 → 3 in parallel-ish (1 and 3 don't depend on each other, 2 depends on scraper data already flowing), then 4 needs 1–3's data maturity, 5 is a business decision layered on top, 6 runs continuously alongside 1–2 as coverage grows.

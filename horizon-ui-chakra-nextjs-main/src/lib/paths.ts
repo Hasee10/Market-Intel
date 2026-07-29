@@ -14,6 +14,7 @@ export const PATH_DASHBOARD = {
   default: path(ROOTS_DASHBOARD, '/overview'),
   overview: path(ROOTS_DASHBOARD, '/overview'),
   market: path(ROOTS_DASHBOARD, '/market'),
+  watchlist: path(ROOTS_DASHBOARD, '/watchlist'),
 };
 
 export const PATH_APPS = {
