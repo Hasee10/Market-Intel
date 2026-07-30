@@ -1,448 +1,240 @@
 'server-only';
 
-import PptxGenJS from 'pptxgenjs';
+import path from 'path';
+import fs from 'fs';
+import Automizer, { ModifyTableHelper, type ISlide } from 'pptx-automizer';
 
-import type { ReportData } from './collect-report-data';
-import { CHART_PALETTE, COLORS, formatCurrency, formatMetricName, formatPercent } from './design-tokens';
+import type { ReportData, CompetitorTrackingRow, PortfolioRow } from './collect-report-data';
+import { pctChange } from './collect-report-data';
+import { formatCurrency } from './design-tokens';
 
-const W = 13.333;
-const H = 7.5;
-const MARGIN = 0.55;
+const TEMPLATE_NAME = 'ryvl-report-template.pptx';
+const TEMPLATE_PATH = path.join(process.cwd(), 'src/lib/reports/assets', TEMPLATE_NAME);
 
-type Kpi = { label: string; value: string; accent: string };
+// Slides that get real seller data injected. Everything else (2, 4, 5, 6, 8,
+// 11 - section dividers, methodology, and the illustrative percentile/price
+// charts, which aren't backed by editable chart objects in the source file)
+// is carried over unmodified from the template.
+const DATA_SLIDES = new Set([1, 3, 7, 9, 10]);
+const TOTAL_SLIDES = 11;
 
-function drawFooter(slide: PptxGenJS.Slide, businessName: string, pageLabel: string) {
-  slide.addShape('rect', { x: 0, y: H - 0.32, w: W, h: 0.32, fill: { color: COLORS.offWhite } });
-  slide.addText(`${businessName}  ·  Confidential`, {
-    x: MARGIN,
-    y: H - 0.32,
-    w: 6,
-    h: 0.32,
-    fontSize: 8,
-    color: COLORS.grayLight,
-    valign: 'middle',
-  });
-  slide.addText(pageLabel, {
-    x: W - MARGIN - 3,
-    y: H - 0.32,
-    w: 3,
-    h: 0.32,
-    fontSize: 8,
-    color: COLORS.grayLight,
-    align: 'right',
-    valign: 'middle',
-  });
+// Generic "set this shape's visible text" callback - the template is a
+// Google-Slides export, so every shape has an auto-generated name like
+// "Google Shape;133;p15" rather than a meaningful one. Collapsing every
+// <a:t> run in the shape into the first and blanking the rest is safe here
+// because none of the target shapes mix formatting mid-sentence.
+function setShapeText(text: string) {
+  return (element: Element) => {
+    const runs = element.getElementsByTagName('a:t');
+    if (runs.length === 0) return;
+    (runs.item(0)!.firstChild as Text).data = text;
+    for (let i = 1; i < runs.length; i++) {
+      (runs.item(i)!.firstChild as Text).data = '';
+    }
+  };
 }
 
-function drawSectionHeader(slide: PptxGenJS.Slide, title: string, subtitle?: string) {
-  slide.addShape('rect', { x: MARGIN, y: 0.5, w: 0.06, h: 0.5, fill: { color: COLORS.indigo } });
-  slide.addText(title, {
-    x: MARGIN + 0.2,
-    y: 0.42,
-    w: W - MARGIN * 2 - 0.2,
-    h: 0.5,
-    fontSize: 24,
-    bold: true,
-    color: COLORS.ink,
-    fontFace: 'Arial',
-  });
-  if (subtitle) {
-    slide.addText(subtitle, {
-      x: MARGIN + 0.2,
-      y: 0.92,
-      w: W - MARGIN * 2 - 0.2,
-      h: 0.3,
-      fontSize: 11,
-      color: COLORS.gray,
-    });
-  }
+function pctLabel(current: number, previous: number, positiveSuffix: string, negativeSuffix = positiveSuffix): string {
+  const diff = pctChange(current, previous);
+  const sign = diff >= 0 ? '+' : '';
+  return `${sign}${diff.toFixed(1)}% ${diff >= 0 ? positiveSuffix : negativeSuffix}`;
 }
 
-function drawKpiCards(slide: PptxGenJS.Slide, kpis: Kpi[], y: number, h = 1.5) {
-  const gap = 0.25;
-  const cardW = (W - MARGIN * 2 - gap * (kpis.length - 1)) / kpis.length;
-  kpis.forEach((kpi, i) => {
-    const x = MARGIN + i * (cardW + gap);
-    slide.addShape('roundRect', {
-      x,
-      y,
-      w: cardW,
-      h,
-      rectRadius: 0.08,
-      fill: { color: COLORS.offWhite },
-      line: { color: COLORS.border, width: 1 },
-    });
-    slide.addShape('rect', { x, y, w: 0.06, h, fill: { color: kpi.accent } });
-    slide.addText(kpi.value, {
-      x: x + 0.2,
-      y: y + 0.18,
-      w: cardW - 0.4,
-      h: h - 0.7,
-      fontSize: 22,
-      bold: true,
-      color: COLORS.ink,
-      fontFace: 'Arial',
-      valign: 'bottom',
-    });
-    slide.addText(kpi.label, {
-      x: x + 0.2,
-      y: y + h - 0.48,
-      w: cardW - 0.4,
-      h: 0.4,
-      fontSize: 10.5,
-      color: COLORS.gray,
-    });
-  });
+function priceIndexDeltaLabel(priceIndex: number | null): string {
+  if (priceIndex == null) return 'No category benchmark available';
+  const diff = priceIndex - 100;
+  const sign = diff >= 0 ? '+' : '';
+  return `${sign}${diff.toFixed(1)}% ${diff < 0 ? 'below' : 'above'} median`;
 }
 
-// Faked "gradient" for the cover - pptxgenjs shape fills are solid-only, so
-// depth comes from layering a few large, low-opacity circles instead of a
-// real CSS-style gradient.
-function drawCoverBackdrop(slide: PptxGenJS.Slide) {
-  slide.background = { color: COLORS.navy };
-  slide.addShape('ellipse', {
-    x: W - 5,
-    y: -2.5,
-    w: 7,
-    h: 7,
-    fill: { color: COLORS.indigo, transparency: 78 },
-    line: { type: 'none' },
-  });
-  slide.addShape('ellipse', {
-    x: W - 3.2,
-    y: -1,
-    w: 4.5,
-    h: 4.5,
-    fill: { color: COLORS.cyan, transparency: 82 },
-    line: { type: 'none' },
-  });
-  slide.addShape('ellipse', {
-    x: -2,
-    y: H - 3,
-    w: 5,
-    h: 5,
-    fill: { color: COLORS.indigoLight, transparency: 85 },
-    line: { type: 'none' },
-  });
+function bulletOrFallback(items: string[], index: number, fallback: string): string {
+  return items[index]?.trim() || fallback;
 }
 
-// Builds a client-shareable summary deck from a seller's own dashboard
-// numbers - meant for a researcher/analyst to review and hand off, not a
-// raw data dump. Every visual element (KPI cards, charts, footer, section
-// rule) is drawn from lib/reports/design-tokens.ts so the PDF version stays
-// visually consistent with this one.
-export async function generateReportPptx(data: ReportData): Promise<Buffer> {
-  const pptx = new PptxGenJS();
-  pptx.defineLayout({ name: 'RYVL_WIDE', width: W, height: H });
-  pptx.layout = 'RYVL_WIDE';
-  pptx.theme = { headFontFace: 'Arial', bodyFontFace: 'Arial' };
+function padRows<T>(rows: T[], count: number): (T | null)[] {
+  const out: (T | null)[] = rows.slice(0, count);
+  while (out.length < count) out.push(null);
+  return out;
+}
 
+function competitorTableRows(rows: CompetitorTrackingRow[]) {
+  return padRows(rows, 5).map((row) =>
+    row
+      ? [
+          row.title,
+          row.priceDeltaPct != null ? `${row.priceDeltaPct >= 0 ? '+' : ''}${row.priceDeltaPct.toFixed(1)}%` : '—',
+          row.stockState,
+          row.signal,
+          row.riskLevel,
+        ]
+      : ['No tracked listing', '—', '—', '—', '—'],
+  );
+}
+
+function portfolioTableRows(rows: PortfolioRow[]) {
+  return padRows(rows, 5).map((row) =>
+    row
+      ? [
+          row.title,
+          `${row.revenueSharePct.toFixed(0)}%`,
+          row.priceIndex != null ? row.priceIndex.toFixed(0) : '—',
+          row.stockRisk,
+          row.strategicAction,
+        ]
+      : ['No product data', '—', '—', '—', '—'],
+  );
+}
+
+function buildKeyInsight(rows: PortfolioRow[]): string {
+  if (rows.length === 0) return 'Key Insight:  Add products to see portfolio contribution insights.';
+  const top = rows.slice(0, 2);
+  const sum = top.reduce((s, r) => s + r.revenueSharePct, 0);
+  return `Key Insight:  Top ${top.length} product line${top.length > 1 ? 's' : ''} generate ${sum.toFixed(0)}% of revenue. Securing inventory for ${rows[0].title} is a priority.`;
+}
+
+function coverRefCode(businessName: string): string {
+  const slug = businessName.replace(/[^A-Za-z0-9]+/g, '').slice(0, 6).toUpperCase() || 'EXEC';
+  return `Ref: RYVL-${slug}-${new Date().getFullYear()}`;
+}
+
+function slideCallback(n: number, data: ReportData): ((slide: ISlide) => void) | undefined {
   const businessName = data.seller.businessName;
 
-  // ===== 1. Cover =====
-  const cover = pptx.addSlide();
-  drawCoverBackdrop(cover);
-  cover.addText('RYVL', { x: MARGIN, y: 0.5, w: 3, h: 0.4, fontSize: 16, bold: true, color: 'FFFFFF', charSpacing: 2 });
-  cover.addText('MARKET INTELLIGENCE REPORT', {
-    x: MARGIN,
-    y: 2.6,
-    w: 10,
-    h: 0.4,
-    fontSize: 13,
-    color: COLORS.cyan,
-    charSpacing: 2,
-    bold: true,
-  });
-  cover.addText(businessName, {
-    x: MARGIN,
-    y: 3.05,
-    w: 11,
-    h: 1.2,
-    fontSize: 40,
-    bold: true,
-    color: 'FFFFFF',
-    fontFace: 'Arial',
-  });
-  cover.addText(data.domainName ?? 'General e-commerce', {
-    x: MARGIN,
-    y: 4.15,
-    w: 10,
-    h: 0.4,
-    fontSize: 15,
-    color: COLORS.grayLight,
-  });
-  cover.addShape('rect', { x: MARGIN, y: 4.75, w: 1.4, h: 0.03, fill: { color: COLORS.indigo } });
-  cover.addText(`${data.periodLabel}  ·  Prepared ${new Date().toLocaleDateString()}`, {
-    x: MARGIN,
-    y: H - 0.85,
-    w: 8,
-    h: 0.35,
-    fontSize: 10.5,
-    color: COLORS.grayLight,
-  });
-  cover.addText('Prepared for internal review and client sharing', {
-    x: MARGIN,
-    y: H - 0.55,
-    w: 8,
-    h: 0.3,
-    fontSize: 9,
-    color: '5B6796',
-  });
-
-  // ===== 2. Executive summary =====
-  const summary = pptx.addSlide();
-  drawSectionHeader(summary, 'Executive summary', data.periodLabel);
-  summary.addShape('roundRect', {
-    x: MARGIN,
-    y: 1.35,
-    w: W - MARGIN * 2,
-    h: 1.5,
-    rectRadius: 0.08,
-    fill: { color: COLORS.navyLight },
-    line: { type: 'none' },
-  });
-  summary.addText(
-    data.insights.summary ||
-      `${businessName} generated ${formatCurrency(data.revenue)} across ${data.orderCount} orders over the last 30 days.`,
-    {
-      x: MARGIN + 0.35,
-      y: 1.55,
-      w: W - MARGIN * 2 - 0.7,
-      h: 1.1,
-      fontSize: 14,
-      color: 'FFFFFF',
-      valign: 'middle',
-      lineSpacing: 22,
-    },
-  );
-
-  const highlightY = 3.15;
-  const highlights = data.insights.highlights.length > 0 ? data.insights.highlights : null;
-  if (highlights) {
-    const gap = 0.3;
-    const cardW = (W - MARGIN * 2 - gap * (highlights.length - 1)) / highlights.length;
-    highlights.forEach((h, i) => {
-      const x = MARGIN + i * (cardW + gap);
-      summary.addShape('roundRect', {
-        x,
-        y: highlightY,
-        w: cardW,
-        h: 1.3,
-        rectRadius: 0.08,
-        fill: { color: COLORS.offWhite },
-        line: { color: COLORS.border, width: 1 },
-      });
-      summary.addShape('ellipse', { x: x + 0.25, y: highlightY + 0.25, w: 0.14, h: 0.14, fill: { color: CHART_PALETTE[i % CHART_PALETTE.length] } });
-      summary.addText(h, {
-        x: x + 0.25,
-        y: highlightY + 0.5,
-        w: cardW - 0.5,
-        h: 0.75,
-        fontSize: 12,
-        color: COLORS.ink,
-        valign: 'top',
-      });
-    });
-  }
-  drawKpiCards(
-    summary,
-    [
-      { label: 'Revenue (30d)', value: formatCurrency(data.revenue), accent: COLORS.indigo },
-      { label: 'Orders (30d)', value: String(data.orderCount), accent: COLORS.cyan },
-      { label: 'Active products', value: String(data.activeProductCount), accent: COLORS.green },
-    ],
-    highlights ? 4.7 : 3.15,
-  );
-  drawFooter(summary, businessName, 'Page 2');
-
-  // ===== 3. Store performance =====
-  const perf = pptx.addSlide();
-  drawSectionHeader(perf, 'Store performance', data.periodLabel);
-  drawKpiCards(
-    perf,
-    [
-      { label: 'Revenue', value: formatCurrency(data.revenue), accent: COLORS.indigo },
-      { label: 'Orders', value: String(data.orderCount), accent: COLORS.cyan },
-      { label: 'Average order value', value: formatCurrency(data.avgOrderValue), accent: COLORS.green },
-      { label: 'Active products', value: String(data.activeProductCount), accent: COLORS.amber },
-    ],
-    1.35,
-    1.3,
-  );
-
-  if (data.weeklyRevenue.some((w) => w.revenue > 0)) {
-    perf.addText('Revenue by week', { x: MARGIN, y: 3.1, w: 6, h: 0.35, fontSize: 12, bold: true, color: COLORS.ink });
-    perf.addChart(
-      pptx.ChartType.bar,
-      [{ name: 'Revenue', labels: data.weeklyRevenue.map((w) => w.label), values: data.weeklyRevenue.map((w) => w.revenue) }],
-      {
-        x: MARGIN,
-        y: 3.5,
-        w: W - MARGIN * 2,
-        h: 3.1,
-        chartColors: [COLORS.indigo],
-        barDir: 'col',
-        showLegend: false,
-        showValue: false,
-        catAxisLabelColor: COLORS.gray,
-        valAxisLabelColor: COLORS.gray,
-        catAxisLineColor: COLORS.border,
-        valAxisLineColor: COLORS.border,
-        valGridLine: { color: COLORS.border },
-        dataBorder: { pt: 0, color: COLORS.indigo },
-      },
-    );
-  }
-  drawFooter(perf, businessName, 'Page 3');
-
-  // ===== 4. Products & category mix =====
-  if (data.topProducts.length > 0 || data.categoryBreakdown.length > 0) {
-    const products = pptx.addSlide();
-    drawSectionHeader(products, 'Products & inventory mix');
-
-    if (data.topProducts.length > 0) {
-      products.addText('Top products by inventory value', {
-        x: MARGIN,
-        y: 1.3,
-        w: 7,
-        h: 0.3,
-        fontSize: 12,
-        bold: true,
-        color: COLORS.ink,
-      });
-      const rows: PptxGenJS.TableRow[] = [
-        [
-          { text: 'Product', options: { bold: true, color: 'FFFFFF', fill: { color: COLORS.indigo }, fontSize: 11 } },
-          {
-            text: 'Inventory value',
-            options: { bold: true, color: 'FFFFFF', fill: { color: COLORS.indigo }, fontSize: 11, align: 'right' },
-          },
-        ],
-        ...data.topProducts.map((p, i) => [
-          { text: p.title, options: { fill: { color: i % 2 === 0 ? COLORS.paper : COLORS.offWhite }, fontSize: 11 } },
-          {
-            text: formatCurrency(p.inventoryValue),
-            options: { fill: { color: i % 2 === 0 ? COLORS.paper : COLORS.offWhite }, fontSize: 11, align: 'right' as const },
-          },
-        ]),
-      ];
-      products.addTable(rows, { x: MARGIN, y: 1.65, w: 7, fontSize: 11, autoPage: false, border: { pt: 0.5, color: COLORS.border } });
-    }
-
-    if (data.categoryBreakdown.length > 0) {
-      products.addText('Inventory value by category', {
-        x: 7.9,
-        y: 1.3,
-        w: 4.9,
-        h: 0.3,
-        fontSize: 12,
-        bold: true,
-        color: COLORS.ink,
-      });
-      products.addChart(
-        pptx.ChartType.doughnut,
-        [
-          {
-            name: 'Category value',
-            labels: data.categoryBreakdown.map((c) => c.category),
-            values: data.categoryBreakdown.map((c) => c.value),
-          },
-        ],
-        {
-          x: 7.7,
-          y: 1.6,
-          w: 5.1,
-          h: 4.6,
-          chartColors: CHART_PALETTE,
-          showLegend: true,
-          legendPos: 'b',
-          legendColor: COLORS.gray,
-          legendFontSize: 9,
-          dataLabelColor: 'FFFFFF',
-        },
+  if (n === 1) {
+    return (slide) => {
+      slide.modifyElement('Google Shape;86;p13', setShapeText(coverRefCode(businessName)));
+      slide.modifyElement('Google Shape;89;p13', setShapeText(`Prepared for: ${businessName}`));
+      slide.modifyElement(
+        'Google Shape;90;p13',
+        setShapeText(`Generated: ${new Date().toLocaleString('en-US', { month: 'long', year: 'numeric' })} | Confidential`),
       );
-    }
-    drawFooter(products, businessName, 'Page 4');
+    };
   }
 
-  // ===== 5. Market position =====
-  if (data.benchmarks.length > 0 || data.categoryPricing) {
-    const market = pptx.addSlide();
-    drawSectionHeader(market, 'Market position', data.domainName ?? undefined);
-
-    let cursorY = 1.35;
-    if (data.categoryPricing) {
-      drawKpiCards(
-        market,
-        [
-          { label: 'Category P25', value: formatCurrency(data.categoryPricing.p25), accent: COLORS.cyan },
-          { label: 'Category median', value: formatCurrency(data.categoryPricing.median), accent: COLORS.indigo },
-          { label: 'Category P75', value: formatCurrency(data.categoryPricing.p75), accent: COLORS.amber },
-          { label: 'Listings tracked', value: String(data.categoryPricing.count), accent: COLORS.green },
-        ],
-        cursorY,
-        1.3,
+  if (n === 3) {
+    return (slide) => {
+      slide.modifyElement('Google Shape;133;p15', setShapeText(formatCurrency(data.revenue)));
+      slide.modifyElement('Google Shape;134;p15', setShapeText(pctLabel(data.revenue, data.previousRevenue, 'vs prior period')));
+      slide.modifyElement('Google Shape;136;p15', setShapeText(data.orderCount.toLocaleString()));
+      slide.modifyElement(
+        'Google Shape;137;p15',
+        setShapeText(pctLabel(data.orderCount, data.previousOrderCount, 'volume growth', 'volume decline')),
       );
-      cursorY += 1.65;
-    }
+      slide.modifyElement('Google Shape;139;p15', setShapeText(data.priceIndex != null ? data.priceIndex.toFixed(1) : '—'));
+      slide.modifyElement('Google Shape;140;p15', setShapeText(priceIndexDeltaLabel(data.priceIndex)));
+      slide.modifyElement('Google Shape;142;p15', setShapeText(`${data.lowStockCount} SKU${data.lowStockCount === 1 ? '' : 's'}`));
+      slide.modifyElement('Google Shape;143;p15', setShapeText(data.lowStockCount > 0 ? 'Action required' : 'On track'));
 
-    if (data.benchmarks.length > 0) {
-      market.addText('Peer benchmarks in your domain', {
-        x: MARGIN,
-        y: cursorY,
-        w: W - MARGIN * 2,
-        h: 0.3,
-        fontSize: 12,
-        bold: true,
-        color: COLORS.ink,
-      });
-      const rows: PptxGenJS.TableRow[] = [
-        [
-          { text: 'Metric', options: { bold: true, color: 'FFFFFF', fill: { color: COLORS.indigo }, fontSize: 11 } },
-          { text: 'Median', options: { bold: true, color: 'FFFFFF', fill: { color: COLORS.indigo }, fontSize: 11, align: 'right' } },
-          {
-            text: 'Sample size',
-            options: { bold: true, color: 'FFFFFF', fill: { color: COLORS.indigo }, fontSize: 11, align: 'right' },
-          },
-        ],
-        ...data.benchmarks.map((b, i) => [
-          { text: formatMetricName(b.metricName), options: { fill: { color: i % 2 === 0 ? COLORS.paper : COLORS.offWhite }, fontSize: 11 } },
-          {
-            text: b.median != null ? String(b.median) : '-',
-            options: { fill: { color: i % 2 === 0 ? COLORS.paper : COLORS.offWhite }, fontSize: 11, align: 'right' as const },
-          },
-          {
-            text: String(b.sampleSize),
-            options: { fill: { color: i % 2 === 0 ? COLORS.paper : COLORS.offWhite }, fontSize: 11, align: 'right' as const },
-          },
-        ]),
-      ];
-      market.addTable(rows, { x: MARGIN, y: cursorY + 0.35, w: W - MARGIN * 2, fontSize: 11, autoPage: false, border: { pt: 0.5, color: COLORS.border } });
-    }
-    drawFooter(market, businessName, 'Page 5');
+      const highlights = data.insights.highlights;
+      slide.modifyElement(
+        'Google Shape;152;p15',
+        setShapeText(bulletOrFallback(highlights, 0, 'Market conditions shifted for tracked categories this cycle.')),
+      );
+      slide.modifyElement(
+        'Google Shape;154;p15',
+        setShapeText(bulletOrFallback(highlights, 1, 'Tracked competitors adjusted pricing across marketplaces.')),
+      );
+      slide.modifyElement(
+        'Google Shape;156;p15',
+        setShapeText(bulletOrFallback(highlights, 2, 'Demand velocity detected for top-performing SKUs.')),
+      );
+
+      const actions = data.insights.recommendedActions;
+      slide.modifyElement(
+        'Google Shape;159;p15',
+        setShapeText(bulletOrFallback(actions, 0, 'Review pricing on top SKUs against category median.')),
+      );
+      slide.modifyElement(
+        'Google Shape;161;p15',
+        setShapeText(bulletOrFallback(actions, 1, 'Reorder high-turnover inventory nearing low-stock threshold.')),
+      );
+      slide.modifyElement(
+        'Google Shape;163;p15',
+        setShapeText(bulletOrFallback(actions, 2, 'Expand watchlist coverage to emerging competitors.')),
+      );
+    };
   }
 
-  // ===== 6. Customer retention =====
-  if (data.churn) {
-    const retention = pptx.addSlide();
-    drawSectionHeader(retention, 'Customer retention');
-    drawKpiCards(
-      retention,
-      [
-        { label: 'Retention rate', value: formatPercent(data.churn.retentionRate), accent: COLORS.green },
-        { label: 'Repeat purchase rate', value: formatPercent(data.churn.repeatPurchaseRate), accent: COLORS.indigo },
-        {
-          label: 'Avg. customer value',
-          value: data.churn.avgClv != null ? formatCurrency(data.churn.avgClv) : '-',
-          accent: COLORS.amber,
-        },
-      ],
-      1.35,
-      1.6,
-    );
-    drawFooter(retention, businessName, 'Page 6');
+  if (n === 7) {
+    return (slide) => {
+      slide.modifyElement('Google Shape;234;p19', [
+        ModifyTableHelper.setTable({
+          body: [
+            { values: ['Tracked Product SKU', 'Price Delta', 'Stock State', 'Category Signal', 'Risk Level'] },
+            ...competitorTableRows(data.competitorTracking).map((values) => ({ values })),
+          ],
+        }),
+      ]);
+    };
   }
 
-  const buffer = (await pptx.write({ outputType: 'nodebuffer' })) as Buffer;
+  if (n === 9) {
+    return (slide) => {
+      slide.modifyElement('Google Shape;308;p21', [
+        ModifyTableHelper.setTable({
+          body: [
+            { values: ['Product Line', 'Revenue Share', 'Price Index', 'Stock Risk', 'Strategic Action'] },
+            ...portfolioTableRows(data.portfolioMatrix).map((values) => ({ values })),
+          ],
+        }),
+      ]);
+      slide.modifyElement('Google Shape;339;p21', setShapeText(buildKeyInsight(data.portfolioMatrix)));
+    };
+  }
+
+  if (n === 10) {
+    const topProduct = data.portfolioMatrix[0]?.title ?? 'Your top-selling product';
+    const retentionNote =
+      data.churn?.retentionRate != null
+        ? `Limit promotional discount codes to high-value at-risk customers (current retention: ${data.churn.retentionRate.toFixed(0)}%) to prevent unnecessary margin erosion.`
+        : 'Limit promotional discount codes strictly to high-LTV at-risk customer cohorts to prevent unnecessary margin erosion.';
+
+    return (slide) => {
+      slide.modifyElement(
+        'Google Shape;363;p22',
+        setShapeText(
+          `Identify ${data.atRiskCount} account${data.atRiskCount === 1 ? '' : 's'} inactive over the last 30 days. Trigger automated targeted re-engagement offers before complete churn.`,
+        ),
+      );
+      slide.modifyElement(
+        'Google Shape;367;p22',
+        setShapeText(
+          `${topProduct} is a strong candidate for bundling with complementary items in your catalog. Creating bundle kits can help boost average order value.`,
+        ),
+      );
+      slide.modifyElement('Google Shape;371;p22', setShapeText(retentionNote));
+    };
+  }
+
+  return undefined;
+}
+
+// Generates the Ryvl enterprise report by cloning the real designer-built
+// template (src/lib/reports/assets/ryvl-report-template.pptx, an 11-slide
+// deck with embedded Inter/Plus Jakarta Sans fonts) slide-for-slide and
+// swapping in real seller data via pptx-automizer, rather than hand-drawing
+// shapes. This keeps every position, font, and color exactly as designed -
+// the output stays fully editable in PowerPoint.
+export async function generateReportPptx(data: ReportData): Promise<Buffer> {
+  const templateBuffer = fs.readFileSync(TEMPLATE_PATH);
+
+  const automizer = new Automizer({
+    removeExistingSlides: true,
+    autoImportSlideMasters: true,
+    // Without this, the original root copy's now-unused slide/media/layout
+    // parts stay zipped into the output as orphaned files (roughly doubling
+    // file size) even though removeExistingSlides drops them from the
+    // visible slide list.
+    cleanup: true,
+  });
+
+  const pres = automizer.loadRoot(templateBuffer).load(templateBuffer, TEMPLATE_NAME);
+
+  for (let n = 1; n <= TOTAL_SLIDES; n++) {
+    pres.addSlide(TEMPLATE_NAME, n, DATA_SLIDES.has(n) ? slideCallback(n, data) : undefined);
+  }
+
+  const zip = await pres.getJSZip();
+  const buffer = await zip.generateAsync({ type: 'nodebuffer' });
   return buffer;
 }

@@ -6,7 +6,9 @@ import { createNotification } from '@/lib/notifications/notify';
 // Below this, a product is "low stock" - matches the threshold already used
 // by the Overview page's "Low Stock Products" stat (see
 // api/ecommerce/stats/route.ts) so the alert and the dashboard number agree.
-const LOW_STOCK_THRESHOLD = 10;
+// Exported so the report generator (collect-report-data.ts) uses the same
+// cutoff rather than picking its own number.
+export const LOW_STOCK_THRESHOLD = 10;
 
 // Re-alert at most once per day per product, so a product that's been
 // sitting at 3 units for a week doesn't spam a notification every 6 hours

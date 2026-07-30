@@ -25,6 +25,7 @@
     "framer-motion": "^4.1.17",
     "next": "^15.1.4",
     "pdfkit": "^0.19.1",
+    "pptx-automizer": "^0.8.2",
     "pptxgenjs": "^4.0.1",
     "react": "^19.0.0-rc.1",
     "react-apexcharts": "^1.4.0",

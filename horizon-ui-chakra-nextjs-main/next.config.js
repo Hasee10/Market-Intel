@@ -13,7 +13,14 @@ const nextConfig = {
   // forcing them into the traced output avoids the same ENOENT in
   // production that serverExternalPackages alone fixed locally.
   outputFileTracingIncludes: {
-    '/api/reports/generate': ['./node_modules/pdfkit/js/data/**/*'],
+    '/api/reports/generate': [
+      './node_modules/pdfkit/js/data/**/*',
+      // The real .pptx report template is read via a process.cwd()-built
+      // path at runtime (see lib/reports/generate-pptx.ts), which Next's
+      // file tracer can't resolve statically - without this the file is
+      // silently missing from the deployed function.
+      './src/lib/reports/assets/**/*',
+    ],
   },
   images: {
     domains: [
