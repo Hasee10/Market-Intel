@@ -29,6 +29,7 @@ import Card from 'components/card/Card';
 import PieChart from 'components/charts/PieChart';
 import LineChart from 'components/charts/LineChart';
 
+import { DownloadReportButton } from '@/components/marketintel/DownloadReportButton';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { OnboardingChecklist } from '@/components/marketintel/OnboardingChecklist';
 import { PageHeader } from '@/components/marketintel/PageHeader';
@@ -176,7 +177,7 @@ export default function OverviewPage() {
 
   return (
     <Box>
-      <PageHeader title="Overview" />
+      <PageHeader title="Overview" actionButton={<DownloadReportButton />} />
 
       <OnboardingChecklist />
 

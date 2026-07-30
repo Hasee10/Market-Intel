@@ -23,6 +23,7 @@
     "apexcharts": "^3.35.2",
     "framer-motion": "^4.1.17",
     "next": "^15.1.4",
+    "pptxgenjs": "^4.0.1",
     "react": "^19.0.0-rc.1",
     "react-apexcharts": "^1.4.0",
     "react-calendar": "^3.7.0",

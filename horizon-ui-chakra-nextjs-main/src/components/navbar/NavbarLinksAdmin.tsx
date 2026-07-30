@@ -22,13 +22,13 @@ import { SearchBar } from 'components/navbar/searchBar/SearchBar';
 import { SidebarResponsive } from 'components/sidebar/Sidebar';
 // Assets
 import navImage from '/public/img/layout/Navbar.png';
-import { IoMdMoon, IoMdSunny } from 'react-icons/io';
 import { MdInfoOutline, MdNotificationsNone } from 'react-icons/md';
 import routes from 'routes';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useSellerSession } from '@/lib/supabase/useSellerSession';
 import { PATH_APPS } from '@/lib/paths';
+import { ThemeToggleMenu } from '@/components/navbar/ThemeToggleMenu';
 
 export default function HeaderLinks(props: {
   secondary: boolean;
@@ -211,24 +211,7 @@ export default function HeaderLinks(props: {
         </MenuList>
       </Menu>
 
-      <Button
-        variant="no-hover"
-        bg="transparent"
-        p="0px"
-        minW="unset"
-        minH="unset"
-        h="18px"
-        w="max-content"
-        onClick={toggleColorMode}
-      >
-        <Icon
-          me="10px"
-          h="18px"
-          w="18px"
-          color={navbarIcon}
-          as={colorMode === 'light' ? IoMdMoon : IoMdSunny}
-        />
-      </Button>
+      <ThemeToggleMenu />
       <Menu>
         <MenuButton p="0px" style={{ position: 'relative' }}>
           <Box
