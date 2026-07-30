@@ -6,12 +6,16 @@ name: Market Scraper
 # (mantine-analytics-dashboard-dev) - fully separate namespace from sellers/
 # domain_benchmarks, see scraper/migrations/001_create_market_tables.sql.
 #
-# Note: cron's day-of-month step (*/2) resets at the start of each month, so
-# the gap is "every 2 days" in practice but can shrink to 1 day across a
-# month boundary (e.g. day 31 -> day 1) - not worth a workaround for this cadence.
+# The schedule below fires daily and the "Determine cadence" step below
+# decides whether this is an "on" day - `cron: "30 3 */2 * *"` looks like it
+# means "every 2 days" but day-of-month */2 actually means "even calendar
+# days", which drifts to a 1- or 3-day gap across most month boundaries
+# (day 30 -> day 2 is a 3-day gap in a 31-day month). Counting days since
+# the Unix epoch instead of calendar day-of-month is immune to month length
+# entirely, so the 2-day cadence is now exact forever.
 on:
   schedule:
-    - cron: "30 3 */2 * *"
+    - cron: "30 3 * * *"
   workflow_dispatch: {}
 
 permissions:
@@ -25,21 +29,37 @@ jobs:
       run:
         working-directory: scraper
     steps:
+      - name: Determine cadence
+        id: cadence
+        run: |
+          days_since_epoch=$(( $(date +%s) / 86400 ))
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ $((days_since_epoch % 2)) -eq 0 ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping - off day in the every-2-days cadence (day $days_since_epoch since epoch)"
+          fi
+
       - uses: actions/checkout@v7
+        if: steps.cadence.outputs.run == 'true'
 
       - uses: actions/setup-node@v6
+        if: steps.cadence.outputs.run == 'true'
         with:
           node-version: "22"
           cache: "npm"
           cache-dependency-path: scraper/package-lock.json
 
       - name: Install dependencies
+        if: steps.cadence.outputs.run == 'true'
         run: npm install --prefer-offline
 
       - name: Install Chromium OS dependencies (for CloakBrowser)
+        if: steps.cadence.outputs.run == 'true'
         run: npx playwright-core install-deps chromium
 
       - name: Run market scraper
+        if: steps.cadence.outputs.run == 'true'
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
