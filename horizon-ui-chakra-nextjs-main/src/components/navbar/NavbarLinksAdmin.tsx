@@ -13,7 +13,6 @@ import {
   MenuItem,
   MenuList,
   Text,
-  useColorMode,
   useColorModeValue,
 } from '@chakra-ui/react';
 // Custom Components
@@ -36,7 +35,6 @@ export default function HeaderLinks(props: {
   fixed: boolean | any;
 }) {
   const { secondary } = props;
-  const { colorMode, toggleColorMode } = useColorMode();
   const router = useRouter();
   const { email, businessName } = useSellerSession();
 

@@ -1,5 +1,6 @@
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
+import { LandingThemeLock } from '@/components/landing/LandingThemeLock';
 import { PricingPageBanner } from '@/components/landing/PricingPageBanner';
 import { PricingSection } from '@/components/landing/PricingSection';
 import { TrustSection } from '@/components/landing/TrustSection';
@@ -12,11 +13,13 @@ export default function PricingPage() {
     <>
       <title>Pricing | Ryvl</title>
       <meta name="description" content="Simple, honest pricing for Ryvl - free, paid, and premium tiers." />
-      <LandingHeader />
-      <PricingPageBanner />
-      <PricingSection />
-      <TrustSection />
-      <LandingFooter />
+      <LandingThemeLock>
+        <LandingHeader />
+        <PricingPageBanner />
+        <PricingSection />
+        <TrustSection />
+        <LandingFooter />
+      </LandingThemeLock>
     </>
   );
 }
