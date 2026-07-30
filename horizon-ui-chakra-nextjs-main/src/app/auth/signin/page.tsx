@@ -20,6 +20,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { AuthCard } from '@/components/marketintel/AuthCard';
+import { PasswordInput } from '@/components/marketintel/PasswordInput';
 import { createClient } from '@/lib/supabase/client';
 import { PATH_AUTH, PATH_DASHBOARD } from '@/lib/paths';
 
@@ -139,12 +140,11 @@ function SignInForm() {
           <FormLabel fontSize="sm" fontWeight="500">
             Password
           </FormLabel>
-          <Input
-            type="password"
+          <PasswordInput
             placeholder="Your password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            required
+            isRequired
           />
         </FormControl>
         <Flex justify="space-between" align="center" mb="24px">

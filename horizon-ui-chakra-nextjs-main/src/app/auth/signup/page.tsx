@@ -19,7 +19,10 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import { AuthCard } from '@/components/marketintel/AuthCard';
+import { PasswordInput } from '@/components/marketintel/PasswordInput';
+import { PasswordRequirements } from '@/components/marketintel/PasswordRequirements';
 import { createClient } from '@/lib/supabase/client';
+import { validatePassword } from '@/lib/password';
 import { PATH_AUTH, PATH_DASHBOARD } from '@/lib/paths';
 
 // useSearchParams() (for ?ref=CODE) forces this into a client-side-rendered
@@ -58,8 +61,9 @@ function SignUpForm() {
       setError('Invalid email');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must include at least 6 characters');
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      setError(`Password needs: ${passwordCheck.failedRule}`);
       return;
     }
     if (password !== confirmPassword) {
@@ -170,24 +174,23 @@ function SignUpForm() {
             <FormLabel fontSize="sm" fontWeight="500">
               Password
             </FormLabel>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Your password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required
+              isRequired
             />
+            {password.length > 0 && <PasswordRequirements password={password} />}
           </FormControl>
           <FormControl mb="24px">
             <FormLabel fontSize="sm" fontWeight="500">
               Confirm Password
             </FormLabel>
-            <Input
-              type="password"
+            <PasswordInput
               placeholder="Confirm password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              required
+              isRequired
             />
           </FormControl>
           <Button type="submit" variant="brand" w="100%" isLoading={isLoading}>
