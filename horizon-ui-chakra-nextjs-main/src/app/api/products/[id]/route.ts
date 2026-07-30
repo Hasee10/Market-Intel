@@ -17,12 +17,16 @@ function mapProduct(row: any): IProduct {
     categoryName: category?.name ?? null,
     costPrice: row.cost_price,
     sellPrice: row.sell_price,
+    currency: row.currency,
     stockQty: row.stock_qty,
     isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
+
+const PRODUCT_COLUMNS =
+  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, created_at, updated_at, seller_categories(name)';
 
 export async function PUT(
   request: NextRequest,
@@ -48,13 +52,14 @@ export async function PUT(
       category_id: body.categoryId || null,
       cost_price: body.costPrice ?? null,
       sell_price: body.sellPrice ?? null,
+      currency: body.currency || 'PKR',
       stock_qty: body.stockQty ?? null,
       is_active: body.isActive ?? true,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
     .eq('seller_id', seller.id)
-    .select('id, sku, title, category_id, cost_price, sell_price, stock_qty, is_active, created_at, updated_at, seller_categories(name)')
+    .select(PRODUCT_COLUMNS)
     .single();
 
   if (error) {

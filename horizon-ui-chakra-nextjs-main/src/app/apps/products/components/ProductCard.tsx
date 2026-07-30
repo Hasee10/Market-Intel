@@ -11,8 +11,10 @@ type ProductCardProps = {
   onEdit?: (product: IProduct) => void;
 };
 
-const formatCurrency = (amount: number | null) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount ?? 0);
+// Was hardcoded to 'USD' regardless of the product's actual currency -
+// every non-USD product showed a misleading $ sign on the wrong amount.
+const formatCurrency = (amount: number | null, currency: string) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount ?? 0);
 
 export function ProductCard({ data, onEdit }: ProductCardProps) {
   return (
@@ -35,7 +37,7 @@ export function ProductCard({ data, onEdit }: ProductCardProps) {
             Sell price
           </Text>
           <Text fontSize="sm" fontWeight="600">
-            {formatCurrency(data.sellPrice)}
+            {formatCurrency(data.sellPrice, data.currency)}
           </Text>
         </div>
         <div style={{ textAlign: 'right' }}>

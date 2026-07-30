@@ -23,7 +23,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 
-import { IProduct, IProductCategory } from '@/types/products';
+import { IProduct, IProductCategory, SUPPORTED_CURRENCIES } from '@/types/products';
 
 type EditProductDrawerProps = {
   isOpen: boolean;
@@ -46,6 +46,7 @@ export function EditProductDrawer({
   const [title, setTitle] = useState('');
   const [sellPrice, setSellPrice] = useState(0);
   const [costPrice, setCostPrice] = useState(0);
+  const [currency, setCurrency] = useState('PKR');
   const [stockQty, setStockQty] = useState(0);
   const [sku, setSku] = useState('');
   const [isActive, setIsActive] = useState(true);
@@ -83,6 +84,7 @@ export function EditProductDrawer({
       setTitle(product.title || '');
       setSellPrice(product.sellPrice ?? 0);
       setCostPrice(product.costPrice ?? 0);
+      setCurrency(product.currency || 'PKR');
       setStockQty(product.stockQty ?? 0);
       setSku(product.sku || '');
       setIsActive(product.isActive);
@@ -110,6 +112,7 @@ export function EditProductDrawer({
           title,
           sellPrice,
           costPrice,
+          currency,
           stockQty,
           sku,
           isActive,
@@ -180,14 +183,28 @@ export function EditProductDrawer({
               </FormLabel>
               <Input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} />
             </FormControl>
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Sell price
-              </FormLabel>
-              <NumberInput value={sellPrice} onChange={(_, v) => setSellPrice(v || 0)} min={0}>
-                <NumberInputField placeholder="sell price" />
-              </NumberInput>
-            </FormControl>
+            <Flex gap="12px">
+              <FormControl flex="2">
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Sell price
+                </FormLabel>
+                <NumberInput value={sellPrice} onChange={(_, v) => setSellPrice(v || 0)} min={0}>
+                  <NumberInputField placeholder="sell price" />
+                </NumberInput>
+              </FormControl>
+              <FormControl flex="1">
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Currency
+                </FormLabel>
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </Flex>
             <FormControl>
               <FormLabel fontSize="sm" fontWeight="500">
                 Cost price

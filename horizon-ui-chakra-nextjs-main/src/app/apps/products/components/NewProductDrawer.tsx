@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import {
+  Badge,
   Button,
   Drawer,
   DrawerBody,
@@ -11,8 +12,10 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
+  Flex,
   FormControl,
   FormLabel,
+  Icon,
   Input,
   NumberInput,
   NumberInputField,
@@ -20,8 +23,9 @@ import {
   Stack,
   useToast,
 } from '@chakra-ui/react';
+import { MdAutoAwesome } from 'react-icons/md';
 
-import { IProductCategory } from '@/types/products';
+import { IProductCategory, SUPPORTED_CURRENCIES } from '@/types/products';
 
 type NewProductDrawerProps = {
   isOpen: boolean;
@@ -34,10 +38,13 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<{ value: string; label: string }[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
+  const [aiConfidence, setAiConfidence] = useState<string | null>(null);
 
   const [title, setTitle] = useState('');
   const [sellPrice, setSellPrice] = useState(0);
   const [costPrice, setCostPrice] = useState(0);
+  const [currency, setCurrency] = useState('PKR');
   const [stockQty, setStockQty] = useState(0);
   const [sku, setSku] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -73,9 +80,48 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
     setTitle('');
     setSellPrice(0);
     setCostPrice(0);
+    setCurrency('PKR');
     setStockQty(0);
     setSku('');
     setCategoryId('');
+    setAiConfidence(null);
+  };
+
+  const handleSuggestCategory = async () => {
+    if (!title.trim()) {
+      toast({ title: 'Enter a title first', status: 'warning' });
+      return;
+    }
+
+    setSuggesting(true);
+    setAiConfidence(null);
+    try {
+      const response = await fetch('/api/products/suggest-category', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.succeeded) {
+        // 503 = GROQ_API_KEY not configured yet - a real, expected state
+        // until that key is added, not a bug to alarm the seller about.
+        toast({
+          title: response.status === 503 ? 'AI suggestions not enabled yet' : 'Could not suggest a category',
+          description: result.message,
+          status: response.status === 503 ? 'info' : 'error',
+        });
+        return;
+      }
+
+      setCategoryId(result.data.categoryId);
+      setAiConfidence(result.data.confidence);
+      toast({ title: `Suggested: ${result.data.categoryName}`, status: 'success' });
+    } catch (error) {
+      toast({ title: 'Could not suggest a category', status: 'error' });
+    } finally {
+      setSuggesting(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -93,7 +139,7 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, sellPrice, costPrice, stockQty, sku, categoryId }),
+        body: JSON.stringify({ title, sellPrice, costPrice, currency, stockQty, sku, categoryId }),
       });
 
       const data = await response.json();
@@ -131,14 +177,28 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
               </FormLabel>
               <Input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} />
             </FormControl>
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Sell price
-              </FormLabel>
-              <NumberInput value={sellPrice} onChange={(_, v) => setSellPrice(v || 0)} min={0}>
-                <NumberInputField placeholder="sell price" />
-              </NumberInput>
-            </FormControl>
+            <Flex gap="12px">
+              <FormControl flex="2">
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Sell price
+                </FormLabel>
+                <NumberInput value={sellPrice} onChange={(_, v) => setSellPrice(v || 0)} min={0}>
+                  <NumberInputField placeholder="sell price" />
+                </NumberInput>
+              </FormControl>
+              <FormControl flex="1">
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Currency
+                </FormLabel>
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </Flex>
             <FormControl>
               <FormLabel fontSize="sm" fontWeight="500">
                 Cost price
@@ -166,13 +226,34 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
               />
             </FormControl>
             <FormControl isRequired>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Category
-              </FormLabel>
+              <Flex justify="space-between" align="center" mb="2px">
+                <FormLabel fontSize="sm" fontWeight="500" mb="0">
+                  Category
+                </FormLabel>
+                <Flex align="center" gap="6px">
+                  {aiConfidence && (
+                    <Badge colorScheme={aiConfidence === 'high' ? 'green' : aiConfidence === 'medium' ? 'orange' : 'gray'}>
+                      AI: {aiConfidence}
+                    </Badge>
+                  )}
+                  <Button
+                    size="xs"
+                    variant="ghost"
+                    leftIcon={<Icon as={MdAutoAwesome} />}
+                    onClick={handleSuggestCategory}
+                    isLoading={suggesting}
+                  >
+                    Suggest with AI
+                  </Button>
+                </Flex>
+              </Flex>
               <Select
                 placeholder="Select category"
                 value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setAiConfidence(null);
+                }}
                 isDisabled={categoriesLoading}
               >
                 {categories.map((c) => (
