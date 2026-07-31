@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
 // titles. market_product_matches (009_product_matches.sql) already models
@@ -51,25 +52,30 @@ const MAX_MARKET_CANDIDATES = 300;
 // (no persisted match table yet), so it's capped to the seller's most
 // recently updated active products against a capped candidate pool from
 // market_products, not run over the whole catalog.
-export async function findTopProductMatches(sellerId: string, categorySlug: string): Promise<ProductMatch[]> {
+export async function findTopProductMatches(
+  sellerId: string,
+  categorySlug: string,
+  reportingCurrency = 'PKR',
+): Promise<ProductMatch[]> {
   const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
   if (!keywordPattern) return [];
 
   const supabase = await createClient();
 
-  const [sellerProductsRes, marketProductsRes] = await Promise.all([
+  const [sellerProductsRes, marketProductsRes, fxRates] = await Promise.all([
     supabase
       .from('seller_products')
-      .select('id, title, sell_price')
+      .select('id, title, sell_price, currency')
       .eq('seller_id', sellerId)
       .eq('is_active', true)
       .order('updated_at', { ascending: false })
       .limit(MAX_SELLER_PRODUCTS),
     supabase
       .from('market_products')
-      .select('title, price, url, category_slug, market_platforms(name)')
+      .select('title, price, currency, url, category_slug, market_platforms(name)')
       .eq('is_active', true)
       .limit(MAX_MARKET_CANDIDATES),
+    getLatestFxRates(),
   ]);
 
   if (sellerProductsRes.error || !sellerProductsRes.data) return [];
@@ -81,7 +87,8 @@ export async function findTopProductMatches(sellerId: string, categorySlug: stri
       const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
       return {
         title: row.title,
-        price: row.price,
+        price:
+          row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null,
         url: row.url,
         platformName: platform?.name ?? null,
         tokens: tokenize(row.title),
@@ -109,7 +116,10 @@ export async function findTopProductMatches(sellerId: string, categorySlug: stri
       matches.push({
         sellerProductId: sellerProduct.id,
         sellerProductTitle: sellerProduct.title,
-        sellerPrice: sellerProduct.sell_price,
+        sellerPrice:
+          sellerProduct.sell_price != null
+            ? convertCurrency(Number(sellerProduct.sell_price), sellerProduct.currency ?? 'PKR', reportingCurrency, fxRates)
+            : null,
         matchedTitle: best.title,
         matchedPlatformName: best.platformName,
         matchedPrice: best.price,

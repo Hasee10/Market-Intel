@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 export type CategoryPricing = {
   categorySlug: string;
@@ -24,7 +25,12 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
-type PriceRow = { price: number | string | null; category_slug: string | null; market_platforms: { name: string } | { name: string }[] | null };
+type PriceRow = {
+  price: number | string | null;
+  currency: string | null;
+  category_slug: string | null;
+  market_platforms: { name: string } | { name: string }[] | null;
+};
 
 function platformName(row: PriceRow): string | undefined {
   const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
@@ -39,23 +45,27 @@ function platformName(row: PriceRow): string | undefined {
 // OLX classifieds. Unrelated to domain_benchmarks (computed from our own
 // sellers' opted-in data). Returns null if this seller's category has no
 // keyword mapping yet, or no scraped/listed rows match.
-export async function getCategoryPricing(sellerCategorySlug: string): Promise<CategoryPricing | null> {
+export async function getCategoryPricing(
+  sellerCategorySlug: string,
+  reportingCurrency = 'PKR',
+): Promise<CategoryPricing | null> {
   const keywordPattern = CATEGORY_KEYWORDS[sellerCategorySlug];
   if (!keywordPattern) return null;
 
   const supabase = await createClient();
 
-  const [productsRes, listingsRes] = await Promise.all([
+  const [productsRes, listingsRes, fxRates] = await Promise.all([
     supabase
       .from('market_products')
-      .select('price, category_slug, market_platforms(name)')
+      .select('price, currency, category_slug, market_platforms(name)')
       .eq('is_active', true)
       .not('price', 'is', null),
     supabase
       .from('market_classified_listings')
-      .select('price, category_slug, market_platforms(name)')
+      .select('price, currency, category_slug, market_platforms(name)')
       .eq('status', 'active')
       .not('price', 'is', null),
+    getLatestFxRates(),
   ]);
 
   const rows: PriceRow[] = [...(productsRes.data ?? []), ...(listingsRes.data ?? [])];
@@ -64,7 +74,9 @@ export async function getCategoryPricing(sellerCategorySlug: string): Promise<Ca
   const matched = rows.filter((row) => row.category_slug && keywordPattern.test(row.category_slug));
   if (matched.length === 0) return null;
 
-  const prices = matched.map((row) => Number(row.price)).sort((a, b) => a - b);
+  const prices = matched
+    .map((row) => convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates))
+    .sort((a, b) => a - b);
   const platformNames = new Set<string>();
   for (const row of matched) {
     const name = platformName(row);

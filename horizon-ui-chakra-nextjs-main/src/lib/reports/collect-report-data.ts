@@ -159,7 +159,7 @@ export async function collectReportData(seller: Seller): Promise<ReportData> {
       .select('title, sell_price, stock_qty, is_active, seller_categories(name)')
       .eq('seller_id', seller.id),
     domain ? getDomainBenchmarks(domain.categoryId) : Promise.resolve([]),
-    domain ? getCategoryPricing(domain.categorySlug) : Promise.resolve(null),
+    domain ? getCategoryPricing(domain.categorySlug, seller.reportingCurrency) : Promise.resolve(null),
     getLatestChurnSnapshot(seller.id),
     getAtRiskCustomers(seller.id),
   ]);

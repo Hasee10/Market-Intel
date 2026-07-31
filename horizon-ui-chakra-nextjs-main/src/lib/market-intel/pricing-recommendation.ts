@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
 import { findTopProductMatches } from '@/lib/market-intel/product-matching';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // Rule-based, not ML: with a handful of scraped competitor data points per
 // category, a real elasticity/demand model would be fitting noise, not
@@ -40,19 +41,21 @@ function round2(value: number): number {
 export async function getPricingRecommendations(
   sellerId: string,
   categorySlug: string,
+  reportingCurrency = 'PKR',
 ): Promise<PricingRecommendation[]> {
   const supabase = await createClient();
 
-  const [productsRes, categoryPricing, matches] = await Promise.all([
+  const [productsRes, categoryPricing, matches, fxRates] = await Promise.all([
     supabase
       .from('seller_products')
-      .select('id, title, cost_price, sell_price')
+      .select('id, title, cost_price, sell_price, currency')
       .eq('seller_id', sellerId)
       .eq('is_active', true)
       .not('cost_price', 'is', null)
       .not('sell_price', 'is', null),
-    getCategoryPricing(categorySlug),
-    findTopProductMatches(sellerId, categorySlug),
+    getCategoryPricing(categorySlug, reportingCurrency),
+    findTopProductMatches(sellerId, categorySlug, reportingCurrency),
+    getLatestFxRates(),
   ]);
 
   if (productsRes.error || !productsRes.data || !categoryPricing) return [];
@@ -61,8 +64,9 @@ export async function getPricingRecommendations(
   const recommendations: PricingRecommendation[] = [];
 
   for (const product of productsRes.data) {
-    const costPrice = Number(product.cost_price);
-    const currentPrice = Number(product.sell_price);
+    const productCurrency = product.currency ?? 'PKR';
+    const costPrice = convertCurrency(Number(product.cost_price), productCurrency, reportingCurrency, fxRates);
+    const currentPrice = convertCurrency(Number(product.sell_price), productCurrency, reportingCurrency, fxRates);
     const match = matchByProductId.get(product.id);
 
     const competitorLow = match?.matchedPrice != null ? match.matchedPrice * (1 - MATCH_BAND_PCT) : categoryPricing.p25;

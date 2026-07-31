@@ -11,6 +11,7 @@ export type Seller = {
   email: string;
   planTier: string;
   onboardedAt: string | null;
+  reportingCurrency: string;
 };
 
 export type SellerDomain = {
@@ -31,7 +32,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
   if (await isBypassedNoSession()) {
     const { data, error } = await supabase
       .from('sellers')
-      .select('id, user_id, business_name, email, plan_tier, onboarded_at')
+      .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -45,6 +46,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
       email: data.email,
       planTier: data.plan_tier,
       onboardedAt: data.onboarded_at,
+      reportingCurrency: data.reporting_currency,
     };
   }
 
@@ -56,7 +58,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
 
   const { data, error } = await supabase
     .from('sellers')
-    .select('id, user_id, business_name, email, plan_tier, onboarded_at')
+    .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency')
     .eq('user_id', user.id)
     .single();
 
@@ -69,6 +71,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
     email: data.email,
     planTier: data.plan_tier,
     onboardedAt: data.onboarded_at,
+    reportingCurrency: data.reporting_currency,
   };
 }
 

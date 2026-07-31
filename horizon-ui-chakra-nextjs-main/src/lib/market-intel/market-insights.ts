@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
@@ -32,19 +33,22 @@ const TREND_LOOKBACK_DAYS = 30;
 // Daily median price across every scraped competitor product in this
 // seller's category, over the last 30 days - market_price_history already
 // collects this on every scrape run, nothing surfaced it until now.
-export async function getPriceTrend(categorySlug: string): Promise<PriceTrendPoint[]> {
+export async function getPriceTrend(categorySlug: string, reportingCurrency = 'PKR'): Promise<PriceTrendPoint[]> {
   const productIds = await getMatchedProductIds(categorySlug);
   if (productIds.length === 0) return [];
 
   const supabase = await createClient();
   const cutoff = new Date(Date.now() - TREND_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
-    .from('market_price_history')
-    .select('price, recorded_at')
-    .in('product_id', productIds)
-    .gte('recorded_at', cutoff)
-    .not('price', 'is', null);
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('market_price_history')
+      .select('price, recorded_at, market_products(currency)')
+      .in('product_id', productIds)
+      .gte('recorded_at', cutoff)
+      .not('price', 'is', null),
+    getLatestFxRates(),
+  ]);
 
   if (error || !data) return [];
 
@@ -52,7 +56,8 @@ export async function getPriceTrend(categorySlug: string): Promise<PriceTrendPoi
   for (const row of data) {
     const date = row.recorded_at.slice(0, 10);
     if (!byDate.has(date)) byDate.set(date, []);
-    byDate.get(date)!.push(Number(row.price));
+    const product = Array.isArray(row.market_products) ? row.market_products[0] : row.market_products;
+    byDate.get(date)!.push(convertCurrency(Number(row.price), product?.currency ?? 'PKR', reportingCurrency, fxRates));
   }
 
   return Array.from(byDate.entries())
@@ -72,18 +77,21 @@ export type StockOutProduct = {
 // Competitors currently showing as out of stock in this category - a signal
 // a seller can use to pick up slack demand while a competitor is unable to
 // fulfil.
-export async function getStockOuts(categorySlug: string, limit = 10): Promise<StockOutProduct[]> {
+export async function getStockOuts(categorySlug: string, limit = 10, reportingCurrency = 'PKR'): Promise<StockOutProduct[]> {
   const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
   if (!keywordPattern) return [];
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('market_products')
-    .select('id, title, price, url, category_slug, last_seen_at, market_platforms(name)')
-    .eq('is_active', true)
-    .eq('in_stock', false)
-    .order('last_seen_at', { ascending: false })
-    .limit(200);
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('market_products')
+      .select('id, title, price, currency, url, category_slug, last_seen_at, market_platforms(name)')
+      .eq('is_active', true)
+      .eq('in_stock', false)
+      .order('last_seen_at', { ascending: false })
+      .limit(200),
+    getLatestFxRates(),
+  ]);
 
   if (error || !data) return [];
 
@@ -96,7 +104,7 @@ export async function getStockOuts(categorySlug: string, limit = 10): Promise<St
         id: row.id,
         title: row.title,
         platformName: platform?.name ?? null,
-        price: row.price,
+        price: row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null,
         url: row.url,
         lastSeenAt: row.last_seen_at,
       };

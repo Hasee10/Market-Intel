@@ -46,10 +46,10 @@ function formatMetric(metricName: string) {
   return metricName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-PK', {
+function formatCurrencyAs(value: number, currency: string) {
+  return new Intl.NumberFormat(undefined, {
     style: 'currency',
-    currency: 'PKR',
+    currency,
     maximumFractionDigits: 0,
   }).format(value);
 }
@@ -63,6 +63,7 @@ function formatRelativeTime(iso: string) {
 
 type MarketViewProps = {
   domain: SellerDomain | null;
+  reportingCurrency: string;
   benchmarks: DomainBenchmark[];
   peers: DomainPeer[];
   categoryPricing: CategoryPricing | null;
@@ -85,6 +86,7 @@ type MarketViewProps = {
 
 export default function MarketView({
   domain,
+  reportingCurrency,
   benchmarks,
   peers,
   categoryPricing,
@@ -100,6 +102,7 @@ export default function MarketView({
 }: MarketViewProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
+  const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
 
   const domainStats = [
     { title: 'Your domain', value: domain?.categoryName ?? 'Not set' },

@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 const LOOKBACK_DAYS = 30;
 const MIN_DAYS_FOR_BASELINE = 7;
@@ -91,16 +92,21 @@ const PRICE_HISTORY_LOOKBACK_DAYS = 7;
 // volatile this specific category actually is, rather than a fixed
 // percentage threshold (which would over-flag in a volatile category like
 // electronics during a sale event, and under-flag in a stable one).
-export async function detectCompetitorPriceAnomalies(categorySlug: string): Promise<CompetitorPriceAnomaly[]> {
+export async function detectCompetitorPriceAnomalies(
+  categorySlug: string,
+  reportingCurrency = 'PKR',
+): Promise<CompetitorPriceAnomaly[]> {
   const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
   if (!keywordPattern) return [];
 
   const supabase = await createClient();
   const cutoff = new Date(Date.now() - PRICE_HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
+  const fxRates = await getLatestFxRates();
+
   const { data: products, error: productsError } = await supabase
     .from('market_products')
-    .select('id, title, category_slug, price, market_platforms(name)')
+    .select('id, title, category_slug, price, currency, market_platforms(name)')
     .eq('is_active', true)
     .not('price', 'is', null);
 
@@ -129,10 +135,19 @@ export async function detectCompetitorPriceAnomalies(categorySlug: string): Prom
 
   const changes: { product: (typeof matched)[number]; oldPrice: number; newPrice: number; pctChange: number }[] = [];
   for (const product of matched) {
-    const oldPrice = oldestPriceByProduct.get(product.id);
-    if (oldPrice == null || oldPrice === 0 || product.price == null) continue;
-    const pctChange = ((Number(product.price) - oldPrice) / oldPrice) * 100;
-    changes.push({ product, oldPrice, newPrice: Number(product.price), pctChange });
+    const rawOldPrice = oldestPriceByProduct.get(product.id);
+    if (rawOldPrice == null || rawOldPrice === 0 || product.price == null) continue;
+    // Convert after computing pctChange in native currency (a ratio, so
+    // conversion doesn't change it) - oldPrice/newPrice are then converted
+    // for display alongside the rest of the market-intel dashboard.
+    const pctChange = ((Number(product.price) - rawOldPrice) / rawOldPrice) * 100;
+    const productCurrency = product.currency ?? 'PKR';
+    changes.push({
+      product,
+      oldPrice: convertCurrency(rawOldPrice, productCurrency, reportingCurrency, fxRates),
+      newPrice: convertCurrency(Number(product.price), productCurrency, reportingCurrency, fxRates),
+      pctChange,
+    });
   }
 
   if (changes.length < MIN_DAYS_FOR_BASELINE) return [];

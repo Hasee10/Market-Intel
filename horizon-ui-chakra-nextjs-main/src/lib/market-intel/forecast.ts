@@ -39,8 +39,8 @@ const FORECAST_HORIZON_DAYS = 14;
 // a linear projection forward. Returns null rather than a forecast built
 // from too little data - a trend line through 2-3 points is misleading, not
 // useful.
-export async function getCategoryPriceForecast(categorySlug: string): Promise<PriceForecast | null> {
-  const trend = await getPriceTrend(categorySlug);
+export async function getCategoryPriceForecast(categorySlug: string, reportingCurrency = 'PKR'): Promise<PriceForecast | null> {
+  const trend = await getPriceTrend(categorySlug, reportingCurrency);
   if (trend.length < MIN_POINTS_FOR_FORECAST) return null;
 
   const baseDate = new Date(trend[0].date);
