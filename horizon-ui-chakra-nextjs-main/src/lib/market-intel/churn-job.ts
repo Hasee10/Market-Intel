@@ -20,11 +20,23 @@ export type ChurnJobResult = {
 // own seller_customers - this table already existed with nothing writing to
 // it (same situation domain_benchmarks was in before Phase 1). Standard
 // cohort-retention definitions, not a novel metric:
-//   - "current window" = last_order_at in the last 30 days
-//   - "prior window" = last_order_at 30-60 days ago
-//   - retention_rate = (customers active in both windows) / (active in prior window)
+//   - "prior cohort" = customers who already existed before the current
+//     30-day window AND had ordered at some point up through the prior
+//     window (i.e. weren't already long gone by then)
+//   - "retained" = that same cohort, restricted to those who ALSO ordered
+//     again during the current window
+//   - retention_rate = retained / prior cohort size (mathematically bounded
+//     0-100%, since "retained" is a strict subset of "prior cohort")
 //   - churn_rate = 100 - retention_rate
 //   - repeat_purchase_rate = customers with orders_count > 1 / customers with any order
+//
+// An earlier version computed the numerator and denominator from two
+// non-overlapping filters (customers whose *last* order fell in the prior
+// window, vs. customers whose last order was recent AND first order was
+// old) - those aren't a subset/superset pair, so the ratio could exceed
+// 100% (observed: 175% retention for a real seller). This version fixes
+// that by deriving "retained" as a filter *of* "prior cohort", not a
+// separately-computed set.
 export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
   const supabase = createAdminClient();
   const now = Date.now();
@@ -51,18 +63,19 @@ export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
     const activeCurrent = withOrders.filter(
       (c) => c.last_order_at && new Date(c.last_order_at) >= currentStart,
     );
-    const activePrior = withOrders.filter(
+
+    // Existed before this window started, and hadn't already gone fully
+    // quiet before the prior window even began.
+    const priorCohort = withOrders.filter(
       (c) =>
-        c.last_order_at &&
-        new Date(c.last_order_at) >= priorStart &&
-        new Date(c.last_order_at) < currentStart,
-    );
-    const activeBothWindows = withOrders.filter(
-      (c) =>
-        c.last_order_at &&
-        new Date(c.last_order_at) >= currentStart &&
         c.first_order_at &&
-        new Date(c.first_order_at) < currentStart,
+        new Date(c.first_order_at) < currentStart &&
+        c.last_order_at &&
+        new Date(c.last_order_at) >= priorStart,
+    );
+    // Retained = that same cohort, now also active in the current window.
+    const retained = priorCohort.filter(
+      (c) => c.last_order_at && new Date(c.last_order_at) >= currentStart,
     );
 
     const newCustomers = withOrders.filter(
@@ -70,8 +83,7 @@ export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
     ).length;
     const returningCustomers = activeCurrent.length - newCustomers;
 
-    const retentionRate =
-      activePrior.length > 0 ? (activeBothWindows.length / activePrior.length) * 100 : null;
+    const retentionRate = priorCohort.length > 0 ? (retained.length / priorCohort.length) * 100 : null;
     const repeatPurchaseRate =
       withOrders.length > 0
         ? (withOrders.filter((c) => c.orders_count > 1).length / withOrders.length) * 100

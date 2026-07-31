@@ -36,7 +36,7 @@ const IMPORT_FIELDS: ImportField[] = [
 
 export default function CustomersPage() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDto | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [newOpen, setNewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);

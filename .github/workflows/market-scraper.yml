@@ -31,6 +31,11 @@ jobs:
     steps:
       - name: Determine cadence
         id: cadence
+        # Runs before actions/checkout, so the job-level "scraper"
+        # working-directory default doesn't exist yet on the runner's
+        # filesystem - this step needs no repo files, just override it back
+        # to the workspace root.
+        working-directory: .
         run: |
           days_since_epoch=$(( $(date +%s) / 86400 ))
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ] || [ $((days_since_epoch % 2)) -eq 0 ]; then

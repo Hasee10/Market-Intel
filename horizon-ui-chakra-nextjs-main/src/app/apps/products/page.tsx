@@ -2,14 +2,15 @@
 
 import { useCallback, useState } from 'react';
 
-import { Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Text } from '@chakra-ui/react';
-import { MdAddCircleOutline, MdOutlineSearchOff, MdUploadFile } from 'react-icons/md';
+import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Text } from '@chakra-ui/react';
+import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { PageHeader } from '@/components/marketintel/PageHeader';
+import { ProductsTable } from '@/components/marketintel/ProductsTable';
 import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
@@ -18,6 +19,8 @@ import { IProduct } from '@/types/products';
 import { EditProductDrawer } from './components/EditProductDrawer';
 import { NewProductDrawer } from './components/NewProductDrawer';
 import { ProductCard } from './components/ProductCard';
+
+type ViewMode = 'grid' | 'table';
 
 const breadcrumbItems = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
@@ -35,6 +38,7 @@ const IMPORT_FIELDS: ImportField[] = [
 
 export default function ProductsPage() {
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [newOpen, setNewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -61,12 +65,16 @@ export default function ProductsPage() {
 
   const renderContent = () => {
     if (productsLoading) {
-      return (
+      return viewMode === 'grid' ? (
         <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={`product-loading-${i}`} height="220px" borderRadius="16px" />
           ))}
         </SimpleGrid>
+      ) : (
+        <Card>
+          <ProductsTable data={[]} loading onEdit={handleEditProduct} />
+        </Card>
       );
     }
 
@@ -102,12 +110,18 @@ export default function ProductsPage() {
       );
     }
 
-    return (
+    return viewMode === 'grid' ? (
       <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
         {productsData.data.map((p) => (
           <ProductCard key={p.id} data={p} onEdit={handleEditProduct} />
         ))}
       </SimpleGrid>
+    ) : (
+      <Card>
+        <Box overflowX="auto">
+          <ProductsTable data={productsData.data} loading={false} onEdit={handleEditProduct} />
+        </Box>
+      </Card>
     );
   };
 
@@ -118,6 +132,26 @@ export default function ProductsPage() {
         breadcrumbItems={breadcrumbItems}
         actionButton={
           <Flex gap="8px">
+            {productsData?.data && productsData.data.length > 0 && (
+              <>
+                <Button
+                  variant={viewMode === 'grid' ? 'brand' : 'outline'}
+                  onClick={() => setViewMode('grid')}
+                  p="0"
+                  w="40px"
+                >
+                  <Icon as={MdGridView} />
+                </Button>
+                <Button
+                  variant={viewMode === 'table' ? 'brand' : 'outline'}
+                  onClick={() => setViewMode('table')}
+                  p="0"
+                  w="40px"
+                >
+                  <Icon as={MdViewList} />
+                </Button>
+              </>
+            )}
             <Button variant="outline" leftIcon={<Icon as={MdUploadFile} />} onClick={() => setImportOpen(true)}>
               Import CSV
             </Button>
