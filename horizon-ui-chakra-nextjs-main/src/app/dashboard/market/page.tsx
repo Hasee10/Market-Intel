@@ -32,27 +32,34 @@ export default async function MarketPage() {
     anomalyDetection: hasFeature(planTier, 'anomaly_detection'),
   };
 
+  const reportingCurrency = seller?.reportingCurrency ?? 'PKR';
+
   const benchmarks = domain && entitlements.peerBenchmarks ? await getDomainBenchmarks(domain.categoryId) : [];
   const peers = domain && seller && entitlements.peerBenchmarks ? await getDomainPeers(domain.categoryId, seller.id) : [];
-  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug, seller?.reportingCurrency ?? 'PKR') : null;
-  const priceTrend = domain ? await getPriceTrend(domain.categorySlug) : [];
-  const stockOuts = domain ? await getStockOuts(domain.categorySlug) : [];
+  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug, reportingCurrency) : null;
+  const priceTrend = domain ? await getPriceTrend(domain.categorySlug, reportingCurrency) : [];
+  const stockOuts = domain ? await getStockOuts(domain.categorySlug, 10, reportingCurrency) : [];
   const freshness = domain ? await getDataFreshness(domain.categorySlug) : [];
   const demandSignal = domain ? await getDemandSignal(domain.categorySlug) : null;
   const productMatches =
-    domain && seller && entitlements.productMatching ? await findTopProductMatches(seller.id, domain.categorySlug) : [];
+    domain && seller && entitlements.productMatching
+      ? await findTopProductMatches(seller.id, domain.categorySlug, reportingCurrency)
+      : [];
   const pricingRecommendations =
     domain && seller && entitlements.pricingRecommendations
-      ? await getPricingRecommendations(seller.id, domain.categorySlug, seller.reportingCurrency)
+      ? await getPricingRecommendations(seller.id, domain.categorySlug, reportingCurrency)
       : [];
   const priceForecast =
-    domain && entitlements.forecasting ? await getCategoryPriceForecast(domain.categorySlug) : null;
+    domain && entitlements.forecasting ? await getCategoryPriceForecast(domain.categorySlug, reportingCurrency) : null;
   const priceAnomalies =
-    domain && entitlements.anomalyDetection ? await detectCompetitorPriceAnomalies(domain.categorySlug) : [];
+    domain && entitlements.anomalyDetection
+      ? await detectCompetitorPriceAnomalies(domain.categorySlug, reportingCurrency)
+      : [];
 
   return (
     <MarketView
       domain={domain}
+      reportingCurrency={reportingCurrency}
       benchmarks={benchmarks}
       peers={peers}
       categoryPricing={categoryPricing}

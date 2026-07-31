@@ -54,7 +54,7 @@ export async function getPricingRecommendations(
       .not('cost_price', 'is', null)
       .not('sell_price', 'is', null),
     getCategoryPricing(categorySlug, reportingCurrency),
-    findTopProductMatches(sellerId, categorySlug),
+    findTopProductMatches(sellerId, categorySlug, reportingCurrency),
     getLatestFxRates(),
   ]);
 
