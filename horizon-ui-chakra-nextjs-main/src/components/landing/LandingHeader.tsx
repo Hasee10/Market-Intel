@@ -1,9 +1,10 @@
 'use client';
 
-import { Box, Button, Flex, Grid, HStack, Link as ChakraLink, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Grid, HStack, Link as ChakraLink, Text, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 
 import { RyvlMark } from 'components/icons/RyvlMark';
+import { ThemeToggleMenu } from '@/components/navbar/ThemeToggleMenu';
 import { PATH_AUTH } from '@/lib/paths';
 
 // Anchors are prefixed with `/` so they still resolve correctly from pages
@@ -17,8 +18,13 @@ const NAV_LINKS = [
 ];
 
 export function LandingHeader() {
+  const bg = useColorModeValue('white', 'navy.900');
+  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const logoColor = useColorModeValue('#111C4E', 'white');
+  const linkColor = useColorModeValue('gray.600', 'secondaryGray.400');
+
   return (
-    <Box as="header" position="sticky" top="0" zIndex="20" bg="white" borderBottom="1px solid" borderColor="gray.100">
+    <Box as="header" position="sticky" top="0" zIndex="20" bg={bg} borderBottom="1px solid" borderColor={borderColor}>
       {/* 3-column grid (not a space-between Flex) so the nav links center
           on the header's true midpoint, independent of how wide the logo
           or the button group happen to be - space-between only centers
@@ -34,7 +40,7 @@ export function LandingHeader() {
       >
         <Flex as={NextLink} href="/" align="center" gap="8px" justifySelf="start">
           <RyvlMark size={26} />
-          <Text fontWeight="bold" fontSize="20px" color="#111C4E">
+          <Text fontWeight="bold" fontSize="20px" color={logoColor}>
             Ryvl
           </Text>
         </Flex>
@@ -46,7 +52,7 @@ export function LandingHeader() {
               href={link.href}
               fontSize="sm"
               fontWeight="500"
-              color="gray.600"
+              color={linkColor}
               _hover={{ color: '#4318FF', textDecoration: 'none' }}
             >
               {link.label}
@@ -54,7 +60,8 @@ export function LandingHeader() {
           ))}
         </HStack>
 
-        <HStack spacing="12px" justifySelf="end">
+        <HStack spacing="16px" justifySelf="end">
+          <ThemeToggleMenu />
           <Button as={NextLink} href={PATH_AUTH.signin} variant="ghost" size="sm" display={{ base: 'none', sm: 'inline-flex' }}>
             Sign in
           </Button>

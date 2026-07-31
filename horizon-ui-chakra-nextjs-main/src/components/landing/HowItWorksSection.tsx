@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Flex, Heading, SimpleGrid, Text } from '@chakra-ui/react';
+import { Box, Container, Flex, Heading, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
 
 // The actual seller journey through the product, not the privacy mechanics
 // (that's TrustSection) - a concrete 3-step process bridges "what is this"
@@ -27,17 +27,23 @@ const STEPS = [
 ];
 
 export function HowItWorksSection() {
+  const sectionBg = useColorModeValue('#F7F8FF', 'navy.800');
+  const kicker = useColorModeValue('#4318FF', '#A594FF');
+  const heading = useColorModeValue('#111C4E', 'white');
+  const body = useColorModeValue('gray.600', 'secondaryGray.400');
+  const stepNumber = useColorModeValue('#E4DBFF', 'whiteAlpha.200');
+
   return (
-    <Box id="how-it-works" bg="#F7F8FF" py={{ base: '70px', md: '100px' }}>
+    <Box id="how-it-works" bg={sectionBg} py={{ base: '70px', md: '100px' }}>
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Box textAlign="center" mb={{ base: '50px', md: '72px' }}>
-          <Text fontSize="xs" fontWeight="700" color="#4318FF" letterSpacing="0.08em" textTransform="uppercase" mb="12px">
+          <Text fontSize="xs" fontWeight="700" color={kicker} letterSpacing="0.08em" textTransform="uppercase" mb="12px">
             The process
           </Text>
-          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color="#111C4E" mb="16px" letterSpacing="-0.02em">
+          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
             From signup to your first insight
           </Heading>
-          <Text color="gray.600" fontSize="lg" maxW="560px" mx="auto">
+          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
             No setup calls, no data imports required to start - just pick a category and the market
             context is already there.
           </Text>
@@ -46,13 +52,13 @@ export function HowItWorksSection() {
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: '40px', md: '32px' }}>
           {STEPS.map((item) => (
             <Flex key={item.step} direction="column" position="relative">
-              <Text fontSize="48px" fontWeight="800" color="#E4DBFF" lineHeight="1" mb="12px">
+              <Text fontSize="48px" fontWeight="800" color={stepNumber} lineHeight="1" mb="12px">
                 {item.step}
               </Text>
-              <Text fontWeight="700" fontSize="lg" color="#111C4E" mb="10px">
+              <Text fontWeight="700" fontSize="lg" color={heading} mb="10px">
                 {item.title}
               </Text>
-              <Text color="gray.600" fontSize="sm" lineHeight="1.6">
+              <Text color={body} fontSize="sm" lineHeight="1.6">
                 {item.description}
               </Text>
             </Flex>

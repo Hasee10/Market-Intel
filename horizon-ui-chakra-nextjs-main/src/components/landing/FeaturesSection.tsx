@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Heading, Icon, SimpleGrid, Text } from '@chakra-ui/react';
+import { Box, Container, Heading, Icon, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
 import {
   MdBarChart,
   MdOutlineVisibility,
@@ -53,24 +53,32 @@ const FEATURES = [
 ];
 
 export function FeaturesSection() {
+  const sectionBg = useColorModeValue('white', 'navy.900');
+  const kicker = useColorModeValue('#4318FF', '#A594FF');
+  const heading = useColorModeValue('#111C4E', 'white');
+  const body = useColorModeValue('gray.600', 'secondaryGray.400');
+  const cardBg = useColorModeValue('white', 'navy.800');
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
+
   return (
-    <Box id="features" bg="white" py={{ base: '80px', md: '120px' }} position="relative">
+    <Box id="features" bg={sectionBg} py={{ base: '80px', md: '120px' }} position="relative">
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }} position="relative">
         <Box textAlign="center" mb={{ base: '50px', md: '72px' }}>
           <Text
             fontSize="xs"
             fontWeight="700"
-            color="#4318FF"
+            color={kicker}
             letterSpacing="0.08em"
             textTransform="uppercase"
             mb="12px"
           >
             What you get
           </Text>
-          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color="#111C4E" mb="16px" letterSpacing="-0.02em">
+          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
             Everything you need to sell with your eyes open
           </Heading>
-          <Text color="gray.600" fontSize="lg" maxW="560px" mx="auto">
+          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
             Your own store analytics, plus the market context that most sellers never get to see.
           </Text>
         </Box>
@@ -83,9 +91,9 @@ export function FeaturesSection() {
               p="32px"
               borderRadius="20px"
               border="1px solid"
-              borderColor="gray.100"
-              bg="white"
-              boxShadow="0px 4px 16px rgba(17, 28, 78, 0.04)"
+              borderColor={cardBorder}
+              bg={cardBg}
+              boxShadow={cardShadow}
               transition="all 0.2s ease"
               _hover={{
                 borderColor: '#4318FF',
@@ -106,10 +114,10 @@ export function FeaturesSection() {
               >
                 <Icon as={feature.icon} boxSize="26px" color="white" />
               </Box>
-              <Text fontWeight="700" fontSize="lg" color="#111C4E" mb="10px" letterSpacing="-0.01em">
+              <Text fontWeight="700" fontSize="lg" color={heading} mb="10px" letterSpacing="-0.01em">
                 {feature.title}
               </Text>
-              <Text color="gray.600" fontSize="sm" lineHeight="1.6">
+              <Text color={body} fontSize="sm" lineHeight="1.6">
                 {feature.description}
               </Text>
             </Box>

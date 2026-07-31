@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Box, Button, Container, Flex, Heading, Stack, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Container, Flex, Heading, Stack, Text, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
 
 import { PATH_AUTH } from '@/lib/paths';
@@ -48,8 +48,18 @@ function DecorativeBlobs() {
 }
 
 export function LandingHero() {
+  const heroBg = useColorModeValue(
+    'linear-gradient(180deg, #F7F8FF 0%, #FFFFFF 100%)',
+    'linear-gradient(180deg, #111C4E 0%, #0B1437 100%)',
+  );
+  const badgeBg = useColorModeValue('#F4F1FF', 'whiteAlpha.100');
+  const badgeBorder = useColorModeValue('#E4DBFF', 'whiteAlpha.200');
+  const badgeColor = useColorModeValue('#4318FF', '#A594FF');
+  const headingColor = useColorModeValue('#111C4E', 'white');
+  const bodyColor = useColorModeValue('gray.600', 'secondaryGray.400');
+
   return (
-    <Box bg="linear-gradient(180deg, #F7F8FF 0%, #FFFFFF 100%)" pt={{ base: '60px', md: '90px' }} pb={{ base: '80px', md: '110px' }} overflow="hidden">
+    <Box bg={heroBg} pt={{ base: '60px', md: '90px' }} pb={{ base: '80px', md: '110px' }} overflow="hidden">
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Flex direction={{ base: 'column', lg: 'row' }} align="center" gap={{ base: '50px', lg: '60px' }}>
           <Box flex="1">
@@ -61,20 +71,20 @@ export function LandingHero() {
               fontSize="xs"
               fontWeight="700"
               letterSpacing="0.04em"
-              bg="#F4F1FF"
-              color="#4318FF"
+              bg={badgeBg}
+              color={badgeColor}
               border="1px solid"
-              borderColor="#E4DBFF"
+              borderColor={badgeBorder}
               textTransform="uppercase"
             >
               For online sellers
             </Badge>
-            <Heading as="h1" fontSize={{ base: '36px', md: '52px' }} lineHeight="1.1" color="#111C4E" mb="20px">
+            <Heading as="h1" fontSize={{ base: '36px', md: '52px' }} lineHeight="1.1" color={headingColor} mb="20px">
               See your market.
               <br />
               Not just your store.
             </Heading>
-            <Text fontSize={{ base: 'md', md: 'lg' }} color="gray.600" mb="32px" maxW="480px">
+            <Text fontSize={{ base: 'md', md: 'lg' }} color={bodyColor} mb="32px" maxW="480px">
               Ryvl tracks competitor pricing across 7 marketplaces, benchmarks you against
               anonymized peers in your category, and tells you when to act — pricing
               recommendations, stock-out signals, and price alerts included.

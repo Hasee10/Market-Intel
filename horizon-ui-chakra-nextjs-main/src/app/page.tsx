@@ -7,7 +7,6 @@ import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
-import { LandingThemeLock } from '@/components/landing/LandingThemeLock';
 import { PricingTeaser } from '@/components/landing/PricingTeaser';
 import { StatsBar } from '@/components/landing/StatsBar';
 import { TrustSection } from '@/components/landing/TrustSection';
@@ -24,20 +23,18 @@ export default function Home() {
         name="description"
         content="Competitive pricing benchmarks, peer comparisons, and demand signals for online sellers."
       />
-      <LandingThemeLock>
-        <AnnouncementBar />
-        <LandingHeader />
-        <LandingHero />
-        <StatsBar />
-        <HowItWorksSection />
-        <FeaturesSection />
-        <ComparisonSection />
-        <TrustSection />
-        <FaqSection />
-        <PricingTeaser />
-        <CTABanner />
-        <LandingFooter />
-      </LandingThemeLock>
+      <AnnouncementBar />
+      <LandingHeader />
+      <LandingHero />
+      <StatsBar />
+      <HowItWorksSection />
+      <FeaturesSection />
+      <ComparisonSection />
+      <TrustSection />
+      <FaqSection />
+      <PricingTeaser />
+      <CTABanner />
+      <LandingFooter />
     </>
   );
 }

@@ -10,6 +10,7 @@ import {
   Container,
   Heading,
   Text,
+  useColorModeValue,
 } from '@chakra-ui/react';
 
 // Real answers to real questions about this specific product - not filler.
@@ -44,28 +45,34 @@ const FAQS = [
 ];
 
 export function FaqSection() {
+  const sectionBg = useColorModeValue('white', 'navy.900');
+  const kicker = useColorModeValue('#4318FF', '#A594FF');
+  const heading = useColorModeValue('#111C4E', 'white');
+  const body = useColorModeValue('gray.600', 'secondaryGray.400');
+  const itemBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+
   return (
-    <Box bg="white" py={{ base: '70px', md: '100px' }}>
+    <Box bg={sectionBg} py={{ base: '70px', md: '100px' }}>
       <Container maxW="800px" px={{ base: '20px', md: '30px' }}>
         <Box textAlign="center" mb={{ base: '40px', md: '56px' }}>
-          <Text fontSize="xs" fontWeight="700" color="#4318FF" letterSpacing="0.08em" textTransform="uppercase" mb="12px">
+          <Text fontSize="xs" fontWeight="700" color={kicker} letterSpacing="0.08em" textTransform="uppercase" mb="12px">
             Questions
           </Text>
-          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color="#111C4E" letterSpacing="-0.02em">
+          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color={heading} letterSpacing="-0.02em">
             Frequently asked questions
           </Heading>
         </Box>
 
         <Accordion allowToggle>
           {FAQS.map((faq) => (
-            <AccordionItem key={faq.q} border="none" borderBottom="1px solid" borderColor="gray.100" py="8px">
+            <AccordionItem key={faq.q} border="none" borderBottom="1px solid" borderColor={itemBorder} py="8px">
               <AccordionButton px="0" py="16px" _hover={{ bg: 'transparent', color: '#4318FF' }}>
-                <Box flex="1" textAlign="left" fontWeight="600" color="#111C4E" fontSize="md">
+                <Box flex="1" textAlign="left" fontWeight="600" color={heading} fontSize="md">
                   {faq.q}
                 </Box>
                 <AccordionIcon />
               </AccordionButton>
-              <AccordionPanel px="0" pb="20px" color="gray.600" fontSize="sm" lineHeight="1.7">
+              <AccordionPanel px="0" pb="20px" color={body} fontSize="sm" lineHeight="1.7">
                 {faq.a}
               </AccordionPanel>
             </AccordionItem>

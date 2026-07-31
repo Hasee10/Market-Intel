@@ -1,6 +1,6 @@
 'use client';
 
-import { Badge, Box, Button, Container, Flex, Heading, Icon, SimpleGrid, Text } from '@chakra-ui/react';
+import { Badge, Box, Button, Container, Flex, Heading, Icon, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
 import { MdCheck } from 'react-icons/md';
 import NextLink from 'next/link';
 
@@ -42,14 +42,21 @@ const TIERS = [
 ];
 
 export function PricingSection() {
+  const heading = useColorModeValue('#111C4E', 'white');
+  const body = useColorModeValue('gray.600', 'secondaryGray.400');
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const cardShadow = useColorModeValue('0px 20px 40px rgba(67, 24, 255, 0.15)', '0px 0px 0px 1px #4318FF');
+  const featureText = useColorModeValue('gray.700', 'secondaryGray.300');
+  const noteText = useColorModeValue('gray.500', 'secondaryGray.500');
+
   return (
     <Box id="pricing" py={{ base: '70px', md: '100px' }}>
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Box textAlign="center" mb="60px">
-          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color="#111C4E" mb="12px">
+          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color={heading} mb="12px">
             Grows with how deep you want to go
           </Heading>
-          <Text color="gray.600" fontSize="lg" maxW="560px" mx="auto">
+          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
             Start free on your own store. Unlock market intelligence as you need it.
           </Text>
         </Box>
@@ -61,8 +68,8 @@ export function PricingSection() {
               borderRadius="20px"
               p="32px"
               border="1px solid"
-              borderColor={tier.highlighted ? '#4318FF' : 'gray.100'}
-              boxShadow={tier.highlighted ? '0px 20px 40px rgba(67, 24, 255, 0.15)' : 'none'}
+              borderColor={tier.highlighted ? '#4318FF' : cardBorder}
+              boxShadow={tier.highlighted ? cardShadow : 'none'}
               position="relative"
             >
               {tier.highlighted && (
@@ -70,17 +77,17 @@ export function PricingSection() {
                   Most popular
                 </Badge>
               )}
-              <Text fontWeight="800" fontSize="xl" color="#111C4E" mb="4px">
+              <Text fontWeight="800" fontSize="xl" color={heading} mb="4px">
                 {tier.name}
               </Text>
-              <Text color="gray.600" fontSize="sm" mb="24px">
+              <Text color={body} fontSize="sm" mb="24px">
                 {tier.tagline}
               </Text>
               <Box mb="24px">
                 {tier.features.map((feature) => (
                   <Flex key={feature} align="start" gap="8px" mb="10px">
                     <Icon as={MdCheck} color="#4318FF" boxSize="18px" mt="2px" />
-                    <Text fontSize="sm" color="gray.700">
+                    <Text fontSize="sm" color={featureText}>
                       {feature}
                     </Text>
                   </Flex>
@@ -96,7 +103,7 @@ export function PricingSection() {
                 {tier.cta}
               </Button>
               {tier.note && (
-                <Text fontSize="xs" color="gray.500" textAlign="center">
+                <Text fontSize="xs" color={noteText} textAlign="center">
                   {tier.note}
                 </Text>
               )}

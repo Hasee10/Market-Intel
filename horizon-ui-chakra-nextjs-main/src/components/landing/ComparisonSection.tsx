@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Flex, Heading, Icon, SimpleGrid, Text } from '@chakra-ui/react';
+import { Box, Container, Flex, Heading, Icon, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
 import { MdClose, MdCheck } from 'react-icons/md';
 
 // Compares against the real alternative most sellers actually have today
@@ -15,28 +15,36 @@ const ROWS = [
 ];
 
 export function ComparisonSection() {
+  const sectionBg = useColorModeValue('white', 'navy.900');
+  const heading = useColorModeValue('#111C4E', 'white');
+  const body = useColorModeValue('gray.600', 'secondaryGray.400');
+  const tableBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const tableHeaderBg = useColorModeValue('#F7F8FF', 'navy.800');
+  const mutedLabel = useColorModeValue('gray.500', 'secondaryGray.500');
+  const accent = useColorModeValue('#4318FF', '#A594FF');
+
   return (
-    <Box bg="white" py={{ base: '70px', md: '100px' }}>
+    <Box bg={sectionBg} py={{ base: '70px', md: '100px' }}>
       <Container maxW="1000px" px={{ base: '20px', md: '30px' }}>
         <Box textAlign="center" mb={{ base: '40px', md: '56px' }}>
-          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color="#111C4E" mb="12px" letterSpacing="-0.02em">
+          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color={heading} mb="12px" letterSpacing="-0.02em">
             What most sellers do today, vs. Ryvl
           </Heading>
-          <Text color="gray.600" fontSize="lg" maxW="560px" mx="auto">
+          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
             Not a competitor comparison - a comparison against how this actually gets done without a
             tool for it.
           </Text>
         </Box>
 
-        <Box borderRadius="20px" border="1px solid" borderColor="gray.100" overflow="hidden">
-          <SimpleGrid columns={3} bg="#F7F8FF" py="14px" px={{ base: '16px', md: '28px' }}>
-            <Text fontSize="sm" fontWeight="700" color="gray.500">
+        <Box borderRadius="20px" border="1px solid" borderColor={tableBorder} overflow="hidden">
+          <SimpleGrid columns={3} bg={tableHeaderBg} py="14px" px={{ base: '16px', md: '28px' }}>
+            <Text fontSize="sm" fontWeight="700" color={mutedLabel}>
               &nbsp;
             </Text>
-            <Text fontSize="sm" fontWeight="700" color="gray.500">
+            <Text fontSize="sm" fontWeight="700" color={mutedLabel}>
               Without Ryvl
             </Text>
-            <Text fontSize="sm" fontWeight="700" color="#4318FF">
+            <Text fontSize="sm" fontWeight="700" color={accent}>
               With Ryvl
             </Text>
           </SimpleGrid>
@@ -47,21 +55,21 @@ export function ComparisonSection() {
               py="18px"
               px={{ base: '16px', md: '28px' }}
               borderTop={i > 0 ? '1px solid' : 'none'}
-              borderColor="gray.100"
+              borderColor={tableBorder}
               alignItems="center"
             >
-              <Text fontSize="sm" fontWeight="600" color="#111C4E">
+              <Text fontSize="sm" fontWeight="600" color={heading}>
                 {row.label}
               </Text>
               <Flex align="center" gap="8px">
                 <Icon as={MdClose} color="red.400" boxSize="16px" flexShrink={0} />
-                <Text fontSize="sm" color="gray.500">
+                <Text fontSize="sm" color={mutedLabel}>
                   {row.without}
                 </Text>
               </Flex>
               <Flex align="center" gap="8px">
                 <Icon as={MdCheck} color="green.400" boxSize="16px" flexShrink={0} />
-                <Text fontSize="sm" color="#111C4E" fontWeight="500">
+                <Text fontSize="sm" color={heading} fontWeight="500">
                   {row.with}
                 </Text>
               </Flex>
