@@ -8,6 +8,7 @@ type ImportRow = {
   email?: string;
   ordersCount?: number;
   totalSpent?: number;
+  currency?: string;
 };
 
 // Upserts keyed on (seller_id, external_customer_id) - the unique index
@@ -45,6 +46,7 @@ export async function POST(request: NextRequest) {
       email: r.email || null,
       orders_count: r.ordersCount ?? 0,
       total_spent: r.totalSpent ?? 0,
+      currency: r.currency || 'PKR',
       updated_at: new Date().toISOString(),
     })),
     { onConflict: 'seller_id,external_customer_id' },

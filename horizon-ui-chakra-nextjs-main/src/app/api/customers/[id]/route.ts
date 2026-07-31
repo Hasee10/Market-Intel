@@ -13,6 +13,7 @@ function mapCustomer(row: any): CustomerDto {
     lastOrderAt: row.last_order_at,
     ordersCount: row.orders_count,
     totalSpent: Number(row.total_spent),
+    currency: row.currency,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -41,11 +42,14 @@ export async function PUT(
       email: body.email || null,
       orders_count: body.ordersCount ?? 0,
       total_spent: body.totalSpent ?? 0,
+      currency: body.currency || 'PKR',
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
     .eq('seller_id', seller.id)
-    .select('id, external_customer_id, email, first_order_at, last_order_at, orders_count, total_spent, created_at, updated_at')
+    .select(
+      'id, external_customer_id, email, first_order_at, last_order_at, orders_count, total_spent, currency, created_at, updated_at',
+    )
     .single();
 
   if (error) {

@@ -425,3 +425,29 @@ create policy scraper_runs_select_all on scraper_runs
 -- Apply manually against Supabase, same convention as 001-015.
 
 alter table seller_products add column if not exists currency text not null default 'PKR';
+
+-- ===== 017_multi_currency_support.sql =====
+-- Products got a currency column (016) but orders/customers/reporting never
+-- followed - see 017 for full context. Apply manually against Supabase.
+
+alter table sellers add column if not exists reporting_currency text not null default 'PKR';
+alter table seller_customers add column if not exists currency text not null default 'PKR';
+
+create table if not exists fx_rates (
+  id uuid primary key default gen_random_uuid(),
+  base_currency text not null default 'USD',
+  quote_currency text not null,
+  rate numeric(18, 8) not null,
+  rate_date date not null default current_date,
+  fetched_at timestamptz not null default now(),
+  unique (base_currency, quote_currency, rate_date)
+);
+
+create index if not exists fx_rates_lookup_idx
+  on fx_rates (base_currency, rate_date desc);
+
+alter table fx_rates enable row level security;
+
+drop policy if exists fx_rates_select_all on fx_rates;
+create policy fx_rates_select_all on fx_rates
+  for select to authenticated using (true);

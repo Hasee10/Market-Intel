@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
+import { SUPPORTED_CURRENCIES } from '@/types/products';
 
 function mapPublicProfile(row: any) {
   return {
@@ -43,6 +44,7 @@ export async function GET() {
       email: seller.email,
       planTier: seller.planTier,
       onboardedAt: seller.onboardedAt,
+      reportingCurrency: seller.reportingCurrency,
       publicProfile: mapPublicProfile(publicProfile),
     },
     errors: [],
@@ -76,6 +78,23 @@ export async function PUT(request: NextRequest) {
     }
   }
 
+  const validCurrencyCodes = new Set(SUPPORTED_CURRENCIES.map((c) => c.code));
+  let reportingCurrency = seller.reportingCurrency;
+  if (typeof body.reportingCurrency === 'string' && validCurrencyCodes.has(body.reportingCurrency)) {
+    reportingCurrency = body.reportingCurrency;
+    const { error } = await supabase
+      .from('sellers')
+      .update({ reporting_currency: reportingCurrency })
+      .eq('id', seller.id);
+
+    if (error) {
+      return NextResponse.json(
+        { succeeded: false, data: null, errors: [error.message], message: 'Failed to update reporting currency' },
+        { status: 400 },
+      );
+    }
+  }
+
   const publicProfile = body.publicProfile ?? {};
   const { data: updatedProfile, error: profileError } = await supabase
     .from('seller_public_profile')
@@ -104,6 +123,7 @@ export async function PUT(request: NextRequest) {
       email: seller.email,
       planTier: seller.planTier,
       onboardedAt: seller.onboardedAt,
+      reportingCurrency,
       publicProfile: mapPublicProfile(updatedProfile),
     },
     errors: [],

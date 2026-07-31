@@ -11,6 +11,7 @@ import {
   DrawerFooter,
   DrawerHeader,
   DrawerOverlay,
+  Flex,
   FormControl,
   FormLabel,
   HStack,
@@ -24,6 +25,7 @@ import {
 
 import type { CustomerDto } from '@/types/customer';
 import type { OrderDto } from '@/types/order';
+import { SUPPORTED_CURRENCIES } from '@/types/products';
 
 type EditOrderDrawerProps = {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export function EditOrderDrawer({ isOpen, onClose, order, onOrderUpdated }: Edit
   const [externalOrderId, setExternalOrderId] = useState('');
   const [orderDate, setOrderDate] = useState('');
   const [totalAmount, setTotalAmount] = useState(0);
+  const [currency, setCurrency] = useState('PKR');
   const [status, setStatus] = useState('completed');
 
   const fetchCustomers = useCallback(async () => {
@@ -57,6 +60,7 @@ export function EditOrderDrawer({ isOpen, onClose, order, onOrderUpdated }: Edit
     setExternalOrderId(order.externalOrderId || '');
     setOrderDate(order.orderDate.slice(0, 10));
     setTotalAmount(order.totalAmount);
+    setCurrency(order.currency || 'PKR');
     setStatus(order.status || 'completed');
   }, [isOpen, order, fetchCustomers]);
 
@@ -72,6 +76,7 @@ export function EditOrderDrawer({ isOpen, onClose, order, onOrderUpdated }: Edit
           externalOrderId,
           orderDate,
           totalAmount,
+          currency,
           status,
         }),
       });
@@ -152,14 +157,28 @@ export function EditOrderDrawer({ isOpen, onClose, order, onOrderUpdated }: Edit
               </FormLabel>
               <Input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)} />
             </FormControl>
-            <FormControl isRequired>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Total amount
-              </FormLabel>
-              <NumberInput value={totalAmount} onChange={(_, v) => setTotalAmount(v || 0)} min={0}>
-                <NumberInputField />
-              </NumberInput>
-            </FormControl>
+            <Flex gap="12px">
+              <FormControl flex="2" isRequired>
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Total amount
+                </FormLabel>
+                <NumberInput value={totalAmount} onChange={(_, v) => setTotalAmount(v || 0)} min={0}>
+                  <NumberInputField />
+                </NumberInput>
+              </FormControl>
+              <FormControl flex="1">
+                <FormLabel fontSize="sm" fontWeight="500">
+                  Currency
+                </FormLabel>
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code}
+                    </option>
+                  ))}
+                </Select>
+              </FormControl>
+            </Flex>
             <FormControl>
               <FormLabel fontSize="sm" fontWeight="500">
                 Status

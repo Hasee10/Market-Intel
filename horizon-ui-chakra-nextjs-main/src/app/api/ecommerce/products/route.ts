@@ -2,13 +2,19 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
+import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 
-function mapProduct(row: any) {
+function mapProduct(row: any, reportingCurrency: string, fxRates: FxRates) {
   const category = Array.isArray(row.seller_categories)
     ? row.seller_categories[0]
     : row.seller_categories;
 
-  const sellPrice = Number(row.sell_price ?? 0);
+  // Products can each be in a different currency (seller_products.currency)
+  // - convert to the seller's reporting currency so ranking "by inventory
+  // value" compares like with like, and so the displayed total means
+  // something (a PKR 88,000 laptop and a EUR 12 item aren't directly
+  // comparable without conversion).
+  const sellPrice = convertCurrency(Number(row.sell_price ?? 0), row.currency, reportingCurrency, fxRates);
   const stockQty = row.stock_qty ?? 0;
 
   return {
@@ -17,9 +23,11 @@ function mapProduct(row: any) {
     sku: row.sku,
     category: category?.name ?? 'Uncategorized',
     sellPrice,
-    costPrice: row.cost_price !== null ? Number(row.cost_price) : null,
+    costPrice:
+      row.cost_price !== null ? convertCurrency(Number(row.cost_price), row.currency, reportingCurrency, fxRates) : null,
     stockQty,
     inventoryValue: sellPrice * stockQty,
+    currency: reportingCurrency,
   };
 }
 
@@ -33,13 +41,16 @@ export async function GET() {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('seller_products')
-    .select(
-      'id, sku, title, cost_price, sell_price, stock_qty, is_active, seller_categories(name)',
-    )
-    .eq('seller_id', seller.id)
-    .eq('is_active', true);
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('seller_products')
+      .select(
+        'id, sku, title, cost_price, sell_price, currency, stock_qty, is_active, seller_categories(name)',
+      )
+      .eq('seller_id', seller.id)
+      .eq('is_active', true),
+    getLatestFxRates(),
+  ]);
 
   if (error) {
     return NextResponse.json(
@@ -49,7 +60,7 @@ export async function GET() {
   }
 
   const mapped = (data ?? [])
-    .map(mapProduct)
+    .map((row) => mapProduct(row, seller.reportingCurrency, fxRates))
     .sort((a, b) => b.inventoryValue - a.inventoryValue);
 
   return NextResponse.json({

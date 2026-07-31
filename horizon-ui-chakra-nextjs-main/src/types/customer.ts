@@ -6,6 +6,7 @@ export interface CustomerDto {
   lastOrderAt: string | null;
   ordersCount: number;
   totalSpent: number;
+  currency: string;
   createdAt: string;
   updatedAt: string;
 }

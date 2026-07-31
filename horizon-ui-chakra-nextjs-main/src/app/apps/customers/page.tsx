@@ -32,6 +32,7 @@ const IMPORT_FIELDS: ImportField[] = [
   { key: 'email', label: 'Email' },
   { key: 'ordersCount', label: 'Orders count', type: 'number' },
   { key: 'totalSpent', label: 'Total spent', type: 'number' },
+  { key: 'currency', label: 'Currency (e.g. PKR)' },
 ];
 
 export default function CustomersPage() {

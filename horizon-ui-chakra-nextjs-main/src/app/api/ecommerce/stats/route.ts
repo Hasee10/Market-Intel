@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 function pctDiff(current: number, previous: number): number {
   if (previous === 0) return current === 0 ? 0 : 100;
@@ -23,10 +24,10 @@ export async function GET() {
   const periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
   const priorStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-  const [ordersRes, customersRes, productsRes] = await Promise.all([
+  const [ordersRes, customersRes, productsRes, fxRates] = await Promise.all([
     supabase
       .from('seller_orders')
-      .select('total_amount, order_date')
+      .select('total_amount, currency, order_date')
       .eq('seller_id', seller.id)
       .gte('order_date', priorStart.toISOString()),
     supabase
@@ -37,6 +38,7 @@ export async function GET() {
       .from('seller_products')
       .select('id, is_active, stock_qty')
       .eq('seller_id', seller.id),
+    getLatestFxRates(),
   ]);
 
   if (ordersRes.error || customersRes.error || productsRes.error) {
@@ -53,15 +55,23 @@ export async function GET() {
     );
   }
 
-  const orders = ordersRes.data ?? [];
+  const reportingCurrency = seller.reportingCurrency;
+  // Orders can each be in a different currency (seller_orders.currency) -
+  // convert every amount into the seller's reporting currency before
+  // summing, otherwise a mix of PKR/EUR/USD orders gets added together as
+  // if they were the same unit (e.g. "PKR 12 + EUR 12" silently becoming 24).
+  const orders = (ordersRes.data ?? []).map((o) => ({
+    ...o,
+    amountInReportingCurrency: convertCurrency(Number(o.total_amount), o.currency, reportingCurrency, fxRates),
+  }));
   const customers = customersRes.data ?? [];
   const products = productsRes.data ?? [];
 
   const currentOrders = orders.filter((o) => new Date(o.order_date) >= periodStart);
   const priorOrders = orders.filter((o) => new Date(o.order_date) < periodStart);
 
-  const currentRevenue = currentOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
-  const priorRevenue = priorOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
+  const currentRevenue = currentOrders.reduce((sum, o) => sum + o.amountInReportingCurrency, 0);
+  const priorRevenue = priorOrders.reduce((sum, o) => sum + o.amountInReportingCurrency, 0);
 
   const currentAov = currentOrders.length ? currentRevenue / currentOrders.length : 0;
   const priorAov = priorOrders.length ? priorRevenue / priorOrders.length : 0;
@@ -79,10 +89,15 @@ export async function GET() {
   const activeProducts = products.filter((p) => p.is_active).length;
   const lowStock = products.filter((p) => p.is_active && (p.stock_qty ?? 0) < 10).length;
 
+  const formatMoney = (amount: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: reportingCurrency, maximumFractionDigits: 2 }).format(
+      amount,
+    );
+
   const data = [
     {
       title: 'Revenue (30d)',
-      value: `$${currentRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      value: formatMoney(currentRevenue),
       diff: pctDiff(currentRevenue, priorRevenue),
       period: 'vs prior 30 days',
       icon: 'currency-dollar',
@@ -98,7 +113,7 @@ export async function GET() {
     },
     {
       title: 'Average Order Value',
-      value: `$${currentAov.toLocaleString('en-US', { minimumFractionDigits: 2 })}`,
+      value: formatMoney(currentAov),
       diff: pctDiff(currentAov, priorAov),
       period: 'vs prior 30 days',
       icon: 'receipt',

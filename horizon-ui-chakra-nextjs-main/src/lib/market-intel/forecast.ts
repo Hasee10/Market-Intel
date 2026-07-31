@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getPriceTrend } from '@/lib/market-intel/market-insights';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // Ordinary least squares on (dayIndex, value) - a straight-line trend, not
 // ARIMA/exponential smoothing/LSTM. With a scraper that runs every 2 days and
@@ -77,22 +78,26 @@ const REVENUE_LOOKBACK_DAYS = 60;
 // Same technique applied to the seller's own daily revenue, not competitor
 // pricing - a distinct signal (are they growing or shrinking), reusing the
 // same honest-about-its-limits linear-trend approach.
-export async function getRevenueForecast(sellerId: string): Promise<RevenueForecast | null> {
+export async function getRevenueForecast(sellerId: string, reportingCurrency: string): Promise<RevenueForecast | null> {
   const supabase = await createClient();
   const cutoff = new Date(Date.now() - REVENUE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
-    .from('seller_orders')
-    .select('order_date, total_amount')
-    .eq('seller_id', sellerId)
-    .gte('order_date', cutoff);
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('seller_orders')
+      .select('order_date, total_amount, currency')
+      .eq('seller_id', sellerId)
+      .gte('order_date', cutoff),
+    getLatestFxRates(),
+  ]);
 
   if (error || !data) return null;
 
   const byDate = new Map<string, number>();
   for (const row of data) {
     const date = row.order_date.slice(0, 10);
-    byDate.set(date, (byDate.get(date) ?? 0) + Number(row.total_amount));
+    const amount = convertCurrency(Number(row.total_amount), row.currency, reportingCurrency, fxRates);
+    byDate.set(date, (byDate.get(date) ?? 0) + amount);
   }
 
   const series = Array.from(byDate.entries())

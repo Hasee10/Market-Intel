@@ -17,6 +17,6 @@ export async function GET() {
     return NextResponse.json({ succeeded: true, data: null, errors: [], message: 'Requires premium plan' });
   }
 
-  const forecast = await getRevenueForecast(seller.id);
+  const forecast = await getRevenueForecast(seller.id, seller.reportingCurrency);
   return NextResponse.json({ succeeded: true, data: forecast, errors: [], message: 'Forecast retrieved successfully' });
 }

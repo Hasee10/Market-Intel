@@ -14,12 +14,12 @@ export async function GET() {
 
   const [snapshot, atRiskCustomers] = await Promise.all([
     getLatestChurnSnapshot(seller.id),
-    getAtRiskCustomers(seller.id),
+    getAtRiskCustomers(seller.id, seller.reportingCurrency),
   ]);
 
   return NextResponse.json({
     succeeded: true,
-    data: { snapshot, atRiskCustomers },
+    data: { snapshot, atRiskCustomers, reportingCurrency: seller.reportingCurrency },
     errors: [],
     message: 'Retention data retrieved successfully',
   });

@@ -34,7 +34,7 @@ export default async function MarketPage() {
 
   const benchmarks = domain && entitlements.peerBenchmarks ? await getDomainBenchmarks(domain.categoryId) : [];
   const peers = domain && seller && entitlements.peerBenchmarks ? await getDomainPeers(domain.categoryId, seller.id) : [];
-  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug) : null;
+  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug, seller?.reportingCurrency ?? 'PKR') : null;
   const priceTrend = domain ? await getPriceTrend(domain.categorySlug) : [];
   const stockOuts = domain ? await getStockOuts(domain.categorySlug) : [];
   const freshness = domain ? await getDataFreshness(domain.categorySlug) : [];
@@ -43,7 +43,7 @@ export default async function MarketPage() {
     domain && seller && entitlements.productMatching ? await findTopProductMatches(seller.id, domain.categorySlug) : [];
   const pricingRecommendations =
     domain && seller && entitlements.pricingRecommendations
-      ? await getPricingRecommendations(seller.id, domain.categorySlug)
+      ? await getPricingRecommendations(seller.id, domain.categorySlug, seller.reportingCurrency)
       : [];
   const priceForecast =
     domain && entitlements.forecasting ? await getCategoryPriceForecast(domain.categorySlug) : null;

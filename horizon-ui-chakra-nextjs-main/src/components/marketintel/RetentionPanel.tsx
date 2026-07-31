@@ -27,15 +27,16 @@ import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/rfm';
 type RetentionData = {
   snapshot: ChurnSnapshot | null;
   atRiskCustomers: AtRiskCustomer[];
+  reportingCurrency: string;
 };
 
 function formatPct(value: number | null) {
   return value != null ? `${value.toFixed(1)}%` : '—';
 }
 
-function formatCurrency(value: number | null) {
+function formatCurrency(value: number | null, currency: string) {
   if (value == null) return '—';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
 }
 
 function downloadCsv(customers: AtRiskCustomer[]) {
@@ -59,6 +60,7 @@ export function RetentionPanel() {
   const { data, loading } = useFetch<IApiResponse<RetentionData>>('/api/customers/at-risk');
   const snapshot = data?.data?.snapshot ?? null;
   const atRiskCustomers = data?.data?.atRiskCustomers ?? [];
+  const reportingCurrency = data?.data?.reportingCurrency ?? 'PKR';
 
   if (loading) {
     return <Skeleton height="200px" borderRadius="16px" mb="20px" />;
@@ -68,7 +70,7 @@ export function RetentionPanel() {
     { title: 'Retention rate (30d)', value: formatPct(snapshot?.retentionRate ?? null) },
     { title: 'Churn rate (30d)', value: formatPct(snapshot?.churnRate ?? null) },
     { title: 'Repeat purchase rate', value: formatPct(snapshot?.repeatPurchaseRate ?? null) },
-    { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null) },
+    { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null, reportingCurrency) },
   ];
 
   return (
@@ -123,7 +125,7 @@ export function RetentionPanel() {
                     <Td>{c.label}</Td>
                     <Td isNumeric>{c.daysSinceLastOrder}</Td>
                     <Td isNumeric>{c.ordersCount}</Td>
-                    <Td isNumeric>{formatCurrency(c.totalSpent)}</Td>
+                    <Td isNumeric>{formatCurrency(c.totalSpent, c.currency)}</Td>
                     <Td>
                       <Badge colorScheme="orange">
                         R{c.recencyScore} F{c.frequencyScore} M{c.monetaryScore}

@@ -1,6 +1,7 @@
 'server-only';
 
 import { createAdminClient } from '@/lib/supabase/server';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 const WINDOW_DAYS = 30;
 
@@ -8,6 +9,7 @@ type CustomerRow = {
   seller_id: string;
   orders_count: number;
   total_spent: number;
+  currency: string;
   first_order_at: string | null;
   last_order_at: string | null;
 };
@@ -44,11 +46,18 @@ export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
   const priorStart = new Date(now - 2 * WINDOW_DAYS * 24 * 60 * 60 * 1000);
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data, error } = await supabase
-    .from('seller_customers')
-    .select('seller_id, orders_count, total_spent, first_order_at, last_order_at');
+  const [{ data, error }, { data: sellers, error: sellersError }, fxRates] = await Promise.all([
+    supabase
+      .from('seller_customers')
+      .select('seller_id, orders_count, total_spent, currency, first_order_at, last_order_at'),
+    supabase.from('sellers').select('id, reporting_currency'),
+    getLatestFxRates(),
+  ]);
 
   if (error) throw new Error(`Failed to load seller_customers: ${error.message}`);
+  if (sellersError) throw new Error(`Failed to load sellers: ${sellersError.message}`);
+
+  const reportingCurrencyBySeller = new Map((sellers ?? []).map((s) => [s.id, s.reporting_currency]));
 
   const bySeller = new Map<string, CustomerRow[]>();
   for (const row of (data ?? []) as CustomerRow[]) {
@@ -59,6 +68,7 @@ export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
   const rows: Record<string, unknown>[] = [];
 
   for (const [sellerId, customers] of bySeller) {
+    const reportingCurrency = reportingCurrencyBySeller.get(sellerId) ?? 'PKR';
     const withOrders = customers.filter((c) => c.orders_count > 0);
     const activeCurrent = withOrders.filter(
       (c) => c.last_order_at && new Date(c.last_order_at) >= currentStart,
@@ -88,9 +98,15 @@ export async function computeChurnSnapshots(): Promise<ChurnJobResult> {
       withOrders.length > 0
         ? (withOrders.filter((c) => c.orders_count > 1).length / withOrders.length) * 100
         : null;
+    // Customers can each be in a different currency (seller_customers.currency)
+    // - convert to the seller's reporting currency before averaging, same
+    // reasoning as the order/revenue conversions elsewhere in lib/market-intel.
     const avgClv =
       withOrders.length > 0
-        ? withOrders.reduce((sum, c) => sum + Number(c.total_spent), 0) / withOrders.length
+        ? withOrders.reduce(
+            (sum, c) => sum + convertCurrency(Number(c.total_spent), c.currency, reportingCurrency, fxRates),
+            0,
+          ) / withOrders.length
         : null;
 
     rows.push({

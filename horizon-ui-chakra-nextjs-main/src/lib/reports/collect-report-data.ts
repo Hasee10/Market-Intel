@@ -7,6 +7,7 @@ import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
 import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller';
 import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/rfm';
 import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/low-stock-job';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import { generateReportInsights, type ReportInsights } from '@/lib/ai/generate-report-insights';
 
 const LOOKBACK_DAYS = 30;
@@ -66,26 +67,31 @@ function pctChange(current: number, previous: number): number {
 // (retailer marketplaces) and market_classified_listings (OLX), since some
 // seller categories only have OLX coverage. Classifieds have no in_stock
 // column - status:'active' (already required by the query) stands in for it.
-async function getCompetitorTracking(categorySlug: string | null, median: number | null): Promise<CompetitorTrackingRow[]> {
+async function getCompetitorTracking(
+  categorySlug: string | null,
+  median: number | null,
+  reportingCurrency: string,
+): Promise<CompetitorTrackingRow[]> {
   if (!categorySlug) return [];
   const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
   if (!keywordPattern) return [];
 
   const supabase = await createClient();
-  const [productsRes, listingsRes] = await Promise.all([
+  const [productsRes, listingsRes, fxRates] = await Promise.all([
     supabase
       .from('market_products')
-      .select('title, price, category_slug, in_stock, last_seen_at')
+      .select('title, price, currency, category_slug, in_stock, last_seen_at')
       .not('price', 'is', null)
       .order('last_seen_at', { ascending: false })
       .limit(200),
     supabase
       .from('market_classified_listings')
-      .select('title, price, category_slug, last_seen_at')
+      .select('title, price, currency, category_slug, last_seen_at')
       .eq('status', 'active')
       .not('price', 'is', null)
       .order('last_seen_at', { ascending: false })
       .limit(200),
+    getLatestFxRates(),
   ]);
 
   const productRows = (productsRes.data ?? []).map((row) => ({ ...row, in_stock: row.in_stock as boolean | null }));
@@ -98,7 +104,11 @@ async function getCompetitorTracking(categorySlug: string | null, median: number
   const matched = data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug)).slice(0, TRACKED_SKU_ROWS);
 
   return matched.map((row) => {
-    const price = Number(row.price);
+    // Scraped rows carry their own currency (almost always 'PKR', since
+    // every scraper here targets Pakistani sites) - convert to the seller's
+    // reporting currency so this compares against `median`, which is
+    // already in that same currency (see getCategoryPricing).
+    const price = convertCurrency(Number(row.price), row.currency, reportingCurrency, fxRates);
     const priceDeltaPct = median ? ((price - median) / median) * 100 : null;
     const stockState: CompetitorTrackingRow['stockState'] = row.in_stock === false ? 'Out of Stock' : 'In Stock';
 
@@ -141,35 +151,51 @@ export async function collectReportData(seller: Seller): Promise<ReportData> {
   const previousPeriodStart = new Date(Date.now() - LOOKBACK_DAYS * 2 * 24 * 60 * 60 * 1000).toISOString();
 
   const domain = await getPrimaryDomain(seller.id);
+  const reportingCurrency = seller.reportingCurrency;
 
-  const [ordersRes, previousOrdersRes, productsRes, benchmarks, categoryPricing, churn, atRiskCustomers] = await Promise.all([
-    supabase
-      .from('seller_orders')
-      .select('total_amount, order_date')
-      .eq('seller_id', seller.id)
-      .gte('order_date', periodStart),
-    supabase
-      .from('seller_orders')
-      .select('total_amount')
-      .eq('seller_id', seller.id)
-      .gte('order_date', previousPeriodStart)
-      .lt('order_date', periodStart),
-    supabase
-      .from('seller_products')
-      .select('title, sell_price, stock_qty, is_active, seller_categories(name)')
-      .eq('seller_id', seller.id),
-    domain ? getDomainBenchmarks(domain.categoryId) : Promise.resolve([]),
-    domain ? getCategoryPricing(domain.categorySlug) : Promise.resolve(null),
-    getLatestChurnSnapshot(seller.id),
-    getAtRiskCustomers(seller.id),
-  ]);
+  const [ordersRes, previousOrdersRes, productsRes, benchmarks, categoryPricing, churn, atRiskCustomers, fxRates] =
+    await Promise.all([
+      supabase
+        .from('seller_orders')
+        .select('total_amount, currency, order_date')
+        .eq('seller_id', seller.id)
+        .gte('order_date', periodStart),
+      supabase
+        .from('seller_orders')
+        .select('total_amount, currency')
+        .eq('seller_id', seller.id)
+        .gte('order_date', previousPeriodStart)
+        .lt('order_date', periodStart),
+      supabase
+        .from('seller_products')
+        .select('title, sell_price, currency, stock_qty, is_active, seller_categories(name)')
+        .eq('seller_id', seller.id),
+      domain ? getDomainBenchmarks(domain.categoryId) : Promise.resolve([]),
+      domain ? getCategoryPricing(domain.categorySlug, reportingCurrency) : Promise.resolve(null),
+      getLatestChurnSnapshot(seller.id),
+      getAtRiskCustomers(seller.id, reportingCurrency),
+      getLatestFxRates(),
+    ]);
 
-  const orders = ordersRes.data ?? [];
-  const previousOrders = previousOrdersRes.data ?? [];
-  const products = productsRes.data ?? [];
+  // Orders and products can each be in a different currency (their own
+  // .currency column) - convert every amount into the seller's reporting
+  // currency up front, so every calculation below (revenue, AOV, inventory
+  // value, price index, portfolio matrix) is comparing like with like
+  // instead of silently summing mixed units.
+  const orders = (ordersRes.data ?? []).map((o) => ({
+    ...o,
+    amount: convertCurrency(Number(o.total_amount), o.currency, reportingCurrency, fxRates),
+  }));
+  const previousOrders = (previousOrdersRes.data ?? []).map((o) => ({
+    amount: convertCurrency(Number(o.total_amount), o.currency, reportingCurrency, fxRates),
+  }));
+  const products = (productsRes.data ?? []).map((p) => ({
+    ...p,
+    sell_price: convertCurrency(Number(p.sell_price ?? 0), p.currency, reportingCurrency, fxRates),
+  }));
 
-  const revenue = orders.reduce((sum, o) => sum + Number(o.total_amount), 0);
-  const previousRevenue = previousOrders.reduce((sum, o) => sum + Number(o.total_amount), 0);
+  const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
+  const previousRevenue = previousOrders.reduce((sum, o) => sum + o.amount, 0);
   const orderCount = orders.length;
   const previousOrderCount = previousOrders.length;
   const activeProducts = products.filter((p) => p.is_active);
@@ -226,11 +252,15 @@ export async function collectReportData(seller: Seller): Promise<ReportData> {
   for (const order of orders) {
     const offset = new Date(order.order_date).getTime() - periodStartMs;
     const bucketIndex = Math.min(WEEKLY_BUCKETS - 1, Math.max(0, Math.floor(offset / bucketMs)));
-    buckets[bucketIndex] += Number(order.total_amount);
+    buckets[bucketIndex] += order.amount;
   }
   const weeklyRevenue = buckets.map((value, i) => ({ label: `Wk ${i + 1}`, revenue: Number(value.toFixed(2)) }));
 
-  const competitorTracking = await getCompetitorTracking(domain?.categorySlug ?? null, categoryPricing?.median ?? null);
+  const competitorTracking = await getCompetitorTracking(
+    domain?.categorySlug ?? null,
+    categoryPricing?.median ?? null,
+    reportingCurrency,
+  );
 
   const reportData: ReportData = {
     seller,
