@@ -63,13 +63,6 @@ export function SidebarLinks(props: SidebarLinksProps) {
   let hoverPillBg = useColorModeValue('gray.50', 'whiteAlpha.50');
   let sectionHeaderColor = useColorModeValue('secondaryGray.500', 'secondaryGray.500');
 
-  // Every section starts open - collapsing is something a seller opts into
-  // per section, not a default state that hides half the nav on first load.
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
-  const isSectionOpen = (name: string) => openSections[name] ?? true;
-  const toggleSection = (name: string) =>
-    setOpenSections((prev) => ({ ...prev, [name]: !isSectionOpen(name) }));
-
   // verifies if routeName is the one active (in browser input) - exact
   // match, not substring: pathname.includes('/apps/products') was also
   // true on /apps/products/categories, highlighting both links at once.
@@ -79,6 +72,19 @@ export function SidebarLinks(props: SidebarLinksProps) {
     },
     [pathname],
   );
+
+  // Sections start collapsed by default, except the one holding the page
+  // you're currently on (so landing on /apps/products/categories doesn't
+  // hide it inside a closed "Store Data" group). Once you click a header,
+  // that explicit choice wins over the auto-open-active-section default
+  // until you toggle it again.
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+  const isSectionOpen = (section: { name: string; routes: IRoute[] }) => {
+    if (section.name in openSections) return openSections[section.name];
+    return section.routes.some((r) => activeRoute(r.path.toLowerCase()));
+  };
+  const toggleSection = (section: { name: string; routes: IRoute[] }) =>
+    setOpenSections((prev) => ({ ...prev, [section.name]: !isSectionOpen(section) }));
 
   const renderRouteItem = (route: IRoute, key: string | number) => {
     const isActive = activeRoute(route.path.toLowerCase());
@@ -130,22 +136,25 @@ export function SidebarLinks(props: SidebarLinksProps) {
       return section.routes.map((route) => renderRouteItem(route, route.path));
     }
 
-    const isOpen = isSectionOpen(section.name);
+    const isOpen = isSectionOpen(section);
 
     return (
       <Box key={section.name} mt="18px">
         <Flex
           as="button"
           type="button"
-          onClick={() => toggleSection(section.name)}
+          onClick={() => toggleSection(section)}
           align="center"
           justify="space-between"
           w="100%"
           ps="10px"
-          pe="4px"
-          pb="4px"
+          pe="8px"
+          py="8px"
+          borderRadius="8px"
           cursor="pointer"
           aria-expanded={isOpen}
+          _hover={{ bg: hoverPillBg }}
+          transition="background 0.15s ease"
         >
           <Text
             fontSize="xs"
@@ -158,7 +167,7 @@ export function SidebarLinks(props: SidebarLinksProps) {
           </Text>
           <Icon
             as={MdExpandMore}
-            boxSize="16px"
+            boxSize="18px"
             color={sectionHeaderColor}
             transform={isOpen ? 'rotate(0deg)' : 'rotate(-90deg)'}
             transition="transform 0.15s ease"

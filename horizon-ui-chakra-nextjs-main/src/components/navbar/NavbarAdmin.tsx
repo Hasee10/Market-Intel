@@ -7,7 +7,6 @@ import {
 } from '@chakra-ui/react'
 import { useState, useEffect } from 'react'
 import AdminNavbarLinks from 'components/navbar/NavbarLinksAdmin'
-import { SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth'
 import { isWindowAvailable } from 'utils/navigation'
 
 export default function AdminNavbar (props: {
@@ -32,19 +31,19 @@ export default function AdminNavbar (props: {
     }
   })
 
-  const { secondary, sidebarWidth = SIDEBAR_WIDTH_EXPANDED } = props
+  const { secondary } = props
 
-  // Here are all the props that may change depending on navbar's type or state.(secondary, variant, scrolled)
-  let navbarPosition = 'fixed' as const
+  // Sticky-in-flow, full width of the content column, instead of the old
+  // `position: fixed` floating rounded card with top/side gaps - those gaps
+  // let scrolled page content show through around the card's edges no
+  // matter how opaque the card itself was. A sticky bar has no gaps to
+  // leak through, so real glassmorphism (translucent + blur) is safe here.
+  let navbarPosition = 'sticky' as const
   let navbarFilter = 'none'
-  let navbarBackdrop = 'blur(20px)'
-  // Was translucent (0.2/0.5 alpha) at all times with an unused `scrolled`
-  // state - page content behind the navbar showed straight through it
-  // whether scrolled or not. Solid at all times fixes that; the extra
-  // shadow on scroll is what signals "you've scrolled" instead.
-  let navbarBg = useColorModeValue('white', 'navy.800')
+  let navbarBackdrop = 'blur(20px) saturate(180%)'
+  let navbarBg = useColorModeValue('rgba(255, 255, 255, 0.72)', 'rgba(17, 28, 68, 0.72)')
   let navbarShadow = scrolled
-    ? '0px 7px 23px rgba(0, 0, 0, 0.05)'
+    ? '0px 7px 23px rgba(0, 0, 0, 0.06)'
     : 'none'
   let navbarBorder = useColorModeValue('gray.200', 'whiteAlpha.100')
   let secondaryMargin = '0px'
@@ -68,8 +67,8 @@ export default function AdminNavbar (props: {
       backdropFilter={navbarBackdrop}
       backgroundPosition='center'
       backgroundSize='cover'
-      borderRadius='16px'
-      borderWidth='1.5px'
+      borderRadius='0px'
+      borderBottomWidth='1.5px'
       borderStyle='solid'
       transitionDelay='0s, 0s, 0s, 0s'
       transitionDuration=' 0.25s, 0.25s, 0.25s, 0s'
@@ -83,23 +82,14 @@ export default function AdminNavbar (props: {
       mx='auto'
       mt={secondaryMargin}
       pb='8px'
-      right={{ base: '12px', md: '30px', lg: '30px', xl: '30px' }}
+      zIndex='100'
       px={{
         sm: paddingX,
-        md: '10px'
-      }}
-      ps={{
-        xl: '12px'
+        md: '20px'
       }}
       pt='8px'
-      top={{ base: '12px', md: '16px', xl: '18px' }}
-      w={{
-        base: 'calc(100vw - 6%)',
-        md: 'calc(100vw - 8%)',
-        lg: 'calc(100vw - 6%)',
-        xl: `calc(100vw - ${sidebarWidth + 60}px)`,
-        '2xl': `calc(100vw - ${sidebarWidth + 75}px)`
-      }}
+      top='0px'
+      w='100%'
     >
       <Flex
         w='100%'

@@ -1,6 +1,6 @@
 'use client';
 // Chakra imports
-import { Portal, Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
+import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
 import Footer from 'components/footer/FooterAdmin';
 // Layout components
 import Navbar from 'components/navbar/NavbarAdmin';
@@ -68,32 +68,22 @@ export default function AdminShell(props: AdminShellProps) {
           transitionProperty="top, bottom, width"
           transitionTimingFunction="linear, linear, ease"
         >
-          <Portal>
-            <Box>
-              <Navbar
-                onOpen={onOpen}
-                logoText={'Ryvl'}
-                brandText={getActiveRoute(routes, pathname)}
-                secondary={getActiveNavbar(routes, pathname)}
-                message={getActiveNavbarText(routes, pathname)}
-                fixed={fixed}
-                sidebarWidth={sidebarWidth}
-                {...rest}
-              />
-            </Box>
-          </Portal>
+          <Navbar
+            onOpen={onOpen}
+            logoText={'Ryvl'}
+            brandText={getActiveRoute(routes, pathname)}
+            secondary={getActiveNavbar(routes, pathname)}
+            message={getActiveNavbarText(routes, pathname)}
+            fixed={fixed}
+            sidebarWidth={sidebarWidth}
+            {...rest}
+          />
 
-          {/* pt clears the fixed navbar's own footprint (top offset + its
-              minH + padding, ~109px on xl) - it was 50px before, which was
-              never actually enough; that only stayed invisible while the
-              navbar was translucent enough to see page content through it. */}
-          <Box
-            mx="auto"
-            p={{ base: '20px', md: '30px' }}
-            pe="20px"
-            minH="100vh"
-            pt={{ base: '140px', md: '120px', xl: '110px' }}
-          >
+          {/* Navbar is `position: sticky` and lives in this same scroll
+              container (not portaled to body), so it reserves its own
+              space in the flow - no manual top-padding guess needed to
+              clear it. */}
+          <Box mx="auto" p={{ base: '20px', md: '30px' }} pe="20px" minH="100vh">
             {children}
           </Box>
           <Box>
