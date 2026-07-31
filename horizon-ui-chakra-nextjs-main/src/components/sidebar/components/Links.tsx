@@ -47,6 +47,23 @@ export function SidebarLinks(props: SidebarLinksProps) {
         route.layout === ''
       ) {
         const isActive = activeRoute(route.path.toLowerCase());
+        const previousSection = index > 0 ? routes[index - 1].section : undefined;
+        const sectionHeader =
+          !isCollapsed && route.section && route.section !== previousSection ? (
+            <Text
+              key={`section-${route.section}`}
+              fontSize="xs"
+              fontWeight="700"
+              color="secondaryGray.500"
+              textTransform="uppercase"
+              letterSpacing="0.04em"
+              ps="10px"
+              pt={index === 0 ? '0px' : '18px'}
+              pb="4px"
+            >
+              {route.section}
+            </Text>
+          ) : null;
 
         if (isCollapsed && route.icon) {
           return (
@@ -61,7 +78,9 @@ export function SidebarLinks(props: SidebarLinksProps) {
         }
 
         return (
-          <Link key={index} href={route.layout + route.path}>
+          <Box key={index}>
+            {sectionHeader}
+            <Link href={route.layout + route.path}>
             {route.icon ? (
               <Box>
                 <HStack
@@ -136,7 +155,8 @@ export function SidebarLinks(props: SidebarLinksProps) {
                 </HStack>
               </Box>
             )}
-          </Link>
+            </Link>
+          </Box>
         );
       }
     });

@@ -14,12 +14,14 @@ import { MdCheck, MdChevronRight } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 import { useFetch } from '@/lib/hooks/useApi';
-import { PATH_APPS, PATH_DASHBOARD, PATH_ONBOARDING } from '@/lib/paths';
+import { PATH_APPS, PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import type { OnboardingStatus } from '@/lib/market-intel/onboarding-status';
 
+// 'hasDomain' isn't a step here anymore - dashboard/apps layout.tsx now
+// redirects any seller without a category to /onboarding before they can
+// reach this checklist at all, so it would always show as already done.
 const STEPS: Array<{ key: keyof OnboardingStatus; label: string; href: string }> = [
-  { key: 'hasDomain', label: 'Pick your category', href: PATH_ONBOARDING },
   { key: 'hasProduct', label: 'Add your first product', href: PATH_APPS.products.root },
   { key: 'hasOrder', label: 'Record your first order', href: PATH_APPS.orders },
   { key: 'hasWatchlistItem', label: 'Track a competitor', href: PATH_DASHBOARD.watchlist },

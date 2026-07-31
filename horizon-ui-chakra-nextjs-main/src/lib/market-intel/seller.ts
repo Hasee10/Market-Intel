@@ -92,6 +92,24 @@ export async function requireSeller(): Promise<Seller> {
   return seller;
 }
 
+// Same auth guard as requireSeller(), plus a redirect to /onboarding for any
+// seller who hasn't picked a category yet. Signup used to drop a brand-new
+// seller straight onto an empty Overview page with domain-selection buried
+// as just one item in a "Getting started" checklist they could ignore -
+// meaning the one thing that doesn't need their own store data (peer/
+// competitor pricing, gated only by category) was the slowest thing to
+// reach. dashboard/ and apps/ use this instead of requireSeller() so every
+// route under them enforces the same order; onboarding/ itself must keep
+// using plain requireSeller() or this would redirect-loop.
+export async function requireOnboardedSeller(): Promise<Seller> {
+  const seller = await requireSeller();
+  const domain = await getPrimaryDomain(seller.id);
+  if (!domain) {
+    redirect('/onboarding');
+  }
+  return seller;
+}
+
 // A seller's primary domain, if they've completed onboarding
 // (see app/onboarding). Null until seller_domains has an is_primary row.
 export async function getPrimaryDomain(sellerId: string): Promise<SellerDomain | null> {
