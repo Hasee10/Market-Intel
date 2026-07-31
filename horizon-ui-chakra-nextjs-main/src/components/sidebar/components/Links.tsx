@@ -25,7 +25,11 @@ export function SidebarLinks(props: SidebarLinksProps) {
   );
   let activeIcon = useColorModeValue('brand.500', 'white');
   let textColor = useColorModeValue('secondaryGray.500', 'white');
-  let brandColor = useColorModeValue('brand.500', 'brand.400');
+  // Filled pill behind the active item (Linear/Vercel-style sidebar), not
+  // just a thin accent bar - reads as a clear "you are here" state instead
+  // of a subtle color change easy to miss at a glance.
+  let activePillBg = useColorModeValue('brand.100', 'whiteAlpha.100');
+  let hoverPillBg = useColorModeValue('gray.50', 'whiteAlpha.50');
 
   // verifies if routeName is the one active (in browser input) - exact
   // match, not substring: pathname.includes('/apps/products') was also
@@ -82,76 +86,46 @@ export function SidebarLinks(props: SidebarLinksProps) {
             {sectionHeader}
             <Link href={route.layout + route.path}>
             {route.icon ? (
-              <Box>
+              <Box px="2px" py="2px">
                 <HStack
-                  spacing={
-                    activeRoute(route.path.toLowerCase()) ? '22px' : '26px'
-                  }
-                  py="5px"
-                  ps="10px"
+                  spacing="14px"
+                  py="9px"
+                  ps="12px"
+                  pe="10px"
+                  borderRadius="12px"
+                  bg={isActive ? activePillBg : 'transparent'}
+                  transition="background 0.15s ease"
+                  _hover={isActive ? undefined : { bg: hoverPillBg }}
                 >
-                  <Flex w="100%" alignItems="center" justifyContent="center">
-                    <Box
-                      color={
-                        activeRoute(route.path.toLowerCase())
-                          ? activeIcon
-                          : textColor
-                      }
-                      me="18px"
-                    >
-                      {route.icon}
-                    </Box>
-                    <Text
-                      me="auto"
-                      color={
-                        activeRoute(route.path.toLowerCase())
-                          ? activeColor
-                          : textColor
-                      }
-                      fontWeight={
-                        activeRoute(route.path.toLowerCase())
-                          ? 'bold'
-                          : 'normal'
-                      }
-                    >
-                      {route.name}
-                    </Text>
-                  </Flex>
-                  <Box
-                    h="36px"
-                    w="4px"
-                    bg={
-                      activeRoute(route.path.toLowerCase())
-                        ? brandColor
-                        : 'transparent'
-                    }
-                    borderRadius="5px"
-                  />
-                </HStack>
-              </Box>
-            ) : (
-              <Box>
-                <HStack
-                  spacing={
-                    activeRoute(route.path.toLowerCase()) ? '22px' : '26px'
-                  }
-                  py="5px"
-                  ps="10px"
-                >
+                  <Box color={isActive ? activeIcon : textColor}>{route.icon}</Box>
                   <Text
                     me="auto"
-                    color={
-                      activeRoute(route.path.toLowerCase())
-                        ? activeColor
-                        : inactiveColor
-                    }
-                    fontWeight={
-                      activeRoute(route.path.toLowerCase()) ? 'bold' : 'normal'
-                    }
+                    fontSize="sm"
+                    color={isActive ? activeColor : textColor}
+                    fontWeight={isActive ? '700' : '500'}
                   >
                     {route.name}
                   </Text>
-                  <Box h="36px" w="4px" bg="brand.400" borderRadius="5px" />
+                </HStack>
+              </Box>
+            ) : (
+              <Box px="2px" py="2px">
+                <HStack
+                  spacing="14px"
+                  py="9px"
+                  ps="12px"
+                  pe="10px"
+                  borderRadius="12px"
+                  bg={isActive ? activePillBg : 'transparent'}
+                >
+                  <Text
+                    me="auto"
+                    fontSize="sm"
+                    color={isActive ? activeColor : inactiveColor}
+                    fontWeight={isActive ? '700' : '500'}
+                  >
+                    {route.name}
+                  </Text>
                 </HStack>
               </Box>
             )}

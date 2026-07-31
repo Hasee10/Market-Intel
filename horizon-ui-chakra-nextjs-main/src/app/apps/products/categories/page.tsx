@@ -61,18 +61,33 @@ export default function CategoriesPage() {
       );
     }
 
+    // Categories with real inventory float to the top instead of sitting
+    // wherever they land in the fixed 12-category list - the ones actually
+    // worth looking at should be the first thing seen, not mixed in
+    // alphabetically with empty ones.
+    const sorted = [...categoriesData.data].sort((a, b) => b.productCount - a.productCount);
+
     return (
       <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
-        {categoriesData.data.map((category) => (
+        {sorted.map((category) => (
           <CategoryCard key={category.id} data={category} />
         ))}
       </SimpleGrid>
     );
   };
 
+  const activeCount = categoriesData?.data?.filter((c) => c.productCount > 0).length ?? 0;
+  const totalCount = categoriesData?.data?.length ?? 0;
+
   return (
     <>
       <PageHeader title="Product Categories" breadcrumbItems={breadcrumbItems} />
+      {totalCount > 0 && (
+        <Text fontSize="sm" color="secondaryGray.600" mb="20px" mt="-12px">
+          {activeCount} of {totalCount} categories have products - click any category to see (or add) its
+          products.
+        </Text>
+      )}
       {renderContent()}
     </>
   );

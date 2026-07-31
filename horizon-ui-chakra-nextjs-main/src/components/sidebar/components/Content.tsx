@@ -3,6 +3,7 @@ import { Box, Flex, Stack } from '@chakra-ui/react';
 //   Custom components
 import Brand from 'components/sidebar/components/Brand';
 import Links from 'components/sidebar/components/Links';
+import PlanBadge from 'components/sidebar/components/PlanBadge';
 import { IRoute } from 'types/navigation';
 
 // FUNCTIONS
@@ -24,6 +25,7 @@ function SidebarContent(props: SidebarContentProps) {
 					<Links routes={routes} isCollapsed={isCollapsed} />
 				</Box>
 			</Stack>
+			<PlanBadge isCollapsed={isCollapsed} />
 		</Flex>
 	);
 }

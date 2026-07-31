@@ -28,7 +28,7 @@ function mapProduct(row: any): IProduct {
 const PRODUCT_COLUMNS =
   'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, created_at, updated_at, seller_categories(name)';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {
     return NextResponse.json(
@@ -37,12 +37,20 @@ export async function GET() {
     );
   }
 
+  const categoryId = request.nextUrl.searchParams.get('categoryId');
+
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from('seller_products')
     .select(PRODUCT_COLUMNS)
     .eq('seller_id', seller.id)
     .order('created_at', { ascending: false });
+
+  if (categoryId) {
+    query = query.eq('category_id', categoryId);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json(

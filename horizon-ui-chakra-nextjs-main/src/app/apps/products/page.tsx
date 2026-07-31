@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 
-import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import Card from 'components/card/Card';
 
@@ -36,19 +37,38 @@ const IMPORT_FIELDS: ImportField[] = [
   { key: 'isActive', label: 'Active (yes/no)', type: 'boolean' },
 ];
 
+// useSearchParams() (for ?categoryId=&categoryName=, arriving via a click
+// from the Categories page) forces this into a client-side-rendered
+// boundary during prerendering, same reason as auth/signup/page.tsx - the
+// actual page lives in ProductsPageContent below, this default export is
+// just the Suspense wrapper.
 export default function ProductsPage() {
+  return (
+    <Suspense fallback={null}>
+      <ProductsPageContent />
+    </Suspense>
+  );
+}
+
+function ProductsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryFilterId = searchParams.get('categoryId');
+  const categoryFilterName = searchParams.get('categoryName');
+
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [newOpen, setNewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
+  const apiUrl = categoryFilterId ? `/api/products?categoryId=${categoryFilterId}` : '/api/products';
   const {
     data: productsData,
     loading: productsLoading,
     error: productsError,
     refetch: refetchProducts,
-  } = useFetch<IApiResponse<IProduct[]>>('/api/products');
+  } = useFetch<IApiResponse<IProduct[]>>(apiUrl);
 
   const handleProductCreated = useCallback(() => {
     refetchProducts();
@@ -62,6 +82,8 @@ export default function ProductsPage() {
     setSelectedProduct(product);
     setEditOpen(true);
   };
+
+  const clearCategoryFilter = () => router.push('/apps/products');
 
   const renderContent = () => {
     if (productsLoading) {
@@ -96,7 +118,9 @@ export default function ProductsPage() {
               No products found
             </Text>
             <Text color="secondaryGray.600">
-              You don&apos;t have any products yet. Create one to get started.
+              {categoryFilterName
+                ? `Nothing in ${categoryFilterName} yet. Add one to get started.`
+                : "You don't have any products yet. Create one to get started."}
             </Text>
             <Button
               variant="brand"
@@ -165,6 +189,15 @@ export default function ProductsPage() {
           </Flex>
         }
       />
+
+      {categoryFilterName && (
+        <Flex mb="16px">
+          <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="brand">
+            <TagLabel>Category: {categoryFilterName}</TagLabel>
+            <TagCloseButton onClick={clearCategoryFilter} />
+          </Tag>
+        </Flex>
+      )}
 
       {renderContent()}
 
