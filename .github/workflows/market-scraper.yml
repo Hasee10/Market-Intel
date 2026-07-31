@@ -81,11 +81,22 @@ jobs:
           # but the scraper (sapphireonline.ts) hits a Demandware endpoint
           # keyed on internal `cgid` values, which aren't the same thing -
           # applying the nav paths as cgids would likely just fail silently.
+          #
+          # OLX_CATEGORIES was expanded beyond mobiles/fashion (2026-07-31) to
+          # cover the 8 seller_categories that no retailer marketplace above
+          # touches at all - see lib/market-intel/category-keywords.ts. Every
+          # added path was fetched live and confirmed to return real listings
+          # before being added here (skin-hair, farm-fresh-food, furniture-
+          # home-decor, kitchen-appliances, books-magazines, toys, baby-gear,
+          # sports-equipment, gym-fitness, spare-parts). This roughly triples
+          # OLX's request volume (5 -> 15 categories, up to 20 paginated
+          # requests each) - still comfortably inside the 30-minute job
+          # timeout, but worth knowing if run duration becomes a problem.
           PRICEOYE_CATEGORIES: mobiles,laptops,tablets,smart-watches,wireless-earbuds,power-banks,bluetooth-speakers
           TELEMART_COLLECTIONS: mobiles-tablets,laptops-1,mens-fashion,womens-fashion
           SHOPHIVE_CATEGORIES: apple/iphone,laptops-computers/laptops,mobile-phones,tablets
           ISHOPPING_CATEGORIES: mobiles,laptops
           GOTO_CATEGORIES: computing-gaming,mens-fashion,womens-fashion
           SAPPHIREONLINE_CATEGORIES: ready-to-wear,unstitched
-          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470,tablets_c1455,smart-watches_c1458,fashion-beauty_c87
+          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470,tablets_c1455,smart-watches_c1458,fashion-beauty_c87,skin-hair_c1972,farm-fresh-food_c2005,furniture-home-decor_c628,kitchen-appliances_c1930,books-magazines_c453,toys_c1977,baby-gear_c707086,sports-equipment_c100,gym-fitness_c771,spare-parts_c82
         run: npm run start

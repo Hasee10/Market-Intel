@@ -62,23 +62,38 @@ function pctChange(current: number, previous: number): number {
 
 // Top scraped competitor listings in this seller's category, for the
 // "Public Marketplace SKU Tracking" table - reuses the same category-slug
-// keyword matching as getCategoryPricing() against the same market_products
-// table, just projecting different columns and keeping row-level detail
-// instead of collapsing to percentiles.
+// keyword matching as getCategoryPricing(), unioned across market_products
+// (retailer marketplaces) and market_classified_listings (OLX), since some
+// seller categories only have OLX coverage. Classifieds have no in_stock
+// column - status:'active' (already required by the query) stands in for it.
 async function getCompetitorTracking(categorySlug: string | null, median: number | null): Promise<CompetitorTrackingRow[]> {
   if (!categorySlug) return [];
   const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
   if (!keywordPattern) return [];
 
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('market_products')
-    .select('title, price, category_slug, in_stock, last_seen_at')
-    .not('price', 'is', null)
-    .order('last_seen_at', { ascending: false })
-    .limit(200);
+  const [productsRes, listingsRes] = await Promise.all([
+    supabase
+      .from('market_products')
+      .select('title, price, category_slug, in_stock, last_seen_at')
+      .not('price', 'is', null)
+      .order('last_seen_at', { ascending: false })
+      .limit(200),
+    supabase
+      .from('market_classified_listings')
+      .select('title, price, category_slug, last_seen_at')
+      .eq('status', 'active')
+      .not('price', 'is', null)
+      .order('last_seen_at', { ascending: false })
+      .limit(200),
+  ]);
 
-  if (error || !data) return [];
+  const productRows = (productsRes.data ?? []).map((row) => ({ ...row, in_stock: row.in_stock as boolean | null }));
+  const listingRows = (listingsRes.data ?? []).map((row) => ({ ...row, in_stock: true as boolean | null }));
+  const data = [...productRows, ...listingRows].sort(
+    (a, b) => new Date(b.last_seen_at).getTime() - new Date(a.last_seen_at).getTime(),
+  );
+  if (data.length === 0) return [];
 
   const matched = data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug)).slice(0, TRACKED_SKU_ROWS);
 

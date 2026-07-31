@@ -24,33 +24,51 @@ function percentile(sorted: number[], p: number): number {
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
 }
 
+type PriceRow = { price: number | string | null; category_slug: string | null; market_platforms: { name: string } | { name: string }[] | null };
+
+function platformName(row: PriceRow): string | undefined {
+  const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
+  return platform?.name;
+}
+
 // Market-wide competitor pricing, sourced from the scraper's market_products
-// table (same Supabase project as of 2026-07-28, see scraper/.env) - this is
-// raw scraped marketplace data, unrelated to domain_benchmarks (which is
-// computed from our own sellers' opted-in data). Returns null if this
-// seller's category has no keyword mapping yet, or no scraped rows match.
+// table (retailer marketplaces: Priceoye, Telemart, Shophive, iShopping,
+// Goto, SapphireOnline) plus market_classified_listings (OLX) - unioned
+// because several seller categories (beauty, grocery, home & kitchen,
+// automotive, etc.) have no retailer-marketplace coverage at all yet, only
+// OLX classifieds. Unrelated to domain_benchmarks (computed from our own
+// sellers' opted-in data). Returns null if this seller's category has no
+// keyword mapping yet, or no scraped/listed rows match.
 export async function getCategoryPricing(sellerCategorySlug: string): Promise<CategoryPricing | null> {
   const keywordPattern = CATEGORY_KEYWORDS[sellerCategorySlug];
   if (!keywordPattern) return null;
 
   const supabase = await createClient();
 
-  const { data, error } = await supabase
-    .from('market_products')
-    .select('price, category_slug, market_platforms(name)')
-    .eq('is_active', true)
-    .not('price', 'is', null);
+  const [productsRes, listingsRes] = await Promise.all([
+    supabase
+      .from('market_products')
+      .select('price, category_slug, market_platforms(name)')
+      .eq('is_active', true)
+      .not('price', 'is', null),
+    supabase
+      .from('market_classified_listings')
+      .select('price, category_slug, market_platforms(name)')
+      .eq('status', 'active')
+      .not('price', 'is', null),
+  ]);
 
-  if (error || !data) return null;
+  const rows: PriceRow[] = [...(productsRes.data ?? []), ...(listingsRes.data ?? [])];
+  if (rows.length === 0) return null;
 
-  const matched = data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug));
+  const matched = rows.filter((row) => row.category_slug && keywordPattern.test(row.category_slug));
   if (matched.length === 0) return null;
 
   const prices = matched.map((row) => Number(row.price)).sort((a, b) => a - b);
   const platformNames = new Set<string>();
   for (const row of matched) {
-    const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
-    if (platform?.name) platformNames.add(platform.name);
+    const name = platformName(row);
+    if (name) platformNames.add(name);
   }
 
   const sum = prices.reduce((acc, price) => acc + price, 0);
