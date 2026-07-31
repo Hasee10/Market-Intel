@@ -36,6 +36,11 @@ const FEATURE_MIN_TIER: Record<Feature, PlanTier> = {
 };
 
 export function hasFeature(planTier: string, feature: Feature): boolean {
+  // Dev/test escape hatch, mirrors the BYPASS_AUTH pattern in seller.ts -
+  // unset in production (Vercel), so real sellers still hit the real
+  // plan-tier gate. Only set this locally when you want to see paid/premium
+  // screens without changing your own sellers.plan_tier row.
+  if (process.env.BYPASS_ENTITLEMENTS === '1') return true;
   const tier = (planTier in TIER_RANK ? planTier : 'free') as PlanTier;
   return TIER_RANK[tier] >= TIER_RANK[FEATURE_MIN_TIER[feature]];
 }
