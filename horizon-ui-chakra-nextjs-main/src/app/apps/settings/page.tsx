@@ -10,6 +10,7 @@ import {
   FormLabel,
   Grid,
   Input,
+  Select,
   Switch,
   Text,
   useToast,
@@ -24,6 +25,7 @@ import { PageHeader } from '@/components/marketintel/PageHeader';
 import { ReferralCard } from '@/components/marketintel/ReferralCard';
 import { useProfile } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
+import { SUPPORTED_CURRENCIES } from '@/types/products';
 
 const breadcrumbItems = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
@@ -39,6 +41,7 @@ export default function SettingsPage() {
   const authFailed = !profileLoading && profileData && profileData.succeeded === false;
 
   const [businessName, setBusinessName] = useState('');
+  const [reportingCurrency, setReportingCurrency] = useState('PKR');
   const [isPublic, setIsPublic] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [showPricePosition, setShowPricePosition] = useState(false);
@@ -48,6 +51,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (profile) {
       setBusinessName(profile.businessName || '');
+      setReportingCurrency(profile.reportingCurrency || 'PKR');
       setIsPublic(profile.publicProfile?.isPublic || false);
       setDisplayName(profile.publicProfile?.displayName || '');
       setShowPricePosition(profile.publicProfile?.showPricePosition || false);
@@ -64,6 +68,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           businessName,
+          reportingCurrency,
           publicProfile: {
             isPublic,
             displayName,
@@ -127,11 +132,27 @@ export default function SettingsPage() {
               onChange={(e) => setBusinessName(e.target.value)}
             />
           </FormControl>
-          <FormControl>
+          <FormControl mb="16px">
             <FormLabel fontSize="sm" fontWeight="500">
               Email
             </FormLabel>
             <Input value={profile?.email || ''} isDisabled />
+          </FormControl>
+          <FormControl>
+            <FormLabel fontSize="sm" fontWeight="500">
+              Reporting currency
+            </FormLabel>
+            <Text fontSize="xs" color="secondaryGray.600" mb="6px">
+              Orders, products, and customers can each be in their own currency - dashboard totals and
+              the PPTX report convert everything into this one currency before adding them up.
+            </Text>
+            <Select value={reportingCurrency} onChange={(e) => setReportingCurrency(e.target.value)}>
+              {SUPPORTED_CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
           </FormControl>
         </Card>
 

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
+import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 const DAYS = 30;
 
@@ -20,11 +21,14 @@ export async function GET() {
   start.setDate(start.getDate() - (DAYS - 1));
   start.setHours(0, 0, 0, 0);
 
-  const { data, error } = await supabase
-    .from('seller_orders')
-    .select('order_date, total_amount')
-    .eq('seller_id', seller.id)
-    .gte('order_date', start.toISOString());
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('seller_orders')
+      .select('order_date, total_amount, currency')
+      .eq('seller_id', seller.id)
+      .gte('order_date', start.toISOString()),
+    getLatestFxRates(),
+  ]);
 
   if (error) {
     return NextResponse.json(
@@ -43,7 +47,8 @@ export async function GET() {
   for (const order of data ?? []) {
     const key = new Date(order.order_date).toISOString().slice(0, 10);
     if (byDay.has(key)) {
-      byDay.set(key, (byDay.get(key) ?? 0) + Number(order.total_amount));
+      const amount = convertCurrency(Number(order.total_amount), order.currency, seller.reportingCurrency, fxRates);
+      byDay.set(key, (byDay.get(key) ?? 0) + amount);
     }
   }
 

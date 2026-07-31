@@ -11,8 +11,8 @@ type CustomersTableProps = {
   onEdit?: (customer: CustomerDto) => void;
 };
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+const formatCurrency = (amount: number, currency: string) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
 export function CustomersTable({ data, loading, onEdit }: CustomersTableProps) {
   return (
@@ -40,7 +40,7 @@ export function CustomersTable({ data, loading, onEdit }: CustomersTableProps) {
                 <Td>{customer.externalCustomerId || 'Customer'}</Td>
                 <Td>{customer.email || 'N/A'}</Td>
                 <Td isNumeric>{customer.ordersCount}</Td>
-                <Td isNumeric>{formatCurrency(customer.totalSpent)}</Td>
+                <Td isNumeric>{formatCurrency(customer.totalSpent, customer.currency)}</Td>
                 <Td>
                   <Button
                     size="sm"

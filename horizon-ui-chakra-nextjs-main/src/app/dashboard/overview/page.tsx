@@ -66,6 +66,7 @@ type TopProductRow = {
   sellPrice: number;
   stockQty: number;
   inventoryValue: number;
+  currency: string;
 };
 type RevenuePoint = { date: string; revenue: number };
 
@@ -80,8 +81,11 @@ const PALETTE = [
   '#22D3EE',
 ];
 
-function formatCurrency(v: number) {
-  return `$${v.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+// Every amount reaching this page has already been converted server-side
+// into the seller's reporting currency (see lib/market-intel/fx.ts) - this
+// just needs the currency code to format it, not do any conversion itself.
+function formatCurrency(v: number, currency: string) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(v);
 }
 
 export default function OverviewPage() {
@@ -136,6 +140,10 @@ export default function OverviewPage() {
   const anomalies = anomaliesData?.data || [];
   const recentAnomaly = anomalies[0];
   const forecast = forecastData?.data ?? null;
+  // Every stat/anomaly/forecast/product amount is already converted
+  // server-side into this currency - derived from whichever response
+  // happens to have loaded first, since they all agree on the same value.
+  const reportingCurrency = topProducts[0]?.currency ?? 'PKR';
 
   const lineChartData = [
     {
@@ -186,9 +194,9 @@ export default function OverviewPage() {
           <AlertIcon />
           <Text fontSize="sm">
             Revenue {recentAnomaly.direction === 'spike' ? 'spiked' : 'dropped'} on{' '}
-            {new Date(recentAnomaly.date).toLocaleDateString()} ({formatCurrency(recentAnomaly.revenue)}, expected
-            roughly {formatCurrency(recentAnomaly.expectedRange[0])}-{formatCurrency(recentAnomaly.expectedRange[1])}
-            ).
+            {new Date(recentAnomaly.date).toLocaleDateString()} ({formatCurrency(recentAnomaly.revenue, reportingCurrency)},
+            expected roughly {formatCurrency(recentAnomaly.expectedRange[0], reportingCurrency)}-
+            {formatCurrency(recentAnomaly.expectedRange[1], reportingCurrency)}).
           </Text>
         </Alert>
       )}
@@ -208,7 +216,7 @@ export default function OverviewPage() {
               <Badge colorScheme={forecast.trendDirection === 'up' ? 'green' : forecast.trendDirection === 'down' ? 'red' : 'gray'}>
                 {forecast.trendDirection === 'flat'
                   ? 'Stable'
-                  : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek)}/wk`}
+                  : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek, reportingCurrency)}/wk`}
               </Badge>
             )}
           </Flex>
@@ -331,9 +339,9 @@ export default function OverviewPage() {
                     <Tr key={p.id}>
                       <Td>{p.title}</Td>
                       <Td>{p.category}</Td>
-                      <Td isNumeric>{formatCurrency(p.sellPrice)}</Td>
+                      <Td isNumeric>{formatCurrency(p.sellPrice, p.currency)}</Td>
                       <Td isNumeric>{p.stockQty}</Td>
-                      <Td isNumeric>{formatCurrency(p.inventoryValue)}</Td>
+                      <Td isNumeric>{formatCurrency(p.inventoryValue, p.currency)}</Td>
                     </Tr>
                   ))}
                 </Tbody>

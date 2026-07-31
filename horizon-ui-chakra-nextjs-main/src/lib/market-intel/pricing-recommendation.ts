@@ -41,7 +41,7 @@ function round2(value: number): number {
 export async function getPricingRecommendations(
   sellerId: string,
   categorySlug: string,
-  reportingCurrency = 'PKR',
+  reportingCurrency: string,
 ): Promise<PricingRecommendation[]> {
   const supabase = await createClient();
 
@@ -64,9 +64,12 @@ export async function getPricingRecommendations(
   const recommendations: PricingRecommendation[] = [];
 
   for (const product of productsRes.data) {
-    const productCurrency = product.currency ?? 'PKR';
-    const costPrice = convertCurrency(Number(product.cost_price), productCurrency, reportingCurrency, fxRates);
-    const currentPrice = convertCurrency(Number(product.sell_price), productCurrency, reportingCurrency, fxRates);
+    // Products can each be in a different currency (seller_products.currency)
+    // - convert to the seller's reporting currency, which categoryPricing is
+    // already in, so cost/current/recommended prices compare correctly
+    // against the competitor band below.
+    const costPrice = convertCurrency(Number(product.cost_price), product.currency, reportingCurrency, fxRates);
+    const currentPrice = convertCurrency(Number(product.sell_price), product.currency, reportingCurrency, fxRates);
     const match = matchByProductId.get(product.id);
 
     const competitorLow = match?.matchedPrice != null ? match.matchedPrice * (1 - MATCH_BAND_PCT) : categoryPricing.p25;

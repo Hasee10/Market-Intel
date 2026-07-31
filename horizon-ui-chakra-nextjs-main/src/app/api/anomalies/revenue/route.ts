@@ -17,6 +17,6 @@ export async function GET() {
     return NextResponse.json({ succeeded: true, data: [], errors: [], message: 'Requires premium plan' });
   }
 
-  const anomalies = await detectOwnRevenueAnomalies(seller.id);
+  const anomalies = await detectOwnRevenueAnomalies(seller.id, seller.reportingCurrency);
   return NextResponse.json({ succeeded: true, data: anomalies, errors: [], message: 'Anomalies retrieved successfully' });
 }

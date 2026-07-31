@@ -11,8 +11,10 @@ type CustomerCardProps = {
   onEdit?: (customer: CustomerDto) => void;
 };
 
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+// Was hardcoded to 'USD' regardless of the customer's actual currency -
+// every non-USD customer showed a misleading $ sign on the wrong amount.
+const formatCurrency = (amount: number, currency: string) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
 export function CustomerCard({ data, onEdit }: CustomerCardProps) {
   return (
@@ -42,7 +44,7 @@ export function CustomerCard({ data, onEdit }: CustomerCardProps) {
             Total Spent
           </Text>
           <Text fontSize="sm" fontWeight="600">
-            {formatCurrency(data.totalSpent)}
+            {formatCurrency(data.totalSpent, data.currency)}
           </Text>
         </div>
       </Flex>

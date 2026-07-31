@@ -21,7 +21,7 @@ function buildPrompt(data: ReportData): string {
     `Business: ${data.seller.businessName}`,
     `Domain / category: ${data.domainName ?? 'not set'}`,
     `Period: ${data.periodLabel}`,
-    `Revenue: ${data.revenue} (prior period: ${data.previousRevenue})`,
+    `Revenue: ${data.revenue} ${data.seller.reportingCurrency} (prior period: ${data.previousRevenue} ${data.seller.reportingCurrency})`,
     `Orders: ${data.orderCount} (prior period: ${data.previousOrderCount})`,
     `Average order value: ${data.avgOrderValue.toFixed(2)}`,
     `Active products: ${data.activeProductCount}`,
@@ -60,7 +60,8 @@ export async function generateReportInsights(data: ReportData): Promise<ReportIn
         '"highlights": ["what changed this cycle", ...], "recommendedActions": ["action to take", ...]} ' +
         'with exactly 3 highlights and exactly 3 recommendedActions, each under 14 words. ' +
         'Highlights describe what the numbers show; recommendedActions are concrete next steps a seller should take. ' +
-        'Be specific to the numbers given, factual, and concise - no generic filler, no markdown.',
+        'Be specific to the numbers given, factual, and concise - no generic filler, no markdown. ' +
+        'Use the currency code given (e.g. "PKR") when citing amounts - never assume "$" or "USD".',
       user: buildPrompt(data),
     });
 

@@ -17,11 +17,13 @@ import {
   Input,
   NumberInput,
   NumberInputField,
+  Select,
   Stack,
   useToast,
 } from '@chakra-ui/react';
 
 import type { CustomerDto } from '@/types/customer';
+import { SUPPORTED_CURRENCIES } from '@/types/products';
 
 type EditCustomerDrawerProps = {
   isOpen: boolean;
@@ -42,6 +44,7 @@ export function EditCustomerDrawer({
   const [externalCustomerId, setExternalCustomerId] = useState('');
   const [ordersCount, setOrdersCount] = useState(0);
   const [totalSpent, setTotalSpent] = useState(0);
+  const [currency, setCurrency] = useState('PKR');
 
   useEffect(() => {
     if (customer) {
@@ -49,6 +52,7 @@ export function EditCustomerDrawer({
       setExternalCustomerId(customer.externalCustomerId || '');
       setOrdersCount(customer.ordersCount || 0);
       setTotalSpent(customer.totalSpent || 0);
+      setCurrency(customer.currency || 'PKR');
     }
   }, [customer]);
 
@@ -64,7 +68,7 @@ export function EditCustomerDrawer({
       const response = await fetch(`/api/customers/${customer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, externalCustomerId, ordersCount, totalSpent }),
+        body: JSON.stringify({ email, externalCustomerId, ordersCount, totalSpent, currency }),
       });
 
       const data = await response.json();
@@ -153,14 +157,28 @@ export function EditCustomerDrawer({
                   <NumberInputField />
                 </NumberInput>
               </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Total spent
-                </FormLabel>
-                <NumberInput value={totalSpent} onChange={(_, v) => setTotalSpent(v || 0)} min={0}>
-                  <NumberInputField />
-                </NumberInput>
-              </FormControl>
+              <Flex gap="12px">
+                <FormControl flex="2">
+                  <FormLabel fontSize="sm" fontWeight="500">
+                    Total spent
+                  </FormLabel>
+                  <NumberInput value={totalSpent} onChange={(_, v) => setTotalSpent(v || 0)} min={0}>
+                    <NumberInputField />
+                  </NumberInput>
+                </FormControl>
+                <FormControl flex="1">
+                  <FormLabel fontSize="sm" fontWeight="500">
+                    Currency
+                  </FormLabel>
+                  <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                    {SUPPORTED_CURRENCIES.map((c) => (
+                      <option key={c.code} value={c.code}>
+                        {c.code}
+                      </option>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Flex>
             </Stack>
           )}
         </DrawerBody>

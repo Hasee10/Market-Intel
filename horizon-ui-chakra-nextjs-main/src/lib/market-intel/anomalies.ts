@@ -30,22 +30,26 @@ export type OrderAnomaly = {
 // Deliberately simple (not seasonal-adjusted): with 30 days of history,
 // day-of-week seasonality can't be reliably separated from real signal
 // anyway, so this flags "unusual for you," not "unusual for a Tuesday."
-export async function detectOwnRevenueAnomalies(sellerId: string): Promise<OrderAnomaly[]> {
+export async function detectOwnRevenueAnomalies(sellerId: string, reportingCurrency: string): Promise<OrderAnomaly[]> {
   const supabase = await createClient();
   const cutoff = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data, error } = await supabase
-    .from('seller_orders')
-    .select('order_date, total_amount')
-    .eq('seller_id', sellerId)
-    .gte('order_date', cutoff);
+  const [{ data, error }, fxRates] = await Promise.all([
+    supabase
+      .from('seller_orders')
+      .select('order_date, total_amount, currency')
+      .eq('seller_id', sellerId)
+      .gte('order_date', cutoff),
+    getLatestFxRates(),
+  ]);
 
   if (error || !data) return [];
 
   const byDate = new Map<string, number>();
   for (const row of data) {
     const date = row.order_date.slice(0, 10);
-    byDate.set(date, (byDate.get(date) ?? 0) + Number(row.total_amount));
+    const amount = convertCurrency(Number(row.total_amount), row.currency, reportingCurrency, fxRates);
+    byDate.set(date, (byDate.get(date) ?? 0) + amount);
   }
 
   const series = Array.from(byDate.entries())

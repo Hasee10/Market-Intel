@@ -230,7 +230,7 @@ function slideCallback(n: number, data: ReportData): ((slide: ISlide) => void) |
 
   if (n === 3) {
     return (slide) => {
-      slide.modifyElement('Google Shape;133;p15', setShapeText(formatCurrency(data.revenue)));
+      slide.modifyElement('Google Shape;133;p15', setShapeText(formatCurrency(data.revenue, data.seller.reportingCurrency)));
       slide.modifyElement(
         'Google Shape;134;p15',
         setShapeText(

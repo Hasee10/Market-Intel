@@ -27,7 +27,7 @@ function percentile(sorted: number[], p: number): number {
 
 type PriceRow = {
   price: number | string | null;
-  currency: string | null;
+  currency: string;
   category_slug: string | null;
   market_platforms: { name: string } | { name: string }[] | null;
 };
@@ -45,10 +45,13 @@ function platformName(row: PriceRow): string | undefined {
 // OLX classifieds. Unrelated to domain_benchmarks (computed from our own
 // sellers' opted-in data). Returns null if this seller's category has no
 // keyword mapping yet, or no scraped/listed rows match.
-export async function getCategoryPricing(
-  sellerCategorySlug: string,
-  reportingCurrency = 'PKR',
-): Promise<CategoryPricing | null> {
+//
+// targetCurrency converts every scraped row into one consistent currency
+// before computing percentiles - every scraper here targets Pakistani
+// sites so rows are almost always 'PKR', but a seller reporting in a
+// different currency would otherwise see their own numbers (already
+// converted) compared against raw PKR competitor prices.
+export async function getCategoryPricing(sellerCategorySlug: string, targetCurrency: string): Promise<CategoryPricing | null> {
   const keywordPattern = CATEGORY_KEYWORDS[sellerCategorySlug];
   if (!keywordPattern) return null;
 
@@ -75,7 +78,7 @@ export async function getCategoryPricing(
   if (matched.length === 0) return null;
 
   const prices = matched
-    .map((row) => convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates))
+    .map((row) => convertCurrency(Number(row.price), row.currency, targetCurrency, fxRates))
     .sort((a, b) => a - b);
   const platformNames = new Set<string>();
   for (const row of matched) {
