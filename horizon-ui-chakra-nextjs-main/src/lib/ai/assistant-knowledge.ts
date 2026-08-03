@@ -1,3 +1,5 @@
+import { MARKETPLACES as MARKETPLACE_ENTRIES, MARKETPLACE_COUNT } from '@/lib/marketplaces';
+
 // Single source of truth for the marketing-site AI assistant. Every fact
 // below is duplicated from copy that already exists elsewhere on the site
 // (PricingSection, TrustSection, HowItWorksSection, FeaturesSection) - this
@@ -5,24 +7,11 @@
 // assistant's system prompt can be built from, and the one place to update
 // when a real fact changes (like the marketplace count did on 2026-08-03).
 //
-// MARKETPLACES mirrors scraper/src/sources/index.ts + migrations/023 - update
-// both together if a source is added/removed, or the assistant will repeat a
-// stale count same as the landing copy did before this file existed.
-export const MARKETPLACE_COUNT = 11;
-
-export const MARKETPLACES = [
-  'PriceOye',
-  'Telemart',
-  'Shophive',
-  'iShopping',
-  'Goto',
-  'SapphireOnline',
-  'Daraz',
-  'Mega.pk',
-  'Naheed.pk',
-  'Vmart.pk',
-  'ShoppersPK',
-];
+// Names come from lib/marketplaces.ts (also the logo slider's source) so
+// there is exactly one list to update when a source is added/removed,
+// instead of the count silently drifting out of sync again.
+export { MARKETPLACE_COUNT };
+export const MARKETPLACES = MARKETPLACE_ENTRIES.map((m) => m.name);
 
 export const FAQS: { q: string; a: string }[] = [
   {

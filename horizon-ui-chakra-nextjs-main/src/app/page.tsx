@@ -6,6 +6,7 @@ import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
+import { MarketplaceLogoSlider } from '@/components/landing/MarketplaceLogoSlider';
 import { StatsBar } from '@/components/landing/StatsBar';
 
 // Public marketing page - `/` is not in middleware.ts's PROTECTED_PREFIXES,
@@ -24,6 +25,7 @@ export default function Home() {
       <LandingHeader />
       <LandingHero />
       <StatsBar />
+      <MarketplaceLogoSlider />
       <FeaturesSection />
       <ComparisonSection />
       <CTABanner />
