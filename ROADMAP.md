@@ -235,6 +235,20 @@ Ordered by value, not by block number.
   root cause on the runner — the next scheduled run's `scraper_runs.error`
   will name it. Until then this source is presumed dead in CI, so D4's real
   retailer coverage is the durable fix, not a second single point of failure.
+  **Root cause confirmed 2026-08-03: HTTP 429 on effectively every request**,
+  including after adding randomised pacing (4–8s/page, 15–25s/category) and
+  exponential backoff on 429 (45s → 90s → 180s, 3 retries/page) —
+  `scraper/src/sources/olx.ts`. That rules out "too fast for a soft rate
+  limit" and points at a standing IP-level block on GitHub's runner range,
+  which no amount of politeness from inside the request fixes. **`scrapeOlx`
+  is now disabled** in `CLASSIFIED_SOURCES`
+  (`scraper/src/sources/index.ts`) rather than left to retry indefinitely —
+  it was burning 20–30+ minutes per run for zero rows and risked the whole
+  job (all 7 retailer sources included) being killed by the workflow timeout
+  mid-run. The code and `OLX_CATEGORIES` config are untouched otherwise; this
+  is a one-line array edit, reversible the moment D4's real fix (a proxy via
+  `SCRAPER_PROXY`, or retailer coverage replacing the need for OLX
+  altogether) lands.
 
 ## Phase E — Restructure the deliverable
 
@@ -281,6 +295,20 @@ of showing them zeroes dressed as findings.
 UI polish is no longer deferred to Phase F wholesale (decided with the user,
 2026-08-03) — each item from here ships with its own UI rather than being
 retrofitted later. Phase F remains for the cross-cutting pass.
+
+**Update, later 2026-08-03.** Migrations 018–022 are now applied to the live
+database. Confirmed via a manually-triggered scraper run: Daraz scraped
+successfully (2,160–3,720 products across runs, `scraper_runs.error: null`),
+carrying real seller identity end to end, and `market_competitors` populated
+to 1,332 rows via `market_refresh_competitors()` — **C1 is no longer inert**.
+A first live run also surfaced Daraz block-page failures on ~half its
+categories and OLX's 429s under the hardened retry logic still didn't
+resolve (see D4 above); both are addressed — Daraz now runs through
+CloakBrowser with retry/backoff, OLX is disabled rather than left retrying
+indefinitely. Next up is still **C3** (strategic implications) and **C4**
+(trends, seasonality, risk); D4's real retailer-coverage fix for the 10
+categories that depended on OLX is now the more urgent gap than before,
+since OLX is off entirely rather than intermittently failing.
 
 ## Open items
 

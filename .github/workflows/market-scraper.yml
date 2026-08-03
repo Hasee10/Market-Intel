@@ -24,7 +24,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: scraper
@@ -82,16 +82,13 @@ jobs:
           # keyed on internal `cgid` values, which aren't the same thing -
           # applying the nav paths as cgids would likely just fail silently.
           #
-          # OLX_CATEGORIES was expanded beyond mobiles/fashion (2026-07-31) to
-          # cover the 8 seller_categories that no retailer marketplace above
-          # touches at all - see lib/market-intel/category-keywords.ts. Every
-          # added path was fetched live and confirmed to return real listings
-          # before being added here (skin-hair, farm-fresh-food, furniture-
-          # home-decor, kitchen-appliances, books-magazines, toys, baby-gear,
-          # sports-equipment, gym-fitness, spare-parts). This roughly triples
-          # OLX's request volume (5 -> 15 categories, up to 20 paginated
-          # requests each) - still comfortably inside the 30-minute job
-          # timeout, but worth knowing if run duration becomes a problem.
+          # OLX_CATEGORIES is intentionally not set here (2026-08-03): OLX is
+          # disabled in scraper/src/sources/index.ts (CLASSIFIED_SOURCES is
+          # empty) after weeks of every request from this runner IP range
+          # coming back 429, including after pacing + exponential backoff
+          # were added - see the comment on CLASSIFIED_SOURCES for the full
+          # reasoning. Re-add this env var alongside re-enabling scrapeOlx in
+          # that array if a proxy fix (SCRAPER_PROXY) resolves the block.
           #
           # DARAZ_CATEGORIES (2026-08-03, ROADMAP.md D1). Every slug below was
           # fetched live and confirmed to return on-topic listings - Daraz
@@ -99,16 +96,16 @@ jobs:
           # so a typo here is loud, not silent. Only category paths appear:
           # daraz.pk/robots.txt disallows /catalog/ (the search endpoint) and
           # /shop/*.htm (seller storefronts), so neither is ever requested.
-          # See SCRAPING.md. This is the largest source by request volume
-          # (22 categories x up to 15 pages, with a 1s delay between pages -
-          # roughly 10 minutes), which is why timeout-minutes went 30 -> 45.
-          # It is the first thing to trim if that starts to bite.
+          # See SCRAPING.md. This is the largest source by request volume (22
+          # categories x up to 15 pages, now through CloakBrowser with
+          # randomised 2.5-6s/page and 8-15s/category delays plus retries on
+          # a block page) - the main reason timeout-minutes stays well above
+          # the pre-hardening baseline even with OLX removed.
           PRICEOYE_CATEGORIES: mobiles,laptops,tablets,smart-watches,wireless-earbuds,power-banks,bluetooth-speakers
           TELEMART_COLLECTIONS: mobiles-tablets,laptops-1,mens-fashion,womens-fashion
           SHOPHIVE_CATEGORIES: apple/iphone,laptops-computers/laptops,mobile-phones,tablets
           ISHOPPING_CATEGORIES: mobiles,laptops
           GOTO_CATEGORIES: computing-gaming,mens-fashion,womens-fashion
           SAPPHIREONLINE_CATEGORIES: ready-to-wear,unstitched
-          OLX_CATEGORIES: mobile-phones_c1453,laptops-computers_c1470,tablets_c1455,smart-watches_c1458,fashion-beauty_c87,skin-hair_c1972,farm-fresh-food_c2005,furniture-home-decor_c628,kitchen-appliances_c1930,books-magazines_c453,toys_c1977,baby-gear_c707086,sports-equipment_c100,gym-fitness_c771,spare-parts_c82
           DARAZ_CATEGORIES: smartphones,laptops,phones-tablets,audio,televisions,laptop-accessories,mens-fashion,womens-fashion,mens-shoes,womens-shoes,jewellery,sunglasses,beauty-health,home-appliances,kitchen-dining,furniture-decor,stationery-craft,books-magazines,toys-games,mother-baby,exercise-fitness,automotive
         run: npm run start

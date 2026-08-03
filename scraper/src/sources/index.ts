@@ -2,7 +2,6 @@ import type { ClassifiedSourceFn, SourceFn } from '../types.js';
 import { scrapeDaraz } from './daraz.js';
 import { scrapeGoto } from './goto.js';
 import { scrapeIshopping } from './ishopping.js';
-import { scrapeOlx } from './olx.js';
 import { scrapePriceoye } from './priceoye.js';
 import { scrapeSapphireonline } from './sapphireonline.js';
 import { scrapeShophive } from './shophive.js';
@@ -32,4 +31,15 @@ export const BROWSER_SOURCES: SourceFn[] = [scrapeIshopping, scrapeGoto, scrapeD
 
 // Classifieds sources - write to market_classified_listings instead of
 // market_products, see types.ts / migrations/007.
-export const CLASSIFIED_SOURCES: ClassifiedSourceFn[] = [scrapeOlx];
+//
+// OLX is disabled here (2026-08-03), not deleted: every request from
+// GitHub's runner IPs has come back 429 for weeks (ROADMAP.md D4), including
+// after adding pacing + exponential backoff on 429 - so this looks like a
+// standing IP-level block on that IP range, not a transient rate limit that
+// politeness can fix. Leaving it retry indefinitely was burning 20-30+
+// minutes of every scrape run for zero rows and risked the whole job being
+// killed by the workflow timeout before the other 7 sources even got a
+// chance to fail cleanly. scrapeOlx() itself is untouched and still works
+// from a non-blocked IP (e.g. a residential proxy) - re-add it to this array
+// once D4's real fix (proxy or additional retailer coverage) lands.
+export const CLASSIFIED_SOURCES: ClassifiedSourceFn[] = [];
