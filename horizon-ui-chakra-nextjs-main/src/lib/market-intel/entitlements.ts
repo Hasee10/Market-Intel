@@ -18,6 +18,7 @@ export type Feature =
   | 'peer_benchmarks'
   | 'watchlists'
   | 'product_matching'
+  | 'competitor_intel'
   | 'pricing_recommendations'
   | 'forecasting'
   | 'anomaly_detection'
@@ -36,6 +37,12 @@ const FEATURE_MIN_TIER: Record<Feature, PlanTier> = {
   watchlists: 'paid',
   product_matching: 'paid',
   pricing_recommendations: 'paid',
+  // Competitor scorecards (ROADMAP.md C1). Paid rather than premium for the
+  // same reason as the rest of this block: it is computed from scraped
+  // marketplace listings, so it populates on a brand-new account with no peer
+  // network. It renders empty for a seller whose market has no true
+  // marketplace in it, which the page states outright rather than gating.
+  competitor_intel: 'paid',
 
   // Premium - derived analytics on top of accumulated history.
   forecasting: 'premium',

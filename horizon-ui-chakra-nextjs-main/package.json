@@ -72,5 +72,9 @@
   "resolutions": {
     "@types/react": "18.0.31",
     "@types/react-dom": "18.0.11"
+  },
+  "overrides": {
+    "postcss": "8.5.25",
+    "sharp": "0.35.3"
   }
 }

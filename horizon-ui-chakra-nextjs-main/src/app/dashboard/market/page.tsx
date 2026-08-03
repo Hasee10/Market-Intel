@@ -1,6 +1,7 @@
 import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/anomalies';
 import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
 import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
+import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
 import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getCategoryPriceForecast } from '@/lib/market-intel/forecast';
 import {
@@ -36,6 +37,10 @@ export default async function MarketPage() {
 
   const benchmarks = domain && entitlements.peerBenchmarks ? await getDomainBenchmarks(domain.categoryId) : [];
   const peers = domain && seller && entitlements.peerBenchmarks ? await getDomainPeers(domain.categoryId, seller.id) : [];
+  // ROADMAP.md C2: the scope every figure below is computed against, echoed
+  // back at the top of the page instead of being implicit.
+  const scopeSummary =
+    domain && seller ? await getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null;
   const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug, reportingCurrency) : null;
   const priceTrend = domain ? await getPriceTrend(domain.categorySlug, reportingCurrency) : [];
   const stockOuts = domain ? await getStockOuts(domain.categorySlug, 10, reportingCurrency) : [];
@@ -59,6 +64,7 @@ export default async function MarketPage() {
   return (
     <MarketView
       domain={domain}
+      scopeSummary={scopeSummary}
       reportingCurrency={reportingCurrency}
       benchmarks={benchmarks}
       peers={peers}

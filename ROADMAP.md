@@ -93,13 +93,31 @@ Nothing below Phase A ships credibly until these are done.
   unauthenticated `/api/referrals/record` free→paid escalation, then
   server-side password policy and the bypass-flag hardening.
 - **A3. Replace regex category matching with a real market-definition
-  model.** A DB-owned mapping (seller category ↔ scraped taxonomy) with
-  price band, brand set, and geography as explicit dimensions. This is the
-  prerequisite for Phase B1 and the fix for gap #1.
-- **A4. Move aggregation into SQL.** `getMatchedProductIds`,
-  `getCategoryPricing`, and the `market-insights` functions currently pull
-  whole tables and filter in JS. Materialised views or indexed joins before
-  price history accumulates further.
+  model.** ✅ **Done 2026-08-03** (`scraper/migrations/020_market_definition_model.sql`,
+  `src/lib/market-intel/market-definition.ts`). `category-keywords.ts` is
+  deleted. The taxonomy now lives in `market_category_map` as exact
+  (platform, category_slug) → (seller category, **segment**) rows, seeded from
+  the 20 platform/slug pairs observed live plus every configured Daraz and OLX
+  slug. The segment dimension is what the regex could not express and is the
+  actual fix for gap #1: one pattern for `mobiles-and-electronics` was pulling
+  `priceoye/power-banks` (median ~3.6k) and `shophive/laptops-computers/laptops`
+  (median ~364k) into the same "category median". All six consumers
+  (`category-pricing`, `market-insights` ×4, `product-matching`, `anomalies`,
+  `collect-report-data`) now scope through `getMarketScope()`, which also
+  pushes the slug filter into the query with `.in()` instead of pulling whole
+  tables into JS — a down payment on A4.
+- **A4. Move aggregation into SQL.** ✅ **Done 2026-08-03**
+  (`scraper/migrations/021_market_scope_aggregates.sql`). Two functions,
+  both `SECURITY INVOKER` so RLS still applies: `market_scope_price_stats()`
+  computes the whole price distribution with `percentile_cont` instead of
+  pulling every in-scope row into JS and sorting an array, and
+  `market_scope_price_trend()` replaces the pattern that selected every
+  matching product id and passed the array back as an `.in()` filter over
+  `market_price_history` — the fastest-growing table in the schema. FX
+  conversion is done in SQL by `market_convert_currency()`, which mirrors
+  `fx.ts`'s `convertCurrency()` including its "missing rate → return
+  unconverted" behaviour. `getMatchedProductIds` is deleted. Materialised
+  views were not needed; indexed joins were enough at this size.
 - **A5. CI + lockfile.** ✅ **Done 2026-08-03.** `.github/workflows/ci.yml`
   gates typecheck, lint and a real `next build` for the app, typecheck for the
   scraper, and an advisory `npm audit` on both. The app's `package-lock.json`
@@ -135,13 +153,38 @@ Peer benchmarks additionally need an honest empty state that explains the
 
 Ordered by value, not by block number.
 
-- **C1. Competitor entity model (Block 4).** Extract seller identity from
-  listings; build per-competitor scorecards — assortment breadth, SKU
-  overlap with the seller, price win/loss rate, repricing aggressiveness,
-  stock reliability. The single highest-value item on this roadmap.
-- **C2. Market Definition surface (Block 1).** Seller-editable scope:
-  offerings in/out, price band, geography, brands. Echo it back on every
-  analysis page — *"N listings across M platforms match your definition."*
+- **C1. Competitor entity model (Block 4).** ✅ **Done 2026-08-03.**
+  `market_competitors` (migration `022`) is the durable entity — derived from
+  the seller identity Daraz carries on every listing, but persisted rather
+  than recomputed, because `first_seen_at` is the one thing a GROUP BY cannot
+  give you. "Entered your market three weeks ago" is a finding; "is here now"
+  is not. `market_competitor_scorecards()` returns assortment breadth and
+  share, median price and price index against the seller's own market median,
+  repricing rate over 30 days of `market_price_history`, stock reliability,
+  and the platform-reported sold-count proxy — all scoped by the seller's
+  market definition (A3), so narrowing the market narrows who counts as a
+  competitor. SKU overlap and price win/loss against the seller's own catalog
+  are computed in `competitors.ts` with the same token-Jaccard matcher as
+  product matching, and are labelled directional in the UI rather than sold as
+  a reconciled catalog match. Surfaces at `/dashboard/market/competitors`
+  behind the `competitor_intel` (paid) entitlement. The scraper calls
+  `market_refresh_competitors()` once at the end of each run.
+
+  Two limits stated in the product, not just here: only true marketplaces can
+  populate this (on the six single-retailer sources the platform *is* the
+  seller, and D2 will not change that — there is nothing to enrich), and the
+  repricing rate is a floor, since a price that moves and reverts between two
+  observations two days apart is invisible to us.
+- **C2. Market Definition surface (Block 1).** ✅ **Done 2026-08-03.**
+  `/dashboard/market/definition` — segments in/out, platform opt-out, price
+  band, brands, cities, saved to `seller_market_definitions` through a server
+  action that takes the seller id from `requireSeller()` and never from the
+  payload. `MarketScopeBanner` echoes it at the top of the Market page:
+  *"N listings across M platforms match your definition of X."* It renders an
+  honest empty state rather than a blank page, and distinguishes the two
+  reasons for emptiness — filters too narrow vs. no scraped source covers this
+  category at all. That distinction is not cosmetic: 10 of 12 seller
+  categories currently have zero coverage (see D4).
 - **C3. Strategic implications in-product (Block 7).** A standing Actions
   surface where each item traces back to the finding that produced it. The
   rule-based rationales in `pricing-recommendation.ts` are the pattern to
@@ -218,10 +261,22 @@ D2 feeds C1 and C5
 Phase A is strictly blocking. D1/D3 can start immediately in parallel since
 they are scraper-side and share no code with the app work.
 
-**Progress, 2026-08-03.** A1, A2, A5, B, D1 and D3 are done. Phase A's
-remaining blockers are **A3** (market-definition model) and **A4** (push
-aggregation into SQL). A3 is also the prerequisite for C2, so those two are
-now the natural next pair: A3 is the model, C2 is the surface for it.
+**Progress, 2026-08-03.** **Phase A is complete** (A1–A5), along with B, C1,
+C2, D1 and D3. C1 — the highest-value item on this roadmap — is now built;
+Daraz unblocked it by carrying seller identity on every listing. Next up is
+**C3** (strategic implications) and **C4** (trends, seasonality, risk).
+
+C1 is built but **inert until migrations 019–022 are applied**: no Daraz run
+means no seller identity, which means no competitors. Those four migrations
+are now on the critical path, not a loose end.
+
+The honest state of the data underneath all of this: only **2 of 12** seller
+categories (`mobiles-and-electronics`, `fashion-and-apparel`) have any scraped
+rows at all — 5,651 products across 6 retailer platforms. The other ten
+depended entirely on OLX, which is returning nothing (D4). Daraz will close
+most of that gap on its first run, once migration 019 is applied. Until then
+C2's empty state is doing real work: it tells those sellers the truth instead
+of showing them zeroes dressed as findings.
 
 UI polish is no longer deferred to Phase F wholesale (decided with the user,
 2026-08-03) — each item from here ships with its own UI rather than being

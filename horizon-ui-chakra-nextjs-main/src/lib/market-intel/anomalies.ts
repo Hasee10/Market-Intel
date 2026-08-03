@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 const LOOKBACK_DAYS = 30;
@@ -100,8 +100,8 @@ export async function detectCompetitorPriceAnomalies(
   categorySlug: string,
   reportingCurrency = 'PKR',
 ): Promise<CompetitorPriceAnomaly[]> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
   const cutoff = new Date(Date.now() - PRICE_HISTORY_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
@@ -112,11 +112,15 @@ export async function detectCompetitorPriceAnomalies(
     .from('market_products')
     .select('id, title, category_slug, price, currency, market_platforms(name)')
     .eq('is_active', true)
-    .not('price', 'is', null);
+    .not('price', 'is', null)
+    .in('category_slug', scope.categorySlugs)
+    .in('platform_id', scope.activePlatformIds);
 
   if (productsError || !products) return [];
 
-  const matched = products.filter((p) => p.category_slug && keywordPattern.test(p.category_slug));
+  // The scope filter now lives in the query above (`.in('category_slug', …)`),
+  // so every returned row is already inside the seller's market definition.
+  const matched = products;
   if (matched.length === 0) return [];
 
   const { data: history, error: historyError } = await supabase

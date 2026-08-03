@@ -168,6 +168,35 @@ async function markStaleProducts(platformId: string, categorySlugs: string[], ru
 }
 
 /**
+ * Rebuilds market_competitors from the seller identity carried on
+ * market_products (ROADMAP.md C1, migration 022). Runs once at the end of a
+ * scrape rather than per source, because the entity is keyed on
+ * (platform, seller) across every category a seller appears in.
+ *
+ * Best-effort, like saveScrapeRunSummary: the competitor table is derived
+ * data, and failing the whole run because a rollup did not refresh would lose
+ * the scraped products too. Requires migration 022; until it is applied this
+ * logs a 404 once per run and nothing else breaks.
+ */
+export async function refreshCompetitors(): Promise<void> {
+  try {
+    requireDatabase();
+    const res = await fetch(`${config.supabaseUrl}/rest/v1/rpc/market_refresh_competitors`, {
+      method: 'POST',
+      headers: headers(),
+      body: '{}',
+    });
+    if (!res.ok) {
+      console.error(`[db] market_refresh_competitors failed: ${res.status} ${await res.text()}`);
+      return;
+    }
+    console.log(`[db] competitors refreshed: ${await res.text()} rows`);
+  } catch (err) {
+    console.error('[db] market_refresh_competitors failed:', (err as Error).message);
+  }
+}
+
+/**
  * Upserts listings into market_classified_listings (by platform_id +
  * external_id) and appends one row per listing into
  * market_classified_price_history. See migrations/007 for why classifieds

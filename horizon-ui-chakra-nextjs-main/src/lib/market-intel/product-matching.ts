@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
@@ -57,8 +57,8 @@ export async function findTopProductMatches(
   categorySlug: string,
   reportingCurrency = 'PKR',
 ): Promise<ProductMatch[]> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
+  const scope = await getMarketScope(categorySlug, sellerId);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
 
@@ -74,6 +74,8 @@ export async function findTopProductMatches(
       .from('market_products')
       .select('title, price, currency, url, category_slug, market_platforms(name)')
       .eq('is_active', true)
+      .in('category_slug', scope.categorySlugs)
+      .in('platform_id', scope.activePlatformIds)
       .limit(MAX_MARKET_CANDIDATES),
     getLatestFxRates(),
   ]);
@@ -82,7 +84,6 @@ export async function findTopProductMatches(
   if (marketProductsRes.error || !marketProductsRes.data) return [];
 
   const candidates = marketProductsRes.data
-    .filter((row) => row.category_slug && keywordPattern.test(row.category_slug))
     .map((row) => {
       const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
       return {

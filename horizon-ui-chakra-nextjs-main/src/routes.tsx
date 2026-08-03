@@ -7,6 +7,8 @@ import {
   MdGroup,
   MdSettings,
   MdOutlineVisibility,
+  MdOutlineTune,
+  MdStorefront,
   MdReceiptLong,
 } from 'react-icons/md';
 
@@ -37,6 +39,20 @@ const routes: IRoute[] = [
     path: '/dashboard/market',
     section: 'Market Intelligence',
     icon: <Icon as={MdBarChart} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Competitors',
+    layout: '',
+    path: '/dashboard/market/competitors',
+    section: 'Market Intelligence',
+    icon: <Icon as={MdStorefront} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Market Definition',
+    layout: '',
+    path: '/dashboard/market/definition',
+    section: 'Market Intelligence',
+    icon: <Icon as={MdOutlineTune} width="20px" height="20px" color="inherit" />,
   },
   {
     name: 'Watchlist',

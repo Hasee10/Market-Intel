@@ -1,8 +1,8 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
-import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getLatestFxRates } from '@/lib/market-intel/fx';
 
 export type CategoryPricing = {
   categorySlug: string;
@@ -16,35 +16,35 @@ export type CategoryPricing = {
   samplePlatforms: string[];
 };
 
-function percentile(sorted: number[], p: number): number {
-  if (sorted.length === 1) return sorted[0];
-  const idx = (sorted.length - 1) * p;
-  const lo = Math.floor(idx);
-  const hi = Math.ceil(idx);
-  if (lo === hi) return sorted[lo];
-  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
-}
-
-type PriceRow = {
-  price: number | string | null;
-  currency: string;
-  category_slug: string | null;
-  market_platforms: { name: string } | { name: string }[] | null;
+type PriceStatsRow = {
+  row_count: number | string | null;
+  min_price: number | string | null;
+  p25: number | string | null;
+  median: number | string | null;
+  p75: number | string | null;
+  max_price: number | string | null;
+  avg_price: number | string | null;
+  platform_names: string[] | null;
 };
-
-function platformName(row: PriceRow): string | undefined {
-  const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
-  return platform?.name;
-}
 
 // Market-wide competitor pricing, sourced from the scraper's market_products
 // table (retailer marketplaces: Priceoye, Telemart, Shophive, iShopping,
-// Goto, SapphireOnline) plus market_classified_listings (OLX) - unioned
+// Goto, SapphireOnline, Daraz) plus market_classified_listings (OLX) - unioned
 // because several seller categories (beauty, grocery, home & kitchen,
 // automotive, etc.) have no retailer-marketplace coverage at all yet, only
 // OLX classifieds. Unrelated to domain_benchmarks (computed from our own
 // sellers' opted-in data). Returns null if this seller's category has no
-// keyword mapping yet, or no scraped/listed rows match.
+// taxonomy mapping yet, or no scraped/listed rows fall inside the seller's
+// market definition.
+//
+// Scoped by getMarketScope() (ROADMAP.md A3) rather than by a category regex,
+// so the median here is the median of the seller's *own* market - their
+// segments, their price band, their brands - not of everything a pattern
+// happened to sweep up.
+//
+// The distribution itself is computed by market_scope_price_stats() in
+// Postgres (ROADMAP.md A4, migration 021) rather than by pulling every
+// matching row into JS and sorting the array. Requires migration 021.
 //
 // targetCurrency converts every scraped row into one consistent currency
 // before computing percentiles - every scraper here targets Pakistani
@@ -52,51 +52,42 @@ function platformName(row: PriceRow): string | undefined {
 // different currency would otherwise see their own numbers (already
 // converted) compared against raw PKR competitor prices.
 export async function getCategoryPricing(sellerCategorySlug: string, targetCurrency: string): Promise<CategoryPricing | null> {
-  const keywordPattern = CATEGORY_KEYWORDS[sellerCategorySlug];
-  if (!keywordPattern) return null;
+  const scope = await getMarketScope(sellerCategorySlug);
+  if (scope.categorySlugs.length === 0) return null;
 
   const supabase = await createClient();
+  const fxRates = await getLatestFxRates();
 
-  const [productsRes, listingsRes, fxRates] = await Promise.all([
-    supabase
-      .from('market_products')
-      .select('price, currency, category_slug, market_platforms(name)')
-      .eq('is_active', true)
-      .not('price', 'is', null),
-    supabase
-      .from('market_classified_listings')
-      .select('price, currency, category_slug, market_platforms(name)')
-      .eq('status', 'active')
-      .not('price', 'is', null),
-    getLatestFxRates(),
-  ]);
+  const { data, error } = await supabase
+    .rpc('market_scope_price_stats', {
+      p_category_slugs: scope.categorySlugs,
+      p_platform_ids: scope.activePlatformIds,
+      p_target_currency: targetCurrency,
+      p_rates: fxRates,
+      p_band_currency: scope.definition.priceCurrency,
+      p_price_min: scope.definition.priceMin,
+      p_price_max: scope.definition.priceMax,
+      p_brands: scope.definition.brands,
+      p_cities: scope.definition.cities,
+    })
+    .maybeSingle<PriceStatsRow>();
 
-  const rows: PriceRow[] = [...(productsRes.data ?? []), ...(listingsRes.data ?? [])];
-  if (rows.length === 0) return null;
+  if (error || !data) return null;
 
-  const matched = rows.filter((row) => row.category_slug && keywordPattern.test(row.category_slug));
-  if (matched.length === 0) return null;
-
-  const prices = matched
-    .map((row) => convertCurrency(Number(row.price), row.currency, targetCurrency, fxRates))
-    .sort((a, b) => a - b);
-  const platformNames = new Set<string>();
-  for (const row of matched) {
-    const name = platformName(row);
-    if (name) platformNames.add(name);
-  }
-
-  const sum = prices.reduce((acc, price) => acc + price, 0);
+  const count = Number(data.row_count ?? 0);
+  // An empty scope aggregates to a single row of nulls, not to zero rows -
+  // that is how `count(*)` with no GROUP BY behaves. Treat it as "no market".
+  if (count === 0 || data.median == null) return null;
 
   return {
     categorySlug: sellerCategorySlug,
-    count: prices.length,
-    minPrice: prices[0],
-    p25: percentile(prices, 0.25),
-    median: percentile(prices, 0.5),
-    p75: percentile(prices, 0.75),
-    maxPrice: prices[prices.length - 1],
-    avgPrice: sum / prices.length,
-    samplePlatforms: Array.from(platformNames).slice(0, 5),
+    count,
+    minPrice: Number(data.min_price),
+    p25: Number(data.p25),
+    median: Number(data.median),
+    p75: Number(data.p75),
+    maxPrice: Number(data.max_price),
+    avgPrice: Number(data.avg_price),
+    samplePlatforms: (data.platform_names ?? []).filter(Boolean).slice(0, 5),
   };
 }

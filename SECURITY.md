@@ -12,15 +12,28 @@ Last updated: 2026-08-03.
 
 **Three things must happen or the fixes below are incomplete.**
 
-### 1. Apply migrations 018 and 019 (required)
+### 1. Apply migrations 018 – 022 (required)
 
 ```
 scraper/migrations/018_referral_integrity.sql
+scraper/migrations/019_add_daraz_platform.sql
+scraper/migrations/020_market_definition_model.sql
+scraper/migrations/021_market_scope_aggregates.sql
+scraper/migrations/022_competitor_entity.sql
 ```
 
-Run once via the Supabase SQL Editor, same convention as 001–017.
-`019_add_daraz_platform.sql` should go with it — without 019 the Daraz source
-throws `Unknown platform slug "daraz"` on every run.
+Run once each, in order, via the Supabase SQL Editor, same convention as
+001–017. Without 019 the Daraz source throws `Unknown platform slug "daraz"`
+on every run, and 020's seed skips its Daraz rows (it joins on
+`market_platforms`). Without 020 every market analysis surface returns empty —
+`market_category_map` is now the only thing mapping a seller's category to
+scraped rows. 021 adds the aggregate functions those surfaces call; without it
+category pricing and the price trend return nothing. 022 adds
+`market_competitors` and the scorecard function behind
+`/dashboard/market/competitors`; it depends on 021's
+`market_convert_currency`, and until it runs the scraper logs one failed
+`market_refresh_competitors` call per run and the page renders its empty
+state.
 
 Until it is applied, referral signups are **silently not recorded** — the
 HTTP endpoint that used to record them has been deleted, and the trigger
@@ -66,6 +79,7 @@ so nobody later mistakes them for a working switch.
 | 2 | **High** | `BYPASS_AUTH` / `BYPASS_ENTITLEMENTS` collapsed to cross-tenant exposure | Both flags **deleted** from every code path (ROADMAP.md A1) — `middleware.ts`, `lib/supabase/server.ts`, `lib/market-intel/seller.ts`, `entitlements.ts`. There is no longer any environment variable that can turn off auth or entitlements. `createAdminClient()` survives, but only cron routes call it and each one is behind `isAuthorizedCronRequest`. |
 | 5 | Medium | No dependency lockfile; version ranges span a Next.js CVE window | `package-lock.json` un-ignored for the app (it was a Horizon UI template default). CI runs `npm ci`, which fails if the lockfile and `package.json` drift. |
 | 13 | Info | No CI gating lint/typecheck/audit | `.github/workflows/ci.yml` — typecheck, lint and a real `next build` for the app, typecheck for the scraper, and an advisory `npm audit --audit-level=high` on both. |
+| — | High | `npm audit` flagged `postcss <=8.5.17` (source-map path traversal/XSS) and `sharp <0.35.0` (libvips CVEs), both pinned exactly by `next@15.5.x` itself — `npm audit fix --force` wanted to downgrade to `next@9.3.3`, a non-fix. Forced to safe patched versions via `"overrides"` in `package.json` (`postcss` 8.5.25, `sharp` 0.35.3) instead of downgrading Next. `brace-expansion <1.1.17` (from eslint's `minimatch`, DoS) fixed in-range by `npm audit fix`. Re-check this override after every Next major/minor bump — a future Next release may ship its own fix and make it redundant. |
 
 Finding **3** (client-only password policy) is fixed by deploy step 2 above,
 not by code.

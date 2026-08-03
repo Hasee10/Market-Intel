@@ -1,68 +1,42 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
-
-function median(values: number[]): number | null {
-  if (values.length === 0) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
-}
-
-async function getMatchedProductIds(categorySlug: string): Promise<string[]> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
-
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('market_products')
-    .select('id, category_slug')
-    .eq('is_active', true);
-
-  if (error || !data) return [];
-
-  return data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug)).map((row) => row.id);
-}
 
 export type PriceTrendPoint = { date: string; medianPrice: number };
 
 const TREND_LOOKBACK_DAYS = 30;
 
-// Daily median price across every scraped competitor product in this
-// seller's category, over the last 30 days - market_price_history already
-// collects this on every scrape run, nothing surfaced it until now.
+// Daily median price across every scraped competitor product inside the
+// seller's market definition, over the last 30 days - market_price_history
+// already collects this on every scrape run, nothing surfaced it until now.
+//
+// Computed by market_scope_price_trend() in Postgres (ROADMAP.md A4, migration
+// 021). This one genuinely needed moving: it used to select every matching
+// product id, then pass that entire array back in as an `.in()` filter on
+// market_price_history - a request whose URL length grew with the size of the
+// seller's market, over the fastest-growing table in the schema.
 export async function getPriceTrend(categorySlug: string, reportingCurrency = 'PKR'): Promise<PriceTrendPoint[]> {
-  const productIds = await getMatchedProductIds(categorySlug);
-  if (productIds.length === 0) return [];
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
-  const cutoff = new Date(Date.now() - TREND_LOOKBACK_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const fxRates = await getLatestFxRates();
 
-  const [{ data, error }, fxRates] = await Promise.all([
-    supabase
-      .from('market_price_history')
-      .select('price, recorded_at, market_products(currency)')
-      .in('product_id', productIds)
-      .gte('recorded_at', cutoff)
-      .not('price', 'is', null),
-    getLatestFxRates(),
-  ]);
+  const { data, error } = await supabase.rpc('market_scope_price_trend', {
+    p_category_slugs: scope.categorySlugs,
+    p_platform_ids: scope.activePlatformIds,
+    p_target_currency: reportingCurrency,
+    p_rates: fxRates,
+    p_lookback_days: TREND_LOOKBACK_DAYS,
+  });
 
   if (error || !data) return [];
 
-  const byDate = new Map<string, number[]>();
-  for (const row of data) {
-    const date = row.recorded_at.slice(0, 10);
-    if (!byDate.has(date)) byDate.set(date, []);
-    const product = Array.isArray(row.market_products) ? row.market_products[0] : row.market_products;
-    byDate.get(date)!.push(convertCurrency(Number(row.price), product?.currency ?? 'PKR', reportingCurrency, fxRates));
-  }
-
-  return Array.from(byDate.entries())
-    .map(([date, prices]) => ({ date, medianPrice: median(prices) ?? 0 }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  return (data as { bucket_date: string; median_price: number | string | null }[])
+    .filter((row) => row.median_price != null)
+    .map((row) => ({ date: row.bucket_date, medianPrice: Number(row.median_price) }));
 }
 
 export type StockOutProduct = {
@@ -78,8 +52,8 @@ export type StockOutProduct = {
 // a seller can use to pick up slack demand while a competitor is unable to
 // fulfil.
 export async function getStockOuts(categorySlug: string, limit = 10, reportingCurrency = 'PKR'): Promise<StockOutProduct[]> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
   const [{ data, error }, fxRates] = await Promise.all([
@@ -88,6 +62,8 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
       .select('id, title, price, currency, url, category_slug, last_seen_at, market_platforms(name)')
       .eq('is_active', true)
       .eq('in_stock', false)
+      .in('category_slug', scope.categorySlugs)
+      .in('platform_id', scope.activePlatformIds)
       .order('last_seen_at', { ascending: false })
       .limit(200),
     getLatestFxRates(),
@@ -96,7 +72,6 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
   if (error || !data) return [];
 
   return data
-    .filter((row) => row.category_slug && keywordPattern.test(row.category_slug))
     .slice(0, limit)
     .map((row) => {
       const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
@@ -117,20 +92,21 @@ export type PlatformFreshness = { platformName: string; lastScrapedAt: string };
 // .github/workflows/market-scraper.yml), so this tells a seller how current
 // the pricing/stock data they're looking at actually is, per platform.
 export async function getDataFreshness(categorySlug: string): Promise<PlatformFreshness[]> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('market_products')
     .select('category_slug, last_seen_at, market_platforms(name)')
-    .eq('is_active', true);
+    .eq('is_active', true)
+    .in('category_slug', scope.categorySlugs)
+    .in('platform_id', scope.activePlatformIds);
 
   if (error || !data) return [];
 
   const latestByPlatform = new Map<string, string>();
   for (const row of data) {
-    if (!row.category_slug || !keywordPattern.test(row.category_slug)) continue;
     const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
     if (!platform?.name) continue;
     const current = latestByPlatform.get(platform.name);
@@ -155,18 +131,18 @@ const DEMAND_WINDOW_DAYS = 7;
 // repriced catalog (see 007_create_olx_classifieds_tables.sql), so listing
 // volume/velocity is what's meaningful here, not price percentiles.
 export async function getDemandSignal(categorySlug: string): Promise<DemandSignal | null> {
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return null;
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return null;
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data: matched, error } = await supabase
     .from('market_classified_listings')
-    .select('category_slug, status, first_seen_at')
-    .eq('status', 'active');
+    .select('first_seen_at')
+    .eq('status', 'active')
+    .in('category_slug', scope.categorySlugs)
+    .in('platform_id', scope.activePlatformIds);
 
-  if (error || !data) return null;
-
-  const matched = data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug));
+  if (error || !matched) return null;
   if (matched.length === 0) return null;
 
   const now = Date.now();

@@ -14,6 +14,8 @@ export const PATH_DASHBOARD = {
   default: path(ROOTS_DASHBOARD, '/overview'),
   overview: path(ROOTS_DASHBOARD, '/overview'),
   market: path(ROOTS_DASHBOARD, '/market'),
+  marketDefinition: path(ROOTS_DASHBOARD, '/market/definition'),
+  competitors: path(ROOTS_DASHBOARD, '/market/competitors'),
   watchlist: path(ROOTS_DASHBOARD, '/watchlist'),
   scraperHealth: path(ROOTS_DASHBOARD, '/scraper-health'),
 };

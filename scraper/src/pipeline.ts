@@ -1,4 +1,4 @@
-import { saveClassifiedListings, saveProducts, saveScrapeRunSummary } from './db.js';
+import { refreshCompetitors, saveClassifiedListings, saveProducts, saveScrapeRunSummary } from './db.js';
 import { BROWSER_SOURCES, CLASSIFIED_SOURCES, HTTP_SOURCES } from './sources/index.js';
 import type { ClassifiedSourceFn, ClassifiedSourceResult, SourceFn, SourceResult } from './types.js';
 
@@ -60,6 +60,10 @@ export async function run(): Promise<void> {
   for (const source of CLASSIFIED_SOURCES) {
     summaries.push(await safeRunClassified(source));
   }
+
+  // After every source, not per source: a competitor is keyed on
+  // (platform, seller) across all their categories (ROADMAP.md C1).
+  await refreshCompetitors();
 
   const zeroResult = summaries.filter((s) => !s.error && s.productCount === 0);
   const errored = summaries.filter((s) => s.error);

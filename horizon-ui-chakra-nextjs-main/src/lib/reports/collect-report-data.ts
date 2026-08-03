@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getDomainBenchmarks } from '@/lib/market-intel/benchmarks';
 import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
-import { CATEGORY_KEYWORDS } from '@/lib/market-intel/category-keywords';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller';
 import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/rfm';
 import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/low-stock-job';
@@ -63,7 +63,7 @@ function pctChange(current: number, previous: number): number {
 
 // Top scraped competitor listings in this seller's category, for the
 // "Public Marketplace SKU Tracking" table - reuses the same category-slug
-// keyword matching as getCategoryPricing(), unioned across market_products
+// market definition as getCategoryPricing(), unioned across market_products
 // (retailer marketplaces) and market_classified_listings (OLX), since some
 // seller categories only have OLX coverage. Classifieds have no in_stock
 // column - status:'active' (already required by the query) stands in for it.
@@ -73,8 +73,8 @@ async function getCompetitorTracking(
   reportingCurrency: string,
 ): Promise<CompetitorTrackingRow[]> {
   if (!categorySlug) return [];
-  const keywordPattern = CATEGORY_KEYWORDS[categorySlug];
-  if (!keywordPattern) return [];
+  const scope = await getMarketScope(categorySlug);
+  if (scope.categorySlugs.length === 0) return [];
 
   const supabase = await createClient();
   const [productsRes, listingsRes, fxRates] = await Promise.all([
@@ -82,6 +82,8 @@ async function getCompetitorTracking(
       .from('market_products')
       .select('title, price, currency, category_slug, in_stock, last_seen_at')
       .not('price', 'is', null)
+      .in('category_slug', scope.categorySlugs)
+      .in('platform_id', scope.activePlatformIds)
       .order('last_seen_at', { ascending: false })
       .limit(200),
     supabase
@@ -89,6 +91,8 @@ async function getCompetitorTracking(
       .select('title, price, currency, category_slug, last_seen_at')
       .eq('status', 'active')
       .not('price', 'is', null)
+      .in('category_slug', scope.categorySlugs)
+      .in('platform_id', scope.activePlatformIds)
       .order('last_seen_at', { ascending: false })
       .limit(200),
     getLatestFxRates(),
@@ -101,7 +105,7 @@ async function getCompetitorTracking(
   );
   if (data.length === 0) return [];
 
-  const matched = data.filter((row) => row.category_slug && keywordPattern.test(row.category_slug)).slice(0, TRACKED_SKU_ROWS);
+  const matched = data.slice(0, TRACKED_SKU_ROWS);
 
   return matched.map((row) => {
     // Scraped rows carry their own currency (almost always 'PKR', since

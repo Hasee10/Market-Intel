@@ -24,6 +24,7 @@ import Link from 'next/link';
 import Card from 'components/card/Card';
 import LineChart from '@/components/charts/LineChart';
 
+import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
@@ -39,8 +40,9 @@ import type {
 } from '@/lib/market-intel/market-insights';
 import type { PricingRecommendation } from '@/lib/market-intel/pricing-recommendation';
 import type { ProductMatch } from '@/lib/market-intel/product-matching';
+import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
 import type { SellerDomain } from '@/lib/market-intel/seller';
-import { PATH_ONBOARDING } from '@/lib/paths';
+import { PATH_DASHBOARD, PATH_ONBOARDING } from '@/lib/paths';
 
 function formatMetric(metricName: string) {
   return metricName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -63,6 +65,7 @@ function formatRelativeTime(iso: string) {
 
 type MarketViewProps = {
   domain: SellerDomain | null;
+  scopeSummary: MarketScopeSummary | null;
   reportingCurrency: string;
   benchmarks: DomainBenchmark[];
   peers: DomainPeer[];
@@ -86,6 +89,7 @@ type MarketViewProps = {
 
 export default function MarketView({
   domain,
+  scopeSummary,
   reportingCurrency,
   benchmarks,
   peers,
@@ -113,7 +117,24 @@ export default function MarketView({
 
   return (
     <Box>
-      <PageHeader title="Market" />
+      <PageHeader
+        title="Market"
+        actionButton={
+          <Flex gap="8px">
+            <Button as={Link} href={PATH_DASHBOARD.competitors} variant="brand" size="sm">
+              Competitors
+            </Button>
+            <Button as={Link} href={PATH_DASHBOARD.marketDefinition} variant="outline" size="sm">
+              Market definition
+            </Button>
+          </Flex>
+        }
+      />
+
+      {/* ROADMAP.md C2. Everything below this line is computed against the
+          scope this strip describes, so it goes first - a median with no
+          stated definition is a number the seller has to take on trust. */}
+      {scopeSummary && <MarketScopeBanner summary={scopeSummary} />}
 
       {freshness.length > 0 && (
         <Flex wrap="wrap" gap="8px" mb="16px">

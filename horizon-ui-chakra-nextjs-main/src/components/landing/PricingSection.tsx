@@ -24,6 +24,7 @@ const TIERS = [
     tagline: 'See what your competitors charge',
     features: [
       'Everything in Free',
+      'Competitor scorecards',
       'Competitor product matching',
       'Pricing recommendations',
       'Watchlists & price alerts',
