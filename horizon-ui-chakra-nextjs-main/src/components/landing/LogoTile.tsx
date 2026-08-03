@@ -43,7 +43,7 @@ export function LogoTile({ name, domain }: { name: string; domain?: string }) {
       src={`https://img.logo.dev/${domain}?token=${token}&size=72&format=png`}
       alt={name}
       height={36}
-      style={{ height: '36px', width: 'auto', flexShrink: 0, opacity: 0.75, filter: 'grayscale(1)' }}
+      style={{ height: '36px', width: 'auto', flexShrink: 0 }}
       onError={() => setFailed(true)}
       loading="lazy"
     />
