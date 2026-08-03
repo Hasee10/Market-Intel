@@ -22,6 +22,29 @@ const REQUEST_HEADERS = {
 
 const MAX_PAGES = 20;
 
+// Polite, randomised pacing between requests - CI's 429s are consistent with
+// OLX rate-limiting the runner's IP rather than a one-off block, so pacing
+// alone won't fix a hard IP-level limit, but it reduces how often a normal
+// run trips it.
+const PAGE_DELAY_MS: [number, number] = [4000, 8000];
+const CATEGORY_DELAY_MS: [number, number] = [15000, 25000];
+
+// A 429 is retried in place with exponential backoff before the page is
+// treated as a failure - a few retries here is cheap insurance against a
+// short-lived limit, but this is not a substitute for D4 (real IP-level
+// throttling needs a proxy, not politeness).
+const RATE_LIMIT_RETRY_BASE_MS = 45_000;
+const RATE_LIMIT_RETRY_MAX_MS = 300_000;
+const RATE_LIMIT_MAX_RETRIES = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function randomDelay([min, max]: [number, number]): Promise<void> {
+  return sleep(min + Math.random() * (max - min));
+}
+
 // OLX prices are shown in Pakistani shorthand ("Rs 1.25 Lac", "Rs 2.5 Crore")
 // as well as plain "Rs 23,999" - handle both.
 function parsePriceText(text: string | undefined): number | undefined {
@@ -74,13 +97,36 @@ function parseListings($: cheerio.CheerioAPI, categoryPath: string): RawClassifi
   return listings;
 }
 
-async function scrapeCategoryPage(categoryPath: string, page: number): Promise<RawClassifiedListing[]> {
+async function fetchCategoryPageHtml(categoryPath: string, page: number): Promise<string> {
   const url = `${BASE_URL}/${categoryPath}${page > 1 ? `?page=${page}` : ''}`;
-  const res = await fetch(url, { headers: REQUEST_HEADERS });
-  if (!res.ok) {
-    throw new Error(`OLX category "${categoryPath}" page ${page} fetch failed: ${res.status}`);
+
+  for (let attempt = 0; ; attempt += 1) {
+    const res = await fetch(url, { headers: REQUEST_HEADERS });
+
+    if (res.status === 429) {
+      const body = await res.text();
+      if (attempt >= RATE_LIMIT_MAX_RETRIES) {
+        throw new Error(`OLX category "${categoryPath}" page ${page} fetch failed: 429 (out of retries)`);
+      }
+      const backoff = Math.min(RATE_LIMIT_RETRY_BASE_MS * 2 ** attempt, RATE_LIMIT_RETRY_MAX_MS);
+      console.warn(
+        `[olx] category "${categoryPath}" page ${page}: 429, retrying in ${Math.round(backoff / 1000)}s ` +
+          `(attempt ${attempt + 2}). First 250 chars: ${body.slice(0, 250).replace(/\s+/g, ' ').trim()}`,
+      );
+      await sleep(backoff);
+      continue;
+    }
+
+    if (!res.ok) {
+      throw new Error(`OLX category "${categoryPath}" page ${page} fetch failed: ${res.status}`);
+    }
+
+    return res.text();
   }
-  const html = await res.text();
+}
+
+async function scrapeCategoryPage(categoryPath: string, page: number): Promise<RawClassifiedListing[]> {
+  const html = await fetchCategoryPageHtml(categoryPath, page);
   const $ = cheerio.load(html);
   const listings = parseListings($, categoryPath);
 
@@ -104,6 +150,7 @@ async function scrapeCategoryPage(categoryPath: string, page: number): Promise<R
 async function scrapeCategory(categoryPath: string): Promise<RawClassifiedListing[]> {
   const listings: RawClassifiedListing[] = [];
   for (let page = 1; page <= MAX_PAGES; page += 1) {
+    if (page > 1) await randomDelay(PAGE_DELAY_MS);
     const pageListings = await scrapeCategoryPage(categoryPath, page);
     if (pageListings.length === 0) break;
     listings.push(...pageListings);
@@ -115,7 +162,9 @@ export async function scrapeOlx(): Promise<ClassifiedSourceResult> {
   const listings: RawClassifiedListing[] = [];
   const failures: string[] = [];
 
-  for (const category of config.olxCategories) {
+  for (let i = 0; i < config.olxCategories.length; i += 1) {
+    const category = config.olxCategories[i];
+    if (i > 0) await randomDelay(CATEGORY_DELAY_MS);
     try {
       listings.push(...(await scrapeCategory(category)));
     } catch (err) {
