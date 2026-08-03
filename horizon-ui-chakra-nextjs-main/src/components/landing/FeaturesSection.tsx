@@ -12,6 +12,8 @@ import {
 import { Reveal } from 'components/reactbits/Reveal';
 import { SpotlightCard } from 'components/reactbits/SpotlightCard';
 
+import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
+
 // Every feature here maps to something actually shipped in the product
 // (see lib/market-intel/*.ts) - not aspirational marketing copy for
 // features that don't exist yet.
@@ -19,14 +21,14 @@ import { SpotlightCard } from 'components/reactbits/SpotlightCard';
 // `wide` marks the two differentiators - the market data nobody else gives a
 // Pakistani seller, and the recommendation built on top of it. A flat 3x2 grid
 // gave all six equal weight, which buried them next to "orders, products,
-// customers". They get the double-width tiles and a tinted surface so the
-// section has an actual reading order.
+// customers". They get the double-width tiles, a tinted surface, and the bold
+// gradient icon treatment (standard tiles get a quieter tinted-outline icon)
+// so the section has an actual reading order instead of six identical boxes.
 const FEATURES = [
   {
     icon: MdOutlineVisibility,
     title: 'Live competitor tracking',
-    description:
-      'Pricing and stock data scraped from 7 marketplaces, refreshed automatically - category-wide pricing bands, stock-outs, and demand signals.',
+    description: `Pricing and stock data scraped from ${MARKETPLACE_COUNT} marketplaces, refreshed automatically - category-wide pricing bands, stock-outs, and demand signals.`,
     wide: true,
   },
   {
@@ -75,6 +77,14 @@ export function FeaturesSection() {
     'linear-gradient(135deg, #1B2559 0%, #111C44 60%)',
   );
   const glow = useColorModeValue('rgba(67, 24, 255, 0.06)', 'rgba(122, 101, 255, 0.10)');
+  const indexColor = useColorModeValue('gray.200', 'whiteAlpha.200');
+  const hoverShadow = useColorModeValue(
+    '0px 24px 48px -12px rgba(17, 28, 78, 0.16)',
+    '0px 24px 48px -12px rgba(0, 0, 0, 0.4)',
+  );
+  const softIconBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
+  const softIconColor = useColorModeValue('#4318FF', '#A594FF');
+  const softIconBorder = useColorModeValue('#E4DEFF', 'whiteAlpha.200');
 
   return (
     <Box id="features" bg={sectionBg} py={{ base: '80px', md: '120px' }} position="relative" overflow="hidden">
@@ -138,6 +148,7 @@ export function FeaturesSection() {
                 <SpotlightCard
                   unstyled
                   h="100%"
+                  position="relative"
                   display="flex"
                   flexDirection="column"
                   p={{ base: '28px', md: '32px' }}
@@ -146,26 +157,47 @@ export function FeaturesSection() {
                   borderColor={cardBorder}
                   bg={feature.wide ? wideBg : cardBg}
                   boxShadow={cardShadow}
-                  transition="border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease"
+                  transition="box-shadow 0.25s ease, transform 0.25s ease"
+                  role="group"
                   _hover={{
-                    borderColor: '#4318FF',
-                    boxShadow: '0px 20px 40px rgba(67, 24, 255, 0.12)',
-                    transform: 'translateY(-4px)',
+                    boxShadow: hoverShadow,
+                    transform: 'translateY(-6px)',
                   }}
                 >
+                  <Text
+                    position="absolute"
+                    top={{ base: '20px', md: '24px' }}
+                    right={{ base: '24px', md: '28px' }}
+                    fontFamily="mono"
+                    fontSize="xs"
+                    fontWeight="600"
+                    color={indexColor}
+                    userSelect="none"
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                  </Text>
+
                   <Flex direction="column" h="100%">
                     <Flex
-                      w={feature.wide ? '60px' : '52px'}
-                      h={feature.wide ? '60px' : '52px'}
+                      w={feature.wide ? '60px' : '48px'}
+                      h={feature.wide ? '60px' : '48px'}
                       borderRadius="16px"
-                      bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
+                      bg={feature.wide ? 'linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)' : softIconBg}
+                      border={feature.wide ? 'none' : '1px solid'}
+                      borderColor={feature.wide ? undefined : softIconBorder}
                       align="center"
                       justify="center"
                       mb="20px"
-                      boxShadow="0px 8px 16px rgba(67, 24, 255, 0.25)"
+                      boxShadow={feature.wide ? '0px 8px 20px rgba(67, 24, 255, 0.28)' : 'none'}
                       flexShrink={0}
+                      transition="transform 0.25s ease"
+                      _groupHover={{ transform: 'scale(1.08)' }}
                     >
-                      <Icon as={feature.icon} boxSize={feature.wide ? '30px' : '26px'} color="white" />
+                      <Icon
+                        as={feature.icon}
+                        boxSize={feature.wide ? '30px' : '22px'}
+                        color={feature.wide ? 'white' : softIconColor}
+                      />
                     </Flex>
                     <Text
                       fontWeight="700"
@@ -173,10 +205,16 @@ export function FeaturesSection() {
                       color={heading}
                       mb="10px"
                       letterSpacing="-0.01em"
+                      pr="28px"
                     >
                       {feature.title}
                     </Text>
-                    <Text color={body} fontSize={feature.wide ? 'md' : 'sm'} lineHeight="1.7" maxW="46ch">
+                    <Text
+                      color={body}
+                      fontSize={feature.wide ? 'md' : 'sm'}
+                      lineHeight="1.7"
+                      maxW={feature.wide ? '60ch' : '40ch'}
+                    >
                       {feature.description}
                     </Text>
                   </Flex>
