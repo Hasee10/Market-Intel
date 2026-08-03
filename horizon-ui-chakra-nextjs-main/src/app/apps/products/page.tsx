@@ -2,11 +2,12 @@
 
 import { Suspense, useCallback, useState } from 'react';
 
-import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text } from '@chakra-ui/react';
+import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text, useColorModeValue } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import Card from 'components/card/Card';
+import { Reveal } from 'components/reactbits/Reveal';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
@@ -62,6 +63,9 @@ function ProductsPageContent() {
   const [editOpen, setEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
 
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
+
   const apiUrl = categoryFilterId ? `/api/products?categoryId=${categoryFilterId}` : '/api/products';
   const {
     data: productsData,
@@ -94,7 +98,7 @@ function ProductsPageContent() {
           ))}
         </SimpleGrid>
       ) : (
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <ProductsTable data={[]} loading onEdit={handleEditProduct} />
         </Card>
       );
@@ -111,7 +115,7 @@ function ProductsPageContent() {
 
     if (!productsData?.data?.length) {
       return (
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Stack align="center" spacing="8px" py="24px">
             <Icon as={MdOutlineSearchOff} boxSize="28px" color="secondaryGray.600" />
             <Text fontSize="lg" fontWeight="700">
@@ -136,12 +140,14 @@ function ProductsPageContent() {
 
     return viewMode === 'grid' ? (
       <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
-        {productsData.data.map((p) => (
-          <ProductCard key={p.id} data={p} onEdit={handleEditProduct} />
+        {productsData.data.map((p, i) => (
+          <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
+            <ProductCard data={p} onEdit={handleEditProduct} />
+          </Reveal>
         ))}
       </SimpleGrid>
     ) : (
-      <Card>
+      <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
         <Box overflowX="auto">
           <ProductsTable data={productsData.data} loading={false} onEdit={handleEditProduct} />
         </Box>
