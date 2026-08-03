@@ -12,6 +12,15 @@ export interface RawProduct {
   inStock?: boolean;
   rating?: number;
   ratingCount?: number;
+  // Seller identity behind the listing. Only marketplaces that name the
+  // merchant can fill these (Daraz today); single-retailer sources leave them
+  // undefined, since on those the platform *is* the seller. This is what makes
+  // a competitor entity possible - see ROADMAP.md C1.
+  sellerName?: string;
+  sellerExternalId?: string;
+  // Platform-reported units sold, coarse and rounded at source. A demand
+  // *proxy*, not sales data - always label it as such downstream.
+  soldCount?: number;
 }
 
 export interface SourceResult {

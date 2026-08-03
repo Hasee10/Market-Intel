@@ -1,24 +1,10 @@
+import { timingSafeEqual } from 'crypto';
+
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
-
-// Same cookie pattern middleware.ts matches on - see the comment there for
-// why this is a redirect-UX/dev-bypass signal, not the security boundary.
-const SUPABASE_AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
-
-const AUTH_BYPASSED = process.env.BYPASS_AUTH === '1';
-
-// Dev-only: BYPASS_AUTH=1 with no real session hands out a service-role
-// client (bypasses RLS) instead of an anon+cookie client, so pages/routes
-// keep working while Clerk isn't wired up yet. getCurrentSeller() then
-// falls back to the first `sellers` row. Remove once real auth lands.
-export async function isBypassedNoSession(): Promise<boolean> {
-  if (!AUTH_BYPASSED) return false;
-  const cookieStore = await cookies();
-  return !cookieStore.getAll().some((c) => SUPABASE_AUTH_COOKIE.test(c.name));
-}
 
 function createServiceRoleClient() {
   return createSupabaseClient(
@@ -40,11 +26,24 @@ export function createAdminClient() {
 // Shared guard for cron-triggered route handlers: requires a
 // `Authorization: Bearer <CRON_SECRET>` header so these endpoints can't be
 // hit by anyone who finds the URL. Returns true if the request is authorized.
+// timingSafeEqual rather than ===: string equality short-circuits at the
+// first differing byte, leaking the shared secret one character at a time
+// to anyone able to measure response latency across many requests
+// (leaks.md finding #9). Length is checked separately because
+// timingSafeEqual throws on mismatched lengths - that comparison isn't
+// constant-time, but it only reveals how long the secret is, not its value.
 export function isAuthorizedCronRequest(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
+
   const header = request.headers.get('authorization');
-  return header === `Bearer ${secret}`;
+  if (!header) return false;
+
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const actual = Buffer.from(header);
+  if (expected.length !== actual.length) return false;
+
+  return timingSafeEqual(expected, actual);
 }
 
 // Server Components/Actions/Route Handlers client. Reads/writes the auth
@@ -54,10 +53,6 @@ export function isAuthorizedCronRequest(request: Request): boolean {
 // called from a Server Component this silently no-ops and relies on
 // middleware.ts to keep the session cookie fresh instead.
 export async function createClient() {
-  if (await isBypassedNoSession()) {
-    return createServiceRoleClient();
-  }
-
   const cookieStore = await cookies();
 
   return createServerClient(

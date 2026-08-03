@@ -3,7 +3,11 @@
 # dependencies
 node_modules
 /node_modules
-package-lock.json
+# package-lock.json is deliberately NOT ignored (it was, as a Horizon UI
+# template default - leaks.md finding #5). Without it, every install resolves
+# version ranges afresh, so CI, local, and Vercel can each build a different
+# dependency tree - and the Next.js range in package.json spans a known CVE
+# window. The lockfile is the only thing that makes a build reproducible.
 yarn.lock
 /.pnp
 .pnp.js

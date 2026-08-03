@@ -82,10 +82,13 @@ proposes changing its architecture.
 
 Nothing below Phase A ships credibly until these are done.
 
-- **A1. Real authentication.** Replace the `BYPASS_AUTH` scaffold; delete the
-  flag and `BYPASS_ENTITLEMENTS` from every code path. Today
-  `lib/supabase/server.ts` hands out a service-role client and falls back to
-  "the first `sellers` row" — we cannot onboard a second customer safely.
+- **A1. Real authentication.** ✅ **Done 2026-08-03.** This turned out to be a
+  deletion, not a build: Supabase Auth was already fully wired (signup,
+  sign-in, password reset, the `013` signup trigger, RLS on `auth.uid()`), and
+  `BYPASS_AUTH` was a scaffold left over from a planned Clerk migration that
+  never happened. Both flags are now gone from `middleware.ts`,
+  `lib/supabase/server.ts`, `seller.ts` and `entitlements.ts`. Moving to Clerk
+  later is a separate migration and is no longer blocking anything.
 - **A2. Fix the Critical + High findings in `leaks.md`.** Start with the
   unauthenticated `/api/referrals/record` free→paid escalation, then
   server-side password policy and the bypass-flag hardening.
@@ -97,8 +100,12 @@ Nothing below Phase A ships credibly until these are done.
   `getCategoryPricing`, and the `market-insights` functions currently pull
   whole tables and filter in JS. Materialised views or indexed joins before
   price history accumulates further.
-- **A5. CI + lockfile.** Typecheck, lint, and dependency audit gating; commit
-  a lockfile for the main app (`leaks.md` findings 5 and 13).
+- **A5. CI + lockfile.** ✅ **Done 2026-08-03.** `.github/workflows/ci.yml`
+  gates typecheck, lint and a real `next build` for the app, typecheck for the
+  scraper, and an advisory `npm audit` on both. The app's `package-lock.json`
+  was being ignored by a Horizon UI template default in `.gitignore` — that
+  line is removed, **but the lockfile still needs to be committed** for `npm
+  ci` in CI to work.
 
 ## Phase B — Rebuild the plan tiers around what works on day one
 
@@ -155,12 +162,36 @@ Ordered by value, not by block number.
 
 ## Phase D — Data coverage
 
-- **D1. Daraz.** Highest-value new source; expect CloakBrowser/proxy work.
+- **D1. Daraz.** ✅ **Done 2026-08-03** (`scraper/src/sources/daraz.ts`,
+  migration `019`). No CloakBrowser or proxy was needed after all: the
+  category pages render client-side, but `?ajax=true` returns the page's JSON
+  model over plain fetch. It also turned out to carry **seller identity**
+  (100% coverage — 58 distinct sellers in `laptops` alone) and a
+  platform-reported **sold count**, so it hands C1 its competitor entity and
+  gap #3 its demand proxy. Requires migration 019 to be applied.
 - **D2. Enrich the existing 7.** Ratings, review counts, delivery terms,
-  seller identity — unlocks C1 and C5 without new anti-bot exposure.
-- **D3. ToS/legal review**, running alongside D1 rather than after it.
+  seller identity — unlocks C1 and C5 without new anti-bot exposure. Note the
+  single-retailer sources cannot supply seller identity at all: on those, the
+  platform *is* the seller. Only Daraz and any future true marketplace can.
+- **D3. ToS/legal review.** ✅ **Done 2026-08-03** — see `SCRAPING.md`. It
+  found one live non-compliance (`sapphireonline` calls a Demandware endpoint
+  its own robots.txt disallows) with a verified compliant alternative, and it
+  is what constrained Daraz to category paths only.
 - **D4. Retailer coverage** for the 10 of 12 categories currently served by
-  OLX alone.
+  OLX alone. **Urgency raised 2026-08-03:** a live read of the database showed
+  `market_classified_listings` is *empty* and `scraper_runs` recorded OLX at
+  `product_count: 0, error: null` on all three logged runs. Since OLX is the
+  only source covering those 10 categories, most of the product has been
+  running on no market data at all. The parser is not the problem — every
+  selector in `olx.ts` still matches a live fetch from a residential
+  connection (33 cards, 24 parsed). The failure was invisible because
+  `scrapeOlx` caught every per-category error and returned `[]`, which the
+  pipeline could not distinguish from an empty market. Both holes are now
+  closed: a total category wipeout throws, and the pipeline records any
+  zero-row source as an error in `scraper_runs`. The remaining unknown is the
+  root cause on the runner — the next scheduled run's `scraper_runs.error`
+  will name it. Until then this source is presumed dead in CI, so D4's real
+  retailer coverage is the durable fix, not a second single point of failure.
 
 ## Phase E — Restructure the deliverable
 
@@ -186,6 +217,15 @@ D2 feeds C1 and C5
 
 Phase A is strictly blocking. D1/D3 can start immediately in parallel since
 they are scraper-side and share no code with the app work.
+
+**Progress, 2026-08-03.** A1, A2, A5, B, D1 and D3 are done. Phase A's
+remaining blockers are **A3** (market-definition model) and **A4** (push
+aggregation into SQL). A3 is also the prerequisite for C2, so those two are
+now the natural next pair: A3 is the model, C2 is the surface for it.
+
+UI polish is no longer deferred to Phase F wholesale (decided with the user,
+2026-08-03) — each item from here ships with its own UI rather than being
+retrofitted later. Phase F remains for the cross-cutting pass.
 
 ## Open items
 

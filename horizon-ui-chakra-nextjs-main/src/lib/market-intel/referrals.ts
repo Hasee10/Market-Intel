@@ -1,9 +1,24 @@
 'server-only';
 
-import { createAdminClient, createClient } from '@/lib/supabase/server';
+import { randomInt } from 'crypto';
 
+import { createClient } from '@/lib/supabase/server';
+
+// Excludes I/O/0/1 - these codes get read aloud and retyped, and the
+// ambiguous glyphs cost more in failed signups than the bits they add.
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const CODE_LENGTH = 8;
+
+// crypto.randomInt, not Math.random: a referral code is a bearer token for
+// the free->paid reward, and Math.random is a seeded PRNG whose future
+// output is derivable from observed draws (leaks.md finding #8). 32^8 = 40
+// bits of real entropy, so enumerating a valid code isn't practical.
 function generateCode(): string {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
+  let code = '';
+  for (let i = 0; i < CODE_LENGTH; i += 1) {
+    code += CODE_ALPHABET[randomInt(CODE_ALPHABET.length)];
+  }
+  return code;
 }
 
 // Every seller gets a code lazily, the first time it's needed (Settings
@@ -32,7 +47,10 @@ export type ReferralStats = {
   pendingCount: number;
 };
 
-const REWARD_JOINS_FOR_PAID = 3;
+// Display only ("N of 3 joined"). The reward is applied by the signup
+// trigger in 018_referral_integrity.sql, which holds the authoritative
+// threshold - keep the two in sync if it ever changes.
+export const REWARD_JOINS_FOR_PAID = 3;
 
 export async function getReferralStats(sellerId: string): Promise<ReferralStats> {
   const supabase = await createClient();
@@ -46,45 +64,11 @@ export async function getReferralStats(sellerId: string): Promise<ReferralStats>
   return { code, joinedCount, pendingCount };
 }
 
-// Called once at signup time (see auth/signup/page.tsx, via
-// /api/referrals/record) when a ?ref=CODE param was present. Uses the
-// service-role client rather than the cookie-bound one: this runs
-// immediately after supabase.auth.signUp() resolves, before there's
-// necessarily a session (email confirmation may still be pending), and it
-// needs to read/write the *referrer's* row, not the new seller's own.
-// Links the new seller to whoever referred them and grants the growth
-// reward - see REWARD_JOINS_FOR_PAID below. No payment provider exists yet
-// (see entitlements.ts), so this is the one real, non-monetary way a
-// seller can move off the free tier today: bring in enough sellers in the
-// same category to make the benchmark pool worth more to everyone, and get
-// rewarded for it directly.
-export async function recordReferralSignup(referralCode: string, newSellerId: string): Promise<void> {
-  const supabase = createAdminClient();
-
-  const { data: referrer } = await supabase
-    .from('sellers')
-    .select('id, plan_tier')
-    .eq('referral_code', referralCode)
-    .maybeSingle();
-
-  if (!referrer || referrer.id === newSellerId) return;
-
-  await supabase.from('seller_referrals').insert({
-    referrer_seller_id: referrer.id,
-    referral_code: referralCode,
-    status: 'joined',
-    joined_seller_id: newSellerId,
-    joined_at: new Date().toISOString(),
-  });
-
-  const { data: allReferrals } = await supabase
-    .from('seller_referrals')
-    .select('status')
-    .eq('referrer_seller_id', referrer.id);
-
-  const joinedCount = (allReferrals ?? []).filter((r) => r.status === 'joined').length;
-
-  if (joinedCount >= REWARD_JOINS_FOR_PAID && referrer.plan_tier === 'free') {
-    await supabase.from('sellers').update({ plan_tier: 'paid' }).eq('id', referrer.id);
-  }
-}
+// Referral *recording* deliberately has no TypeScript writer any more. It
+// used to live here, called by /api/referrals/record with a caller-supplied
+// userId over the service-role client - an endpoint that could not be
+// session-gated (no session exists at signup while email confirmation is
+// pending) and so let anyone forge joins until they earned the free->paid
+// reward (leaks.md finding #1). The write now happens inside the signup DB
+// trigger (018_referral_integrity.sql), where the only way to submit a code
+// is to genuinely create an auth user. Do not reintroduce an HTTP writer.

@@ -25,22 +25,38 @@ export type Feature =
 
 const TIER_RANK: Record<PlanTier, number> = { free: 0, paid: 1, premium: 2 };
 
+// Ordering principle (ROADMAP.md Phase B): a tier may only charge for
+// things that actually render for a brand-new seller with no other sellers
+// on the platform. Everything derived from scraped competitor data
+// qualifies on day one; anything needing a peer network does not.
 const FEATURE_MIN_TIER: Record<Feature, PlanTier> = {
-  peer_benchmarks: 'paid',
+  // Paid - the competitor-intelligence loop. All of these run purely off
+  // scraped market data plus the seller's own catalog, so they work from
+  // the first login with zero other customers on the platform.
   watchlists: 'paid',
-  product_matching: 'premium',
-  pricing_recommendations: 'premium',
+  product_matching: 'paid',
+  pricing_recommendations: 'paid',
+
+  // Premium - derived analytics on top of accumulated history.
   forecasting: 'premium',
   anomaly_detection: 'premium',
   multi_domain: 'premium',
+
+  // Premium, and deliberately not a headline feature: domain_benchmarks
+  // needs MIN_SAMPLE_SIZE (3) opted-in sellers sharing a category before it
+  // writes a single row (benchmarks-job.ts), so it renders empty until the
+  // network reaches that density. It used to sit at 'paid', which meant the
+  // cheapest upgrade was sold partly on a screen that cannot populate yet.
+  // Treat it as upside that unlocks with scale, not as something we promise.
+  peer_benchmarks: 'premium',
 };
 
+// No dev escape hatch. BYPASS_ENTITLEMENTS=1 used to unlock every gate, which
+// meant local development never once exercised the free-tier experience -
+// the thing every new seller actually sees. To view paid/premium screens,
+// set your own `sellers.plan_tier` in Supabase, which is also how a real
+// upgrade happens today (there is no checkout yet).
 export function hasFeature(planTier: string, feature: Feature): boolean {
-  // Dev/test escape hatch, mirrors the BYPASS_AUTH pattern in seller.ts -
-  // unset in production (Vercel), so real sellers still hit the real
-  // plan-tier gate. Only set this locally when you want to see paid/premium
-  // screens without changing your own sellers.plan_tier row.
-  if (process.env.BYPASS_ENTITLEMENTS === '1') return true;
   const tier = (planTier in TIER_RANK ? planTier : 'free') as PlanTier;
   return TIER_RANK[tier] >= TIER_RANK[FEATURE_MIN_TIER[feature]];
 }

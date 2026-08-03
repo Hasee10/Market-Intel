@@ -78,25 +78,20 @@ function SignUpForm() {
         email,
         password,
         options: {
-          data: { business_name: businessName },
+          // referral_code rides along in the signup metadata rather than
+          // going to a separate endpoint: the signup trigger
+          // (018_referral_integrity.sql) reads it and records the referral
+          // server-side. The endpoint this replaced took a caller-supplied
+          // userId and could not be session-gated (no session exists while
+          // email confirmation is pending), which made the free->paid
+          // referral reward forgeable by anyone - see leaks.md finding #1.
+          data: { business_name: businessName, referral_code: referralCode ?? '' },
         },
       });
 
       if (signUpError) {
         setError(signUpError.message);
         return;
-      }
-
-      // Best-effort: the signup trigger (013_seller_signup_trigger.sql)
-      // needs to have created the sellers row first, which it has by the
-      // time signUp() resolves - see /api/referrals/record's comment for
-      // why this doesn't require a session. Never blocks signup on failure.
-      if (referralCode && data.user?.id) {
-        fetch('/api/referrals/record', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ referralCode, userId: data.user.id }),
-        }).catch(() => {});
       }
 
       // Email confirmation is on by default for a new Supabase project -

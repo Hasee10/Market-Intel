@@ -8,11 +8,21 @@ interface SourceRunSummary {
   error?: string;
 }
 
+// A source that returns an empty array without throwing looks identical in
+// telemetry to a source that legitimately found nothing - which is how OLX sat
+// at `product_count: 0, error: null` across three runs while it was in fact
+// failing on every category. No configured source should ever legitimately
+// return zero, so record the emptiness itself as the error.
+const ZERO_RESULT_ERROR =
+  'returned 0 rows without throwing - source is configured with categories, so this is a silent failure, not an empty market';
+
 async function safeRun(source: SourceFn): Promise<SourceRunSummary> {
   try {
     const result: SourceResult = await source();
     await saveProducts(result.platformSlug, result.products);
-    await saveScrapeRunSummary(result.platformSlug, result.products.length);
+    const empty = result.products.length === 0;
+    await saveScrapeRunSummary(result.platformSlug, result.products.length, empty ? ZERO_RESULT_ERROR : undefined);
+    if (empty) console.warn(`[pipeline] ${result.platformSlug} ${ZERO_RESULT_ERROR}`);
     return { platformSlug: result.platformSlug, productCount: result.products.length };
   } catch (err) {
     const message = (err as Error).message;
@@ -26,7 +36,9 @@ async function safeRunClassified(source: ClassifiedSourceFn): Promise<SourceRunS
   try {
     const result: ClassifiedSourceResult = await source();
     await saveClassifiedListings(result.platformSlug, result.listings);
-    await saveScrapeRunSummary(result.platformSlug, result.listings.length);
+    const empty = result.listings.length === 0;
+    await saveScrapeRunSummary(result.platformSlug, result.listings.length, empty ? ZERO_RESULT_ERROR : undefined);
+    if (empty) console.warn(`[pipeline] ${result.platformSlug} ${ZERO_RESULT_ERROR}`);
     return { platformSlug: result.platformSlug, productCount: result.listings.length };
   } catch (err) {
     const message = (err as Error).message;

@@ -21,6 +21,7 @@ export const config = {
   gotoCategories: splitList(process.env.GOTO_CATEGORIES) as string[],
   sapphireonlineCategories: splitList(process.env.SAPPHIREONLINE_CATEGORIES) as string[],
   olxCategories: splitList(process.env.OLX_CATEGORIES) as string[],
+  darazCategories: splitList(process.env.DARAZ_CATEGORIES) as string[],
 
   logLevel: process.env.LOG_LEVEL ?? 'info',
 };

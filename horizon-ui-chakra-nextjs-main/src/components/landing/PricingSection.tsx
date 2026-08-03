@@ -21,20 +21,31 @@ const TIERS = [
   },
   {
     name: 'Paid',
-    tagline: 'See the market',
-    features: ['Everything in Free', 'Peer benchmarking', 'Watchlists & price alerts'],
+    tagline: 'See what your competitors charge',
+    features: [
+      'Everything in Free',
+      'Competitor product matching',
+      'Pricing recommendations',
+      'Watchlists & price alerts',
+    ],
     cta: 'Start free',
     highlighted: true,
     note: 'Or unlock it free - refer 3 sellers',
   },
   {
     name: 'Premium',
-    tagline: 'Full market intelligence',
+    tagline: 'Forecasting and scale',
     features: [
       'Everything in Paid',
-      'Competitor product matching',
-      'Pricing recommendations & forecasting',
-      'Anomaly detection, multi-domain',
+      'Price & demand forecasting',
+      'Anomaly detection',
+      'Multiple domains',
+      // Deliberately last and hedged: domain_benchmarks needs 3+ opted-in
+      // sellers in a category before it renders anything (benchmarks-job.ts),
+      // so promising it flatly would be selling a screen that may be empty
+      // on the day someone pays. Keep the wording conditional until the
+      // network is dense enough for it to be a headline.
+      'Peer benchmarking, as your category fills up',
     ],
     cta: 'Start free',
     highlighted: false,

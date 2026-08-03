@@ -102,6 +102,11 @@ export async function saveProducts(platformSlug: string, products: RawProduct[])
       in_stock: p.inStock ?? null,
       rating: p.rating ?? null,
       rating_count: p.ratingCount ?? null,
+      // Null for every single-retailer source - only true marketplaces name
+      // the merchant behind a listing (see migrations/019).
+      seller_name: p.sellerName ?? null,
+      seller_external_id: p.sellerExternalId ?? null,
+      sold_count: p.soldCount ?? null,
       is_active: true,
       last_seen_at: now,
     }));

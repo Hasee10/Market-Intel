@@ -153,40 +153,58 @@ export default function MarketView({
 
       <StatsGrid data={domainStats} columns={4} />
 
-      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Paid" featureName="Domain benchmarks">
+      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Domain benchmarks">
         <Card mb="20px">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Domain benchmarks
             </Text>
-            {domain && benchmarks.length === 0 && (
-              <Badge colorScheme="gray">No benchmarks computed for this domain yet</Badge>
-            )}
           </Flex>
-          <Box overflowX="auto">
-            <Table variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Metric</Th>
-                  <Th>P25</Th>
-                  <Th>Median</Th>
-                  <Th>P75</Th>
-                  <Th>Sample size</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {benchmarks.map((row) => (
-                  <Tr key={row.metricName}>
-                    <Td>{formatMetric(row.metricName)}</Td>
-                    <Td>{row.p25 ?? '—'}</Td>
-                    <Td>{row.median ?? '—'}</Td>
-                    <Td>{row.p75 ?? '—'}</Td>
-                    <Td>{row.sampleSize}</Td>
+          {/* Benchmarks stay empty until MIN_SAMPLE_SIZE (3) sellers in this
+              category have opted in - see benchmarks-job.ts. That's a real
+              anonymity floor, not a bug, but an unexplained blank table reads
+              as broken software, so say why rather than showing an empty
+              grid. */}
+          {benchmarks.length === 0 ? (
+            <Alert status="info" borderRadius="12px">
+              <AlertIcon />
+              <Box>
+                <AlertTitle fontSize="sm">Not enough sellers in your domain yet</AlertTitle>
+                <AlertDescription fontSize="sm">
+                  Peer benchmarks need at least 3 opted-in sellers in a category before we publish
+                  them, so no single seller&apos;s numbers can be reverse-engineered from the
+                  aggregate. We&apos;ll turn this on for your domain automatically once it reaches
+                  that threshold — nothing for you to do. Everything else on this page is drawn from
+                  scraped market data and works today.
+                </AlertDescription>
+              </Box>
+            </Alert>
+          ) : (
+            <Box overflowX="auto">
+              <Table variant="simple">
+                <Thead>
+                  <Tr>
+                    <Th>Metric</Th>
+                    <Th>P25</Th>
+                    <Th>Median</Th>
+                    <Th>P75</Th>
+                    <Th>Sample size</Th>
                   </Tr>
-                ))}
-              </Tbody>
-            </Table>
-          </Box>
+                </Thead>
+                <Tbody>
+                  {benchmarks.map((row) => (
+                    <Tr key={row.metricName}>
+                      <Td>{formatMetric(row.metricName)}</Td>
+                      <Td>{row.p25 ?? '—'}</Td>
+                      <Td>{row.median ?? '—'}</Td>
+                      <Td>{row.p75 ?? '—'}</Td>
+                      <Td>{row.sampleSize}</Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            </Box>
+          )}
         </Card>
       </UpgradeGate>
 
@@ -369,7 +387,7 @@ export default function MarketView({
 
       <UpgradeGate
         hasAccess={entitlements.productMatching}
-        requiredPlanLabel="Premium"
+        requiredPlanLabel="Paid"
         featureName="Closest competitor match per product"
       >
         <Card mb="20px">
@@ -420,7 +438,7 @@ export default function MarketView({
 
       <UpgradeGate
         hasAccess={entitlements.pricingRecommendations}
-        requiredPlanLabel="Premium"
+        requiredPlanLabel="Paid"
         featureName="Pricing recommendations"
       >
         <Card mb="20px">
@@ -529,7 +547,7 @@ export default function MarketView({
         </Card>
       </UpgradeGate>
 
-      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Paid" featureName="Peers in your domain">
+      <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Peers in your domain">
         <Card mb="20px">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>

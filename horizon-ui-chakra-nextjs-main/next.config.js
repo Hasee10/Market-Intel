@@ -31,6 +31,45 @@ const nextConfig = {
     // Make ENV
     unoptimized: true,
   },
+  // leaks.md finding #4 - none of these were set. Applied to every route
+  // rather than a subset: there's no page here that benefits from being
+  // framed, sniffed, or from leaking a full referrer cross-origin.
+  //
+  // No Content-Security-Policy yet, deliberately. Chakra/Emotion inject
+  // styles at runtime and would need 'unsafe-inline' for style-src, so a
+  // CSP written today would be weak enough to give false assurance while
+  // still risking breakage. It needs a nonce-based setup done properly -
+  // tracked as its own item rather than bolted on here.
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Clickjacking: nothing here is meant to be embedded.
+          { key: 'X-Frame-Options', value: 'DENY' },
+          // Stops the browser second-guessing our Content-Type, which is
+          // what turns an uploaded/returned file into stored XSS.
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          // Send the origin cross-site, full URL same-origin: seller
+          // dashboard paths carry ids we don't want in third-party logs.
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          // We use none of these; deny by default so a future dependency
+          // can't quietly start asking.
+          {
+            key: 'Permissions-Policy',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+          },
+          // Only meaningful over HTTPS; Vercel terminates TLS so this is
+          // always the case in production. 2 years, per the HSTS preload
+          // requirement, in case we submit the domain later.
+          {
+            key: 'Strict-Transport-Security',
+            value: 'max-age=63072000; includeSubDomains; preload',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 // module.exports = withTM(nextConfig);

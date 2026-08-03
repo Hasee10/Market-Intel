@@ -28,7 +28,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 
-import { csvToObjects } from '@/lib/csv';
+import { csvToObjects, MAX_IMPORT_ROWS } from '@/lib/csv';
 
 export type ImportField = {
   key: string;
@@ -96,6 +96,18 @@ export function BulkImportDrawer({ isOpen, onClose, title, fields, apiEndpoint, 
   const handleImport = async () => {
     if (missingRequired.length > 0) {
       toast({ status: 'error', title: `Map required field(s): ${missingRequired.map((f) => f.label).join(', ')}` });
+      return;
+    }
+
+    // Mirrors the server-side cap so an oversized file fails here, before
+    // the upload, instead of coming back as a 413. The API check is the
+    // real enforcement - this is purely to save the round trip.
+    if (rows.length > MAX_IMPORT_ROWS) {
+      toast({
+        status: 'error',
+        title: `Too many rows (${rows.length})`,
+        description: `Split the file into batches of ${MAX_IMPORT_ROWS} rows or fewer.`,
+      });
       return;
     }
 

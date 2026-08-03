@@ -19,20 +19,9 @@ const SUPABASE_AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
 //
 // This is a redirect-UX gate, not a security boundary. Real identity is
 // verified server-side via createClient().auth.getUser() in pages and route
-// handlers, where RLS is enforced.
-//
-// BYPASS_AUTH=1 (see .env.local) skips this gate entirely while real auth
-// (Clerk) isn't wired up yet - src/lib/supabase/server.ts falls back to a
-// service-role client + the first `sellers` row in that case, so pages and
-// API routes keep working without a session. Remove BYPASS_AUTH once real
-// sign-in is in place.
-const AUTH_BYPASSED = process.env.BYPASS_AUTH === '1';
-
+// handlers, where RLS is enforced - requireSeller() in lib/market-intel/
+// seller.ts is the guard every protected layout actually depends on.
 export default function middleware(request: NextRequest) {
-  if (AUTH_BYPASSED) {
-    return NextResponse.next();
-  }
-
   const hasSession = request.cookies
     .getAll()
     .some((cookie) => SUPABASE_AUTH_COOKIE.test(cookie.name));

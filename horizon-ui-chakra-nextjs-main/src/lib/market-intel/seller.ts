@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
-import { createClient, isBypassedNoSession } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export type Seller = {
   id: string;
@@ -23,32 +23,14 @@ export type SellerDomain = {
 // Every authenticated request in this app already has a `sellers` row -
 // the 013_seller_signup_trigger.sql trigger creates it at auth.users insert
 // time. Returns null only if the caller isn't signed in.
+//
+// There is deliberately no dev bypass here any more. This used to fall back
+// to "the newest `sellers` row" under BYPASS_AUTH=1, which meant the identity
+// of the current user was whoever signed up last - fine with one seller,
+// cross-tenant data exposure with two (leaks.md finding #2). To work on the
+// dashboard locally, sign up a real account; the flow works end to end.
 export async function getCurrentSeller(): Promise<Seller | null> {
   const supabase = await createClient();
-
-  // Dev-only: BYPASS_AUTH=1 with no session - createClient() already handed
-  // back a service-role client above, so just grab the first seller instead
-  // of resolving a real auth.uid(). Remove once Clerk auth is wired up.
-  if (await isBypassedNoSession()) {
-    const { data, error } = await supabase
-      .from('sellers')
-      .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency')
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (error || !data) return null;
-
-    return {
-      id: data.id,
-      userId: data.user_id,
-      businessName: data.business_name,
-      email: data.email,
-      planTier: data.plan_tier,
-      onboardedAt: data.onboarded_at,
-      reportingCurrency: data.reporting_currency,
-    };
-  }
 
   const {
     data: { user },

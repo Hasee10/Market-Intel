@@ -1,3 +1,12 @@
+// Ceiling on rows accepted by a single /api/*/bulk-import call (leaks.md
+// finding #6 - all three endpoints previously accepted an unbounded array
+// and passed it straight to a Supabase upsert). They're authenticated, so
+// this isn't an anonymous DoS, but one seller shouldn't be able to stall a
+// serverless function or the database with a 500k-row paste. Sized well
+// above any realistic single catalog export; larger migrations should be
+// chunked by the caller.
+export const MAX_IMPORT_ROWS = 5000;
+
 // Minimal RFC 4180-ish CSV parser (quoted fields, escaped "" quotes, commas
 // and newlines inside quotes) - hand-rolled instead of adding a dependency
 // since seller-uploaded product/customer/order exports are simple tabular

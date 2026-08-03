@@ -1,0 +1,95 @@
+name: CI
+
+# ROADMAP.md A5 / leaks.md finding #13. Until this existed, nothing gated a
+# push: typecheck, lint, and dependency audit were all "run it locally if you
+# remember". Both packages are checked - the scraper is a separate npm project
+# with its own lockfile and tsconfig, and it is the half that touches the
+# database with a service-role key, so it is not the half to leave unchecked.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: App (typecheck, lint, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: horizon-ui-chakra-nextjs-main
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: horizon-ui-chakra-nextjs-main/package-lock.json
+
+      # `npm ci` rather than `npm install`: it fails loudly if package.json and
+      # the lockfile have drifted apart, which is the whole point of committing
+      # the lockfile in the first place.
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - run: npm run lint
+
+      # A real `next build` is the only thing that catches Server/Client
+      # component boundary errors and route-type mismatches - tsc alone does
+      # not. Placeholder env values: the build must not need real credentials,
+      # and if it ever starts to, that is itself the bug.
+      - name: Build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+        run: npm run build
+
+  scraper:
+    name: Scraper (typecheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: scraper/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run typecheck
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Advisory, not blocking. A new high-severity advisory in a transitive
+    # dependency should not stop an unrelated fix from merging - but it should
+    # be visible in the checks list rather than discovered in an audit months
+    # later, which is how leaks.md finding #5 was found.
+    continue-on-error: true
+    strategy:
+      matrix:
+        package: [horizon-ui-chakra-nextjs-main, scraper]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+
+      - name: Audit ${{ matrix.package }}
+        working-directory: ${{ matrix.package }}
+        run: npm audit --audit-level=high

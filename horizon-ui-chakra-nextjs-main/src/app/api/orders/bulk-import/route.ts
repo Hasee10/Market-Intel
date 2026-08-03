@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { MAX_IMPORT_ROWS } from '@/lib/csv';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 
@@ -28,6 +29,18 @@ export async function POST(request: NextRequest) {
 
   const body = await request.json();
   const rows: ImportRow[] = Array.isArray(body.rows) ? body.rows : [];
+
+  if (rows.length > MAX_IMPORT_ROWS) {
+    return NextResponse.json(
+      {
+        succeeded: false,
+        data: null,
+        errors: [`Too many rows: ${rows.length} (max ${MAX_IMPORT_ROWS} per import)`],
+        message: `Split the file into batches of ${MAX_IMPORT_ROWS} rows or fewer.`,
+      },
+      { status: 413 },
+    );
+  }
 
   const valid = rows.filter((r) => r.externalOrderId && r.orderDate && r.totalAmount != null);
   const skipped = rows.length - valid.length;

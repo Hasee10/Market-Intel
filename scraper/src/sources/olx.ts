@@ -7,8 +7,18 @@ import type { ClassifiedSourceResult, RawClassifiedListing } from '../types.js';
 // Server-rendered, plain HTTP, no bot protection on the listing grid.
 
 const USER_AGENT =
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const BASE_URL = 'https://www.olx.com.pk';
+
+// A bare `User-Agent` with no `Accept`/`Accept-Language` is an obvious tell and
+// a plausible reason this source started coming back empty from CI while the
+// identical request succeeds from a residential connection. These are the
+// headers any browser sends; nothing here is an attempt to defeat a challenge.
+const REQUEST_HEADERS = {
+  'User-Agent': USER_AGENT,
+  Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-PK,en;q=0.9',
+} as const;
 
 const MAX_PAGES = 20;
 
@@ -66,7 +76,7 @@ function parseListings($: cheerio.CheerioAPI, categoryPath: string): RawClassifi
 
 async function scrapeCategoryPage(categoryPath: string, page: number): Promise<RawClassifiedListing[]> {
   const url = `${BASE_URL}/${categoryPath}${page > 1 ? `?page=${page}` : ''}`;
-  const res = await fetch(url, { headers: { 'User-Agent': USER_AGENT } });
+  const res = await fetch(url, { headers: REQUEST_HEADERS });
   if (!res.ok) {
     throw new Error(`OLX category "${categoryPath}" page ${page} fetch failed: ${res.status}`);
   }
@@ -103,12 +113,34 @@ async function scrapeCategory(categoryPath: string): Promise<RawClassifiedListin
 
 export async function scrapeOlx(): Promise<ClassifiedSourceResult> {
   const listings: RawClassifiedListing[] = [];
+  const failures: string[] = [];
+
   for (const category of config.olxCategories) {
     try {
       listings.push(...(await scrapeCategory(category)));
     } catch (err) {
-      console.error(`[olx] category "${category}" failed:`, (err as Error).message);
+      const message = (err as Error).message;
+      console.error(`[olx] category "${category}" failed:`, message);
+      failures.push(`${category}: ${message}`);
     }
   }
+
+  // Swallowing every category error and returning an empty array is how this
+  // source reported `product_count: 0` with no error on three consecutive runs
+  // while `market_classified_listings` stayed empty - the pipeline cannot tell
+  // "OLX genuinely has nothing" from "every fetch 403'd". Tolerating *some*
+  // category failures is still right (one dead slug should not lose the other
+  // fourteen), but a total wipeout is a source failure and must be thrown so
+  // `scraper_runs.error` records it.
+  if (failures.length > 0 && listings.length === 0) {
+    throw new Error(
+      `all ${failures.length} OLX categories failed: ${failures.slice(0, 3).join(' | ')}` +
+        (failures.length > 3 ? ` (+${failures.length - 3} more)` : ''),
+    );
+  }
+  if (failures.length > 0) {
+    console.warn(`[olx] ${failures.length}/${config.olxCategories.length} categories failed but others succeeded`);
+  }
+
   return { platformSlug: 'olx', listings };
 }
