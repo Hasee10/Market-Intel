@@ -46,6 +46,21 @@ export function isAuthorizedCronRequest(request: Request): boolean {
   return timingSafeEqual(expected, actual);
 }
 
+// Anonymous public-data client - no cookies, no session, just the anon key.
+// For reads that are meant to work identically for every visitor regardless
+// of whether they're signed in (the marketing homepage's company/brand
+// showcase - see lib/market-intel/showcase.ts). Deliberately not
+// createClient(): that one wires in cookies() so it can resolve auth.uid(),
+// which forces the calling route into fully dynamic (per-request) rendering
+// even when nothing about the query is actually user-specific.
+export function createPublicClient() {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
+
 // Server Components/Actions/Route Handlers client. Reads/writes the auth
 // cookie via Next's cookies() so RLS policies (auth.uid()) see the right
 // user. The set() calls are wrapped in try/catch because Server Components

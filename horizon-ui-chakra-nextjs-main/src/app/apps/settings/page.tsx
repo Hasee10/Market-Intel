@@ -47,6 +47,8 @@ export default function SettingsPage() {
   const [showPricePosition, setShowPricePosition] = useState(false);
   const [showRating, setShowRating] = useState(false);
   const [showCategoryRank, setShowCategoryRank] = useState(false);
+  const [website, setWebsite] = useState('');
+  const [showOnMarketingSite, setShowOnMarketingSite] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -57,6 +59,8 @@ export default function SettingsPage() {
       setShowPricePosition(profile.publicProfile?.showPricePosition || false);
       setShowRating(profile.publicProfile?.showRating || false);
       setShowCategoryRank(profile.publicProfile?.showCategoryRank || false);
+      setWebsite(profile.publicProfile?.website || '');
+      setShowOnMarketingSite(profile.publicProfile?.showOnMarketingSite || false);
     }
   }, [profile]);
 
@@ -75,6 +79,8 @@ export default function SettingsPage() {
             showPricePosition,
             showRating,
             showCategoryRank,
+            website,
+            showOnMarketingSite,
           },
         }),
       });
@@ -214,6 +220,37 @@ export default function SettingsPage() {
               isChecked={showCategoryRank}
               isDisabled={!isPublic}
               onChange={(e) => setShowCategoryRank(e.target.checked)}
+              colorScheme="brand"
+            />
+          </Flex>
+        </Card>
+
+        <Card>
+          <Text fontSize="lg" fontWeight="600" mb="4px">
+            Marketing site showcase
+          </Text>
+          <Text fontSize="sm" color="secondaryGray.600" mb="16px">
+            Separate from peer benchmarking above - this shows your logo to anonymous visitors on
+            ryvl&apos;s public homepage, not just other sellers. Off by default.
+          </Text>
+          <FormControl mb="16px">
+            <FormLabel fontSize="sm" fontWeight="500">
+              Website
+            </FormLabel>
+            <Input
+              placeholder="yourstore.pk"
+              value={website}
+              onChange={(e) => setWebsite(e.target.value)}
+            />
+          </FormControl>
+          <Flex align="center" justify="space-between">
+            <FormLabel mb="0" fontSize="sm" fontWeight="500">
+              Show my logo on the Ryvl homepage
+            </FormLabel>
+            <Switch
+              isChecked={showOnMarketingSite}
+              isDisabled={!website.trim()}
+              onChange={(e) => setShowOnMarketingSite(e.target.checked)}
               colorScheme="brand"
             />
           </Flex>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
+import { sanitizeDomain } from '@/lib/domain';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 
 function mapPublicProfile(row: any) {
@@ -11,6 +12,11 @@ function mapPublicProfile(row: any) {
     showPricePosition: row?.show_price_position ?? false,
     showRating: row?.show_rating ?? false,
     showCategoryRank: row?.show_category_rank ?? false,
+    // Separate consent scope from isPublic - that one only ever gated peer
+    // (other-seller) visibility. This gates showing on the public marketing
+    // homepage to anonymous visitors, see migration 024.
+    website: row?.website ?? '',
+    showOnMarketingSite: row?.show_on_marketing_site ?? false,
   };
 }
 
@@ -26,7 +32,7 @@ export async function GET() {
   const supabase = await createClient();
   const { data: publicProfile, error } = await supabase
     .from('seller_public_profile')
-    .select('is_public, display_name, show_price_position, show_rating, show_category_rank')
+    .select('is_public, display_name, show_price_position, show_rating, show_category_rank, website, show_on_marketing_site')
     .eq('seller_id', seller.id)
     .maybeSingle();
 
@@ -96,6 +102,32 @@ export async function PUT(request: NextRequest) {
   }
 
   const publicProfile = body.publicProfile ?? {};
+
+  // Website is stored as a bare domain (logo.dev looks up img.logo.dev/<domain>
+  // directly) rather than whatever URL shape the seller typed in Settings.
+  let website: string | null = null;
+  if (typeof publicProfile.website === 'string' && publicProfile.website.trim()) {
+    website = sanitizeDomain(publicProfile.website);
+    if (!website) {
+      return NextResponse.json(
+        { succeeded: false, data: null, errors: ['Website is not a valid domain'], message: 'Failed to update public profile' },
+        { status: 400 },
+      );
+    }
+  }
+
+  // Showing your logo to every anonymous visitor is a bigger step than
+  // opting into peer benchmarks, so it requires a real domain on file - no
+  // silently-on-but-blank state that a UI bug could later render as an
+  // empty/broken logo tile.
+  const showOnMarketingSite = !!publicProfile.showOnMarketingSite;
+  if (showOnMarketingSite && !website) {
+    return NextResponse.json(
+      { succeeded: false, data: null, errors: ['Add a website before enabling the public showcase'], message: 'Failed to update public profile' },
+      { status: 400 },
+    );
+  }
+
   const { data: updatedProfile, error: profileError } = await supabase
     .from('seller_public_profile')
     .upsert({
@@ -105,8 +137,10 @@ export async function PUT(request: NextRequest) {
       show_price_position: !!publicProfile.showPricePosition,
       show_rating: !!publicProfile.showRating,
       show_category_rank: !!publicProfile.showCategoryRank,
+      website,
+      show_on_marketing_site: showOnMarketingSite,
     })
-    .select('is_public, display_name, show_price_position, show_rating, show_category_rank')
+    .select('is_public, display_name, show_price_position, show_rating, show_category_rank, website, show_on_marketing_site')
     .single();
 
   if (profileError) {
