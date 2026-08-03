@@ -24,7 +24,7 @@ export function StatsBar() {
           position="relative"
           overflow="hidden"
           borderRadius="24px"
-          bg="linear-gradient(135deg, #171F58 0%, #0B1230 100%)"
+          bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
           px={{ base: '24px', md: '48px' }}
           py={{ base: '40px', md: '48px' }}
         >
@@ -36,7 +36,7 @@ export function StatsBar() {
             w="240px"
             h="240px"
             borderRadius="full"
-            bg="radial-gradient(circle, rgba(122,101,255,0.35) 0%, rgba(122,101,255,0) 70%)"
+            bg="radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%)"
           />
           <Box
             position="absolute"
@@ -45,7 +45,7 @@ export function StatsBar() {
             w="200px"
             h="200px"
             borderRadius="full"
-            bg="radial-gradient(circle, rgba(67,24,255,0.25) 0%, rgba(67,24,255,0) 70%)"
+            bg="radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)"
           />
 
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: '32px', md: '16px' }} position="relative">
@@ -59,7 +59,7 @@ export function StatsBar() {
                       left={{ base: 'auto', md: '-8px' }}
                       h="70%"
                       top="15%"
-                      borderColor="whiteAlpha.200"
+                      borderColor="whiteAlpha.300"
                       display={{ base: 'none', md: 'block' }}
                     />
                   )}
@@ -67,12 +67,12 @@ export function StatsBar() {
                     w="40px"
                     h="40px"
                     borderRadius="10px"
-                    bg="whiteAlpha.100"
+                    bg="whiteAlpha.200"
                     align="center"
                     justify="center"
                     mb="12px"
                   >
-                    <Icon as={stat.icon} boxSize="20px" color="#A5B4FF" />
+                    <Icon as={stat.icon} boxSize="20px" color="white" />
                   </Flex>
                   <Text fontSize={{ base: '26px', md: '34px' }} fontWeight="800" color="white" lineHeight="1">
                     <CountUp value={stat.value} />
