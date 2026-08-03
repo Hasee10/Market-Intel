@@ -91,6 +91,14 @@ function formatCurrency(v: number, currency: string) {
 export default function OverviewPage() {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const cardBg = useColorModeValue('white', 'navy.700');
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
+  const sectionAccent = useColorModeValue('#4318FF', '#A594FF');
+  const donutLabelColor = useColorModeValue('#1B2559', '#FFFFFF');
+  const donutTotalColor = useColorModeValue('#A3AED0', '#A3AED0');
+  const tableRowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
+  const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
+  const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
 
   const { data: statsData, loading: statsLoading } = useFetch<IApiResponse<StatItem[]>>(
     '/api/ecommerce/stats',
@@ -155,6 +163,11 @@ export default function OverviewPage() {
     chart: { toolbar: { show: false } },
     dataLabels: { enabled: false },
     stroke: { curve: 'smooth', width: 3 },
+    fill: {
+      type: 'gradient',
+      gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 90, 100] },
+    },
+    markers: { size: 0, hover: { size: 5 } },
     xaxis: {
       categories: revenueTrend.map((p) => p.date.slice(5)),
       labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
@@ -168,19 +181,59 @@ export default function OverviewPage() {
   };
 
   const orderPieData = orders.map((o) => o.count);
+  const totalOrderCount = orderPieData.reduce((sum, v) => sum + v, 0);
   const orderPieOptions = {
     labels: orders.map((o) => o.status),
     colors: PALETTE.slice(0, orders.length || 1),
     legend: { show: true, position: 'bottom' as const },
     dataLabels: { enabled: false },
+    stroke: { width: 0 },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '72%',
+          labels: {
+            show: true,
+            value: { fontSize: '22px', fontWeight: '800', color: donutLabelColor, offsetY: -4 },
+            total: {
+              show: true,
+              label: 'Orders',
+              fontSize: '12px',
+              color: donutTotalColor,
+              formatter: () => String(totalOrderCount),
+            },
+          },
+        },
+      },
+    },
   };
 
   const categoryPieData = categories.map((c) => c.value);
+  const totalCategoryValue = categoryPieData.reduce((sum, v) => sum + v, 0);
   const categoryPieOptions = {
     labels: categories.map((c) => c.category),
     colors: PALETTE.slice(0, categories.length || 1),
     legend: { show: true, position: 'bottom' as const },
     dataLabels: { enabled: false },
+    stroke: { width: 0 },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '72%',
+          labels: {
+            show: true,
+            value: { fontSize: '16px', fontWeight: '800', color: donutLabelColor, offsetY: -4 },
+            total: {
+              show: true,
+              label: 'Total value',
+              fontSize: '12px',
+              color: donutTotalColor,
+              formatter: () => formatCurrency(totalCategoryValue, reportingCurrency),
+            },
+          },
+        },
+      },
+    },
   };
 
   return (
@@ -203,11 +256,14 @@ export default function OverviewPage() {
 
       <StatsGrid data={statsData?.data || []} loading={statsLoading} columns={3} />
 
-      <Heading size="md" color={textColor} mb="12px" mt="8px">
-        Revenue & fulfillment
-      </Heading>
+      <Flex align="center" gap="10px" mb="14px" mt="12px">
+        <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
+        <Heading size="md" color={textColor}>
+          Revenue & fulfillment
+        </Heading>
+      </Flex>
       <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Flex justify="space-between" align="center" mb="10px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Revenue trend {forecast ? '& 14-day forecast' : '(30 days)'}
@@ -225,6 +281,7 @@ export default function OverviewPage() {
           ) : forecast ? (
             <Box h="260px">
               <LineChart
+                type="area"
                 chartData={[
                   {
                     name: 'Revenue',
@@ -243,6 +300,15 @@ export default function OverviewPage() {
                   chart: { toolbar: { show: false } },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
+                  // Only the actual-revenue series gets the area fill - a
+                  // filled projected segment would read as if the forecast
+                  // were as certain as the real data next to it.
+                  fill: {
+                    type: ['gradient', 'solid'],
+                    gradient: { shadeIntensity: 1, opacityFrom: 0.35, opacityTo: 0.02, stops: [0, 90, 100] },
+                    opacity: [1, 0],
+                  },
+                  markers: { size: 0, hover: { size: 5 } },
                   xaxis: {
                     categories: forecast.points.map((p) => p.date.slice(5)),
                     labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
@@ -264,11 +330,11 @@ export default function OverviewPage() {
             />
           ) : (
             <Box h="260px">
-              <LineChart chartData={lineChartData} chartOptions={lineChartOptions} />
+              <LineChart type="area" chartData={lineChartData} chartOptions={lineChartOptions} />
             </Box>
           )}
         </Card>
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
             Order status
           </Text>
@@ -282,17 +348,20 @@ export default function OverviewPage() {
             />
           ) : (
             <Box h="260px">
-              <PieChart chartData={orderPieData} chartOptions={orderPieOptions} />
+              <PieChart type="donut" chartData={orderPieData} chartOptions={orderPieOptions} />
             </Box>
           )}
         </Card>
       </Grid>
 
-      <Heading size="md" color={textColor} mb="12px" mt="8px">
-        Products & inventory
-      </Heading>
+      <Flex align="center" gap="10px" mb="14px" mt="12px">
+        <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
+        <Heading size="md" color={textColor}>
+          Products & inventory
+        </Heading>
+      </Flex>
       <Grid templateColumns={{ base: '1fr', lg: '5fr 7fr' }} gap="20px">
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
             Category inventory value
           </Text>
@@ -306,11 +375,11 @@ export default function OverviewPage() {
             />
           ) : (
             <Box h="260px">
-              <PieChart chartData={categoryPieData} chartOptions={categoryPieOptions} />
+              <PieChart type="donut" chartData={categoryPieData} chartOptions={categoryPieOptions} />
             </Box>
           )}
         </Card>
-        <Card>
+        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
             Top products by inventory value
           </Text>
@@ -323,30 +392,47 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.products.root}
             />
           ) : (
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Title</Th>
-                    <Th>Category</Th>
-                    <Th isNumeric>Sell price</Th>
-                    <Th isNumeric>Stock</Th>
-                    <Th isNumeric>Inventory value</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {topProducts.map((p) => (
-                    <Tr key={p.id}>
-                      <Td>{p.title}</Td>
-                      <Td>{p.category}</Td>
-                      <Td isNumeric>{formatCurrency(p.sellPrice, p.currency)}</Td>
-                      <Td isNumeric>{p.stockQty}</Td>
-                      <Td isNumeric>{formatCurrency(p.inventoryValue, p.currency)}</Td>
+            <>
+              <Box overflowX="auto">
+                <Table variant="simple">
+                  <Thead>
+                    <Tr>
+                      <Th>Title</Th>
+                      <Th>Category</Th>
+                      <Th isNumeric>Sell price</Th>
+                      <Th isNumeric>Stock</Th>
+                      <Th isNumeric>Inventory value</Th>
                     </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
+                  </Thead>
+                  <Tbody>
+                    {topProducts.map((p) => (
+                      <Tr key={p.id} transition="background-color 0.15s ease" _hover={{ bg: tableRowHoverBg }}>
+                        <Td fontWeight="600" color={textColor}>
+                          {p.title}
+                        </Td>
+                        <Td>
+                          <Badge borderRadius="full" px="10px" py="2px" fontSize="xs" fontWeight="600" bg={categoryBadgeBg} color={categoryBadgeColor}>
+                            {p.category}
+                          </Badge>
+                        </Td>
+                        <Td isNumeric>{formatCurrency(p.sellPrice, p.currency)}</Td>
+                        <Td isNumeric>{p.stockQty}</Td>
+                        <Td isNumeric fontWeight="700" color={textColor}>
+                          {formatCurrency(p.inventoryValue, p.currency)}
+                        </Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </Table>
+              </Box>
+              {(productsData?.data?.length ?? 0) > topProducts.length && (
+                <Flex justify="flex-end" mt="12px">
+                  <Button as={NextLink} href={PATH_APPS.products.root} size="sm" variant="ghost" colorScheme="brand">
+                    View all products →
+                  </Button>
+                </Flex>
+              )}
+            </>
           )}
         </Card>
       </Grid>

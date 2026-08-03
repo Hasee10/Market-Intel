@@ -25,6 +25,8 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const boxBg = useColorModeValue('secondaryGray.300', 'whiteAlpha.100');
   const brandColor = 'brand.500';
+  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
+  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
 
   if (loading) {
     return (
@@ -53,6 +55,9 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
             <SpotlightCard
               py="15px"
               h="100%"
+              border="1px solid"
+              borderColor={cardBorder}
+              boxShadow={cardShadow}
               transition="transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease"
               _hover={{ transform: 'translateY(-2px)', boxShadow: 'lg' }}
             >

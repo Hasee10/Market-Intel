@@ -6,12 +6,12 @@ const Chart = dynamic(() => import('react-apexcharts'), {
 });
 
 const LineChart = (props: any) => {
-  const { chartData, chartOptions } = props;
+  const { chartData, chartOptions, type = 'line' } = props;
 
   return (
     <Chart
       options={chartOptions}
-      type="line"
+      type={type}
       width="100%"
       height="100%"
       series={chartData}
