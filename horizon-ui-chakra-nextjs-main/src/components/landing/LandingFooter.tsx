@@ -8,12 +8,13 @@ import { PATH_AUTH } from '@/lib/paths';
 
 // Only links to pages that actually exist - no placeholder About/Careers/
 // Privacy/Terms links to nowhere. Add those columns back once those pages
-// are real. Anchors are `/`-prefixed (see LandingHeader's note) so they
-// still resolve when this footer renders on /pricing, not just the homepage.
+// are real. "#features" is `/`-prefixed (see LandingHeader's note) so it
+// still resolves when this footer renders on /pricing, not just the homepage.
 const PRODUCT_LINKS = [
   { label: 'Features', href: '/#features' },
   { label: 'Pricing', href: '/pricing' },
-  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'How it works', href: '/how-it-works' },
+  { label: 'Trust', href: '/trust' },
 ];
 
 const ACCOUNT_LINKS = [

@@ -2,6 +2,8 @@
 
 import { Box, Container, Divider, Flex, Icon, SimpleGrid, Text } from '@chakra-ui/react';
 import { MdStorefront, MdCategory, MdSchedule, MdShield } from 'react-icons/md';
+import { CountUp } from 'components/reactbits/CountUp';
+import { Reveal } from 'components/reactbits/Reveal';
 
 // Real, product-descriptive numbers (scraper coverage, refresh cadence) -
 // deliberately not fake customer/user counts, since this product has no
@@ -48,36 +50,38 @@ export function StatsBar() {
 
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: '32px', md: '16px' }} position="relative">
             {STATS.map((stat, i) => (
-              <Flex key={stat.label} direction="column" align={{ base: 'flex-start', md: 'center' }} textAlign={{ base: 'left', md: 'center' }} position="relative">
-                {i > 0 && (
-                  <Divider
-                    orientation="vertical"
-                    position="absolute"
-                    left={{ base: 'auto', md: '-8px' }}
-                    h="70%"
-                    top="15%"
-                    borderColor="whiteAlpha.200"
-                    display={{ base: 'none', md: 'block' }}
-                  />
-                )}
-                <Flex
-                  w="40px"
-                  h="40px"
-                  borderRadius="10px"
-                  bg="whiteAlpha.100"
-                  align="center"
-                  justify="center"
-                  mb="12px"
-                >
-                  <Icon as={stat.icon} boxSize="20px" color="#A5B4FF" />
+              <Reveal key={stat.label} delay={i * 80}>
+                <Flex direction="column" align={{ base: 'flex-start', md: 'center' }} textAlign={{ base: 'left', md: 'center' }} position="relative">
+                  {i > 0 && (
+                    <Divider
+                      orientation="vertical"
+                      position="absolute"
+                      left={{ base: 'auto', md: '-8px' }}
+                      h="70%"
+                      top="15%"
+                      borderColor="whiteAlpha.200"
+                      display={{ base: 'none', md: 'block' }}
+                    />
+                  )}
+                  <Flex
+                    w="40px"
+                    h="40px"
+                    borderRadius="10px"
+                    bg="whiteAlpha.100"
+                    align="center"
+                    justify="center"
+                    mb="12px"
+                  >
+                    <Icon as={stat.icon} boxSize="20px" color="#A5B4FF" />
+                  </Flex>
+                  <Text fontSize={{ base: '26px', md: '34px' }} fontWeight="800" color="white" lineHeight="1">
+                    <CountUp value={stat.value} />
+                  </Text>
+                  <Text fontSize="sm" color="whiteAlpha.700" mt="6px" maxW="160px">
+                    {stat.label}
+                  </Text>
                 </Flex>
-                <Text fontSize={{ base: '26px', md: '34px' }} fontWeight="800" color="white" lineHeight="1">
-                  {stat.value}
-                </Text>
-                <Text fontSize="sm" color="whiteAlpha.700" mt="6px" maxW="160px">
-                  {stat.label}
-                </Text>
-              </Flex>
+              </Reveal>
             ))}
           </SimpleGrid>
         </Box>

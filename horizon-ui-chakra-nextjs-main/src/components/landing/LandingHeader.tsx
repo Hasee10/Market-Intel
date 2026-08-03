@@ -7,13 +7,13 @@ import { RyvlMark } from 'components/icons/RyvlMark';
 import { ThemeToggleMenu } from '@/components/navbar/ThemeToggleMenu';
 import { PATH_AUTH } from '@/lib/paths';
 
-// Anchors are prefixed with `/` so they still resolve correctly from pages
-// other than the homepage (e.g. from /pricing, "#features" alone would try
-// to scroll /pricing itself instead of navigating back to the homepage
-// section). Pricing is a real separate route, not an anchor.
+// "#features" is prefixed with `/` so it still resolves correctly from pages
+// other than the homepage. How it works, trust, and pricing are all real
+// separate routes now, not anchors.
 const NAV_LINKS = [
   { label: 'Features', href: '/#features' },
-  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'How it works', href: '/how-it-works' },
+  { label: 'Trust', href: '/trust' },
   { label: 'Pricing', href: '/pricing' },
 ];
 

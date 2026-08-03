@@ -1,6 +1,8 @@
 'use client';
 
 import { Box, Container, Flex, Heading, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
+import { CountUp } from 'components/reactbits/CountUp';
+import { Reveal } from 'components/reactbits/Reveal';
 
 // The actual seller journey through the product, not the privacy mechanics
 // (that's TrustSection) - a concrete 3-step process bridges "what is this"
@@ -36,32 +38,36 @@ export function HowItWorksSection() {
   return (
     <Box id="how-it-works" bg={sectionBg} py={{ base: '70px', md: '100px' }}>
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Box textAlign="center" mb={{ base: '50px', md: '72px' }}>
-          <Text fontSize="xs" fontWeight="700" color={kicker} letterSpacing="0.08em" textTransform="uppercase" mb="12px">
-            The process
-          </Text>
-          <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
-            From signup to your first insight
-          </Heading>
-          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
-            No setup calls, no data imports required to start - just pick a category and the market
-            context is already there.
-          </Text>
-        </Box>
+        <Reveal>
+          <Box textAlign="center" mb={{ base: '50px', md: '72px' }}>
+            <Text fontSize="xs" fontWeight="700" color={kicker} letterSpacing="0.08em" textTransform="uppercase" mb="12px">
+              The process
+            </Text>
+            <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
+              From signup to your first insight
+            </Heading>
+            <Text color={body} fontSize="lg" maxW="560px" mx="auto">
+              No setup calls, no data imports required to start - just pick a category and the market
+              context is already there.
+            </Text>
+          </Box>
+        </Reveal>
 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={{ base: '40px', md: '32px' }}>
-          {STEPS.map((item) => (
-            <Flex key={item.step} direction="column" position="relative">
-              <Text fontSize="48px" fontWeight="800" color={stepNumber} lineHeight="1" mb="12px">
-                {item.step}
-              </Text>
-              <Text fontWeight="700" fontSize="lg" color={heading} mb="10px">
-                {item.title}
-              </Text>
-              <Text color={body} fontSize="sm" lineHeight="1.6">
-                {item.description}
-              </Text>
-            </Flex>
+          {STEPS.map((item, i) => (
+            <Reveal key={item.step} delay={i * 100}>
+              <Flex direction="column" position="relative">
+                <Text fontSize="48px" fontWeight="800" color={stepNumber} lineHeight="1" mb="12px">
+                  <CountUp value={item.step} />
+                </Text>
+                <Text fontWeight="700" fontSize="lg" color={heading} mb="10px">
+                  {item.title}
+                </Text>
+                <Text color={body} fontSize="sm" lineHeight="1.6">
+                  {item.description}
+                </Text>
+              </Flex>
+            </Reveal>
           ))}
         </SimpleGrid>
       </Container>

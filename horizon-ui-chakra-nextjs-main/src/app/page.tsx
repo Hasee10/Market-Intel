@@ -3,13 +3,10 @@ import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { FaqSection } from '@/components/landing/FaqSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
-import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
-import { PricingTeaser } from '@/components/landing/PricingTeaser';
 import { StatsBar } from '@/components/landing/StatsBar';
-import { TrustSection } from '@/components/landing/TrustSection';
 
 // Public marketing page - `/` is not in middleware.ts's PROTECTED_PREFIXES,
 // so this is reachable without signing in. Signed-in sellers land here too
@@ -27,12 +24,9 @@ export default function Home() {
       <LandingHeader />
       <LandingHero />
       <StatsBar />
-      <HowItWorksSection />
       <FeaturesSection />
       <ComparisonSection />
-      <TrustSection />
       <FaqSection />
-      <PricingTeaser />
       <CTABanner />
       <LandingFooter />
     </>
