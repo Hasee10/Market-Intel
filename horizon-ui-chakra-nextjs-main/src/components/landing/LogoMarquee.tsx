@@ -18,7 +18,18 @@ const scroll = keyframes({
 
 export type LogoMarqueeItem = { key: string; name: string; domain?: string };
 
-export function LogoMarquee({ label, items, durationSeconds = 28 }: { label: string; items: LogoMarqueeItem[]; durationSeconds?: number }) {
+export function LogoMarquee({
+  label,
+  items,
+  durationSeconds = 28,
+  direction = 'left',
+}: {
+  label: string;
+  items: LogoMarqueeItem[];
+  durationSeconds?: number;
+  /** Which way the track scrolls - 'right' just plays the same keyframes in reverse. */
+  direction?: 'left' | 'right';
+}) {
   const sectionBg = useColorModeValue('white', 'navy.900');
   const labelColor = useColorModeValue('gray.500', 'whiteAlpha.500');
   const edgeFade = useColorModeValue(
@@ -60,7 +71,11 @@ export function LogoMarquee({ label, items, durationSeconds = 28 }: { label: str
             w={prefersReducedMotion ? '100%' : 'max-content'}
             flexWrap={prefersReducedMotion ? 'wrap' : 'nowrap'}
             justify={prefersReducedMotion ? 'center' : 'flex-start'}
-            animation={prefersReducedMotion ? undefined : `${scroll} ${durationSeconds}s linear infinite`}
+            animation={
+              prefersReducedMotion
+                ? undefined
+                : `${scroll} ${durationSeconds}s linear infinite${direction === 'right' ? ' reverse' : ''}`
+            }
             sx={prefersReducedMotion ? undefined : { '&:hover': { animationPlayState: 'paused' } }}
           >
             {track.map((item, i) => (

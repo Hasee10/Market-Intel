@@ -6,20 +6,32 @@ import { LogoMarquee } from '@/components/landing/LogoMarquee';
 // No data fetching here - this stays a plain component so it can be handed
 // props from an async Server Component without itself needing 'use client'.
 //
-// Sellers get a real logo.dev lookup: they opted in via Settings and
-// supplied their own domain, so this is their own logo, with their consent.
-// Brands never get a domain here, on purpose - LogoTile renders anything
-// without a domain as a text pill instead of fetching a trademark logo we
-// have no rights to (Samsung, Nike, etc. never agreed to appear on this
-// site). If a future task wants real brand logos, that needs a real domain
-// source AND a legal decision, not just wiring one up.
+// Both sellers and brands get a real logo.dev logo attempt here: sellers via
+// their own opted-in domain, brands via a per-name logo.dev Brand Search
+// lookup (showcase.ts) since scraped listings never stored a brand's
+// domain. Showing real brand logos (Samsung, Nike, ...) rather than text-only
+// pills was an explicit, flagged product decision accepting the
+// trademark/endorsement-implication risk - if that ever needs walking back,
+// the fix is dropping `domain` on the brand mapping below, not touching
+// LogoTile (it already falls back to an initials avatar whenever a domain
+// is absent or its image fails to load).
+//
+// Scrolls the opposite direction from MarketplaceLogoSlider (right instead
+// of left) so the two rows read as distinct rather than one long repeat.
 export function CompanyLogoSlider({ sellers, brands }: { sellers: ShowcaseSeller[]; brands: ShowcaseBrand[] }) {
   const items = [
     ...sellers.map((s) => ({ key: `seller-${s.domain}`, name: s.name, domain: s.domain })),
-    ...brands.map((b) => ({ key: `brand-${b.name}`, name: b.name })),
+    ...brands.map((b) => ({ key: `brand-${b.name}`, name: b.name, domain: b.domain ?? undefined })),
   ];
 
-  return <LogoMarquee label="Real sellers on Ryvl, alongside brands we already track pricing for" items={items} durationSeconds={32} />;
+  return (
+    <LogoMarquee
+      label="Real sellers on Ryvl, alongside brands we already track pricing for"
+      items={items}
+      durationSeconds={32}
+      direction="right"
+    />
+  );
 }
 
 export default CompanyLogoSlider;

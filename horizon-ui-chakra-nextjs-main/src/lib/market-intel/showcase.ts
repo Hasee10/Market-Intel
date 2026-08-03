@@ -1,6 +1,7 @@
 'server-only';
 
 import { createPublicClient } from '@/lib/supabase/server';
+import { searchBrandDomain } from '@/lib/logo-dev';
 
 // Data for the public marketing homepage's company slider (see
 // components/landing/CompanyLogoSlider.tsx). Two sources, deliberately kept
@@ -8,16 +9,17 @@ import { createPublicClient } from '@/lib/supabase/server';
 //
 //   - Real sellers who opted in via Settings > "Show my logo on the Ryvl
 //     site" (seller_marketing_showcase view, migration 024). Genuine
-//     customers, genuine consent, so these render as real logo.dev logos.
+//     customers, genuine consent - the domain is theirs, entered by them.
 //   - Brands actually present in scraped market_products (top_market_brands
-//     RPC, migration 024). These are third parties we have no relationship
-//     or consent from - Samsung/Nike/etc. did not agree to appear on this
-//     site, so unlike the seller entries and the existing marketplace-logo
-//     row (which shows retail *platforms* whose public prices we scrape,
-//     not endorsements), brand entries are rendered as plain text pills by
-//     the component, never as fetched trademark logos. Do not change
-//     CompanyLogoSlider to fetch logo.dev images for these without checking
-//     with whoever owns that legal call first.
+//     RPC, migration 024). These are third parties with no relationship or
+//     consent - showing their real logos here was an explicit, flagged
+//     product decision (accepting the trademark/endorsement-implication
+//     risk), not a default. Their domain isn't stored anywhere (scraped
+//     listings only ever had a brand *name*), so it's resolved per brand via
+//     logo.dev's own Brand Search API (searchBrandDomain) rather than a
+//     hand-maintained name->domain map, which would drift the moment the top
+//     10 brands change - and they will, since this list is live, not curated
+//     like lib/marketplaces.ts.
 //
 // This runs on the anonymous homepage, so both queries must work with no
 // session at all (see the anon grants in migration 024) and must fail soft:
@@ -25,7 +27,7 @@ import { createPublicClient } from '@/lib/supabase/server';
 // not break the homepage build or render.
 
 export type ShowcaseSeller = { name: string; domain: string };
-export type ShowcaseBrand = { name: string };
+export type ShowcaseBrand = { name: string; domain: string | null };
 
 const SELLER_LIMIT = 12;
 const BRAND_LIMIT = 10;
@@ -57,9 +59,14 @@ export async function getShowcaseBrands(): Promise<ShowcaseBrand[]> {
 
     if (error || !data) return [];
 
-    return (data as { brand: string; product_count: number }[])
-      .filter((row) => !!row.brand)
-      .map((row) => ({ name: row.brand }));
+    const brands = (data as { brand: string; product_count: number }[]).filter((row) => !!row.brand);
+
+    // Resolved in parallel - each lookup is independent and searchBrandDomain
+    // already fails soft to null, so one slow/failed brand can't hold up the
+    // rest or take the section down.
+    return await Promise.all(
+      brands.map(async (row) => ({ name: row.brand, domain: await searchBrandDomain(row.brand) })),
+    );
   } catch {
     return [];
   }
