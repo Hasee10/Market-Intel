@@ -27,6 +27,7 @@ async function Page() {
       {hasAccess ? (
         <WatchlistView
           categorySlug={domain?.categorySlug ?? null}
+          reportingCurrency={seller?.reportingCurrency ?? 'PKR'}
           watchlists={watchlists}
           notifications={notifications}
         />

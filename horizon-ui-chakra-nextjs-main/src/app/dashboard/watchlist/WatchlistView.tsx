@@ -1,13 +1,20 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import NextLink from 'next/link';
 
 import {
   Badge,
   Box,
   Button,
   Flex,
+  Icon,
   Input,
+  InputGroup,
+  InputLeftElement,
+  InputRightElement,
+  Link as ChakraLink,
+  Spinner,
   Table,
   Tbody,
   Td,
@@ -19,27 +26,34 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { MdDelete, MdAdd } from 'react-icons/md';
+import { MdDelete, MdAdd, MdSearch } from 'react-icons/md';
 import Card from 'components/card/Card';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import type { Watchlist, WatchlistItem, ProductSearchResult } from '@/lib/market-intel/watchlists';
 import type { Notification } from '@/lib/notifications/list';
 
-function formatPrice(value: number | null) {
+// Currency comes from the seller's own reporting setting - it used to be
+// hardcoded to PKR here, which mislabelled every price for a seller reporting
+// in anything else.
+function formatPrice(value: number | null, currency: string) {
   if (value == null) return '—';
-  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: 'PKR', maximumFractionDigits: 0 }).format(
-    value,
-  );
+  return new Intl.NumberFormat('en-PK', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
 }
 
 type WatchlistViewProps = {
   categorySlug: string | null;
+  reportingCurrency: string;
   watchlists: Watchlist[];
   notifications: Notification[];
 };
 
-export default function WatchlistView({ categorySlug, watchlists: initialWatchlists, notifications: initialNotifications }: WatchlistViewProps) {
+export default function WatchlistView({
+  categorySlug,
+  reportingCurrency,
+  watchlists: initialWatchlists,
+  notifications: initialNotifications,
+}: WatchlistViewProps) {
   const toast = useToast();
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const [watchlists, setWatchlists] = useState(initialWatchlists);
@@ -169,6 +183,7 @@ export default function WatchlistView({ categorySlug, watchlists: initialWatchli
           key={watchlist.id}
           watchlist={watchlist}
           categorySlug={categorySlug}
+          reportingCurrency={reportingCurrency}
           onDelete={() => handleDeleteWatchlist(watchlist.id)}
           onItemAdded={(item) => handleItemAdded(watchlist.id, item)}
           onRemoveItem={(itemId) => handleRemoveItem(watchlist.id, itemId)}
@@ -181,12 +196,14 @@ export default function WatchlistView({ categorySlug, watchlists: initialWatchli
 function WatchlistCard({
   watchlist,
   categorySlug,
+  reportingCurrency,
   onDelete,
   onItemAdded,
   onRemoveItem,
 }: {
   watchlist: Watchlist;
   categorySlug: string | null;
+  reportingCurrency: string;
   onDelete: () => void;
   onItemAdded: (item: WatchlistItem) => void;
   onRemoveItem: (itemId: string) => void;
@@ -196,20 +213,54 @@ function WatchlistCard({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ProductSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  // Distinguishes "typed too little to search yet" from "searched, found
+  // nothing" - without it an empty result list is indistinguishable from the
+  // initial state, which reads as a broken search.
+  const [hasSearched, setHasSearched] = useState(false);
 
-  async function handleSearch() {
-    if (query.trim().length < 2) return;
-    setSearching(true);
-    try {
-      const params = new URLSearchParams({ q: query.trim() });
-      if (categorySlug) params.set('categorySlug', categorySlug);
-      const response = await fetch(`/api/market-products/search?${params.toString()}`);
-      const result = await response.json();
-      setResults(result.succeeded ? result.data : []);
-    } finally {
+  const trimmed = query.trim();
+
+  // Live search: debounce keystrokes so every character doesn't fire a query,
+  // and abort the in-flight request when the term changes. Without the abort,
+  // a slow response for "lap" can land after a fast one for "laptop" and
+  // overwrite the newer results.
+  useEffect(() => {
+    if (trimmed.length < 2) {
+      setResults([]);
+      setHasSearched(false);
       setSearching(false);
+      return;
     }
-  }
+
+    const controller = new AbortController();
+    setSearching(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q: trimmed });
+        if (categorySlug) params.set('categorySlug', categorySlug);
+        const response = await fetch(`/api/market-products/search?${params.toString()}`, {
+          signal: controller.signal,
+        });
+        const result = await response.json();
+        setResults(result.succeeded ? result.data : []);
+        setHasSearched(true);
+      } catch (error) {
+        // An aborted request is a superseded search, not a failure.
+        if ((error as Error).name !== 'AbortError') {
+          setResults([]);
+          setHasSearched(true);
+        }
+      } finally {
+        if (!controller.signal.aborted) setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [trimmed, categorySlug]);
 
   async function handleAdd(productId: string) {
     const response = await fetch(`/api/watchlists/${watchlist.id}/items`, {
@@ -236,24 +287,29 @@ function WatchlistCard({
         <IconButton aria-label="Delete watchlist" icon={<MdDelete />} size="sm" variant="ghost" onClick={onDelete} />
       </Flex>
 
-      <Flex gap="10px" mb="12px">
+      <InputGroup mb="12px">
+        <InputLeftElement pointerEvents="none">
+          <Icon as={MdSearch} color="secondaryGray.600" />
+        </InputLeftElement>
         <Input
           placeholder="Search competitor products to track..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
         />
-        <Button isLoading={searching} onClick={handleSearch}>
-          Search
-        </Button>
-      </Flex>
+        {searching && (
+          <InputRightElement>
+            <Spinner size="sm" color="secondaryGray.600" />
+          </InputRightElement>
+        )}
+      </InputGroup>
 
       {results.length > 0 && (
         <Flex direction="column" gap="6px" mb="16px">
           {results.map((r) => (
             <Flex key={r.id} justify="space-between" align="center" p="8px" borderRadius="8px" bg="secondaryGray.100">
               <Text fontSize="sm">
-                {r.title} {r.platformName ? `· ${r.platformName}` : ''} · {formatPrice(r.price)}
+                {r.title} {r.platformName ? `· ${r.platformName}` : ''} ·{' '}
+                {formatPrice(r.price, reportingCurrency)}
               </Text>
               <Button size="xs" variant="brand" onClick={() => handleAdd(r.id)}>
                 Track
@@ -261,6 +317,16 @@ function WatchlistCard({
             </Flex>
           ))}
         </Flex>
+      )}
+
+      {hasSearched && !searching && results.length === 0 && (
+        <Text fontSize="sm" color="secondaryGray.600" mb="16px">
+          No competitor products match “{trimmed}” in your market. Widen your{' '}
+          <ChakraLink as={NextLink} href="/dashboard/market/definition" color="brand.500" fontWeight="500">
+            market definition
+          </ChakraLink>{' '}
+          if this looks wrong.
+        </Text>
       )}
 
       {watchlist.items.length === 0 ? (
@@ -288,7 +354,7 @@ function WatchlistCard({
                     </a>
                   </Td>
                   <Td>{item.platformName ?? '—'}</Td>
-                  <Td>{formatPrice(item.price)}</Td>
+                  <Td>{formatPrice(item.price, reportingCurrency)}</Td>
                   <Td>
                     <Badge colorScheme={item.inStock ? 'green' : 'red'}>
                       {item.inStock ? 'In stock' : 'Out of stock'}

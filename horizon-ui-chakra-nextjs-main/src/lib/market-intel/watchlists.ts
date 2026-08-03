@@ -1,5 +1,6 @@
 'server-only';
 
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { createClient } from '@/lib/supabase/server';
 
 export type WatchlistItem = {
@@ -116,7 +117,18 @@ export type ProductSearchResult = {
 // Lets a seller search scraped competitor products to add to a watchlist.
 // market_products has no RLS (it's public marketplace data, never private -
 // see 011's header comment), so this is readable by any authenticated seller.
-export async function searchMarketProducts(query: string, categorySlug?: string): Promise<ProductSearchResult[]> {
+//
+// `sellerCategorySlug` is the *seller's* category ("mobiles-and-electronics"),
+// which is not what market_products.category_slug holds - that column stores
+// the scraped platform slug ("smartphones", "laptops", "audio"). Comparing the
+// two directly matched zero rows, so search silently returned nothing for
+// every onboarded seller. Resolve through the taxonomy (migration 020) the
+// same way every other market surface does, which also means search now
+// respects the seller's own market definition instead of ignoring it.
+export async function searchMarketProducts(
+  query: string,
+  sellerCategorySlug?: string,
+): Promise<ProductSearchResult[]> {
   const supabase = await createClient();
 
   let builder = supabase
@@ -126,8 +138,14 @@ export async function searchMarketProducts(query: string, categorySlug?: string)
     .eq('is_active', true)
     .limit(20);
 
-  if (categorySlug) {
-    builder = builder.eq('category_slug', categorySlug);
+  if (sellerCategorySlug) {
+    const scope = await getMarketScope(sellerCategorySlug);
+    // A seller category with no taxonomy at all (e.g. `other`) has nothing to
+    // scope to. Searching the whole scraped market beats returning nothing,
+    // and matches how the taxonomy-less case is handled elsewhere.
+    if (scope.categorySlugs.length > 0) {
+      builder = builder.in('category_slug', scope.categorySlugs);
+    }
   }
 
   const { data, error } = await builder;
