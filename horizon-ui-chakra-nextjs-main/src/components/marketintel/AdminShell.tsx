@@ -1,7 +1,6 @@
 'use client';
 // Chakra imports
 import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
-import Footer from 'components/footer/FooterAdmin';
 // Layout components
 import Navbar from 'components/navbar/NavbarAdmin';
 import Sidebar from 'components/sidebar/Sidebar';
@@ -18,10 +17,11 @@ interface AdminShellProps extends PropsWithChildren {
 
 const COLLAPSE_STORAGE_KEY = 'market-intel-sidebar-collapsed';
 
-// Same chrome as Horizon's stock /admin layout (Sidebar + Navbar + Footer),
-// but reused directly under /dashboard, /apps and /onboarding so those
-// routes match middleware.ts's PROTECTED_PREFIXES without an extra
-// /admin URL segment.
+// Same chrome as Horizon's stock /admin layout (Sidebar + Navbar), but
+// reused directly under /dashboard, /apps and /onboarding so those routes
+// match middleware.ts's PROTECTED_PREFIXES without an extra /admin URL
+// segment. The template's stock footer is deliberately not rendered - it
+// was Horizon/Simmmple boilerplate branding, not ours.
 export default function AdminShell(props: AdminShellProps) {
   const { children, ...rest } = props;
   const [fixed] = useState(false);
@@ -85,9 +85,6 @@ export default function AdminShell(props: AdminShellProps) {
               clear it. */}
           <Box mx="auto" p={{ base: '20px', md: '30px' }} pe="20px" minH="100vh">
             {children}
-          </Box>
-          <Box>
-            <Footer />
           </Box>
         </Box>
       </SidebarContext.Provider>
