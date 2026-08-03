@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ryvl-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "horizon-ui-chakra-nextjs-main", "run", "dev"],
+      "port": 3000
+    }
+  ]
+}

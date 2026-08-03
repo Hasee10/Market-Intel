@@ -85,7 +85,7 @@ export function LandingHero() {
               Not just your store.
             </Heading>
             <Text fontSize={{ base: 'md', md: 'lg' }} color={bodyColor} mb="32px" maxW="480px">
-              Ryvl tracks competitor pricing across 7 marketplaces, benchmarks you against
+              Ryvl tracks competitor pricing across 11 marketplaces, benchmarks you against
               anonymized peers in your category, and tells you when to act — pricing
               recommendations, stock-out signals, and price alerts included.
             </Text>

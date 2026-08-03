@@ -1,7 +1,7 @@
 import { AnnouncementBar } from '@/components/landing/AnnouncementBar';
+import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { CTABanner } from '@/components/landing/CTABanner';
-import { FaqSection } from '@/components/landing/FaqSection';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
@@ -26,9 +26,9 @@ export default function Home() {
       <StatsBar />
       <FeaturesSection />
       <ComparisonSection />
-      <FaqSection />
       <CTABanner />
       <LandingFooter />
+      <AssistantWidget />
     </>
   );
 }

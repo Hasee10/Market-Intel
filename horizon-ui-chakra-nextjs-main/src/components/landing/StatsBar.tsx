@@ -10,7 +10,7 @@ import { Reveal } from 'components/reactbits/Reveal';
 // public user base to cite yet. Overstating traction here would be the
 // kind of thing that erodes trust the moment someone checks.
 const STATS = [
-  { icon: MdStorefront, value: '7', label: 'Marketplaces tracked live' },
+  { icon: MdStorefront, value: '11', label: 'Marketplaces tracked live' },
   { icon: MdCategory, value: '12', label: 'Seller categories supported' },
   { icon: MdSchedule, value: '48hrs', label: 'Max data refresh cycle' },
   { icon: MdShield, value: '0', label: 'Raw competitor data ever shown to you' },

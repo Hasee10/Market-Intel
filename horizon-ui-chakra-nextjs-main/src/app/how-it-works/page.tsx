@@ -1,3 +1,4 @@
+import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
@@ -18,6 +19,7 @@ export default function HowItWorksPage() {
       <HowItWorksSection />
       <CTABanner />
       <LandingFooter />
+      <AssistantWidget />
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { PricingPageBanner } from '@/components/landing/PricingPageBanner';
@@ -17,6 +18,7 @@ export default function PricingPage() {
       <PricingSection />
       <TrustSection />
       <LandingFooter />
+      <AssistantWidget />
     </>
   );
 }

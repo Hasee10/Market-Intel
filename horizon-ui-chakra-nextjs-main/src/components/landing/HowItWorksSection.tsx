@@ -18,7 +18,7 @@ const STEPS = [
     step: '02',
     title: 'We track the market for you',
     description:
-      "Competitor pricing and stock across 7 marketplaces refresh automatically, alongside your own store's orders, products, and customers - all in one dashboard.",
+      "Competitor pricing and stock across 11 marketplaces refresh automatically, alongside your own store's orders, products, and customers - all in one dashboard.",
   },
   {
     step: '03',

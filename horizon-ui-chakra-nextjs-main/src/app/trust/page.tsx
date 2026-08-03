@@ -1,3 +1,4 @@
+import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
@@ -20,6 +21,7 @@ export default function TrustPage() {
       <TrustSection />
       <CTABanner />
       <LandingFooter />
+      <AssistantWidget />
     </>
   );
 }
