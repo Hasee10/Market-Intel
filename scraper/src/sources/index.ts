@@ -2,19 +2,31 @@ import type { ClassifiedSourceFn, SourceFn } from '../types.js';
 import { scrapeDaraz } from './daraz.js';
 import { scrapeGoto } from './goto.js';
 import { scrapeIshopping } from './ishopping.js';
+import { scrapeMega } from './mega.js';
+import { scrapeNaheed } from './naheed.js';
 import { scrapePriceoye } from './priceoye.js';
 import { scrapeSapphireonline } from './sapphireonline.js';
 import { scrapeShophive } from './shophive.js';
+import { scrapeShopperspk } from './shopperspk.js';
 import { scrapeTelemart } from './telemart.js';
+import { scrapeVmart } from './vmart.js';
 
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
+// Added 2026-08-03: mega (custom HTML), naheed (Magento, same markup family
+// as ishopping/shophive), vmart (Shopify products.json, same shape telemart
+// uses) and shopperspk (WooCommerce Store API). Every selector/endpoint was
+// verified against a live fetch before being added - see each file's header.
 export const HTTP_SOURCES: SourceFn[] = [
   scrapePriceoye,
   scrapeTelemart,
   scrapeShophive,
   scrapeSapphireonline,
+  scrapeMega,
+  scrapeNaheed,
+  scrapeVmart,
+  scrapeShopperspk,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP
@@ -32,14 +44,18 @@ export const BROWSER_SOURCES: SourceFn[] = [scrapeIshopping, scrapeGoto, scrapeD
 // Classifieds sources - write to market_classified_listings instead of
 // market_products, see types.ts / migrations/007.
 //
-// OLX is disabled here (2026-08-03), not deleted: every request from
-// GitHub's runner IPs has come back 429 for weeks (ROADMAP.md D4), including
-// after adding pacing + exponential backoff on 429 - so this looks like a
-// standing IP-level block on that IP range, not a transient rate limit that
-// politeness can fix. Leaving it retry indefinitely was burning 20-30+
-// minutes of every scrape run for zero rows and risked the whole job being
-// killed by the workflow timeout before the other 7 sources even got a
-// chance to fail cleanly. scrapeOlx() itself is untouched and still works
-// from a non-blocked IP (e.g. a residential proxy) - re-add it to this array
-// once D4's real fix (proxy or additional retailer coverage) lands.
+// Empty since 2026-08-03: OLX was the only classifieds source and has been
+// removed (src/sources/olx.ts deleted, OLX_CATEGORIES dropped from config and
+// the workflow). Every request from GitHub's runner IPs came back 429 for
+// weeks, including after pacing and exponential backoff were added, which
+// pointed at a standing IP-level block rather than a rate limit politeness
+// could fix - it was burning 20-30 minutes per run for zero rows.
+//
+// The classifieds *plumbing* around it is intentionally left in place: the
+// RawClassifiedListing/ClassifiedSourceFn types, saveClassifiedListings() in
+// db.ts, and the market_classified_* tables. Removing those would be a schema
+// and pipeline change, and they are what any future classifieds source would
+// plug into. The retailer coverage added the same day (naheed, shopperspk,
+// mega, vmart) is the durable answer to the category gap OLX used to fill -
+// see ROADMAP.md D4.
 export const CLASSIFIED_SOURCES: ClassifiedSourceFn[] = [];

@@ -20,8 +20,16 @@ export const config = {
   ishoppingCategories: splitList(process.env.ISHOPPING_CATEGORIES) as string[],
   gotoCategories: splitList(process.env.GOTO_CATEGORIES) as string[],
   sapphireonlineCategories: splitList(process.env.SAPPHIREONLINE_CATEGORIES) as string[],
-  olxCategories: splitList(process.env.OLX_CATEGORIES) as string[],
   darazCategories: splitList(process.env.DARAZ_CATEGORIES) as string[],
+
+  // Added 2026-08-03 (coverage expansion). Naheed and ShoppersPK are the ones
+  // that matter most: they are the first sources with real depth in grocery,
+  // beauty, home and kids - the seller categories left with no retailer
+  // coverage once OLX was disabled.
+  megaCategories: splitList(process.env.MEGA_CATEGORIES) as string[],
+  naheedCategories: splitList(process.env.NAHEED_CATEGORIES) as string[],
+  vmartCollections: splitList(process.env.VMART_COLLECTIONS) as string[],
+  shopperspkCategories: splitList(process.env.SHOPPERSPK_CATEGORIES) as string[],
 
   logLevel: process.env.LOG_LEVEL ?? 'info',
 };

@@ -108,4 +108,18 @@ jobs:
           GOTO_CATEGORIES: computing-gaming,mens-fashion,womens-fashion
           SAPPHIREONLINE_CATEGORIES: ready-to-wear,unstitched
           DARAZ_CATEGORIES: smartphones,laptops,phones-tablets,audio,televisions,laptop-accessories,mens-fashion,womens-fashion,mens-shoes,womens-shoes,jewellery,sunglasses,beauty-health,home-appliances,kitchen-dining,furniture-decor,stationery-craft,books-magazines,toys-games,mother-baby,exercise-fitness,automotive
+          #
+          # Sources added 2026-08-03 to replace the coverage OLX used to
+          # provide. Every slug below was fetched live and confirmed to return
+          # real product cards before being added - mega returns HTTP 500 for
+          # an unknown slug rather than an empty page, so a typo there is loud.
+          #
+          # naheed + shopperspk are the important ones: they are the first
+          # sources with genuine depth in grocery, beauty, home, kids and
+          # kitchen, which is where 10 of 12 seller categories had no retailer
+          # coverage at all.
+          MEGA_CATEGORIES: laptops,mobiles,desktopcomputers,smartwatches,airconditioners,ledtv,refrigerators,microwaveovens
+          NAHEED_CATEGORIES: phones-tablets,health-beauty,kids-babies,home-lifestyle,groceries-pets,tv-home-appliances,books,men-s-fashion
+          VMART_COLLECTIONS: apple-phones,apple-macbooks-pakistan,audio-pakistan,gaming-mouse-pakistan,gaming-keyboards-pakistan,gaming-headsets-pakistan,accessories-pakistan
+          SHOPPERSPK_CATEGORIES: home-decor,jars-containers,serving-dishes-in-pakistan,water-bottles-in-pakistan,wall-clocks-in-pakistan,mugs-in-pakistan,air-fryers,baby
         run: npm run start
