@@ -24,8 +24,21 @@ const ACCOUNT_LINKS = [
 
 export function LandingFooter() {
   return (
-    <Box as="footer" bg="#0B1230" pt="60px" pb="30px">
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
+    <Box as="footer" bg="#0B1230" pt="60px" pb="30px" position="relative" overflow="hidden">
+      {/* Same quiet ambient glow the other dark surfaces (StatsBar, CTABanner)
+          use, so the footer doesn't read as a plain flat bar by comparison. */}
+      <Box
+        position="absolute"
+        top="-120px"
+        left="50%"
+        transform="translateX(-50%)"
+        w="500px"
+        h="240px"
+        borderRadius="full"
+        bg="radial-gradient(circle, rgba(122,101,255,0.12) 0%, rgba(122,101,255,0) 70%)"
+        pointerEvents="none"
+      />
+      <Container maxW="1200px" px={{ base: '20px', md: '30px' }} position="relative">
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing="40px" mb="40px">
           <Box>
             <Flex align="center" gap="8px" mb="12px">

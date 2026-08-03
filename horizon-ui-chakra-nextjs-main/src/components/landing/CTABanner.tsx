@@ -14,7 +14,7 @@ export function CTABanner() {
           position="relative"
           overflow="hidden"
           borderRadius="28px"
-          bg="linear-gradient(135deg, #171F58 0%, #0B1230 100%)"
+          bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
           px={{ base: '28px', md: '64px' }}
           py={{ base: '48px', md: '64px' }}
         >
@@ -24,7 +24,7 @@ export function CTABanner() {
             position="absolute"
             inset="0"
             opacity="0.5"
-            backgroundImage="radial-gradient(rgba(255,255,255,0.12) 1px, transparent 1px)"
+            backgroundImage="radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1px)"
             backgroundSize="18px 18px"
             sx={{ maskImage: 'linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0))' }}
           />
@@ -35,7 +35,7 @@ export function CTABanner() {
             w="280px"
             h="280px"
             borderRadius="full"
-            bg="radial-gradient(circle, rgba(122,101,255,0.4) 0%, rgba(122,101,255,0) 70%)"
+            bg="radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0) 70%)"
           />
 
           <Flex

@@ -28,7 +28,6 @@ export function CompanyLogoSlider({ sellers, brands }: { sellers: ShowcaseSeller
     <LogoMarquee
       label="Real sellers on Ryvl, alongside brands we already track pricing for"
       items={items}
-      durationSeconds={32}
       direction="right"
     />
   );

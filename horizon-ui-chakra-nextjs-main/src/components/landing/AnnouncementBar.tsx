@@ -14,7 +14,7 @@ export function AnnouncementBar() {
   if (dismissed) return null;
 
   return (
-    <Box bg="#4318FF" py="10px">
+    <Box bg="linear-gradient(90deg, #4318FF 0%, #6A47FF 100%)" py="10px">
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Flex align="center" justify="center" gap="8px" position="relative">
           <Text fontSize="sm" color="white" textAlign="center">

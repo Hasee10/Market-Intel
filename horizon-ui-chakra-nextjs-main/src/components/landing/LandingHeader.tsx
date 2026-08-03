@@ -50,10 +50,25 @@ export function LandingHeader() {
             <ChakraLink
               key={link.href}
               href={link.href}
+              position="relative"
               fontSize="sm"
               fontWeight="500"
               color={linkColor}
               _hover={{ color: '#4318FF', textDecoration: 'none' }}
+              sx={{
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  left: 0,
+                  right: '100%',
+                  bottom: '-4px',
+                  h: '2px',
+                  borderRadius: 'full',
+                  bg: '#4318FF',
+                  transition: 'right 0.2s ease',
+                },
+                '&:hover::after': { right: 0 },
+              }}
             >
               {link.label}
             </ChakraLink>

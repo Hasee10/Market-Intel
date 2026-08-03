@@ -102,7 +102,7 @@ export function AssistantWidget() {
               justify="space-between"
               px="20px"
               py="16px"
-              bg="linear-gradient(135deg, #171F58 0%, #0B1230 100%)"
+              bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
             >
               <Box>
                 <Text fontWeight="700" fontSize="sm" color="white">
