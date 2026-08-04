@@ -206,7 +206,20 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
   they work like the rest of `HTTP_SOURCES`.
 - **Migration numbering: verify the current tip.** This file says 018–024
   are applied as of 2026-08-04; a fresh session must re-check for anything
-  past 024 before trusting that.
+  past 024 before trusting that. **Migration 025 (`report_snapshots`,
+  `report_reviews`, `report_exports`) exists but is confirmed NOT applied**
+  as of this same date — see the next item.
+- **Report generation v2 was rebuilt from scratch on 2026-08-04** — read
+  `docs/reports-v2-architecture.md` before touching anything under
+  `lib/reports/`. Short version: PPTX/PDF now both render from one typed
+  `ReportSnapshot` (`lib/reports/schema.ts`), generated dynamically per
+  seller (no fixed slide count, no flattened chart images — `pptxgenjs`
+  builds the whole deck from code, no template file). Phases 0-4 and 7 of
+  that doc's plan are done and merged; Phases 5 (internal review API) and 6
+  (seller-facing reports list UI) are not. **Migration 025 must be applied
+  before report history/persistence actually works** — until then,
+  `/api/reports/generate` still works for a seller's own download (fails
+  soft, logs the persistence error) but nothing is saved anywhere.
 
 ## Things to not do (from prior explicit correction)
 

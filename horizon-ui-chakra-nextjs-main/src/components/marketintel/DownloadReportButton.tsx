@@ -1,26 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Button, Icon, useToast } from '@chakra-ui/react';
+import { Button, Icon, Menu, MenuButton, MenuItem, MenuList, useToast } from '@chakra-ui/react';
 import { MdOutlineFileDownload } from 'react-icons/md';
 
-// PDF generation is paused for now (see generate-pdf.ts) until a real
-// pptx->PDF conversion path is decided - only PPTX is offered here.
+type Format = 'pptx' | 'pdf';
+
+// Both formats now come from the same ReportSnapshot (see
+// lib/reports/collect-snapshot.ts, render/pptx/build-deck.ts,
+// render/pdf/build-pdf.ts) - PDF is no longer paused.
 export function DownloadReportButton() {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<Format | null>(null);
   const toast = useToast();
 
-  const handleDownload = async () => {
-    setIsLoading(true);
+  const handleDownload = async (format: Format) => {
+    setIsLoading(format);
     try {
-      const res = await fetch('/api/reports/generate?format=pptx');
+      const res = await fetch(`/api/reports/generate?format=${format}`);
       if (!res.ok) {
         throw new Error('Failed to generate report');
       }
       const blob = await res.blob();
       const disposition = res.headers.get('Content-Disposition') || '';
       const match = disposition.match(/filename="(.+)"/);
-      const fileName = match?.[1] ?? 'ryvl-report.pptx';
+      const fileName = match?.[1] ?? `ryvl-report.${format}`;
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -39,20 +42,26 @@ export function DownloadReportButton() {
         isClosable: true,
       });
     } finally {
-      setIsLoading(false);
+      setIsLoading(null);
     }
   };
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      leftIcon={<Icon as={MdOutlineFileDownload} />}
-      onClick={handleDownload}
-      isLoading={isLoading}
-      loadingText="Preparing report..."
-    >
-      Download report (PPTX)
-    </Button>
+    <Menu>
+      <MenuButton
+        as={Button}
+        variant="outline"
+        size="sm"
+        leftIcon={<Icon as={MdOutlineFileDownload} />}
+        isLoading={isLoading !== null}
+        loadingText="Preparing report..."
+      >
+        Download report
+      </MenuButton>
+      <MenuList minW="180px">
+        <MenuItem onClick={() => handleDownload('pptx')}>PowerPoint (.pptx)</MenuItem>
+        <MenuItem onClick={() => handleDownload('pdf')}>PDF</MenuItem>
+      </MenuList>
+    </Menu>
   );
 }

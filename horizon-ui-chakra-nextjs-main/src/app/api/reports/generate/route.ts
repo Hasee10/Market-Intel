@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller';
-import { collectReportData } from '@/lib/reports/collect-report-data';
-import { generateReportPdf } from '@/lib/reports/generate-pdf';
-import { generateReportPptx } from '@/lib/reports/generate-pptx';
+import { collectSnapshot } from '@/lib/reports/collect-snapshot';
+import { validateSnapshot } from '@/lib/reports/validate';
+import { saveSnapshot } from '@/lib/reports/persist';
+import { buildReportDeck } from '@/lib/reports/render/pptx/build-deck';
+import { buildReportPdf } from '@/lib/reports/render/pdf/build-pdf';
 
 const CONTENT_TYPES = {
   pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
   pdf: 'application/pdf',
 } as const;
 
+// A seller generating/downloading their own report from their own dashboard
+// is not the "researcher reviews before client-safe delivery" flow from
+// docs/reports-v2-architecture.md §7 - there's no cross-tenant exposure risk
+// here (a seller can only ever see their own data), so this stays instant,
+// self-serve, and always mode: 'internal'. The approval gate applies when a
+// snapshot needs to leave the platform as a formal client_safe deliverable
+// (see /api/reports/[id]/export, not this route).
 export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -19,8 +28,21 @@ export async function GET(request: NextRequest) {
   const formatParam = request.nextUrl.searchParams.get('format');
   const format = formatParam === 'pdf' ? 'pdf' : 'pptx';
 
-  const reportData = await collectReportData(seller);
-  const buffer = format === 'pdf' ? await generateReportPdf(reportData) : await generateReportPptx(reportData);
+  const snapshot = await collectSnapshot(seller, { mode: 'internal' });
+  const validation = validateSnapshot(snapshot);
+  if (!validation.passed) {
+    // A self-view download still gets a best-effort file rather than a hard
+    // block - the blocking gate is for approved client_safe exports (see
+    // export route). Logged for visibility, not surfaced to the seller.
+    console.error(`[reports] snapshot for ${seller.id} failed validation:`, validation.issues);
+  }
+
+  const [buffer] = await Promise.all([
+    format === 'pdf' ? buildReportPdf(snapshot) : buildReportDeck(snapshot),
+    saveSnapshot(snapshot, 'seller_request').catch((err) => {
+      console.error('[reports] failed to persist snapshot:', err);
+    }),
+  ]);
 
   const slug = seller.businessName.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
   const fileName = `${slug}-report.${format}`;

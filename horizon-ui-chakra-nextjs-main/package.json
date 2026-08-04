@@ -25,7 +25,6 @@
     "framer-motion": "^4.1.17",
     "next": "^15.1.4",
     "pdfkit": "^0.19.1",
-    "pptx-automizer": "^0.8.2",
     "pptxgenjs": "^4.0.1",
     "react": "^19.0.0-rc.1",
     "react-apexcharts": "^1.4.0",
@@ -46,6 +45,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
     "predeploy": "yarn run build",
     "deploy": "gh-pages -d build"
   },
@@ -67,7 +67,8 @@
     "@types/react-calendar": "^3.5.2",
     "@types/react-table": "^7.7.12",
     "eslint": "^8.23.0",
-    "eslint-config-next": "^15.1.4"
+    "eslint-config-next": "^15.1.4",
+    "vitest": "^3.2.7"
   },
   "resolutions": {
     "@types/react": "18.0.31",

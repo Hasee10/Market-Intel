@@ -680,56 +680,109 @@ components/marketintel/
 
 Sized to ship incrementally and stay reviewable — not one giant PR.
 
-**Phase 0 — schema & persistence (no rendering changes yet)**
-Migration 025 (tables above), `lib/reports/schema.ts`, `persist.ts`. Existing
-`collect-report-data.ts` output gets mapped into the new schema shape as a
-compatibility step, so nothing breaks yet.
+**Status as of 2026-08-04: Phases 0-4 and 7 are implemented and merged.
+Phases 5 and 6 are not.** Details below; verify against the live repo
+before trusting this line in a future session.
 
-**Phase 1 — collectors, metrics, validation**
-Split `collect-report-data.ts` into the `collectors/` modules, add
-`metrics/growth.ts` with guard rails (kills the 2657.7% bug at the source),
-add `validate.ts`. Unit tests here are cheap and high-value — pure
-functions, no I/O in metrics/validate.
+**Phase 0 — schema & persistence — DONE.**
+Migration `025_report_snapshots.sql` (`report_snapshots`, `report_reviews`,
+`report_exports`, owner-only RLS, service-role write) written but **not
+yet applied** in Supabase — same "written vs. applied" gap this repo has
+hit before (see mind.md). `lib/reports/schema.ts` (the full `ReportSnapshot`
+type) and `lib/reports/persist.ts` (save/get/list/transitionStatus/
+recordExport, admin-client writes) are both implemented.
 
-**Phase 2 — market-signals rules + AI narration hardening**
-Promote `getCompetitorTracking()`'s heuristics into `rules/market-signals.ts`
-with named, versioned, tested rules. Add the numeric-consistency check to
-the AI narration layer.
+**Phase 1 — collectors, metrics, validation — DONE.**
+`lib/reports/collectors/{revenue-and-products,marketplace-and-pricing,
+competitors,customers}.ts` replace the old monolithic
+`collect-report-data.ts` (deleted). `metrics/growth.ts` provides
+`buildGrowthMetric`/`safeRatio` with a near-zero-baseline guard — this is
+the actual fix for the "+2657.7%" bug, covered by a unit test that
+reproduces the failure mode and asserts it can't happen. `validate.ts`
+implements the QUALITY CHECKS gate.
 
-**Phase 3 — section plan + PPTX template rebuild**
-The template-authoring work from §6 (real charts, stable shape names) —
-this one has a design/authoring component, not pure engineering, and is
-likely the longest single phase. Build `section-plan.ts` and the new
-section-driven PPTX renderer against the rebuilt template.
+**Phase 2 — market-signals rules + AI narration hardening — DONE.**
+`rules/market-signals.ts` promotes the old ad hoc price-delta thresholds
+into four named, versioned (`ruleVersion: 'v1'`) rule functions.
+`ai/narrate.ts` replaces `generate-report-insights.ts` (deleted): same
+"only paraphrase pre-computed numbers" discipline as before, plus the
+numeric-consistency check that was missing - every number/percentage the
+model states is extracted and checked against the snapshot's own values;
+an ungrounded claim rejects the whole narration in favor of the static
+fallback rather than risking one bad slide.
 
-**Phase 4 — PDF renderer parity**
-Mirror Phase 3's section-driven approach in the PDF path (§6 Option A).
+**Phase 3 — section plan + PPTX renderer — DONE, but via a better approach
+than originally scoped here.** Instead of hand-authoring a new PowerPoint
+template file with real chart objects (this section's original plan),
+the renderer was switched to **`pptxgenjs`, generating the entire deck
+from code with zero template file** - `pptxgenjs` was already an installed,
+unused dependency and supports native charts/tables/text/shapes built
+programmatically. This eliminates the template-authoring bottleneck
+entirely (no PowerPoint design work was a blocking dependency) and the
+Google-Slides-shape-name fragility documented in §1. `pptx-automizer` and
+the old `ryvl-report-template.pptx` asset were removed - nothing depends
+on them anymore. `section-plan.ts` implements §5's inclusion rules and the
+dynamic slide-count floor/ceiling exactly as specified (`ROWS_PER_TABLE_PAGE
+= 5`, `MAX_CONTINUATION_PAGES = 2`), covered by tests for both ends (a
+2-slide floor case and a 40-row table hitting the truncation ceiling).
+`render/pptx/components.ts` holds the reusable component library (KPI
+cards, native tables, native bar/line charts, insight callouts,
+recommendation cards, section dividers, confidentiality labels) and
+`render/pptx/build-deck.ts` composes them per section.
 
-**Phase 5 — review/approval workflow (Phase-1 scope from §7)**
-Internal API for status transitions + `report_reviews` audit trail. Export
-endpoint enforces `approved` + `client_safe` gating.
+**Phase 4 — PDF renderer parity — DONE.**
+`render/pdf/build-pdf.ts` mirrors `build-deck.ts` section-for-section
+against the same `ReportSnapshot` and `section-plan.ts` output, using
+pdfkit (Option A from §6, as decided) with native vector shapes/text/bars
+- no rasterized charts. The old orphaned `generate-pdf.ts` is deleted;
+`DownloadReportButton.tsx` now offers both formats via a menu (PDF was
+previously disabled in the UI pending exactly this rework).
 
-**Phase 6 — seller-facing UI**
-`dashboard/reports/` list + detail pages, extended `DownloadReportButton`
-with period/type picker, entitlement gating on the route.
+**Phase 5 — review/approval workflow — NOT DONE.**
+`persist.ts`'s `transitionStatus()` exists (the primitive an internal API
+would call), but there is no `/api/internal/reports/:id` route and no
+enforcement yet that a `client_safe` export requires `status: 'approved'`.
+The current `/api/reports/generate` route only ever produces `mode:
+'internal'` self-view downloads for the seller's own dashboard (see the
+route's own comment on why that's a deliberately different, lower-risk
+path than the formal client-safe delivery flow in §7).
 
-**Phase 7 — hardening**
-Checked directly: **no test runner exists in this app today** —
-`@testing-library/jest-dom`/`@types/jest` are installed but there's no
-`test` script in `package.json` and no `jest.config`/`vitest.config`
-anywhere. This phase therefore starts with standing up a test runner
-(vitest is the lighter-weight fit for a Next.js 15/React 19 app and needs
-no config beyond what's already implied by the installed
-`@testing-library/*` packages — jest would also need its Next.js-specific
-config layer added from scratch either way, so there's no "already
-half-configured" option here), *then* the full suite per the brief
-(calculations, section visibility, tenant isolation, overflow/pagination,
-PPTX generation, PDF generation), lint, typecheck, production build.
+**Phase 6 — seller-facing UI — NOT DONE.**
+No `dashboard/reports/` list/detail pages exist yet. `DownloadReportButton`
+was extended with a format picker but not a period/report-type picker.
+No entitlement/plan-tier gating was added to the report route.
+
+**Phase 7 — hardening — DONE (for what's implemented so far).**
+Confirmed: this app had zero test infrastructure before this work (no
+`test` script, no config). Added `vitest` (bumped to `^3.2.7` specifically
+- earlier 2.x/early-3.x resolve a vulnerable transitive `esbuild`, `npm
+audit` was rerun clean after pinning), `vitest.config.ts`, and 25 tests
+across `metrics/growth.test.ts`, `section-plan.test.ts`, `validate.test.ts`,
+and `render/render.test.ts` (PPTX/PDF generation smoke tests against both
+a floor-case and a data-rich, paginated fixture). `npm run test` wired into
+`.github/workflows/ci.yml` alongside typecheck/lint/build. Two real bugs
+were caught and fixed by writing these tests: `section-plan.ts`'s
+`inventory_risk` inclusion check was testing object-existence instead of
+the actual SKU count (would have shown a 0-count section despite the
+explicit rule against it), and the growth-guard test itself was
+miscalibrated against the exact boundary value. Not yet covered: tenant
+isolation (needs Supabase test doubles/integration setup, not just pure-
+function tests) and overflow at the PDF-page level specifically (the PDF
+renderer reuses the same section plan as PPTX, so it inherits the same
+pagination tests indirectly, but has no PDF-specific overflow test yet).
 
 ---
 
 ## 10. Risks and assumptions
 
+- **Migration 025 is written but not applied** — same "written vs. applied"
+  gap this repo has hit repeatedly before (mind.md tracks this pattern).
+  Until it's run in the Supabase SQL Editor, `saveSnapshot()`/`persist.ts`
+  will fail against a missing table, and `/api/reports/generate` currently
+  swallows that failure (logs it, still returns the generated file) rather
+  than blocking the seller's download - by design, since a self-view
+  download shouldn't fail just because persistence isn't set up yet, but it
+  does mean report history/versioning is silently inert until this runs.
 - **Biggest risk, added after deeper verification**: real SKU-level revenue
   attribution needs an order-line-item table that doesn't exist (§2 item
   0). If you want "product portfolio contribution"/"SKU performance" to

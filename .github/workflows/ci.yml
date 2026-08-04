@@ -41,6 +41,12 @@ jobs:
 
       - run: npm run lint
 
+      # vitest - added alongside the report generation v2 rebuild
+      # (docs/reports-v2-architecture.md), the first test runner this repo
+      # has ever had. Covers calculation guards, section-inclusion rules,
+      # and PPTX/PDF generation smoke tests under src/lib/reports/.
+      - run: npm run test
+
       # A real `next build` is the only thing that catches Server/Client
       # component boundary errors and route-type mismatches - tsc alone does
       # not. Placeholder env values: the build must not need real credentials,
