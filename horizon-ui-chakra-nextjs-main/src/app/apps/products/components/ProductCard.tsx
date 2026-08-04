@@ -78,7 +78,11 @@ export function ProductCard({ data, onEdit }: ProductCardProps) {
             {formatCurrency(data.sellPrice, data.currency)}
           </Text>
           {marginPct !== null && (
-            <Text fontSize="xs" fontWeight="600" color={marginPct >= HEALTHY_MARGIN_PCT * 100 ? 'green.500' : 'orange.400'}>
+            <Text
+              fontSize="xs"
+              fontWeight="600"
+              color={marginPct >= HEALTHY_MARGIN_PCT * 100 ? 'green.500' : marginPct < 0 ? 'red.500' : 'orange.400'}
+            >
               {marginPct.toFixed(0)}% margin
             </Text>
           )}

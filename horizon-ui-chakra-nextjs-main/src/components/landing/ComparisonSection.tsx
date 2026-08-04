@@ -26,7 +26,7 @@ export function ComparisonSection() {
   const accent = useColorModeValue('#4318FF', '#A594FF');
   const cardShadow = useColorModeValue('0px 4px 24px rgba(17, 28, 78, 0.05)', 'none');
   const rowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
-  const withColBg = useColorModeValue('#FBFAFF', 'whiteAlpha.30');
+  const withColBg = useColorModeValue('#FBFAFF', 'whiteAlpha.50');
   const closeChipBg = useColorModeValue('red.50', 'whiteAlpha.100');
   const checkChipBg = useColorModeValue('green.50', 'whiteAlpha.100');
 
