@@ -83,7 +83,14 @@ export function LandingHero() {
               >
                 For online sellers
               </Badge>
-              <Heading as="h1" fontSize={{ base: '36px', md: '52px' }} lineHeight="1.1" color={headingColor} mb="20px">
+              <Heading
+                as="h1"
+                fontFamily="var(--font-merriweather), serif"
+                fontSize={{ base: '36px', md: '52px' }}
+                lineHeight="1.1"
+                color={headingColor}
+                mb="20px"
+              >
                 See your market.
                 <br />
                 Not just your store.

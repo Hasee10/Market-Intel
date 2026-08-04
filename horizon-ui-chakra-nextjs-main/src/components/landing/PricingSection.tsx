@@ -65,7 +65,13 @@ export function PricingSection() {
     <Box id="pricing" py={{ base: '70px', md: '100px' }}>
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
         <Box textAlign="center" mb="60px">
-          <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color={heading} mb="12px">
+          <Heading
+            as="h2"
+            fontFamily="var(--font-merriweather), serif"
+            fontSize={{ base: '28px', md: '36px' }}
+            color={heading}
+            mb="12px"
+          >
             Grows with how deep you want to go
           </Heading>
           <Text color={body} fontSize="lg" maxW="560px" mx="auto">

@@ -15,7 +15,13 @@ export function PricingPageBanner() {
   return (
     <Box bg={bannerBg} pt={{ base: '60px', md: '80px' }} pb={{ base: '40px', md: '50px' }}>
       <Container maxW="1200px" px={{ base: '20px', md: '30px' }} textAlign="center">
-        <Heading as="h1" fontSize={{ base: '32px', md: '44px' }} color={heading} mb="16px">
+        <Heading
+          as="h1"
+          fontFamily="var(--font-merriweather), serif"
+          fontSize={{ base: '32px', md: '44px' }}
+          color={heading}
+          mb="16px"
+        >
           Simple, honest pricing
         </Heading>
         <Text fontSize={{ base: 'md', md: 'lg' }} color={body} maxW="560px" mx="auto">

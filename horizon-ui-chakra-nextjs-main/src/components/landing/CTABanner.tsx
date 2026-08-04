@@ -46,7 +46,13 @@ export function CTABanner() {
             position="relative"
           >
             <Box textAlign={{ base: 'center', md: 'left' }}>
-              <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color="white" mb="10px">
+              <Heading
+                as="h2"
+                fontFamily="var(--font-merriweather), serif"
+                fontSize={{ base: '28px', md: '36px' }}
+                color="white"
+                mb="10px"
+              >
                 Ready to see where you stand?
               </Heading>
               <Text color="whiteAlpha.700" fontSize={{ base: 'sm', md: 'md' }}>

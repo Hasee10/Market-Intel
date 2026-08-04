@@ -1,5 +1,12 @@
 import { mode, StyleFunctionProps } from "@chakra-ui/theme-tools";
+
+const bodyFont = "var(--font-inter), sans-serif";
+
 export const globalStyles = {
+  fonts: {
+    heading: bodyFont,
+    body: bodyFont,
+  },
   colors: {
     brand: {
       100: "#E9E3FF",
@@ -83,14 +90,14 @@ export const globalStyles = {
       body: {
         overflowX: "hidden",
         bg: mode("secondaryGray.300", "navy.900")(props),
-        fontFamily: "DM Sans",
+        fontFamily: bodyFont,
         letterSpacing: "-0.5px",
       },
       input: {
         color: "gray.700",
       },
       html: {
-        fontFamily: "DM Sans",
+        fontFamily: bodyFont,
       },
     }),
   },

@@ -43,7 +43,14 @@ export function HowItWorksSection() {
             <Text fontSize="xs" fontWeight="700" color={kicker} letterSpacing="0.08em" textTransform="uppercase" mb="12px">
               The process
             </Text>
-            <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
+            <Heading
+              as="h2"
+              fontFamily="var(--font-merriweather), serif"
+              fontSize={{ base: '28px', md: '40px' }}
+              color={heading}
+              mb="16px"
+              letterSpacing="-0.02em"
+            >
               From signup to your first insight
             </Heading>
             <Text color={body} fontSize="lg" maxW="560px" mx="auto">

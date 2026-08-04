@@ -124,7 +124,14 @@ export function FeaturesSection() {
             >
               What you get
             </Text>
-            <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
+            <Heading
+              as="h2"
+              fontFamily="var(--font-merriweather), serif"
+              fontSize={{ base: '28px', md: '40px' }}
+              color={heading}
+              mb="16px"
+              letterSpacing="-0.02em"
+            >
               Everything you need to sell with your eyes open
             </Heading>
             <Text color={body} fontSize="lg" maxW="560px" mx="auto">

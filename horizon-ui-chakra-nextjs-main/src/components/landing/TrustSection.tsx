@@ -58,7 +58,14 @@ export function TrustSection() {
             >
               How it works
             </Text>
-            <Heading as="h2" fontSize={{ base: '28px', md: '40px' }} color={heading} mb="16px" letterSpacing="-0.02em">
+            <Heading
+              as="h2"
+              fontFamily="var(--font-merriweather), serif"
+              fontSize={{ base: '28px', md: '40px' }}
+              color={heading}
+              mb="16px"
+              letterSpacing="-0.02em"
+            >
               Peer benchmarking, not surveillance
             </Heading>
             <Text color={body} fontSize="lg" maxW="620px" mx="auto">

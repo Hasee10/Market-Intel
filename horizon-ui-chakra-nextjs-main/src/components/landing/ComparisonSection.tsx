@@ -35,7 +35,14 @@ export function ComparisonSection() {
       <Container maxW="1000px" px={{ base: '20px', md: '30px' }}>
         <Reveal>
           <Box textAlign="center" mb={{ base: '40px', md: '56px' }}>
-            <Heading as="h2" fontSize={{ base: '28px', md: '36px' }} color={heading} mb="12px" letterSpacing="-0.02em">
+            <Heading
+              as="h2"
+              fontFamily="var(--font-merriweather), serif"
+              fontSize={{ base: '28px', md: '36px' }}
+              color={heading}
+              mb="12px"
+              letterSpacing="-0.02em"
+            >
               What most sellers do today, vs. Ryvl
             </Heading>
             <Text color={body} fontSize="lg" maxW="560px" mx="auto">
