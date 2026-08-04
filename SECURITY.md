@@ -40,8 +40,8 @@ naheed, vmart, shopperspk) — code was already wired into `HTTP_SOURCES`
 before this ran. 024 adds an opt-in seller marketing showcase
 (`seller_public_profile.show_on_marketing_site`, the
 `seller_marketing_showcase` view, `top_market_brands()`) for the public
-homepage's company slider; the view is a deliberate, narrow exception to the
-project's "SECURITY INVOKER always" rule (see the migration's own comment).
+homepage's company slider; the view reuses migration 012's existing
+view-owner pattern (see `seller_public_profiles_view`), not a new exception.
 
 Referral signups depend on 018's trigger (the HTTP endpoint that used to
 record them was deleted). This fails safe if not applied (no referral, no
@@ -87,6 +87,7 @@ so nobody later mistakes them for a working switch.
 | 5 | Medium | No dependency lockfile; version ranges span a Next.js CVE window | `package-lock.json` un-ignored for the app (it was a Horizon UI template default). CI runs `npm ci`, which fails if the lockfile and `package.json` drift. |
 | 13 | Info | No CI gating lint/typecheck/audit | `.github/workflows/ci.yml` — typecheck, lint and a real `next build` for the app, typecheck for the scraper, and an advisory `npm audit --audit-level=high` on both. |
 | — | High | `npm audit` flagged `postcss <=8.5.17` (source-map path traversal/XSS) and `sharp <0.35.0` (libvips CVEs), both pinned exactly by `next@15.5.x` itself — `npm audit fix --force` wanted to downgrade to `next@9.3.3`, a non-fix. Forced to safe patched versions via `"overrides"` in `package.json` (`postcss` 8.5.25, `sharp` 0.35.3) instead of downgrading Next. `brace-expansion <1.1.17` (from eslint's `minimatch`, DoS) fixed in-range by `npm audit fix`. Re-check this override after every Next major/minor bump — a future Next release may ship its own fix and make it redundant. |
+| — | Medium | No rate limiting on `/api/assistant` (public Groq-backed landing-page chatbot, added 2026-08-04) | `src/lib/rate-limit.ts` — in-memory fixed-window limiter, 12 requests/minute per IP, returns 429 past that. Deliberately not the fix for finding #7 below (a shared store is still needed for auth endpoints); this is a much smaller bar for a single non-auth route and resets on cold start / differs per instance on Vercel. Good enough to stop casual scripted abuse, not a hard guarantee under a real distributed attack. |
 
 Finding **3** (client-only password policy) is fixed by deploy step 2 above,
 not by code.

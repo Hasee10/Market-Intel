@@ -153,15 +153,16 @@ uncommitted locally while the deployed scraper kept running the old code.
   do not add a keyword/search mode (the `/catalog/` path is disallowed), do
   not follow sellers to their shop pages (`/shop/*.htm` is disallowed). Both
   are noted inline in `daraz.ts` — read the comment before touching that file.
-- **SQL functions are `SECURITY INVOKER`, always** — with one deliberate,
-  narrow exception as of migration 024: the `seller_marketing_showcase` view
-  uses definer-like semantics to let the anonymous public homepage read past
-  `seller_public_profile`'s owner-only RLS, but it only ever exposes 2
-  columns (name, domain) and only for rows the seller explicitly opted into
-  via `show_on_marketing_site`. The migration's own comment justifies this.
-  Don't treat it as license to add more DEFINER-style objects without the
-  same explicit, narrow, commented justification — this should stay the one
-  exception, not a pattern.
+- **SQL functions are `SECURITY INVOKER`, always.** Views are a separate,
+  pre-existing, narrower exception: `seller_public_profiles_view` (migration
+  012) already uses view-owner (definer-like) semantics to expose a couple
+  of controlled columns from the owner-only-RLS `seller_public_profile`
+  table to authenticated peers. Migration 024's `seller_marketing_showcase`
+  view **reuses that exact same established convention** for the public
+  homepage (2 columns, opt-in rows only via `show_on_marketing_site`) — it
+  is not a new precedent, just the second application of one. Don't extend
+  this to functions (those stay invoker), and don't widen either view's
+  column set without a similarly explicit, narrow, commented reason.
 - **Aggregation lives in SQL, not JS**, since A4 (migration 021). Don't
   reintroduce a "pull every row into JS and sort" pattern for anything that
   touches `market_price_history` — it's the fastest-growing table in the
@@ -191,21 +192,15 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
 
 ## Open items that need attention (as of 2026-08-04)
 
-- **`/api/assistant` (new Groq-backed landing-page chatbot) has no rate
-  limiting.** `groq-client.ts`/`marketing-assistant.ts` are server-only (key
-  never reaches the client), history is capped at 8 messages/500 chars, and
-  it fails soft to a canned reply — but nothing stops an anonymous visitor
-  from calling the route repeatedly. Cost exposure is architecturally
-  unbounded even though each call is cheap (llama-3.1-8b-instant). Worth a
-  per-IP/session cap before this gets real landing-page traffic.
-- **`GROQ_API_KEY` exists in `.env.local` locally; `NEXT_PUBLIC_LOGO_DEV_TOKEN`
-  and `LOGO_DEV_SECRET_KEY` do NOT** (checked directly). Both logo.dev
-  call sites degrade gracefully without the key (`LogoTile.tsx` falls back to
-  an initials avatar; `logo-dev.ts`'s `searchBrandDomain` returns `null`), so
-  this isn't a broken build, just a silently-degraded feature locally and
-  possibly in prod if the same keys aren't set in Vercel. Confirm they're set
-  in Vercel if the homepage logo sliders need to show real logos in
-  production, not just initials.
+- ~~`/api/assistant` has no rate limiting~~ — **fixed 2026-08-04**:
+  `src/lib/rate-limit.ts`, an in-memory fixed-window limiter (12 req/min per
+  IP, 429 past that), wired into the route. It's explicitly *not* the fix
+  for the older "no rate limiting on auth endpoints" finding (that still
+  needs a shared store like Upstash, since Vercel runs many instances that
+  don't share this Map) — this is a much smaller bar for one non-auth route.
+- ~~`NEXT_PUBLIC_LOGO_DEV_TOKEN`/`LOGO_DEV_SECRET_KEY` missing~~ — confirmed
+  set in Vercel by the user on 2026-08-04. No longer a gap; logo sliders
+  should render real logos in production, not just initials.
 - **The 4 new retailer sources are unproven** (see "Known live state" above)
   — check `scraper_runs` for them after the next cron fire before assuming
   they work like the rest of `HTTP_SOURCES`.
