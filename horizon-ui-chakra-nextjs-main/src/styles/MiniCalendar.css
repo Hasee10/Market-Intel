@@ -3,7 +3,7 @@
 .react-calendar {
   border: none !important;
   background-color: transparent !important;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-inter), sans-serif;
 }
 .react-calendar__navigation__prev2-button {
   display: none;
