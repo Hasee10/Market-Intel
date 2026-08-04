@@ -684,12 +684,13 @@ Sized to ship incrementally and stay reviewable — not one giant PR.
 Phases 5 and 6 are not.** Details below; verify against the live repo
 before trusting this line in a future session.
 
-**Phase 0 — schema & persistence — DONE.**
+**Phase 0 — schema & persistence — DONE, including applying the migration.**
 Migration `025_report_snapshots.sql` (`report_snapshots`, `report_reviews`,
-`report_exports`, owner-only RLS, service-role write) written but **not
-yet applied** in Supabase — same "written vs. applied" gap this repo has
-hit before (see mind.md). `lib/reports/schema.ts` (the full `ReportSnapshot`
-type) and `lib/reports/persist.ts` (save/get/list/transitionStatus/
+`report_exports`, owner-only RLS, service-role write) is applied and
+confirmed live (2026-08-04) - applied via direct `psql` connection against
+the pooler URL in `CREDENTIALS.txt`, since the Supabase MCP tools were
+again connected to the wrong account (see mind.md). `lib/reports/schema.ts`
+(the full `ReportSnapshot` type) and `lib/reports/persist.ts` (save/get/list/transitionStatus/
 recordExport, admin-client writes) are both implemented.
 
 **Phase 1 — collectors, metrics, validation — DONE.**
@@ -775,14 +776,9 @@ pagination tests indirectly, but has no PDF-specific overflow test yet).
 
 ## 10. Risks and assumptions
 
-- **Migration 025 is written but not applied** — same "written vs. applied"
-  gap this repo has hit repeatedly before (mind.md tracks this pattern).
-  Until it's run in the Supabase SQL Editor, `saveSnapshot()`/`persist.ts`
-  will fail against a missing table, and `/api/reports/generate` currently
-  swallows that failure (logs it, still returns the generated file) rather
-  than blocking the seller's download - by design, since a self-view
-  download shouldn't fail just because persistence isn't set up yet, but it
-  does mean report history/versioning is silently inert until this runs.
+- ~~Migration 025 is written but not applied~~ — **applied and confirmed
+  live 2026-08-04** (via `psql`, see §9 Phase 0). `saveSnapshot()` now
+  succeeds; report history/versioning is live, not silently inert.
 - **Biggest risk, added after deeper verification**: real SKU-level revenue
   attribution needs an order-line-item table that doesn't exist (§2 item
   0). If you want "product portfolio contribution"/"SKU performance" to

@@ -22,19 +22,23 @@ scraper/migrations/021_market_scope_aggregates.sql
 scraper/migrations/022_competitor_entity.sql
 scraper/migrations/023_add_retailer_platforms.sql
 scraper/migrations/024_seller_marketing_showcase.sql
+scraper/migrations/025_report_snapshots.sql
 ```
 
-**018–024 confirmed applied as of 2026-08-04**, verified directly against
+**018–025 confirmed applied as of 2026-08-04**, verified directly against
 the live DB (see `mind.md`'s "How to check what's actually live"). Run any
-new migration once, in order, via the Supabase SQL Editor, same convention
-as 001–017, and update this list when you do. Without 019 the Daraz source
-throws `Unknown platform slug "daraz"` on every run, and 020's seed skips
-its Daraz rows (it joins on `market_platforms`). Without 020 every market
-analysis surface returns empty — `market_category_map` is the only thing
-mapping a seller's category to scraped rows. 021 adds the aggregate
-functions those surfaces call; without it category pricing and the price
-trend return nothing. 022 adds `market_competitors` and the scorecard
-function behind `/dashboard/market/competitors`; it depends on 021's
+new migration once, in order, via the Supabase SQL Editor (or `psql`
+against the pooler connection string in `CREDENTIALS.txt` if the Supabase
+MCP tools are connected to the wrong account, which they have been more
+than once - see `mind.md`), same convention as 001–017, and update this
+list when you do. Without 019 the Daraz source throws `Unknown platform
+slug "daraz"` on every run, and 020's seed skips its Daraz rows (it joins
+on `market_platforms`). Without 020 every market analysis surface returns
+empty — `market_category_map` is the only thing mapping a seller's
+category to scraped rows. 021 adds the aggregate functions those surfaces
+call; without it category pricing and the price trend return nothing. 022
+adds `market_competitors` and the scorecard function behind
+`/dashboard/market/competitors`; it depends on 021's
 `market_convert_currency`. 023 registers 4 new retailer platforms (mega,
 naheed, vmart, shopperspk) — code was already wired into `HTTP_SOURCES`
 before this ran. 024 adds an opt-in seller marketing showcase
@@ -42,6 +46,9 @@ before this ran. 024 adds an opt-in seller marketing showcase
 `seller_marketing_showcase` view, `top_market_brands()`) for the public
 homepage's company slider; the view reuses migration 012's existing
 view-owner pattern (see `seller_public_profiles_view`), not a new exception.
+025 adds `report_snapshots`/`report_reviews`/`report_exports` (owner-only
+RLS, service-role write) backing the rebuilt report generation system -
+see `docs/reports-v2-architecture.md`.
 
 Referral signups depend on 018's trigger (the HTTP endpoint that used to
 record them was deleted). This fails safe if not applied (no referral, no

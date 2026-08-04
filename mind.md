@@ -53,18 +53,26 @@ item up: **C3** (strategic implications) and **C4** (trends/seasonality/risk)
 Every `scraper/migrations/0NN_*.sql` file must be run **manually**, in
 order, via the Supabase SQL Editor. Nothing in CI or the app applies them.
 
-**Migrations 018–024 are all confirmed applied as of 2026-08-04** (verified
+**Migrations 018–025 are all confirmed applied as of 2026-08-04** (verified
 directly against the live DB — `daraz`/`mega`/`naheed`/`vmart`/`shopperspk`
 rows exist in `market_platforms`, `market_competitors` has rows, the
 `seller_marketing_showcase` view and `top_market_brands()` RPC both resolve
-without `PGRST205`). The "inert until applied" state described in the
-2026-08-03 version of this file is **stale — don't repeat it.**
+without `PGRST205`, and `report_snapshots`/`report_reviews`/`report_exports`
+all resolve empty rather than erroring). The "inert until applied" state
+described in the 2026-08-03 version of this file is **stale — don't repeat
+it.** Migration 025 was applied directly via `psql` against the pooler
+connection string in `CREDENTIALS.txt`, not the Supabase SQL Editor - the
+Supabase MCP tools were (again) connected to the wrong account, and `psql`
+was the workaround. That path is available for future migrations too if
+the MCP is still misconfigured: `psql "$PG_URL" -v ON_ERROR_STOP=1 -f
+scraper/migrations/0NN_whatever.sql`, reading the URL out of
+`CREDENTIALS.txt` into a shell variable, never printed.
 
-That said, migration **025 or later may exist and not be applied** by the
+That said, migration **026 or later may exist and not be applied** by the
 time you read this — always re-verify with the query below rather than
 trusting this paragraph. Grep `scraper/migrations/` for the highest number,
 then check whether that specific table/column exists live before assuming
-anything past 024 is deployed.
+anything past 025 is deployed.
 
 **Before trusting any "is X live" claim from an old session, check the DB
 directly** — don't take a roadmap "✅ Done" checkbox at face value, it means
@@ -204,22 +212,22 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
 - **The 4 new retailer sources are unproven** (see "Known live state" above)
   — check `scraper_runs` for them after the next cron fire before assuming
   they work like the rest of `HTTP_SOURCES`.
-- **Migration numbering: verify the current tip.** This file says 018–024
-  are applied as of 2026-08-04; a fresh session must re-check for anything
-  past 024 before trusting that. **Migration 025 (`report_snapshots`,
-  `report_reviews`, `report_exports`) exists but is confirmed NOT applied**
-  as of this same date — see the next item.
+- **Migration numbering: verify the current tip.** This file says 018–025
+  are applied as of 2026-08-04 (**025 applied the same day it was
+  written**, via direct `psql` connection using the pooler URL in
+  `CREDENTIALS.txt` - the Supabase MCP tools were still on the wrong
+  account, `psql` was the workaround); a fresh session must re-check for
+  anything past 025 before trusting that.
 - **Report generation v2 was rebuilt from scratch on 2026-08-04** — read
   `docs/reports-v2-architecture.md` before touching anything under
   `lib/reports/`. Short version: PPTX/PDF now both render from one typed
   `ReportSnapshot` (`lib/reports/schema.ts`), generated dynamically per
   seller (no fixed slide count, no flattened chart images — `pptxgenjs`
   builds the whole deck from code, no template file). Phases 0-4 and 7 of
-  that doc's plan are done and merged; Phases 5 (internal review API) and 6
-  (seller-facing reports list UI) are not. **Migration 025 must be applied
-  before report history/persistence actually works** — until then,
-  `/api/reports/generate` still works for a seller's own download (fails
-  soft, logs the persistence error) but nothing is saved anywhere.
+  that doc's plan are done and merged, and migration 025
+  (`report_snapshots`/`report_reviews`/`report_exports`) is applied and
+  confirmed live. Phases 5 (internal review API) and 6 (seller-facing
+  reports list UI) are still not built.
 
 ## Things to not do (from prior explicit correction)
 
