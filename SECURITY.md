@@ -4,7 +4,7 @@ Tracks what has been fixed against the audit in [`leaks.md`](leaks.md)
 (2026-08-02). `leaks.md` is left unedited as the original audit record; this
 file is the living remediation status.
 
-Last updated: 2026-08-03.
+Last updated: 2026-08-04.
 
 ---
 
@@ -12,7 +12,7 @@ Last updated: 2026-08-03.
 
 **Three things must happen or the fixes below are incomplete.**
 
-### 1. Apply migrations 018 – 022 (required)
+### 1. Apply migrations (required, keep this list current)
 
 ```
 scraper/migrations/018_referral_integrity.sql
@@ -20,25 +20,32 @@ scraper/migrations/019_add_daraz_platform.sql
 scraper/migrations/020_market_definition_model.sql
 scraper/migrations/021_market_scope_aggregates.sql
 scraper/migrations/022_competitor_entity.sql
+scraper/migrations/023_add_retailer_platforms.sql
+scraper/migrations/024_seller_marketing_showcase.sql
 ```
 
-Run once each, in order, via the Supabase SQL Editor, same convention as
-001–017. Without 019 the Daraz source throws `Unknown platform slug "daraz"`
-on every run, and 020's seed skips its Daraz rows (it joins on
-`market_platforms`). Without 020 every market analysis surface returns empty —
-`market_category_map` is now the only thing mapping a seller's category to
-scraped rows. 021 adds the aggregate functions those surfaces call; without it
-category pricing and the price trend return nothing. 022 adds
-`market_competitors` and the scorecard function behind
-`/dashboard/market/competitors`; it depends on 021's
-`market_convert_currency`, and until it runs the scraper logs one failed
-`market_refresh_competitors` call per run and the page renders its empty
-state.
+**018–024 confirmed applied as of 2026-08-04**, verified directly against
+the live DB (see `mind.md`'s "How to check what's actually live"). Run any
+new migration once, in order, via the Supabase SQL Editor, same convention
+as 001–017, and update this list when you do. Without 019 the Daraz source
+throws `Unknown platform slug "daraz"` on every run, and 020's seed skips
+its Daraz rows (it joins on `market_platforms`). Without 020 every market
+analysis surface returns empty — `market_category_map` is the only thing
+mapping a seller's category to scraped rows. 021 adds the aggregate
+functions those surfaces call; without it category pricing and the price
+trend return nothing. 022 adds `market_competitors` and the scorecard
+function behind `/dashboard/market/competitors`; it depends on 021's
+`market_convert_currency`. 023 registers 4 new retailer platforms (mega,
+naheed, vmart, shopperspk) — code was already wired into `HTTP_SOURCES`
+before this ran. 024 adds an opt-in seller marketing showcase
+(`seller_public_profile.show_on_marketing_site`, the
+`seller_marketing_showcase` view, `top_market_brands()`) for the public
+homepage's company slider; the view is a deliberate, narrow exception to the
+project's "SECURITY INVOKER always" rule (see the migration's own comment).
 
-Until it is applied, referral signups are **silently not recorded** — the
-HTTP endpoint that used to record them has been deleted, and the trigger
-that replaces it lives in this migration. This fails safe (no referral, no
-reward, no vulnerability) but the referral feature is inert until it runs.
+Referral signups depend on 018's trigger (the HTTP endpoint that used to
+record them was deleted). This fails safe if not applied (no referral, no
+reward, no vulnerability), but is no longer a live concern — 018 is applied.
 
 ### 2. Set the Supabase Auth password policy (required)
 
@@ -91,6 +98,7 @@ not by code.
 | # | Severity | Finding | Note |
 |---|---|---|---|
 | 7 | Medium | In-memory rate limiter ineffective on serverless; no rate limiting on auth endpoints | Needs a shared store (Upstash/Redis) or Supabase Auth's built-in limits. |
+| — | Medium | No rate limiting on `/api/assistant` (new Groq-backed landing-page chatbot, added 2026-08-04) | Server-only key, capped history, fails soft — but any anonymous visitor can call it repeatedly with no per-IP/session cap. Cost exposure is unbounded even though each call is cheap. Same fix as #7 would cover it. |
 | 10 | Low | Stale `web/` app with a separate, weaker auth system | Not deployed (no `package.json`). Should be deleted outright once nothing is being salvaged from it. |
 | 11 | Info | No explicit CSRF verification on state-changing JSON APIs | Partially mitigated: routes require a bearer/cookie session and JSON content-type. Worth verifying deliberately. |
 | 12 | Info | Raw Postgres error messages returned in API responses | Leaks schema detail. Wrap in generic messages, log the detail server-side. |
