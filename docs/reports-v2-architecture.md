@@ -504,9 +504,17 @@ and fragile auto-generated shape names. Proposed:
 3. Continuation slides (§5) are handled by cloning a "table continuation"
    layout slide N times, not by a special case in the main renderer.
 
-### PDF — two viable options, need your call (this is the one implementation-affecting decision left genuinely open)
+### PDF — DECIDED: Option A (extend the existing pdfkit path)
 
-**Option A — extend the existing pdfkit path (recommended default).**
+Confirmed 2026-08-04. The current deploy is all-serverless Vercel with no
+evidence anywhere in the repo of dedicated worker/container infra, and the
+brief explicitly says to reuse the existing stack rather than add
+unnecessary libraries — Option B would mean standing up new infrastructure
+just for PDF conversion, which isn't justified today. Revisit Option B
+later only if exact pixel-parity between PDF and PPTX becomes a hard
+requirement (kept below for that future reference).
+
+**Option A — extend the existing pdfkit path (decided).**
 Native vector PDF, zero new dependencies, runs anywhere including Vercel's
 existing serverless functions (today's actual deploy target). Restructure
 it the same way as PPTX: a section-driven renderer consuming the identical
@@ -517,40 +525,35 @@ renderers sharing data but not rendering code — acceptable, since the
 brief only requires *data* parity ("both formats must come from the same
 structured report data"), not pixel parity.
 
-**Option B — LibreOffice headless conversion of the generated PPTX.**
-`soffice --headless --convert-to pdf` on the actual PPTX output guarantees
-the PDF is visually identical to the editable deck, with zero duplicate
-layout code. **Tradeoff**: requires a `soffice` binary in the runtime,
-which Vercel's standard serverless functions do not provide — this would
-need a separate worker (a small container on Fly.io/Render, or a
-Supabase Edge Function with a custom Docker image), a real infrastructure
-addition, not just a library. Also in tension with "reuse the existing
-project stack / do not add unnecessary libraries" if read as "no new
-infra," though it's arguably not a *library* in the npm sense.
-
-I'd default to **Option A** given the explicit "reuse existing stack, no
-unnecessary libraries" instruction and the current all-serverless deploy
-model, and revisit Option B later only if exact pixel-parity between PDF
-and PPTX becomes a hard client requirement. Flagging this rather than
-silently deciding, since it's the one place the brief's constraints
-("both formats," "reuse stack") pull in slightly different directions
-depending on how strictly "same data" vs. "same look" is read.
+**Option B — LibreOffice headless conversion of the generated PPTX (not
+chosen, kept for reference).** `soffice --headless --convert-to pdf` on the
+actual PPTX output guarantees the PDF is visually identical to the
+editable deck, with zero duplicate layout code. **Tradeoff**: requires a
+`soffice` binary in the runtime, which Vercel's standard serverless
+functions do not provide — this would need a separate worker (a small
+container on Fly.io/Render, or a Supabase Edge Function with a custom
+Docker image), a real infrastructure addition, not just a library.
 
 ---
 
 ## 7. Researcher review and approval workflow
 
-**Open question first, not assumed**: the brief's step 5 ("Researcher
-reviews and edits the report") introduces an actor that doesn't exist
-anywhere in this codebase today — there is no internal-staff/admin role,
-only `sellers`. The reference deck's own slide 4 describes this as *Ryvl's
-internal analysts* reviewing before client delivery (matches an
-agency/consulting delivery model, not a self-serve SaaS flow) — I'm
-assuming that's the intent (internal Ryvl team reviews before a report is
-marked client-safe), not a seller reviewing their own report. **Please
-confirm** — if wrong, the workflow below changes shape.
+**DECIDED 2026-08-04**: "researcher" = internal Ryvl staff reviewing a
+report before it's marked client-safe, not the seller reviewing their own
+report. This matches what the reference deck's own marketing copy already
+claims happens ("Internal analysts review model findings...Data Validation
+& Approval Gate," "Client-Safe Export Guarantee") — the product is already
+selling this workflow to customers, so building it as internal-staff
+review is the consistent reading, not a guess. The workflow below proceeds
+on that basis.
 
-Proposed, assuming internal-staff review:
+Context for why this needed deciding rather than assuming: there is no
+internal-staff/admin role anywhere in this codebase today, only `sellers`
+— this workflow introduces the first actor of that kind, matching an
+agency/consulting delivery model (Ryvl staff review before client
+delivery) rather than a self-serve SaaS flow.
+
+Proposed:
 
 1. Report generates as `status: 'draft'` after passing validation (§4 step
    5) — drafts are always internal-mode, never directly downloadable by
@@ -743,11 +746,13 @@ PPTX generation, PDF generation), lint, typecheck, production build.
   one up before it can add the tests the brief requires; this isn't
   optional prep work, it's a real first step with its own small setup
   surface (config, CI wiring in `.github/workflows/ci.yml`).
-- **Assumption needing your confirmation**: "researcher" = internal Ryvl
-  staff reviewing before client delivery, not the seller reviewing their
-  own report. The whole approval-workflow design in §7 depends on this.
-- **Open decision needing your call**: PDF generation approach (§6, Option
-  A vs. B) — infra tradeoff, not something to silently pick.
+- ~~Researcher-identity assumption~~ and ~~PDF generation approach~~ —
+  **both decided 2026-08-04** (§7, §6). No longer open; the workflow and
+  render approach below are written against those decisions, not
+  hypotheticals. If either turns out wrong once staff/reviewer needs
+  become concrete, §7's Phase 2 (a real internal UI, not yet built) is the
+  natural point to revisit — it's deferred specifically so this decision
+  doesn't need to be perfect on the first pass.
 - **Template rebuild is real design work**, not just code — someone needs
   to author a new PPTX template with real chart objects and a stable
   naming convention. This is the single biggest non-engineering dependency
