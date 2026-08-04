@@ -131,6 +131,55 @@ describe('PPTX slide count is genuinely dynamic, not fixed', () => {
     expect(competitorSlides[competitorSlides.length - 1].truncated).toBe(true);
   });
 
+  it('adds contents + chapter dividers only when the report is substantial enough to need them', () => {
+    // Thin and mid reports skip both - a 2-to-4 slide deck does not need a
+    // contents page or chapter breaks, and adding them would be padding.
+    for (const sparse of [thinSeller, midSeller]) {
+      const kinds = buildSectionPlan(sparse).sections.map((s) => s.kind);
+      expect(kinds).not.toContain('toc');
+      expect(kinds).not.toContain('section_divider');
+    }
+
+    const richPlan = buildSectionPlan(richSeller);
+    const kinds = richPlan.sections.map((s) => s.kind);
+    expect(kinds[0]).toBe('cover');
+    expect(kinds[1]).toBe('toc');
+    expect(kinds.filter((k) => k === 'section_divider').length).toBeGreaterThanOrEqual(4);
+
+    // Every divider is immediately followed by real content, never another
+    // divider or the end of the deck - i.e. no chapter is announced empty.
+    kinds.forEach((kind, i) => {
+      if (kind !== 'section_divider') return;
+      expect(kinds[i + 1]).toBeDefined();
+      expect(kinds[i + 1]).not.toBe('section_divider');
+    });
+
+    // Dividers carry their own chapter numbering, contiguous from 1.
+    const dividers = richPlan.sections.filter((s) => s.kind === 'section_divider');
+    dividers.forEach((d, i) => {
+      expect(d.chapterNumber).toBe(i + 1);
+      expect(d.chapterTotal).toBe(dividers.length);
+    });
+  });
+
+  it('table of contents reflects real inclusion, listing omitted sections rather than hiding them', () => {
+    const plan = buildSectionPlan(richSeller);
+    expect(plan.toc.length).toBe(plan.candidateSectionCount);
+
+    const included = plan.toc.filter((e) => e.status === 'included');
+    expect(included.length).toBe(plan.includedSectionCount);
+    // Included entries are numbered contiguously from 1; excluded ones carry
+    // no number at all rather than a misleading placeholder index.
+    included.forEach((entry, i) => expect(entry.number).toBe(i + 1));
+    plan.toc.filter((e) => e.status !== 'included').forEach((e) => expect(e.number).toBeNull());
+
+    // A seller missing everything still gets an honest contents list where
+    // every candidate section is accounted for as absent, not silently dropped.
+    const thinToc = buildSectionPlan(thinSeller).toc;
+    expect(thinToc.every((e) => e.status !== 'included')).toBe(true);
+    expect(thinToc.length).toBe(plan.candidateSectionCount);
+  });
+
   it('never renders a fixed template count regardless of how sparse the data is', async () => {
     // Two different thin sellers with completely different business names/
     // ids should still both produce the same minimal count (2), proving

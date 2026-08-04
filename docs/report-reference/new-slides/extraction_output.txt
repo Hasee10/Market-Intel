@@ -1,0 +1,3384 @@
+====================================================================================================
+PPTX: E:\Market_Intel\market-intel\docs\report-reference\new-slides\New_Slides.pptx
+Slide size: 20.0in x 11.25in
+Total slides: 13
+====================================================================================================
+
+####################################################################################################
+SLIDE 1  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;16;p3' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=14.042in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-height]
+      fill: SOLID:4B3AF0
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;17;p3' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=14.042in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-height]
+      fill: PICTURE (6)
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;18;p3' type=PICTURE (13)
+      pos: left=0.875in top=0.667in w=0.354in h=0.354in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;19;p3' type=AUTO_SHAPE (1)
+      pos: left=1.354in top=0.681in w=0.648in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #5: name='Google Shape;20;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=3.196in w=13.521in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SELLER MARKET INTELLIGENCE — MONTHLY BRIEFING'
+      run[p0r0]: text='SELLER MARKET INTELLIGENCE — MONTHLY BRI' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #6: name='Google Shape;21;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=3.604in w=13.521in h=0.973in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Mobile Accessories'
+      run[p0r0]: text='Aura Mobile Accessories' font=Inter size=64.5pt bold=True italic=False color=FFFFFF
+  --- Shape #7: name='Google Shape;22;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=4.744in w=13.521in h=0.433in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market intelligence for Mobiles & Electronics'
+      run[p0r0]: text='Market intelligence for Mobiles & Electr' font=Inter size=23.25pt bold=False italic=False color=FFFFFF
+  --- Shape #8: name='Google Shape;23;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=5.594in w=12.292in h=0.01in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;24;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=5.854in w=1.317in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Last 30 days'
+      run[p0r0]: text='Last 30 days' font=Inter size=15.0pt bold=False italic=False color=FFFFFF
+  --- Shape #10: name='Google Shape;25;p3' type=AUTO_SHAPE (1)
+      pos: left=2.338in top=5.959in w=0.042in h=0.042in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #11: name='Google Shape;26;p3' type=AUTO_SHAPE (1)
+      pos: left=2.609in top=5.854in w=2.43in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Generated 4 Aug 2026'
+      run[p0r0]: text='Generated 4 Aug 2026' font=Inter size=15.0pt bold=False italic=False color=FFFFFF
+  --- Shape #12: name='Google Shape;27;p3' type=AUTO_SHAPE (1)
+      pos: left=5.047in top=5.959in w=0.042in h=0.042in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;28;p3' type=AUTO_SHAPE (1)
+      pos: left=5.318in top=5.854in w=1.589in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ref: 7F3A1C9D'
+      run[p0r0]: text='Ref: 7F3A1C9D' font=Inter size=15.0pt bold=False italic=False color=FFFFFF
+  --- Shape #14: name='Google Shape;29;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.563in w=13.521in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'THIS CYCLE COVERS'
+      run[p0r0]: text='THIS CYCLE COVERS' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #15: name='Google Shape;30;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.921in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market position & percentiles'
+      run[p0r0]: text='Market position & percentiles' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #16: name='Google Shape;31;p3' type=AUTO_SHAPE (1)
+      pos: left=7.25in top=6.921in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKU performance & portfolio'
+      run[p0r0]: text='SKU performance & portfolio' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #17: name='Google Shape;32;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=7.304in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Pricing intelligence'
+      run[p0r0]: text='Pricing intelligence' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #18: name='Google Shape;33;p3' type=AUTO_SHAPE (1)
+      pos: left=7.25in top=7.304in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Inventory & demand risk'
+      run[p0r0]: text='Inventory & demand risk' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #19: name='Google Shape;34;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=7.688in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Competitor tracking'
+      run[p0r0]: text='Competitor tracking' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #20: name='Google Shape;35;p3' type=AUTO_SHAPE (1)
+      pos: left=7.25in top=7.688in w=6.508in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Prioritised recommendations'
+      run[p0r0]: text='Prioritised recommendations' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #21: name='Google Shape;36;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=9.912in w=3.54in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'REVENUE'
+      run[p0r0]: text='REVENUE' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #22: name='Google Shape;37;p3' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.208in w=2.583in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 2,145,000'
+      run[p0r0]: text='Rs 2,145,000' font=Inter size=27.0pt bold=True italic=False color=FFFFFF
+  --- Shape #23: name='Google Shape;38;p3' type=AUTO_SHAPE (1)
+      pos: left=3.327in top=10.375in w=0.849in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+18.4%'
+      run[p0r0]: text='+18.4%' font=Inter size=15.0pt bold=True italic=False color=6CF2BD
+  --- Shape #24: name='Google Shape;39;p3' type=AUTO_SHAPE (1)
+      pos: left=4.552in top=9.912in w=0.01in h=0.754in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;40;p3' type=AUTO_SHAPE (1)
+      pos: left=5.02in top=9.912in w=1.644in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'ORDERS'
+      run[p0r0]: text='ORDERS' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #26: name='Google Shape;41;p3' type=AUTO_SHAPE (1)
+      pos: left=5.02in top=10.208in w=0.714in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '312'
+      run[p0r0]: text='312' font=Inter size=27.0pt bold=True italic=False color=FFFFFF
+  --- Shape #27: name='Google Shape;42;p3' type=AUTO_SHAPE (1)
+      pos: left=5.755in top=10.375in w=0.843in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+12.0%'
+      run[p0r0]: text='+12.0%' font=Inter size=15.0pt bold=True italic=False color=6CF2BD
+  --- Shape #28: name='Google Shape;43;p3' type=AUTO_SHAPE (1)
+      pos: left=6.973in top=9.912in w=0.01in h=0.754in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #29: name='Google Shape;44;p3' type=AUTO_SHAPE (1)
+      pos: left=7.442in top=9.912in w=1.835in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'PRICE INDEX'
+      run[p0r0]: text='PRICE INDEX' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #30: name='Google Shape;45;p3' type=AUTO_SHAPE (1)
+      pos: left=7.442in top=10.208in w=0.742in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '104'
+      run[p0r0]: text='104' font=Inter size=27.0pt bold=True italic=False color=FFFFFF
+  --- Shape #31: name='Google Shape;46;p3' type=AUTO_SHAPE (1)
+      pos: left=8.205in top=10.392in w=0.989in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'vs. market'
+      run[p0r0]: text='vs. market' font=Inter size=13.5pt bold=False italic=False color=FFFFFF
+  --- Shape #32: name='Google Shape;47;p3' type=AUTO_SHAPE (1)
+      pos: left=14.042in top=0.0in w=5.958in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-height]
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;48;p3' type=AUTO_SHAPE (1)
+      pos: left=18.064in top=0.667in w=1.436in h=0.404in  []
+      fill: SOLID:FFFFFF
+      line: color=E9E3FF, width_pt=0.75
+  --- Shape #34: name='Google Shape;49;p3' type=AUTO_SHAPE (1)
+      pos: left=18.302in top=0.769in w=1.044in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=4B3AF0
+  --- Shape #35: name='Google Shape;50;p3' type=PICTURE (13)
+      pos: left=14.17in top=3.76in w=5.454in h=3.636in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #36: name='Google Shape;51;p3' type=AUTO_SHAPE (1)
+      pos: left=14.542in top=9.835in w=4.958in h=0.01in  []
+      fill: SOLID:E1E7F5
+      line: color=None, width_pt=0.0
+  --- Shape #37: name='Google Shape;52;p3' type=AUTO_SHAPE (1)
+      pos: left=14.542in top=10.073in w=5.107in h=0.635in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Generated automatically from your store data and Ryvl’s market scan across 11 tr'
+      run[p0r0]: text='Generated automatically from your store ' font=Inter size=14.25pt bold=False italic=False color=707EAE
+
+####################################################################################################
+SLIDE 2  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;58;p4' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;59;p4' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;60;p4' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;61;p4' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;62;p4' type=AUTO_SHAPE (1)
+      pos: left=18.904in top=0.475in w=0.304in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '02'
+      run[p0r0]: text='02' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;63;p4' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'What’s in this report'
+      run[p0r0]: text='What’s in this report' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;64;p4' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '8 of 12 sections have enough tracked data this cycle'
+      run[p0r0]: text='8 of 12 sections have enough tracked dat' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;65;p4' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.558in w=9.333in h=7.483in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;66;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.483in w=8.667in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #10: name='Google Shape;67;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.054in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '01'
+      run[p0r0]: text='01' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #11: name='Google Shape;68;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=3.017in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Executive Snapshot & Key Signals'
+      run[p0r0]: text='Executive Snapshot & Key Signals' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #12: name='Google Shape;69;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=3.019in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;70;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=3.071in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #14: name='Google Shape;71;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.146in w=8.667in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;72;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.717in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '02'
+      run[p0r0]: text='02' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #16: name='Google Shape;73;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=3.679in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market Position & Benchmark Percentiles'
+      run[p0r0]: text='Market Position & Benchmark Percentiles' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #17: name='Google Shape;74;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=3.681in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #18: name='Google Shape;75;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=3.733in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #19: name='Google Shape;76;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.808in w=8.667in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;77;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.379in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '03'
+      run[p0r0]: text='03' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #21: name='Google Shape;78;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=4.342in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Pricing Intelligence'
+      run[p0r0]: text='Pricing Intelligence' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;79;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=4.344in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #23: name='Google Shape;80;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=4.396in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #24: name='Google Shape;81;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.471in w=8.667in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;82;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.042in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '04'
+      run[p0r0]: text='04' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #26: name='Google Shape;83;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=5.004in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Marketplace & Competitor Tracking'
+      run[p0r0]: text='Marketplace & Competitor Tracking' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #27: name='Google Shape;84;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=5.006in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #28: name='Google Shape;85;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=5.058in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #29: name='Google Shape;86;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.133in w=8.667in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #30: name='Google Shape;87;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.704in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '05'
+      run[p0r0]: text='05' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #31: name='Google Shape;88;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=5.667in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKU Performance & Portfolio'
+      run[p0r0]: text='SKU Performance & Portfolio' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #32: name='Google Shape;89;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=5.669in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;90;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=5.721in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #34: name='Google Shape;91;p4' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.367in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '06'
+      run[p0r0]: text='06' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #35: name='Google Shape;92;p4' type=AUTO_SHAPE (1)
+      pos: left=1.792in top=6.329in w=7.686in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Inventory & Demand Risk'
+      run[p0r0]: text='Inventory & Demand Risk' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #36: name='Google Shape;93;p4' type=AUTO_SHAPE (1)
+      pos: left=8.987in top=6.331in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #37: name='Google Shape;94;p4' type=AUTO_SHAPE (1)
+      pos: left=9.112in top=6.383in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #38: name='Google Shape;95;p4' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=2.558in w=8.667in h=3.867in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #39: name='Google Shape;96;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=3.483in w=8.0in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #40: name='Google Shape;97;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=3.054in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '07'
+      run[p0r0]: text='07' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #41: name='Google Shape;98;p4' type=AUTO_SHAPE (1)
+      pos: left=11.375in top=3.017in w=6.952in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Prioritised Recommendations'
+      run[p0r0]: text='Prioritised Recommendations' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #42: name='Google Shape;99;p4' type=AUTO_SHAPE (1)
+      pos: left=17.904in top=3.019in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #43: name='Google Shape;100;p4' type=AUTO_SHAPE (1)
+      pos: left=18.029in top=3.071in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #44: name='Google Shape;101;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=4.146in w=8.0in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #45: name='Google Shape;102;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=3.717in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '08'
+      run[p0r0]: text='08' font=Inter size=13.5pt bold=True italic=False color=A3AED0
+  --- Shape #46: name='Google Shape;103;p4' type=AUTO_SHAPE (1)
+      pos: left=11.375in top=3.679in w=6.952in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Methodology & Data Sources'
+      run[p0r0]: text='Methodology & Data Sources' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #47: name='Google Shape;104;p4' type=AUTO_SHAPE (1)
+      pos: left=17.904in top=3.681in w=0.888in h=0.296in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #48: name='Google Shape;105;p4' type=AUTO_SHAPE (1)
+      pos: left=18.029in top=3.733in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Included'
+      run[p0r0]: text='Included' font=Inter size=11.25pt bold=True italic=False color=01B574
+  --- Shape #49: name='Google Shape;106;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=4.808in w=8.0in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #50: name='Google Shape;107;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=4.379in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '—'
+      run[p0r0]: text='—' font=Inter size=13.5pt bold=True italic=False color=C6CEE6
+  --- Shape #51: name='Google Shape;108;p4' type=AUTO_SHAPE (1)
+      pos: left=11.375in top=4.342in w=6.316in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Customer Health & Retention'
+      run[p0r0]: text='Customer Health & Retention' font=Inter size=18.0pt bold=False italic=False color=A3AED0
+  --- Shape #52: name='Google Shape;109;p4' type=AUTO_SHAPE (1)
+      pos: left=17.325in top=4.344in w=1.467in h=0.296in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #53: name='Google Shape;110;p4' type=AUTO_SHAPE (1)
+      pos: left=17.45in top=4.396in w=1.3in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Not enough data'
+      run[p0r0]: text='Not enough data' font=Inter size=11.25pt bold=True italic=False color=A3AED0
+  --- Shape #54: name='Google Shape;111;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=5.471in w=8.0in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #55: name='Google Shape;112;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=5.042in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '—'
+      run[p0r0]: text='—' font=Inter size=13.5pt bold=True italic=False color=C6CEE6
+  --- Shape #56: name='Google Shape;113;p4' type=AUTO_SHAPE (1)
+      pos: left=11.375in top=5.004in w=6.316in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Strategic Action Roadmap'
+      run[p0r0]: text='Strategic Action Roadmap' font=Inter size=18.0pt bold=False italic=False color=A3AED0
+  --- Shape #57: name='Google Shape;114;p4' type=AUTO_SHAPE (1)
+      pos: left=17.325in top=5.006in w=1.467in h=0.296in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #58: name='Google Shape;115;p4' type=AUTO_SHAPE (1)
+      pos: left=17.45in top=5.058in w=1.3in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Not enough data'
+      run[p0r0]: text='Not enough data' font=Inter size=11.25pt bold=True italic=False color=A3AED0
+  --- Shape #59: name='Google Shape;116;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=5.704in w=0.458in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '—'
+      run[p0r0]: text='—' font=Inter size=13.5pt bold=True italic=False color=C6CEE6
+  --- Shape #60: name='Google Shape;117;p4' type=AUTO_SHAPE (1)
+      pos: left=11.375in top=5.667in w=7.009in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Appendix (internal copies only)'
+      run[p0r0]: text='Appendix (internal copies only)' font=Inter size=18.0pt bold=False italic=False color=A3AED0
+  --- Shape #61: name='Google Shape;118;p4' type=AUTO_SHAPE (1)
+      pos: left=17.955in top=5.669in w=0.836in h=0.296in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #62: name='Google Shape;119;p4' type=AUTO_SHAPE (1)
+      pos: left=18.08in top=5.721in w=0.67in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Omitted'
+      run[p0r0]: text='Omitted' font=Inter size=11.25pt bold=True italic=False color=A3AED0
+  --- Shape #63: name='Google Shape;120;p4' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=6.675in w=8.667in h=1.627in  []
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #64: name='Google Shape;121;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=6.967in w=8.8in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'HOW THIS REPORT IS BUILT'
+      run[p0r0]: text='HOW THIS REPORT IS BUILT' font=Inter size=12.0pt bold=True italic=False color=422AFB
+  --- Shape #65: name='Google Shape;122;p4' type=AUTO_SHAPE (1)
+      pos: left=10.792in top=7.292in w=8.24in h=0.76in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Sections appear only when the underlying data clears Ryvl’s coverage threshold, '
+      run[p0r0]: text='Sections appear only when the underlying' font=Inter size=17.25pt bold=False italic=False color=1B2559
+  --- Shape #66: name='Google Shape;123;p4' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #67: name='Google Shape;124;p4' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #68: name='Google Shape;125;p4' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=7.6in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Section inclusion is decided at generation time from your account’s tracked cove'
+      run[p0r0]: text='Section inclusion is decided at generati' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #69: name='Google Shape;126;p4' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #70: name='Google Shape;127;p4' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 3  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;133;p5' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;134;p5' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;135;p5' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;136;p5' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;137;p5' type=AUTO_SHAPE (1)
+      pos: left=18.902in top=0.475in w=0.307in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '03'
+      run[p0r0]: text='03' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;138;p5' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Executive Snapshot & Key Signals'
+      run[p0r0]: text='Executive Snapshot & Key Signals' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;139;p5' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Mobile Accessories · Last 30 days vs. prior 30 days'
+      run[p0r0]: text='Aura Mobile Accessories · Last 30 days v' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;140;p5' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=4.406in h=1.962in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;141;p5' type=AUTO_SHAPE (1)
+      pos: left=1.167in top=2.788in w=4.205in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'REVENUE'
+      run[p0r0]: text='REVENUE' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #10: name='Google Shape;142;p5' type=AUTO_SHAPE (1)
+      pos: left=1.167in top=3.112in w=4.205in h=0.575in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 2,145,000'
+      run[p0r0]: text='Rs 2,145,000' font=Inter size=31.5pt bold=True italic=False color=1B2559
+  --- Shape #11: name='Google Shape;143;p5' type=AUTO_SHAPE (1)
+      pos: left=1.167in top=3.904in w=0.859in h=0.304in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #12: name='Google Shape;144;p5' type=AUTO_SHAPE (1)
+      pos: left=1.292in top=3.956in w=0.692in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+18.4%'
+      run[p0r0]: text='+18.4%' font=Inter size=12.0pt bold=True italic=False color=01B574
+  --- Shape #13: name='Google Shape;145;p5' type=PICTURE (13)
+      pos: left=3.635in top=3.792in w=1.354in h=0.417in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #14: name='Google Shape;146;p5' type=AUTO_SHAPE (1)
+      pos: left=5.49in top=2.517in w=4.406in h=1.962in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;147;p5' type=AUTO_SHAPE (1)
+      pos: left=5.781in top=2.788in w=4.205in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'ORDERS'
+      run[p0r0]: text='ORDERS' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #16: name='Google Shape;148;p5' type=AUTO_SHAPE (1)
+      pos: left=5.781in top=3.112in w=4.205in h=0.575in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '312'
+      run[p0r0]: text='312' font=Inter size=31.5pt bold=True italic=False color=1B2559
+  --- Shape #17: name='Google Shape;149;p5' type=AUTO_SHAPE (1)
+      pos: left=5.781in top=3.904in w=0.854in h=0.304in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #18: name='Google Shape;150;p5' type=AUTO_SHAPE (1)
+      pos: left=5.906in top=3.956in w=0.687in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+12.0%'
+      run[p0r0]: text='+12.0%' font=Inter size=12.0pt bold=True italic=False color=01B574
+  --- Shape #19: name='Google Shape;151;p5' type=PICTURE (13)
+      pos: left=8.25in top=3.792in w=1.354in h=0.417in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;152;p5' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=2.517in w=4.406in h=1.962in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #21: name='Google Shape;153;p5' type=AUTO_SHAPE (1)
+      pos: left=10.396in top=2.788in w=4.205in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'PRICE INDEX'
+      run[p0r0]: text='PRICE INDEX' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #22: name='Google Shape;154;p5' type=AUTO_SHAPE (1)
+      pos: left=10.396in top=3.112in w=4.205in h=0.575in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '104'
+      run[p0r0]: text='104' font=Inter size=31.5pt bold=True italic=False color=1B2559
+  --- Shape #23: name='Google Shape;155;p5' type=AUTO_SHAPE (1)
+      pos: left=10.396in top=3.904in w=1.894in h=0.304in  []
+      fill: SOLID:EFF4FB
+      line: color=None, width_pt=0.0
+  --- Shape #24: name='Google Shape;156;p5' type=AUTO_SHAPE (1)
+      pos: left=10.521in top=3.956in w=1.727in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '100 = market median'
+      run[p0r0]: text='100 = market median' font=Inter size=12.0pt bold=True italic=False color=3965FF
+  --- Shape #25: name='Google Shape;157;p5' type=PICTURE (13)
+      pos: left=12.865in top=3.792in w=1.354in h=0.417in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #26: name='Google Shape;158;p5' type=AUTO_SHAPE (1)
+      pos: left=14.719in top=2.517in w=4.406in h=1.962in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #27: name='Google Shape;159;p5' type=AUTO_SHAPE (1)
+      pos: left=15.01in top=2.788in w=4.205in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'STOCKOUT RISK SKUS'
+      run[p0r0]: text='STOCKOUT RISK SKUS' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #28: name='Google Shape;160;p5' type=AUTO_SHAPE (1)
+      pos: left=15.01in top=3.112in w=4.205in h=0.575in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '6'
+      run[p0r0]: text='6' font=Inter size=31.5pt bold=True italic=False color=1B2559
+  --- Shape #29: name='Google Shape;161;p5' type=AUTO_SHAPE (1)
+      pos: left=15.01in top=3.904in w=1.517in h=0.304in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #30: name='Google Shape;162;p5' type=AUTO_SHAPE (1)
+      pos: left=15.135in top=3.956in w=1.35in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Below threshold'
+      run[p0r0]: text='Below threshold' font=Inter size=12.0pt bold=True italic=False color=B37610
+  --- Shape #31: name='Google Shape;163;p5' type=PICTURE (13)
+      pos: left=17.479in top=3.792in w=1.354in h=0.417in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #32: name='Google Shape;164;p5' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=4.729in w=10.005in h=5.354in  []
+      fill: SOLID:4B3AF0
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;165;p5' type=PICTURE (13)
+      pos: left=1.271in top=5.09in w=0.188in h=0.188in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #34: name='Google Shape;166;p5' type=AUTO_SHAPE (1)
+      pos: left=1.562in top=5.083in w=1.499in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'RYVL INSIGHT'
+      run[p0r0]: text='RYVL INSIGHT' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #35: name='Google Shape;167;p5' type=AUTO_SHAPE (1)
+      pos: left=1.271in top=5.492in w=9.489in h=1.817in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '“Revenue grew 18.4% this period, driven by higher order volume. Your pricing sit'
+      run[p0r0]: text='“Revenue grew 18.4% this period, driven ' font=Inter size=22.5pt bold=False italic=False color=FFFFFF
+  --- Shape #36: name='Google Shape;168;p5' type=AUTO_SHAPE (1)
+      pos: left=1.271in top=8.867in w=9.213in h=0.01in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #37: name='Google Shape;169;p5' type=AUTO_SHAPE (1)
+      pos: left=1.271in top=9.167in w=1.484in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'ORDER VOLUME'
+      run[p0r0]: text='ORDER VOLUME' font=Inter size=10.5pt bold=True italic=False color=FFFFFF
+  --- Shape #38: name='Google Shape;170;p5' type=AUTO_SHAPE (1)
+      pos: left=1.271in top=9.404in w=1.484in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+12.0%'
+      run[p0r0]: text='+12.0%' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #39: name='Google Shape;171;p5' type=AUTO_SHAPE (1)
+      pos: left=2.995in top=9.167in w=1.821in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AVG. ORDER VALUE'
+      run[p0r0]: text='AVG. ORDER VALUE' font=Inter size=10.5pt bold=True italic=False color=FFFFFF
+  --- Shape #40: name='Google Shape;172;p5' type=AUTO_SHAPE (1)
+      pos: left=2.995in top=9.404in w=1.821in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 6,875'
+      run[p0r0]: text='Rs 6,875' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #41: name='Google Shape;173;p5' type=AUTO_SHAPE (1)
+      pos: left=5.025in top=9.167in w=2.01in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'MARKET PERCENTILE'
+      run[p0r0]: text='MARKET PERCENTILE' font=Inter size=10.5pt bold=True italic=False color=FFFFFF
+  --- Shape #42: name='Google Shape;174;p5' type=AUTO_SHAPE (1)
+      pos: left=5.025in top=9.404in w=2.01in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '82nd'
+      run[p0r0]: text='82nd' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #43: name='Google Shape;175;p5' type=AUTO_SHAPE (1)
+      pos: left=11.088in top=4.729in w=8.037in h=5.354in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #44: name='Google Shape;176;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=5.042in w=8.107in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'What changed this cycle'
+      run[p0r0]: text='What changed this cycle' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #45: name='Google Shape;177;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=5.596in w=0.781in h=0.3in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #46: name='Google Shape;178;p5' type=AUTO_SHAPE (1)
+      pos: left=11.526in top=5.658in w=0.656in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'WATCH'
+      run[p0r0]: text='WATCH' font=Inter size=10.5pt bold=True italic=False color=B37610
+  --- Shape #47: name='Google Shape;179;p5' type=AUTO_SHAPE (1)
+      pos: left=12.369in top=5.596in w=6.616in h=0.683in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Zenith Gadgets on Daraz repriced 32% of tracked SKUs this period.'
+      run[p0r0]: text='Zenith Gadgets on Daraz repriced ' font=Inter size=16.5pt bold=False italic=False color=1B2559
+      run[p0r1]: text='32% ' font=Inter size=16.5pt bold=True italic=False color=1B2559
+      run[p0r2]: text='of tracked SKUs this period.' font=Inter size=16.5pt bold=False italic=False color=1B2559
+  --- Shape #48: name='Google Shape;180;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=6.425in w=7.37in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #49: name='Google Shape;181;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=6.623in w=0.913in h=0.3in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #50: name='Google Shape;182;p5' type=AUTO_SHAPE (1)
+      pos: left=11.526in top=6.685in w=0.788in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'OPENING'
+      run[p0r0]: text='OPENING' font=Inter size=10.5pt bold=True italic=False color=01B574
+  --- Shape #51: name='Google Shape;183;p5' type=AUTO_SHAPE (1)
+      pos: left=12.501in top=6.623in w=6.479in h=0.683in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Volt Traders is out of stock on 45% of their tracked assortment.'
+      run[p0r0]: text='Volt Traders is out of stock on ' font=Inter size=16.5pt bold=False italic=False color=1B2559
+      run[p0r1]: text='45% ' font=Inter size=16.5pt bold=True italic=False color=1B2559
+      run[p0r2]: text='of their tracked assortment.' font=Inter size=16.5pt bold=False italic=False color=1B2559
+  --- Shape #52: name='Google Shape;184;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=7.452in w=7.37in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #53: name='Google Shape;185;p5' type=AUTO_SHAPE (1)
+      pos: left=11.421in top=7.65in w=0.955in h=0.3in  []
+      fill: SOLID:EFF4FB
+      line: color=None, width_pt=0.0
+  --- Shape #54: name='Google Shape;186;p5' type=AUTO_SHAPE (1)
+      pos: left=11.526in top=7.713in w=0.83in h=0.217in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'POSITION'
+      run[p0r0]: text='POSITION' font=Inter size=10.5pt bold=True italic=False color=3965FF
+  --- Shape #55: name='Google Shape;187;p5' type=AUTO_SHAPE (1)
+      pos: left=12.543in top=7.65in w=6.436in h=0.683in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your price sits at the 82nd percentile — above most of the category.'
+      run[p0r0]: text='Your price sits at the ' font=Inter size=16.5pt bold=False italic=False color=1B2559
+      run[p0r1]: text='82nd percentile ' font=Inter size=16.5pt bold=True italic=False color=1B2559
+      run[p0r2]: text='— above most of the category.' font=Inter size=16.5pt bold=False italic=False color=1B2559
+  --- Shape #56: name='Google Shape;188;p5' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #57: name='Google Shape;189;p5' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #58: name='Google Shape;190;p5' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=8.35in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: your store orders (312 orders, 30 days) & Ryvl market scan of 42 tracked'
+      run[p0r0]: text='Source: your store orders (312 orders, 3' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #59: name='Google Shape;191;p5' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #60: name='Google Shape;192;p5' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 4  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;198;p6' type=AUTO_SHAPE (1)
+      pos: left=7.903in top=1.562in w=4.415in h=2.708in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '02'
+      run[p0r0]: text='02' font=Inter size=240.0pt bold=True italic=False color=FFFFFF
+  --- Shape #2: name='Google Shape;199;p6' type=PICTURE (13)
+      pos: left=0.875in top=0.667in w=0.354in h=0.354in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;200;p6' type=AUTO_SHAPE (1)
+      pos: left=1.354in top=0.681in w=0.648in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #4: name='Google Shape;201;p6' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=5.535in w=12.146in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SECTION 02 OF 08'
+      run[p0r0]: text='SECTION 02 OF 08' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #5: name='Google Shape;202;p6' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=5.943in w=11.373in h=1.707in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market Position & Benchmark Percentiles'
+      run[p0r0]: text='Market Position & Benchmark Percentiles' font=Inter size=55.5pt bold=True italic=False color=FFFFFF
+  --- Shape #6: name='Google Shape;203;p6' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=7.838in w=8.154in h=0.692in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Where your pricing sits against 42 tracked sellers in Mobiles & Electronics this'
+      run[p0r0]: text='Where your pricing sits against 42 track' font=Inter size=19.5pt bold=False italic=False color=FFFFFF
+  --- Shape #7: name='Google Shape;204;p6' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=8.904in w=11.042in h=0.01in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #8: name='Google Shape;205;p6' type=PICTURE (13)
+      pos: left=0.875in top=9.309in w=0.156in h=0.156in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;206;p6' type=AUTO_SHAPE (1)
+      pos: left=1.177in top=9.246in w=5.369in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your percentile position across the tracked set'
+      run[p0r0]: text='Your percentile position across the trac' font=Inter size=16.5pt bold=False italic=False color=FFFFFF
+  --- Shape #10: name='Google Shape;207;p6' type=PICTURE (13)
+      pos: left=0.875in top=9.739in w=0.156in h=0.156in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #11: name='Google Shape;208;p6' type=AUTO_SHAPE (1)
+      pos: left=1.177in top=9.675in w=5.828in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'P25 / P75 benchmark range and where you sit in it'
+      run[p0r0]: text='P25 / P75 benchmark range and where you ' font=Inter size=16.5pt bold=False italic=False color=FFFFFF
+  --- Shape #12: name='Google Shape;209;p6' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.333in w=12.146in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl market scan · Daraz · last 30 days'
+      run[p0r0]: text='Ryvl market scan · Daraz · last 30 days' font=Inter size=15.0pt bold=False italic=False color=FFFFFF
+  --- Shape #13: name='Google Shape;210;p6' type=AUTO_SHAPE (1)
+      pos: left=12.708in top=0.0in w=7.292in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-height]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #14: name='Google Shape;211;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=0.667in w=6.921in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'TRACKED-SET PRICE DISTRIBUTION'
+      run[p0r0]: text='TRACKED-SET PRICE DISTRIBUTION' font=Inter size=11.25pt bold=True italic=False color=A3AED0
+  --- Shape #15: name='Google Shape;212;p6' type=PICTURE (13)
+      pos: left=11.854in top=-0.662in w=10.833in h=7.222in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #16: name='Google Shape;213;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=4.915in w=6.292in h=0.01in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #17: name='Google Shape;214;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=5.235in w=1.726in h=0.425in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'YOUR PERCENTILE'
+      run[p0r0]: text='YOUR PERCENTILE' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #18: name='Google Shape;215;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=5.702in w=1.807in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '82nd'
+      run[p0r0]: text='82nd' font=Inter size=33.0pt bold=True italic=False color=422AFB
+  --- Shape #19: name='Google Shape;216;p6' type=AUTO_SHAPE (1)
+      pos: left=15.31in top=5.235in w=0.01in h=1.017in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;217;p6' type=AUTO_SHAPE (1)
+      pos: left=15.778in top=5.235in w=1.748in h=0.425in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SELLERS TRACKED'
+      run[p0r0]: text='SELLERS TRACKED' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #21: name='Google Shape;218;p6' type=AUTO_SHAPE (1)
+      pos: left=15.778in top=5.702in w=1.831in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '42'
+      run[p0r0]: text='42' font=Inter size=33.0pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;219;p6' type=AUTO_SHAPE (1)
+      pos: left=17.901in top=5.235in w=0.01in h=1.017in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #23: name='Google Shape;220;p6' type=AUTO_SHAPE (1)
+      pos: left=18.37in top=5.235in w=1.214in h=0.425in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'PRICE INDEX'
+      run[p0r0]: text='PRICE INDEX' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #24: name='Google Shape;221;p6' type=AUTO_SHAPE (1)
+      pos: left=18.37in top=5.702in w=1.214in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '104'
+      run[p0r0]: text='104' font=Inter size=33.0pt bold=True italic=False color=1B2559
+  --- Shape #25: name='Google Shape;222;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=6.71in w=6.292in h=2.542in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #26: name='Google Shape;223;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=7.002in w=6.233in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'BENCHMARK RANGE'
+      run[p0r0]: text='BENCHMARK RANGE' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #27: name='Google Shape;224;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=7.431in w=0.481in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'P25'
+      run[p0r0]: text='P25' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #28: name='Google Shape;225;p6' type=AUTO_SHAPE (1)
+      pos: left=18.855in top=7.381in w=0.416in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '25'
+      run[p0r0]: text='25' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #29: name='Google Shape;226;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=7.852in w=5.667in h=0.01in  []
+      fill: SOLID:E1E7F5
+      line: color=None, width_pt=0.0
+  --- Shape #30: name='Google Shape;227;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=8.058in w=0.469in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'P75'
+      run[p0r0]: text='P75' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #31: name='Google Shape;228;p6' type=AUTO_SHAPE (1)
+      pos: left=18.87in top=8.008in w=0.401in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '75'
+      run[p0r0]: text='75' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #32: name='Google Shape;229;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=8.479in w=5.667in h=0.01in  []
+      fill: SOLID:E1E7F5
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;230;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=8.685in w=1.466in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your position'
+      run[p0r0]: text='Your position' font=Inter size=15.75pt bold=False italic=False color=422AFB
+  --- Shape #34: name='Google Shape;231;p6' type=AUTO_SHAPE (1)
+      pos: left=18.847in top=8.635in w=0.424in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '82'
+      run[p0r0]: text='82' font=Inter size=19.5pt bold=True italic=False color=422AFB
+  --- Shape #35: name='Google Shape;232;p6' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=9.46in w=6.292in h=1.206in  []
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #36: name='Google Shape;233;p6' type=AUTO_SHAPE (1)
+      pos: left=13.521in top=9.731in w=5.837in h=0.706in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'You price above three quarters of the tracked set — margin held, exposure noted.'
+      run[p0r0]: text='You price above three quarters of the tr' font=Inter size=16.5pt bold=False italic=False color=1B2559
+
+####################################################################################################
+SLIDE 5  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;239;p7' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;240;p7' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;241;p7' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;242;p7' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;243;p7' type=AUTO_SHAPE (1)
+      pos: left=18.906in top=0.475in w=0.302in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '05'
+      run[p0r0]: text='05' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;244;p7' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market Position & Benchmark Percentiles'
+      run[p0r0]: text='Market Position & Benchmark Percentiles' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;245;p7' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Price distribution across 42 tracked sellers · Mobiles & Electronics · Daraz'
+      run[p0r0]: text='Price distribution across 42 tracked sel' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;246;p7' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=13.238in h=7.567in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;247;p7' type=AUTO_SHAPE (1)
+      pos: left=1.25in top=2.829in w=5.626in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Where your price sits in the tracked market'
+      run[p0r0]: text='Where your price sits in the tracked mar' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #10: name='Google Shape;248;p7' type=AUTO_SHAPE (1)
+      pos: left=10.738in top=2.906in w=0.146in h=0.146in  []
+      fill: SOLID:D9D3FF
+      line: color=None, width_pt=0.0
+  --- Shape #11: name='Google Shape;249;p7' type=AUTO_SHAPE (1)
+      pos: left=10.967in top=2.871in w=1.325in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Tracked sellers'
+      run[p0r0]: text='Tracked sellers' font=Inter size=12.75pt bold=False italic=False color=707EAE
+  --- Shape #12: name='Google Shape;250;p7' type=AUTO_SHAPE (1)
+      pos: left=12.438in top=2.906in w=0.146in h=0.146in  []
+      fill: SOLID:422AFB
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;251;p7' type=AUTO_SHAPE (1)
+      pos: left=12.667in top=2.871in w=1.155in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your position'
+      run[p0r0]: text='Your position' font=Inter size=12.75pt bold=False italic=False color=707EAE
+  --- Shape #14: name='Google Shape;252;p7' type=PICTURE (13)
+      pos: left=1.25in top=3.233in w=12.488in h=6.537in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;253;p7' type=AUTO_SHAPE (1)
+      pos: left=14.322in top=2.517in w=4.803in h=1.525in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #16: name='Google Shape;254;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=2.788in w=4.642in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'PRICE INDEX VS. MARKET'
+      run[p0r0]: text='PRICE INDEX VS. MARKET' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #17: name='Google Shape;255;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=3.112in w=1.039in h=0.7in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '104'
+      run[p0r0]: text='104' font=Inter size=39.0pt bold=True italic=False color=1B2559
+  --- Shape #18: name='Google Shape;256;p7' type=AUTO_SHAPE (1)
+      pos: left=15.694in top=3.438in w=2.229in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '100 = market median'
+      run[p0r0]: text='100 = market median' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #19: name='Google Shape;257;p7' type=AUTO_SHAPE (1)
+      pos: left=14.322in top=4.25in w=4.803in h=1.575in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;258;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=4.521in w=4.642in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'BENCHMARK RANGE'
+      run[p0r0]: text='BENCHMARK RANGE' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #21: name='Google Shape;259;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=4.888in w=0.494in h=0.45in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '25'
+      run[p0r0]: text='25' font=Inter size=24.0pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;260;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=5.338in w=0.494in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'P25'
+      run[p0r0]: text='P25' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #23: name='Google Shape;261;p7' type=AUTO_SHAPE (1)
+      pos: left=16.523in top=4.888in w=0.475in h=0.45in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '75'
+      run[p0r0]: text='75' font=Inter size=24.0pt bold=True italic=False color=1B2559
+  --- Shape #24: name='Google Shape;262;p7' type=AUTO_SHAPE (1)
+      pos: left=16.523in top=5.338in w=0.475in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'P75'
+      run[p0r0]: text='P75' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #25: name='Google Shape;263;p7' type=AUTO_SHAPE (1)
+      pos: left=18.413in top=4.888in w=0.504in h=0.45in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '82'
+      run[p0r0]: text='82' font=Inter size=24.0pt bold=True italic=False color=422AFB
+  --- Shape #26: name='Google Shape;264;p7' type=AUTO_SHAPE (1)
+      pos: left=18.413in top=5.338in w=0.504in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'You'
+      run[p0r0]: text='You' font=Inter size=12.75pt bold=False italic=False color=422AFB
+  --- Shape #27: name='Google Shape;265;p7' type=AUTO_SHAPE (1)
+      pos: left=14.322in top=6.033in w=4.803in h=4.05in  []
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #28: name='Google Shape;266;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=6.304in w=4.642in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'READ'
+      run[p0r0]: text='READ' font=Inter size=12.0pt bold=True italic=False color=422AFB
+  --- Shape #29: name='Google Shape;267;p7' type=AUTO_SHAPE (1)
+      pos: left=14.613in top=6.629in w=4.347in h=1.431in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'You price above three quarters of tracked sellers. That holds margin, but leaves'
+      run[p0r0]: text='You price above three quarters of tracke' font=Inter size=17.25pt bold=False italic=False color=1B2559
+  --- Shape #30: name='Google Shape;268;p7' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #31: name='Google Shape;269;p7' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #32: name='Google Shape;270;p7' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=8.013in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: Ryvl market scan — publicly listed prices from 42 tracked sellers in you'
+      run[p0r0]: text='Source: Ryvl market scan — publicly list' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #33: name='Google Shape;271;p7' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #34: name='Google Shape;272;p7' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 6  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;278;p8' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=0.271in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-height]
+      fill: SOLID:4B3AF0
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;279;p8' type=PICTURE (13)
+      pos: left=1.062in top=0.667in w=0.354in h=0.354in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;280;p8' type=AUTO_SHAPE (1)
+      pos: left=1.542in top=0.681in w=0.648in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #4: name='Google Shape;281;p8' type=AUTO_SHAPE (1)
+      pos: left=17.757in top=0.735in w=1.505in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Section 03 of 08'
+      run[p0r0]: text='Section 03 of 08' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #5: name='Google Shape;282;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=3.938in w=8.938in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SECTION 03'
+      run[p0r0]: text='SECTION 03' font=Inter size=12.0pt bold=True italic=False color=422AFB
+  --- Shape #6: name='Google Shape;283;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=4.325in w=8.938in h=0.93in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Pricing Intelligence'
+      run[p0r0]: text='Pricing Intelligence' font=Inter size=61.5pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;284;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=5.443in w=8.369in h=0.857in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your price against the tracked market median — and the band Ryvl recommends hold'
+      run[p0r0]: text='Your price against the tracked market me' font=Inter size=20.25pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;285;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=6.717in w=8.125in h=0.01in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;286;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=7.017in w=1.791in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'YOUR PRICE'
+      run[p0r0]: text='YOUR PRICE' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #10: name='Google Shape;287;p8' type=AUTO_SHAPE (1)
+      pos: left=1.062in top=7.292in w=1.791in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 4,200'
+      run[p0r0]: text='Rs 4,200' font=Inter size=27.0pt bold=True italic=False color=1B2559
+  --- Shape #11: name='Google Shape;288;p8' type=AUTO_SHAPE (1)
+      pos: left=3.149in top=7.017in w=0.01in h=0.733in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #12: name='Google Shape;289;p8' type=AUTO_SHAPE (1)
+      pos: left=3.618in top=7.017in w=1.765in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'MARKET MEDIAN'
+      run[p0r0]: text='MARKET MEDIAN' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #13: name='Google Shape;290;p8' type=AUTO_SHAPE (1)
+      pos: left=3.618in top=7.292in w=1.765in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,950'
+      run[p0r0]: text='Rs 3,950' font=Inter size=27.0pt bold=True italic=False color=1B2559
+  --- Shape #14: name='Google Shape;291;p8' type=AUTO_SHAPE (1)
+      pos: left=5.681in top=7.017in w=0.01in h=0.733in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;292;p8' type=AUTO_SHAPE (1)
+      pos: left=6.15in top=7.017in w=1.294in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'GAP'
+      run[p0r0]: text='GAP' font=Inter size=11.25pt bold=True italic=False color=707EAE
+  --- Shape #16: name='Google Shape;293;p8' type=AUTO_SHAPE (1)
+      pos: left=6.15in top=7.292in w=1.294in h=0.5in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+6.3%'
+      run[p0r0]: text='+6.3%' font=Inter size=27.0pt bold=True italic=False color=422AFB
+  --- Shape #17: name='Google Shape;294;p8' type=PICTURE (13)
+      pos: left=9.812in top=2.74in w=9.312in h=6.208in  []
+      fill: None
+      line: color=None, width_pt=0.0
+
+####################################################################################################
+SLIDE 7  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;300;p9' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;301;p9' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;302;p9' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;303;p9' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;304;p9' type=AUTO_SHAPE (1)
+      pos: left=18.916in top=0.475in w=0.293in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '07'
+      run[p0r0]: text='07' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;305;p9' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Pricing Intelligence'
+      run[p0r0]: text='Pricing Intelligence' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;306;p9' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura MagSafe Charger 20W (AUR-MSC20) · tracked against 42 sellers'
+      run[p0r0]: text='Aura MagSafe Charger 20W (AUR-MSC20) · t' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;307;p9' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=12.638in h=7.567in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;308;p9' type=AUTO_SHAPE (1)
+      pos: left=1.25in top=2.829in w=4.68in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market median price — last 90 days'
+      run[p0r0]: text='Market median price — last 90 days' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #10: name='Google Shape;309;p9' type=AUTO_SHAPE (1)
+      pos: left=8.111in top=2.964in w=0.188in h=0.031in  []
+      fill: SOLID:422AFB
+      line: color=None, width_pt=0.0
+  --- Shape #11: name='Google Shape;310;p9' type=AUTO_SHAPE (1)
+      pos: left=8.382in top=2.871in w=1.305in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market median'
+      run[p0r0]: text='Market median' font=Inter size=12.75pt bold=False italic=False color=707EAE
+  --- Shape #12: name='Google Shape;311;p9' type=AUTO_SHAPE (1)
+      pos: left=9.833in top=2.967in w=0.188in h=0.025in  []
+      fill: SOLID:EE5D50
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;312;p9' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=2.871in w=0.919in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your price'
+      run[p0r0]: text='Your price' font=Inter size=12.75pt bold=False italic=False color=707EAE
+  --- Shape #14: name='Google Shape;313;p9' type=AUTO_SHAPE (1)
+      pos: left=11.169in top=2.917in w=0.188in h=0.125in  []
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;314;p9' type=AUTO_SHAPE (1)
+      pos: left=11.439in top=2.871in w=1.782in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Recommended band'
+      run[p0r0]: text='Recommended band' font=Inter size=12.75pt bold=False italic=False color=707EAE
+  --- Shape #16: name='Google Shape;315;p9' type=PICTURE (13)
+      pos: left=1.25in top=3.254in w=11.888in h=6.183in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #17: name='Google Shape;316;p9' type=AUTO_SHAPE (1)
+      pos: left=1.25in top=9.521in w=13.077in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Median has climbed Rs 130 (+3.4%) over the tracked window, narrowing your premiu'
+      run[p0r0]: text='Median has climbed Rs 130 (+3.4%) over t' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #18: name='Google Shape;317;p9' type=AUTO_SHAPE (1)
+      pos: left=13.721in top=2.517in w=5.404in h=5.658in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #19: name='Google Shape;318;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=2.808in w=5.257in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Price ladder'
+      run[p0r0]: text='Price ladder' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #20: name='Google Shape;319;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=3.133in w=5.257in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Scale starts at Rs 3,700'
+      run[p0r0]: text='Scale starts at Rs 3,700' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #21: name='Google Shape;320;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=3.6in w=1.031in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your price'
+      run[p0r0]: text='Your price' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;321;p9' type=AUTO_SHAPE (1)
+      pos: left=17.977in top=3.6in w=0.919in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 4,200'
+      run[p0r0]: text='Rs 4,200' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #23: name='Google Shape;322;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=3.925in w=4.779in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #24: name='Google Shape;323;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=3.925in w=3.393in h=0.167in  []
+      fill: SOLID:422AFB
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;324;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=4.3in w=1.614in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Highest tracked'
+      run[p0r0]: text='Highest tracked' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #26: name='Google Shape;325;p9' type=AUTO_SHAPE (1)
+      pos: left=18.042in top=4.3in w=0.854in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 4,120'
+      run[p0r0]: text='Rs 4,120' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #27: name='Google Shape;326;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=4.625in w=4.779in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #28: name='Google Shape;327;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=4.625in w=2.867in h=0.167in  []
+      fill: SOLID:A3AED0
+      line: color=None, width_pt=0.0
+  --- Shape #29: name='Google Shape;328;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=5.0in w=1.526in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Market median'
+      run[p0r0]: text='Market median' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #30: name='Google Shape;329;p9' type=AUTO_SHAPE (1)
+      pos: left=17.989in top=5.0in w=0.907in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,950'
+      run[p0r0]: text='Rs 3,950' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #31: name='Google Shape;330;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=5.325in w=4.779in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #32: name='Google Shape;331;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=5.325in w=1.72in h=0.167in  []
+      fill: SOLID:3965FF
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;332;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=5.7in w=1.561in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Lowest tracked'
+      run[p0r0]: text='Lowest tracked' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #34: name='Google Shape;333;p9' type=AUTO_SHAPE (1)
+      pos: left=18.001in top=5.7in w=0.895in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,760'
+      run[p0r0]: text='Rs 3,760' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #35: name='Google Shape;334;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=6.025in w=4.779in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #36: name='Google Shape;335;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=6.025in w=0.43in h=0.167in  []
+      fill: SOLID:A3AED0
+      line: color=None, width_pt=0.0
+  --- Shape #37: name='Google Shape;336;p9' type=AUTO_SHAPE (1)
+      pos: left=13.721in top=8.383in w=5.404in h=1.7in  []
+      fill: SOLID:4B3AF0
+      line: color=None, width_pt=0.0
+  --- Shape #38: name='Google Shape;337;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=8.654in w=5.257in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'RECOMMENDED BAND'
+      run[p0r0]: text='RECOMMENDED BAND' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #39: name='Google Shape;338;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=8.958in w=5.257in h=0.542in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,700 – 4,300'
+      run[p0r0]: text='Rs 3,700 – 4,300' font=Inter size=30.0pt bold=True italic=False color=FFFFFF
+  --- Shape #40: name='Google Shape;339;p9' type=AUTO_SHAPE (1)
+      pos: left=14.034in top=9.562in w=5.257in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'You are inside the band, near its upper edge.'
+      run[p0r0]: text='You are inside the band, near its upper ' font=Inter size=15.0pt bold=False italic=False color=FFFFFF
+  --- Shape #41: name='Google Shape;340;p9' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #42: name='Google Shape;341;p9' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #43: name='Google Shape;342;p9' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=7.566in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: Ryvl market scan — scheduled scrapes of publicly listed prices, last 90 '
+      run[p0r0]: text='Source: Ryvl market scan — scheduled scr' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #44: name='Google Shape;343;p9' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #45: name='Google Shape;344;p9' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 8  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;350;p10' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-width,full-height]
+      fill: PICTURE (6)
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;351;p10' type=PICTURE (13)
+      pos: left=10.0in top=0.625in w=11.25in h=7.5in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;352;p10' type=PICTURE (13)
+      pos: left=0.875in top=0.667in w=0.354in h=0.354in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;353;p10' type=AUTO_SHAPE (1)
+      pos: left=1.354in top=0.681in w=0.648in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #5: name='Google Shape;354;p10' type=AUTO_SHAPE (1)
+      pos: left=17.751in top=0.735in w=1.511in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Section 04 of 08'
+      run[p0r0]: text='Section 04 of 08' font=Inter size=12.75pt bold=True italic=False color=FFFFFF
+  --- Shape #6: name='Google Shape;355;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.284in w=11.458in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SECTION 04'
+      run[p0r0]: text='SECTION 04' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #7: name='Google Shape;356;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.672in w=10.729in h=1.72in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Marketplace & Competitor Tracking'
+      run[p0r0]: text='Marketplace & Competitor Tracking' font=Inter size=57.0pt bold=True italic=False color=FFFFFF
+  --- Shape #8: name='Google Shape;357;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=8.558in w=11.458in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Who moved on price, who ran out of stock, and where that leaves you.'
+      run[p0r0]: text='Who moved on price, who ran out of stock' font=Inter size=19.5pt bold=False italic=False color=FFFFFF
+  --- Shape #9: name='Google Shape;358;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=9.467in w=18.25in h=0.01in  [full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #10: name='Google Shape;359;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=9.808in w=2.461in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'COMPETITORS TRACKED'
+      run[p0r0]: text='COMPETITORS TRACKED' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #11: name='Google Shape;360;p10' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.083in w=2.461in h=0.542in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '42'
+      run[p0r0]: text='42' font=Inter size=30.0pt bold=True italic=False color=FFFFFF
+  --- Shape #12: name='Google Shape;361;p10' type=AUTO_SHAPE (1)
+      pos: left=3.612in top=9.808in w=0.01in h=0.775in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;362;p10' type=AUTO_SHAPE (1)
+      pos: left=4.123in top=9.808in w=1.811in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKUS MONITORED'
+      run[p0r0]: text='SKUS MONITORED' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #14: name='Google Shape;363;p10' type=AUTO_SHAPE (1)
+      pos: left=4.123in top=10.083in w=1.811in h=0.542in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '259'
+      run[p0r0]: text='259' font=Inter size=30.0pt bold=True italic=False color=FFFFFF
+  --- Shape #15: name='Google Shape;364;p10' type=AUTO_SHAPE (1)
+      pos: left=6.269in top=9.808in w=0.01in h=0.775in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #16: name='Google Shape;365;p10' type=AUTO_SHAPE (1)
+      pos: left=6.779in top=9.808in w=2.49in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'PRICE MOVES OBSERVED'
+      run[p0r0]: text='PRICE MOVES OBSERVED' font=Inter size=11.25pt bold=True italic=False color=FFFFFF
+  --- Shape #17: name='Google Shape;366;p10' type=AUTO_SHAPE (1)
+      pos: left=6.779in top=10.083in w=2.49in h=0.542in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '71'
+      run[p0r0]: text='71' font=Inter size=30.0pt bold=True italic=False color=FFFFFF
+
+####################################################################################################
+SLIDE 9  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;372;p11' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;373;p11' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;374;p11' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;375;p11' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;376;p11' type=AUTO_SHAPE (1)
+      pos: left=18.901in top=0.475in w=0.307in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '09'
+      run[p0r0]: text='09' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;377;p11' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Marketplace & Competitor Tracking'
+      run[p0r0]: text='Marketplace & Competitor Tracking' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;378;p11' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Top 5 by tracked SKU count · Daraz · Last 30 days'
+      run[p0r0]: text='Top 5 by tracked SKU count · Daraz · Las' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;379;p11' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=13.594in h=7.567in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;380;p11' type=AUTO_SHAPE (1)
+      pos: left=1.0in top=2.621in w=13.344in h=0.583in  []
+      fill: SOLID:0B1437
+      line: color=None, width_pt=0.0
+  --- Shape #10: name='Google Shape;381;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=2.788in w=3.148in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Competitor'
+      run[p0r0]: text='Competitor' font=Inter size=15.0pt bold=True italic=False color=FFFFFF
+  --- Shape #11: name='Google Shape;382;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=2.788in w=1.105in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKUs'
+      run[p0r0]: text='SKUs' font=Inter size=15.0pt bold=True italic=False color=FFFFFF
+  --- Shape #12: name='Google Shape;383;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=2.788in w=2.223in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Median price'
+      run[p0r0]: text='Median price' font=Inter size=15.0pt bold=True italic=False color=FFFFFF
+  --- Shape #13: name='Google Shape;384;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=2.788in w=3.547in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'In stock'
+      run[p0r0]: text='In stock' font=Inter size=15.0pt bold=True italic=False color=FFFFFF
+  --- Shape #14: name='Google Shape;385;p11' type=AUTO_SHAPE (1)
+      pos: left=12.429in top=2.788in w=1.707in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Repricing'
+      run[p0r0]: text='Repricing' font=Inter size=15.0pt bold=True italic=False color=FFFFFF
+  --- Shape #15: name='Google Shape;386;p11' type=AUTO_SHAPE (1)
+      pos: left=1.0in top=3.9in w=3.461in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #16: name='Google Shape;387;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.413in w=3.148in h=0.321in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Zenith Gadgets'
+      run[p0r0]: text='Zenith Gadgets' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #17: name='Google Shape;388;p11' type=AUTO_SHAPE (1)
+      pos: left=4.461in top=3.9in w=1.438in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #18: name='Google Shape;389;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=3.413in w=1.105in h=0.321in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '84'
+      run[p0r0]: text='84' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #19: name='Google Shape;390;p11' type=AUTO_SHAPE (1)
+      pos: left=5.899in top=3.9in w=2.556in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;391;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=3.413in w=2.223in h=0.321in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,890'
+      run[p0r0]: text='Rs 3,890' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #21: name='Google Shape;392;p11' type=AUTO_SHAPE (1)
+      pos: left=8.455in top=3.9in w=3.849in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #22: name='Google Shape;393;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=3.492in w=1.562in h=0.125in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #23: name='Google Shape;394;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=3.492in w=1.422in h=0.125in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #24: name='Google Shape;395;p11' type=AUTO_SHAPE (1)
+      pos: left=10.372in top=3.433in w=0.483in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '91%'
+      run[p0r0]: text='91%' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #25: name='Google Shape;396;p11' type=AUTO_SHAPE (1)
+      pos: left=12.304in top=3.9in w=2.04in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #26: name='Google Shape;397;p11' type=AUTO_SHAPE (1)
+      pos: left=13.269in top=3.371in w=0.866in h=0.367in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #27: name='Google Shape;398;p11' type=AUTO_SHAPE (1)
+      pos: left=13.332in top=3.433in w=0.658in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+32%'
+      run[p0r0]: text='+32%' font=Inter size=14.25pt bold=True italic=False color=B37610
+  --- Shape #28: name='Google Shape;399;p11' type=AUTO_SHAPE (1)
+      pos: left=1.0in top=4.583in w=3.461in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #29: name='Google Shape;400;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.117in w=3.148in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Volt Traders'
+      run[p0r0]: text='Volt Traders' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #30: name='Google Shape;401;p11' type=AUTO_SHAPE (1)
+      pos: left=4.461in top=4.583in w=1.438in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #31: name='Google Shape;402;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=4.117in w=1.105in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '61'
+      run[p0r0]: text='61' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #32: name='Google Shape;403;p11' type=AUTO_SHAPE (1)
+      pos: left=5.899in top=4.583in w=2.556in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;404;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=4.117in w=2.223in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 4,050'
+      run[p0r0]: text='Rs 4,050' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #34: name='Google Shape;405;p11' type=AUTO_SHAPE (1)
+      pos: left=8.455in top=4.583in w=3.849in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #35: name='Google Shape;406;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=4.188in w=1.562in h=0.125in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #36: name='Google Shape;407;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=4.188in w=0.859in h=0.125in  []
+      fill: SOLID:EE5D50
+      line: color=None, width_pt=0.0
+  --- Shape #37: name='Google Shape;408;p11' type=AUTO_SHAPE (1)
+      pos: left=10.372in top=4.129in w=0.515in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '55%'
+      run[p0r0]: text='55%' font=Inter size=14.25pt bold=True italic=False color=EE5D50
+  --- Shape #38: name='Google Shape;409;p11' type=AUTO_SHAPE (1)
+      pos: left=12.304in top=4.583in w=2.04in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #39: name='Google Shape;410;p11' type=AUTO_SHAPE (1)
+      pos: left=12.429in top=4.117in w=1.707in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+12%'
+      run[p0r0]: text='+12%' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #40: name='Google Shape;411;p11' type=AUTO_SHAPE (1)
+      pos: left=1.0in top=5.267in w=3.461in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #41: name='Google Shape;412;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.8in w=3.148in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Nova Tech Store'
+      run[p0r0]: text='Nova Tech Store' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #42: name='Google Shape;413;p11' type=AUTO_SHAPE (1)
+      pos: left=4.461in top=5.267in w=1.438in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #43: name='Google Shape;414;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=4.8in w=1.105in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '47'
+      run[p0r0]: text='47' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #44: name='Google Shape;415;p11' type=AUTO_SHAPE (1)
+      pos: left=5.899in top=5.267in w=2.556in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #45: name='Google Shape;416;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=4.8in w=2.223in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,760'
+      run[p0r0]: text='Rs 3,760' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #46: name='Google Shape;417;p11' type=AUTO_SHAPE (1)
+      pos: left=8.455in top=5.267in w=3.849in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #47: name='Google Shape;418;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=4.871in w=1.562in h=0.125in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #48: name='Google Shape;419;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=4.871in w=1.375in h=0.125in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #49: name='Google Shape;420;p11' type=AUTO_SHAPE (1)
+      pos: left=10.372in top=4.812in w=0.526in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '88%'
+      run[p0r0]: text='88%' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #50: name='Google Shape;421;p11' type=AUTO_SHAPE (1)
+      pos: left=12.304in top=5.267in w=2.04in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #51: name='Google Shape;422;p11' type=AUTO_SHAPE (1)
+      pos: left=12.429in top=4.8in w=1.707in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+8%'
+      run[p0r0]: text='+8%' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #52: name='Google Shape;423;p11' type=AUTO_SHAPE (1)
+      pos: left=1.0in top=5.95in w=3.461in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #53: name='Google Shape;424;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.483in w=3.148in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Pulse Accessories'
+      run[p0r0]: text='Pulse Accessories' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #54: name='Google Shape;425;p11' type=AUTO_SHAPE (1)
+      pos: left=4.461in top=5.95in w=1.438in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #55: name='Google Shape;426;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=5.483in w=1.105in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '39'
+      run[p0r0]: text='39' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #56: name='Google Shape;427;p11' type=AUTO_SHAPE (1)
+      pos: left=5.899in top=5.95in w=2.556in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #57: name='Google Shape;428;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=5.483in w=2.223in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 4,120'
+      run[p0r0]: text='Rs 4,120' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #58: name='Google Shape;429;p11' type=AUTO_SHAPE (1)
+      pos: left=8.455in top=5.95in w=3.849in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #59: name='Google Shape;430;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=5.554in w=1.562in h=0.125in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #60: name='Google Shape;431;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=5.554in w=1.484in h=0.125in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #61: name='Google Shape;432;p11' type=AUTO_SHAPE (1)
+      pos: left=10.372in top=5.496in w=0.521in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '95%'
+      run[p0r0]: text='95%' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #62: name='Google Shape;433;p11' type=AUTO_SHAPE (1)
+      pos: left=12.304in top=5.95in w=2.04in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #63: name='Google Shape;434;p11' type=AUTO_SHAPE (1)
+      pos: left=12.429in top=5.483in w=1.707in h=0.3in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+5%'
+      run[p0r0]: text='+5%' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #64: name='Google Shape;435;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.167in w=3.148in h=0.304in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Circuit Bazaar'
+      run[p0r0]: text='Circuit Bazaar' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #65: name='Google Shape;436;p11' type=AUTO_SHAPE (1)
+      pos: left=4.586in top=6.167in w=1.105in h=0.304in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '28'
+      run[p0r0]: text='28' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #66: name='Google Shape;437;p11' type=AUTO_SHAPE (1)
+      pos: left=6.024in top=6.167in w=2.223in h=0.304in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,980'
+      run[p0r0]: text='Rs 3,980' font=Inter size=15.75pt bold=True italic=False color=1B2559
+  --- Shape #67: name='Google Shape;438;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=6.237in w=1.562in h=0.125in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #68: name='Google Shape;439;p11' type=AUTO_SHAPE (1)
+      pos: left=8.663in top=6.237in w=1.234in h=0.125in  []
+      fill: SOLID:FFB547
+      line: color=None, width_pt=0.0
+  --- Shape #69: name='Google Shape;440;p11' type=AUTO_SHAPE (1)
+      pos: left=10.372in top=6.179in w=0.511in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '79%'
+      run[p0r0]: text='79%' font=Inter size=14.25pt bold=True italic=False color=1B2559
+  --- Shape #70: name='Google Shape;441;p11' type=AUTO_SHAPE (1)
+      pos: left=12.429in top=6.167in w=1.707in h=0.304in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+14%'
+      run[p0r0]: text='+14%' font=Inter size=15.75pt bold=False italic=False color=1B2559
+  --- Shape #71: name='Google Shape;442;p11' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.804in w=13.327in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+37 more tracked competitors — see your Ryvl dashboard for the full list.'
+      run[p0r0]: text='+37 more tracked competitors — see your ' font=Inter size=13.5pt bold=False italic=True color=707EAE
+  --- Shape #72: name='Google Shape;443;p11' type=AUTO_SHAPE (1)
+      pos: left=14.677in top=2.517in w=4.448in h=2.223in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #73: name='Google Shape;444;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=2.788in w=4.251in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'MOST ACTIVE REPRICER'
+      run[p0r0]: text='MOST ACTIVE REPRICER' font=Inter size=12.0pt bold=True italic=False color=B37610
+  --- Shape #74: name='Google Shape;445;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=3.092in w=4.251in h=0.417in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Zenith Gadgets'
+      run[p0r0]: text='Zenith Gadgets' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #75: name='Google Shape;446;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=3.55in w=3.981in h=0.96in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Moved price on 27 of 84 tracked SKUs — 2.6× the tracked-set average.'
+      run[p0r0]: text='Moved price on 27 of 84 tracked SKUs — 2' font=Inter size=15.75pt bold=False italic=False color=7A5A18
+  --- Shape #76: name='Google Shape;447;p11' type=AUTO_SHAPE (1)
+      pos: left=14.677in top=4.948in w=4.448in h=2.223in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #77: name='Google Shape;448;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=5.219in w=4.251in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SUPPLY VOID'
+      run[p0r0]: text='SUPPLY VOID' font=Inter size=12.0pt bold=True italic=False color=01875A
+  --- Shape #78: name='Google Shape;449;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=5.523in w=4.251in h=0.417in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Volt Traders'
+      run[p0r0]: text='Volt Traders' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #79: name='Google Shape;450;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=5.981in w=3.981in h=0.96in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Out of stock on 45% of their assortment, including 18 SKUs that overlap yours.'
+      run[p0r0]: text='Out of stock on 45% of their assortment,' font=Inter size=15.75pt bold=False italic=False color=0A6A4A
+  --- Shape #80: name='Google Shape;451;p11' type=AUTO_SHAPE (1)
+      pos: left=14.677in top=7.379in w=4.448in h=2.704in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #81: name='Google Shape;452;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=7.65in w=4.251in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'TRACKED-SET MEDIANS'
+      run[p0r0]: text='TRACKED-SET MEDIANS' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #82: name='Google Shape;453;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=8.079in w=1.345in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Median price'
+      run[p0r0]: text='Median price' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #83: name='Google Shape;454;p11' type=AUTO_SHAPE (1)
+      pos: left=17.765in top=8.037in w=1.152in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Rs 3,980'
+      run[p0r0]: text='Rs 3,980' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #84: name='Google Shape;455;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=8.483in w=3.865in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #85: name='Google Shape;456;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=8.681in w=1.72in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Median in-stock'
+      run[p0r0]: text='Median in-stock' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #86: name='Google Shape;457;p11' type=AUTO_SHAPE (1)
+      pos: left=18.263in top=8.64in w=0.653in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '88%'
+      run[p0r0]: text='88%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #87: name='Google Shape;458;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=9.085in w=3.865in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #88: name='Google Shape;459;p11' type=AUTO_SHAPE (1)
+      pos: left=14.969in top=9.283in w=1.796in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Median repricing'
+      run[p0r0]: text='Median repricing' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #89: name='Google Shape;460;p11' type=AUTO_SHAPE (1)
+      pos: left=18.157in top=9.242in w=0.76in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '+12%'
+      run[p0r0]: text='+12%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #90: name='Google Shape;461;p11' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #91: name='Google Shape;462;p11' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #92: name='Google Shape;463;p11' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=9.676in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: Ryvl market scan. Repricing rate is a floor — moves that reverted betwee'
+      run[p0r0]: text='Source: Ryvl market scan. Repricing rate' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #93: name='Google Shape;464;p11' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #94: name='Google Shape;465;p11' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 10  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;471;p12' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;472;p12' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;473;p12' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;474;p12' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;475;p12' type=AUTO_SHAPE (1)
+      pos: left=18.939in top=0.475in w=0.269in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '10'
+      run[p0r0]: text='10' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;476;p12' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKU Performance & Portfolio'
+      run[p0r0]: text='SKU Performance & Portfolio' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;477;p12' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Top 5 products by inventory value share · category mix'
+      run[p0r0]: text='Top 5 products by inventory value share ' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;478;p12' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=12.25in h=7.567in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;479;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=2.808in w=12.742in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Top products by inventory value share'
+      run[p0r0]: text='Top products by inventory value share' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #10: name='Google Shape;480;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.217in w=5.375in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #11: name='Google Shape;481;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.483in w=5.912in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura MagSafe Charger 20W'
+      run[p0r0]: text='Aura MagSafe Charger 20W' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #12: name='Google Shape;482;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.808in w=5.912in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-MSC20'
+      run[p0r0]: text='AUR-MSC20' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #13: name='Google Shape;483;p12' type=AUTO_SHAPE (1)
+      pos: left=6.583in top=4.217in w=4.708in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #14: name='Google Shape;484;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=3.685in w=4.375in h=0.146in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;485;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=3.685in w=4.2in h=0.146in  []
+      fill: SOLID:422AFB
+      line: color=None, width_pt=0.0
+  --- Shape #16: name='Google Shape;486;p12' type=AUTO_SHAPE (1)
+      pos: left=11.292in top=4.217in w=1.5in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #17: name='Google Shape;487;p12' type=AUTO_SHAPE (1)
+      pos: left=11.458in top=3.483in w=1.333in h=0.588in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '24.1%'
+      run[p0r0]: text='24.1%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #18: name='Google Shape;488;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.15in w=5.375in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #19: name='Google Shape;489;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.417in w=5.912in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Tempered Glass Pro'
+      run[p0r0]: text='Aura Tempered Glass Pro' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #20: name='Google Shape;490;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.742in w=5.912in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-TGP01'
+      run[p0r0]: text='AUR-TGP01' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #21: name='Google Shape;491;p12' type=AUTO_SHAPE (1)
+      pos: left=6.583in top=5.15in w=4.708in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #22: name='Google Shape;492;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=4.619in w=4.375in h=0.146in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #23: name='Google Shape;493;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=4.619in w=3.281in h=0.146in  []
+      fill: SOLID:5B45FF
+      line: color=None, width_pt=0.0
+  --- Shape #24: name='Google Shape;494;p12' type=AUTO_SHAPE (1)
+      pos: left=11.292in top=5.15in w=1.5in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;495;p12' type=AUTO_SHAPE (1)
+      pos: left=11.458in top=4.412in w=1.333in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '18.7%'
+      run[p0r0]: text='18.7%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #26: name='Google Shape;496;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.083in w=5.375in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #27: name='Google Shape;497;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.35in w=5.912in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura USB-C Cable 2m'
+      run[p0r0]: text='Aura USB-C Cable 2m' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #28: name='Google Shape;498;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.675in w=5.912in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-UCC2M'
+      run[p0r0]: text='AUR-UCC2M' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #29: name='Google Shape;499;p12' type=AUTO_SHAPE (1)
+      pos: left=6.583in top=6.083in w=4.708in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #30: name='Google Shape;500;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=5.552in w=4.375in h=0.146in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #31: name='Google Shape;501;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=5.552in w=2.669in h=0.146in  []
+      fill: SOLID:7551FF
+      line: color=None, width_pt=0.0
+  --- Shape #32: name='Google Shape;502;p12' type=AUTO_SHAPE (1)
+      pos: left=11.292in top=6.083in w=1.5in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;503;p12' type=AUTO_SHAPE (1)
+      pos: left=11.458in top=5.346in w=1.333in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '15.3%'
+      run[p0r0]: text='15.3%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #34: name='Google Shape;504;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=7.017in w=5.375in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #35: name='Google Shape;505;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.283in w=5.912in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Wireless Earbuds X2'
+      run[p0r0]: text='Aura Wireless Earbuds X2' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #36: name='Google Shape;506;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=6.608in w=5.912in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-WEX2'
+      run[p0r0]: text='AUR-WEX2' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #37: name='Google Shape;507;p12' type=AUTO_SHAPE (1)
+      pos: left=6.583in top=7.017in w=4.708in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #38: name='Google Shape;508;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=6.485in w=4.375in h=0.146in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #39: name='Google Shape;509;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=6.485in w=2.231in h=0.146in  []
+      fill: SOLID:8E74FF
+      line: color=None, width_pt=0.0
+  --- Shape #40: name='Google Shape;510;p12' type=AUTO_SHAPE (1)
+      pos: left=11.292in top=7.017in w=1.5in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #41: name='Google Shape;511;p12' type=AUTO_SHAPE (1)
+      pos: left=11.458in top=6.279in w=1.333in h=0.592in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '12.9%'
+      run[p0r0]: text='12.9%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #42: name='Google Shape;512;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=7.217in w=5.912in h=0.325in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Car Mount Vent Clip'
+      run[p0r0]: text='Aura Car Mount Vent Clip' font=Inter size=16.5pt bold=True italic=False color=1B2559
+  --- Shape #43: name='Google Shape;513;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=7.542in w=5.912in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-CMVC'
+      run[p0r0]: text='AUR-CMVC' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #44: name='Google Shape;514;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=7.419in w=4.375in h=0.146in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #45: name='Google Shape;515;p12' type=AUTO_SHAPE (1)
+      pos: left=6.917in top=7.419in w=1.619in h=0.146in  []
+      fill: SOLID:A995FF
+      line: color=None, width_pt=0.0
+  --- Shape #46: name='Google Shape;516;p12' type=AUTO_SHAPE (1)
+      pos: left=11.458in top=7.213in w=1.333in h=0.596in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '9.4%'
+      run[p0r0]: text='9.4%' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #47: name='Google Shape;517;p12' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=8.121in w=12.742in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Share is measured on inventory value, not recorded sales revenue.'
+      run[p0r0]: text='Share is measured on inventory value, no' font=Inter size=13.5pt bold=False italic=True color=707EAE
+  --- Shape #48: name='Google Shape;518;p12' type=AUTO_SHAPE (1)
+      pos: left=13.333in top=2.517in w=5.792in h=5.516in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #49: name='Google Shape;519;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=2.808in w=5.683in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Category mix'
+      run[p0r0]: text='Category mix' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #50: name='Google Shape;520;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=3.358in w=0.988in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Chargers'
+      run[p0r0]: text='Chargers' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #51: name='Google Shape;521;p12' type=AUTO_SHAPE (1)
+      pos: left=18.347in top=3.358in w=0.549in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '38%'
+      run[p0r0]: text='38%' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #52: name='Google Shape;522;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=3.692in w=5.167in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #53: name='Google Shape;523;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=3.692in w=5.167in h=0.167in  []
+      fill: SOLID:422AFB
+      line: color=None, width_pt=0.0
+  --- Shape #54: name='Google Shape;524;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=4.088in w=1.694in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Cases & Covers'
+      run[p0r0]: text='Cases & Covers' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #55: name='Google Shape;525;p12' type=AUTO_SHAPE (1)
+      pos: left=18.363in top=4.088in w=0.533in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '27%'
+      run[p0r0]: text='27%' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #56: name='Google Shape;526;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=4.421in w=5.167in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #57: name='Google Shape;527;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=4.421in w=3.668in h=0.167in  []
+      fill: SOLID:6AD2FF
+      line: color=None, width_pt=0.0
+  --- Shape #58: name='Google Shape;528;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=4.817in w=0.658in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Audio'
+      run[p0r0]: text='Audio' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #59: name='Google Shape;529;p12' type=AUTO_SHAPE (1)
+      pos: left=18.395in top=4.817in w=0.501in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '21%'
+      run[p0r0]: text='21%' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #60: name='Google Shape;530;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=5.15in w=5.167in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #61: name='Google Shape;531;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=5.15in w=2.842in h=0.167in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #62: name='Google Shape;532;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=5.546in w=0.76in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Cables'
+      run[p0r0]: text='Cables' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #63: name='Google Shape;533;p12' type=AUTO_SHAPE (1)
+      pos: left=18.386in top=5.546in w=0.51in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '14%'
+      run[p0r0]: text='14%' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #64: name='Google Shape;534;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=5.879in w=5.167in h=0.167in  []
+      fill: SOLID:F4F7FE
+      line: color=None, width_pt=0.0
+  --- Shape #65: name='Google Shape;535;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=5.879in w=1.912in h=0.167in  []
+      fill: SOLID:FFB547
+      line: color=None, width_pt=0.0
+  --- Shape #66: name='Google Shape;536;p12' type=AUTO_SHAPE (1)
+      pos: left=13.333in top=8.241in w=5.792in h=1.843in  []
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #67: name='Google Shape;537;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=8.511in w=5.683in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'CONCENTRATION'
+      run[p0r0]: text='CONCENTRATION' font=Inter size=12.0pt bold=True italic=False color=422AFB
+  --- Shape #68: name='Google Shape;538;p12' type=AUTO_SHAPE (1)
+      pos: left=13.646in top=8.816in w=5.322in h=1.039in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your top two SKUs hold 42.8% of inventory value — both sit in Chargers, your mos'
+      run[p0r0]: text='Your top two SKUs hold 42.8% of inventor' font=Inter size=16.5pt bold=False italic=False color=1B2559
+  --- Shape #69: name='Google Shape;539;p12' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #70: name='Google Shape;540;p12' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #71: name='Google Shape;541;p12' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=6.161in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: your store products & inventory, as recorded in your account.'
+      run[p0r0]: text='Source: your store products & inventory,' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #72: name='Google Shape;542;p12' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #73: name='Google Shape;543;p12' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 11  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;549;p13' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;550;p13' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;551;p13' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;552;p13' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;553;p13' type=AUTO_SHAPE (1)
+      pos: left=18.981in top=0.475in w=0.227in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '11'
+      run[p0r0]: text='11' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;554;p13' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Inventory & Demand Risk'
+      run[p0r0]: text='Inventory & Demand Risk' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;555;p13' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SKUs below your low-stock threshold · competitor stockouts you can absorb'
+      run[p0r0]: text='SKUs below your low-stock threshold · co' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;556;p13' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=11.092in h=7.567in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;557;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=2.808in w=2.861in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'At risk of stocking out'
+      run[p0r0]: text='At risk of stocking out' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #10: name='Google Shape;558;p13' type=AUTO_SHAPE (1)
+      pos: left=9.256in top=2.858in w=2.615in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '6 SKUs flagged · 3 shown'
+      run[p0r0]: text='6 SKUs flagged · 3 shown' font=Inter size=14.25pt bold=True italic=False color=A3AED0
+  --- Shape #11: name='Google Shape;559;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.196in w=10.425in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #12: name='Google Shape;560;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=3.483in w=1.081in h=0.338in  []
+      fill: SOLID:FEEFEE
+      line: color=None, width_pt=0.0
+  --- Shape #13: name='Google Shape;561;p13' type=AUTO_SHAPE (1)
+      pos: left=1.344in top=3.556in w=0.893in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'CRITICAL'
+      run[p0r0]: text='CRITICAL' font=Inter size=11.25pt bold=True italic=False color=EE5D50
+  --- Shape #14: name='Google Shape;562;p13' type=AUTO_SHAPE (1)
+      pos: left=2.539in top=3.373in w=8.709in h=0.333in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Wireless Earbuds X2'
+      run[p0r0]: text='Aura Wireless Earbuds X2' font=Inter size=17.25pt bold=True italic=False color=1B2559
+  --- Shape #15: name='Google Shape;563;p13' type=AUTO_SHAPE (1)
+      pos: left=2.539in top=3.706in w=8.709in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-WEX2'
+      run[p0r0]: text='AUR-WEX2' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #16: name='Google Shape;564;p13' type=AUTO_SHAPE (1)
+      pos: left=10.623in top=3.358in w=1.01in h=0.392in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '6 days'
+      run[p0r0]: text='6 days' font=Inter size=21.0pt bold=True italic=False color=EE5D50
+  --- Shape #17: name='Google Shape;565;p13' type=AUTO_SHAPE (1)
+      pos: left=10.623in top=3.729in w=1.01in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'cover left'
+      run[p0r0]: text='cover left' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #18: name='Google Shape;566;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.292in w=10.425in h=0.01in  []
+      fill: SOLID:F0F3FA
+      line: color=None, width_pt=0.0
+  --- Shape #19: name='Google Shape;567;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=4.579in w=0.908in h=0.338in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;568;p13' type=AUTO_SHAPE (1)
+      pos: left=1.344in top=4.652in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'WATCH'
+      run[p0r0]: text='WATCH' font=Inter size=11.25pt bold=True italic=False color=B37610
+  --- Shape #21: name='Google Shape;569;p13' type=AUTO_SHAPE (1)
+      pos: left=2.367in top=4.469in w=8.834in h=0.333in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Fast Charger 30W'
+      run[p0r0]: text='Aura Fast Charger 30W' font=Inter size=17.25pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;570;p13' type=AUTO_SHAPE (1)
+      pos: left=2.367in top=4.802in w=8.834in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-FC30'
+      run[p0r0]: text='AUR-FC30' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #23: name='Google Shape;571;p13' type=AUTO_SHAPE (1)
+      pos: left=10.564in top=4.454in w=1.069in h=0.392in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '11 days'
+      run[p0r0]: text='11 days' font=Inter size=21.0pt bold=True italic=False color=B37610
+  --- Shape #24: name='Google Shape;572;p13' type=AUTO_SHAPE (1)
+      pos: left=10.564in top=4.825in w=1.069in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'cover left'
+      run[p0r0]: text='cover left' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #25: name='Google Shape;573;p13' type=AUTO_SHAPE (1)
+      pos: left=1.208in top=5.675in w=0.908in h=0.338in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #26: name='Google Shape;574;p13' type=AUTO_SHAPE (1)
+      pos: left=1.344in top=5.748in w=0.721in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'WATCH'
+      run[p0r0]: text='WATCH' font=Inter size=11.25pt bold=True italic=False color=B37610
+  --- Shape #27: name='Google Shape;575;p13' type=AUTO_SHAPE (1)
+      pos: left=2.367in top=5.565in w=8.755in h=0.333in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Aura Screen Protector Matte'
+      run[p0r0]: text='Aura Screen Protector Matte' font=Inter size=17.25pt bold=True italic=False color=1B2559
+  --- Shape #28: name='Google Shape;576;p13' type=AUTO_SHAPE (1)
+      pos: left=2.367in top=5.898in w=8.755in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'AUR-SPM1'
+      run[p0r0]: text='AUR-SPM1' font=Inter size=13.5pt bold=False italic=False color=A3AED0
+  --- Shape #29: name='Google Shape;577;p13' type=AUTO_SHAPE (1)
+      pos: left=10.493in top=5.55in w=1.141in h=0.392in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '14 days'
+      run[p0r0]: text='14 days' font=Inter size=21.0pt bold=True italic=False color=B37610
+  --- Shape #30: name='Google Shape;578;p13' type=AUTO_SHAPE (1)
+      pos: left=10.493in top=5.921in w=1.141in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'cover left'
+      run[p0r0]: text='cover left' font=Inter size=12.75pt bold=False italic=False color=A3AED0
+  --- Shape #31: name='Google Shape;579;p13' type=AUTO_SHAPE (1)
+      pos: left=12.217in top=2.558in w=7.562in h=0.342in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Supply void opportunities'
+      run[p0r0]: text='Supply void opportunities' font=Inter size=18.0pt bold=True italic=False color=1B2559
+  --- Shape #32: name='Google Shape;580;p13' type=AUTO_SHAPE (1)
+      pos: left=12.175in top=3.067in w=6.95in h=2.076in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;581;p13' type=AUTO_SHAPE (1)
+      pos: left=12.175in top=3.067in w=0.083in h=2.076in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #34: name='Google Shape;582;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=3.337in w=1.736in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Volt Traders'
+      run[p0r0]: text='Volt Traders' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #35: name='Google Shape;583;p13' type=AUTO_SHAPE (1)
+      pos: left=18.269in top=3.404in w=0.627in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Daraz'
+      run[p0r0]: text='Daraz' font=Inter size=14.25pt bold=True italic=False color=A3AED0
+  --- Shape #36: name='Google Shape;584;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=3.767in w=6.429in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Out of stock on 45% of their assortment — 18 SKUs overlap with yours.'
+      run[p0r0]: text='Out of stock on 45% of their assortment ' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #37: name='Google Shape;585;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=4.547in w=2.157in h=0.325in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #38: name='Google Shape;586;p13' type=AUTO_SHAPE (1)
+      pos: left=12.696in top=4.609in w=1.99in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Demand you can absorb'
+      run[p0r0]: text='Demand you can absorb' font=Inter size=12.0pt bold=True italic=False color=01875A
+  --- Shape #39: name='Google Shape;587;p13' type=AUTO_SHAPE (1)
+      pos: left=12.175in top=5.351in w=6.95in h=2.076in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #40: name='Google Shape;588;p13' type=AUTO_SHAPE (1)
+      pos: left=12.175in top=5.351in w=0.083in h=2.076in  []
+      fill: SOLID:01B574
+      line: color=None, width_pt=0.0
+  --- Shape #41: name='Google Shape;589;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=5.622in w=1.996in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Circuit Bazaar'
+      run[p0r0]: text='Circuit Bazaar' font=Inter size=19.5pt bold=True italic=False color=1B2559
+  --- Shape #42: name='Google Shape;590;p13' type=AUTO_SHAPE (1)
+      pos: left=18.269in top=5.689in w=0.627in h=0.283in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Daraz'
+      run[p0r0]: text='Daraz' font=Inter size=14.25pt bold=True italic=False color=A3AED0
+  --- Shape #43: name='Google Shape;591;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=6.051in w=6.429in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Out of stock on 21% of their assortment — 6 SKUs overlap with yours.'
+      run[p0r0]: text='Out of stock on 21% of their assortment ' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #44: name='Google Shape;592;p13' type=AUTO_SHAPE (1)
+      pos: left=12.571in top=6.831in w=2.157in h=0.325in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #45: name='Google Shape;593;p13' type=AUTO_SHAPE (1)
+      pos: left=12.696in top=6.894in w=1.99in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Demand you can absorb'
+      run[p0r0]: text='Demand you can absorb' font=Inter size=12.0pt bold=True italic=False color=01875A
+  --- Shape #46: name='Google Shape;594;p13' type=AUTO_SHAPE (1)
+      pos: left=12.175in top=7.635in w=6.95in h=2.448in  []
+      fill: SOLID:4B3AF0
+      line: color=None, width_pt=0.0
+  --- Shape #47: name='Google Shape;595;p13' type=AUTO_SHAPE (1)
+      pos: left=12.488in top=8.164in w=6.957in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'NET POSITION'
+      run[p0r0]: text='NET POSITION' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #48: name='Google Shape;596;p13' type=AUTO_SHAPE (1)
+      pos: left=12.488in top=8.468in w=6.515in h=1.129in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Two of your six at-risk SKUs sit in categories where competitors are already out'
+      run[p0r0]: text='Two of your six at-risk SKUs sit in cate' font=Inter size=18.0pt bold=False italic=False color=FFFFFF
+  --- Shape #49: name='Google Shape;597;p13' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #50: name='Google Shape;598;p13' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #51: name='Google Shape;599;p13' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=9.942in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Source: your store inventory & Ryvl market scan stock status. Days of cover assu'
+      run[p0r0]: text='Source: your store inventory & Ryvl mark' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #52: name='Google Shape;600;p13' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #53: name='Google Shape;601;p13' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 12  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;607;p14' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=2.183in  [near-top(header zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;608;p14' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=2.175in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;609;p14' type=PICTURE (13)
+      pos: left=0.875in top=0.458in w=0.25in h=0.25in  [near-top(header zone)]
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #4: name='Google Shape;610;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=0.458in w=0.515in h=0.292in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=15.0pt bold=True italic=False color=1B2559
+  --- Shape #5: name='Google Shape;611;p14' type=AUTO_SHAPE (1)
+      pos: left=18.946in top=0.475in w=0.262in h=0.258in  [near-top(header zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '12'
+      run[p0r0]: text='12' font=Inter size=12.75pt bold=True italic=False color=A3AED0
+  --- Shape #6: name='Google Shape;612;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=0.917in w=20.075in h=0.642in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Prioritised Recommendations'
+      run[p0r0]: text='Prioritised Recommendations' font=Inter size=36.0pt bold=True italic=False color=1B2559
+  --- Shape #7: name='Google Shape;613;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.579in w=20.075in h=0.325in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Four actions, ordered by what this cycle’s data says will cost you most if ignor'
+      run[p0r0]: text='Four actions, ordered by what this cycle' font=Inter size=16.5pt bold=False italic=False color=707EAE
+  --- Shape #8: name='Google Shape;614;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=9.021in h=3.484in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #9: name='Google Shape;615;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.517in w=9.021in h=0.058in  []
+      fill: SOLID:EE5D50
+      line: color=None, width_pt=0.0
+  --- Shape #10: name='Google Shape;616;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=2.888in w=0.515in h=0.517in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '01'
+      run[p0r0]: text='01' font=Inter size=28.5pt bold=True italic=False color=E9EDF7
+  --- Shape #11: name='Google Shape;617;p14' type=AUTO_SHAPE (1)
+      pos: left=8.814in top=2.956in w=0.728in h=0.338in  []
+      fill: SOLID:FEEFEE
+      line: color=None, width_pt=0.0
+  --- Shape #12: name='Google Shape;618;p14' type=AUTO_SHAPE (1)
+      pos: left=8.96in top=3.029in w=0.52in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'HIGH'
+      run[p0r0]: text='HIGH' font=Inter size=11.25pt bold=True italic=False color=EE5D50
+  --- Shape #13: name='Google Shape;619;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=3.508in w=9.144in h=0.432in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Reorder the 3 SKUs nearing your low-stock threshold.'
+      run[p0r0]: text='Reorder the 3 SKUs nearing your low-stoc' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #14: name='Google Shape;620;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=4.024in w=8.562in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Earbuds X2 has 6 days of cover at the current order rate, and it is 12.9% of you'
+      run[p0r0]: text='Earbuds X2 has 6 days of cover at the cu' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #15: name='Google Shape;621;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=5.463in w=8.562in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Act this week'
+      run[p0r0]: text='Act this week' font=Inter size=13.5pt bold=True italic=False color=422AFB
+  --- Shape #16: name='Google Shape;622;p14' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=2.517in w=9.021in h=3.484in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #17: name='Google Shape;623;p14' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=2.517in w=9.021in h=0.058in  []
+      fill: SOLID:EE5D50
+      line: color=None, width_pt=0.0
+  --- Shape #18: name='Google Shape;624;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=2.888in w=0.593in h=0.517in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '02'
+      run[p0r0]: text='02' font=Inter size=28.5pt bold=True italic=False color=E9EDF7
+  --- Shape #19: name='Google Shape;625;p14' type=AUTO_SHAPE (1)
+      pos: left=18.043in top=2.956in w=0.728in h=0.338in  []
+      fill: SOLID:FEEFEE
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;626;p14' type=AUTO_SHAPE (1)
+      pos: left=18.189in top=3.029in w=0.52in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'HIGH'
+      run[p0r0]: text='HIGH' font=Inter size=11.25pt bold=True italic=False color=EE5D50
+  --- Shape #21: name='Google Shape;627;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=3.508in w=9.144in h=0.432in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Review pricing against Zenith Gadgets.'
+      run[p0r0]: text='Review pricing against Zenith Gadgets.' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #22: name='Google Shape;628;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=4.024in w=8.562in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'They repriced 32% of tracked SKUs this cycle while your premium sits at +6.3% ov'
+      run[p0r0]: text='They repriced 32% of tracked SKUs this c' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #23: name='Google Shape;629;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=5.463in w=8.562in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Act this week'
+      run[p0r0]: text='Act this week' font=Inter size=13.5pt bold=True italic=False color=422AFB
+  --- Shape #24: name='Google Shape;630;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.209in w=9.021in h=3.874in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;631;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=6.209in w=9.021in h=0.058in  []
+      fill: SOLID:FFB547
+      line: color=None, width_pt=0.0
+  --- Shape #26: name='Google Shape;632;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=6.58in w=0.6in h=0.517in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '03'
+      run[p0r0]: text='03' font=Inter size=28.5pt bold=True italic=False color=E9EDF7
+  --- Shape #27: name='Google Shape;633;p14' type=AUTO_SHAPE (1)
+      pos: left=8.53in top=6.648in w=1.011in h=0.338in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #28: name='Google Shape;634;p14' type=AUTO_SHAPE (1)
+      pos: left=8.676in top=6.721in w=0.803in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'MEDIUM'
+      run[p0r0]: text='MEDIUM' font=Inter size=11.25pt bold=True italic=False color=B37610
+  --- Shape #29: name='Google Shape;635;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=7.201in w=9.144in h=0.432in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Stock up where Volt Traders has gone out of stock.'
+      run[p0r0]: text='Stock up where Volt Traders has gone out' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #30: name='Google Shape;636;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=7.716in w=9.144in h=0.359in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '18 of their out-of-stock SKUs overlap your catalogue, mostly in Chargers.'
+      run[p0r0]: text='18 of their out-of-stock SKUs overlap yo' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #31: name='Google Shape;637;p14' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=9.546in w=8.562in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Next 30 days'
+      run[p0r0]: text='Next 30 days' font=Inter size=13.5pt bold=True italic=False color=422AFB
+  --- Shape #32: name='Google Shape;638;p14' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=6.209in w=9.021in h=3.874in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #33: name='Google Shape;639;p14' type=AUTO_SHAPE (1)
+      pos: left=10.104in top=6.209in w=9.021in h=0.058in  []
+      fill: SOLID:FFB547
+      line: color=None, width_pt=0.0
+  --- Shape #34: name='Google Shape;640;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=6.58in w=0.612in h=0.517in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: '04'
+      run[p0r0]: text='04' font=Inter size=28.5pt bold=True italic=False color=E9EDF7
+  --- Shape #35: name='Google Shape;641;p14' type=AUTO_SHAPE (1)
+      pos: left=17.76in top=6.648in w=1.011in h=0.338in  []
+      fill: SOLID:FFF6DA
+      line: color=None, width_pt=0.0
+  --- Shape #36: name='Google Shape;642;p14' type=AUTO_SHAPE (1)
+      pos: left=17.905in top=6.721in w=0.803in h=0.233in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'MEDIUM'
+      run[p0r0]: text='MEDIUM' font=Inter size=11.25pt bold=True italic=False color=B37610
+  --- Shape #37: name='Google Shape;643;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=7.201in w=8.562in h=0.823in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Re-check your band against the category’s typical range.'
+      run[p0r0]: text='Re-check your band against the category’' font=Inter size=22.5pt bold=True italic=False color=1B2559
+  --- Shape #38: name='Google Shape;644;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=8.107in w=8.562in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'You sit at the 82nd percentile — inside the recommended Rs 3,700–4,300 band, but'
+      run[p0r0]: text='You sit at the 82nd percentile — inside ' font=Inter size=15.75pt bold=False italic=False color=707EAE
+  --- Shape #39: name='Google Shape;645;p14' type=AUTO_SHAPE (1)
+      pos: left=10.458in top=9.546in w=8.562in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Next 30 days'
+      run[p0r0]: text='Next 30 days' font=Inter size=13.5pt bold=True italic=False color=422AFB
+  --- Shape #40: name='Google Shape;646;p14' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.875in  [near-bottom(footer zone),full-width]
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #41: name='Google Shape;647;p14' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=10.375in w=20.0in h=0.01in  [full-width]
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #42: name='Google Shape;648;p14' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.708in w=8.97in h=0.258in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Recommendations are generated from this cycle’s tracked signals only — no foreca'
+      run[p0r0]: text='Recommendations are generated from this ' font=Inter size=12.75pt bold=False italic=True color=707EAE
+  --- Shape #43: name='Google Shape;649;p14' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.633in w=1.419in h=0.367in  [near-bottom(footer zone)]
+      fill: SOLID:F2EFFF
+      line: color=None, width_pt=0.0
+  --- Shape #44: name='Google Shape;650;p14' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.717in w=1.044in h=0.242in  [near-bottom(footer zone)]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=1B2559
+
+####################################################################################################
+SLIDE 13  (layout='DEFAULT')
+####################################################################################################
+  --- Shape #1: name='Google Shape;656;p15' type=AUTO_SHAPE (1)
+      pos: left=0.0in top=0.0in w=20.0in h=11.25in  [near-top(header zone),near-bottom(footer zone),full-width,full-height]
+      fill: PICTURE (6)
+      line: color=None, width_pt=0.0
+  --- Shape #2: name='Google Shape;657;p15' type=PICTURE (13)
+      pos: left=0.875in top=0.667in w=0.354in h=0.354in  []
+      fill: None
+      line: color=None, width_pt=0.0
+  --- Shape #3: name='Google Shape;658;p15' type=AUTO_SHAPE (1)
+      pos: left=1.354in top=0.681in w=0.648in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl'
+      run[p0r0]: text='Ryvl' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #4: name='Google Shape;659;p15' type=AUTO_SHAPE (1)
+      pos: left=17.756in top=0.735in w=1.506in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Section 08 of 08'
+      run[p0r0]: text='Section 08 of 08' font=Inter size=12.75pt bold=True italic=False color=FFFFFF
+  --- Shape #5: name='Google Shape;660;p15' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=1.688in w=20.075in h=0.242in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'SECTION 08'
+      run[p0r0]: text='SECTION 08' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #6: name='Google Shape;661;p15' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=2.054in w=20.075in h=0.77in  [full-width]
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Methodology, Privacy & Data Sources'
+      run[p0r0]: text='Methodology, Privacy & Data Sources' font=Inter size=49.5pt bold=True italic=False color=FFFFFF
+  --- Shape #7: name='Google Shape;662;p15' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=3.366in w=5.917in h=6.455in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #8: name='Google Shape;663;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=3.699in w=5.729in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'DATA SOURCES'
+      run[p0r0]: text='DATA SOURCES' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #9: name='Google Shape;664;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=4.149in w=5.729in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Your store data'
+      run[p0r0]: text='Your store data' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #10: name='Google Shape;665;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=4.558in w=5.365in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Orders, products and customers from your own account.'
+      run[p0r0]: text='Orders, products and customers from your' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #11: name='Google Shape;666;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=5.442in w=5.208in h=0.01in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #12: name='Google Shape;667;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=5.703in w=5.729in h=0.367in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Ryvl market scan'
+      run[p0r0]: text='Ryvl market scan' font=Inter size=19.5pt bold=True italic=False color=FFFFFF
+  --- Shape #13: name='Google Shape;668;p15' type=AUTO_SHAPE (1)
+      pos: left=1.229in top=6.111in w=5.365in h=0.676in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Publicly listed prices and stock status scraped from tracked retailer marketplac'
+      run[p0r0]: text='Publicly listed prices and stock status ' font=Inter size=15.75pt bold=False italic=False color=FFFFFF
+  --- Shape #14: name='Google Shape;669;p15' type=AUTO_SHAPE (1)
+      pos: left=7.042in top=3.366in w=5.917in h=6.455in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #15: name='Google Shape;670;p15' type=AUTO_SHAPE (1)
+      pos: left=7.396in top=3.699in w=5.729in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'LIMITATIONS'
+      run[p0r0]: text='LIMITATIONS' font=Inter size=12.0pt bold=True italic=False color=FFFFFF
+  --- Shape #16: name='Google Shape;671;p15' type=AUTO_SHAPE (1)
+      pos: left=7.396in top=4.149in w=5.365in h=1.073in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Repricing rate is a floor, not exhaustive — price moves that reverted between sc'
+      run[p0r0]: text='Repricing rate is a floor, not exhaustiv' font=Inter size=16.5pt bold=False italic=False color=FFFFFF
+  --- Shape #17: name='Google Shape;672;p15' type=AUTO_SHAPE (1)
+      pos: left=7.396in top=5.431in w=5.208in h=0.01in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #18: name='Google Shape;673;p15' type=AUTO_SHAPE (1)
+      pos: left=7.396in top=5.691in w=5.365in h=0.729in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Product and portfolio contribution is based on inventory value, not recorded sal'
+      run[p0r0]: text='Product and portfolio contribution is ba' font=Inter size=16.5pt bold=False italic=False color=FFFFFF
+  --- Shape #19: name='Google Shape;674;p15' type=AUTO_SHAPE (1)
+      pos: left=13.208in top=3.366in w=5.917in h=6.455in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #20: name='Google Shape;675;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=3.699in w=5.729in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'REPORT STATUS'
+      run[p0r0]: text='REPORT STATUS' font=Inter size=12.0pt bold=True italic=False color=707EAE
+  --- Shape #21: name='Google Shape;676;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=4.129in w=1.207in h=0.392in  []
+      fill: SOLID:E6FAF5
+      line: color=None, width_pt=0.0
+  --- Shape #22: name='Google Shape;677;p15' type=AUTO_SHAPE (1)
+      pos: left=13.729in top=4.212in w=0.957in h=0.267in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Approved'
+      run[p0r0]: text='Approved' font=Inter size=13.5pt bold=True italic=False color=01875A
+  --- Shape #23: name='Google Shape;678;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=4.708in w=5.729in h=0.374in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Reviewed by staff@ryvl.com before release.'
+      run[p0r0]: text='Reviewed by staff@ryvl.com before releas' font=Inter size=16.5pt bold=False italic=False color=1B2559
+  --- Shape #24: name='Google Shape;679;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=5.29in w=5.208in h=0.01in  []
+      fill: SOLID:E9EDF7
+      line: color=None, width_pt=0.0
+  --- Shape #25: name='Google Shape;680;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=5.551in w=5.365in h=0.667in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Report ref 7F3A1C9D · generated 4 Aug 2026 for the last 30 days.'
+      run[p0r0]: text='Report ref 7F3A1C9D · generated 4 Aug 20' font=Inter size=15.0pt bold=False italic=False color=707EAE
+  --- Shape #26: name='Google Shape;681;p15' type=AUTO_SHAPE (1)
+      pos: left=13.562in top=9.238in w=5.729in h=0.292in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'End of report'
+      run[p0r0]: text='End of report' font=Inter size=15.0pt bold=True italic=False color=422AFB
+  --- Shape #27: name='Google Shape;682;p15' type=AUTO_SHAPE (1)
+      pos: left=0.875in top=10.365in w=8.476in h=0.258in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Every figure in this report traces to a tracked measurement — nothing is estimat'
+      run[p0r0]: text='Every figure in this report traces to a ' font=Inter size=12.75pt bold=False italic=True color=FFFFFF
+  --- Shape #28: name='Google Shape;683;p15' type=AUTO_SHAPE (1)
+      pos: left=17.706in top=10.279in w=1.419in h=0.388in  []
+      fill: SOLID:FFFFFF
+      line: color=None, width_pt=0.0
+  --- Shape #29: name='Google Shape;684;p15' type=AUTO_SHAPE (1)
+      pos: left=17.935in top=10.373in w=1.044in h=0.242in  []
+      fill: BACKGROUND (5)
+      line: color=None, width_pt=0.0
+      text[:80]: 'Confidential'
+      run[p0r0]: text='Confidential' font=Inter size=12.0pt bold=True italic=False color=4B3AF0
+
+====================================================================================================
+DEDUPLICATED PALETTE (hex -> occurrence count)
+====================================================================================================
+  #1B2559  x132
+      - slide2:Google Shape;61;p4(text) size=15.0pt bold=True text='Ryvl'
+      - slide2:Google Shape;63;p4(text) size=36.0pt bold=True text='What’s in this repor'
+      - slide2:Google Shape;68;p4(text) size=18.0pt bold=True text='Executive Snapshot &'
+      - slide2:Google Shape;73;p4(text) size=18.0pt bold=True text='Market Position & Be'
+      - slide2:Google Shape;78;p4(text) size=18.0pt bold=True text='Pricing Intelligence'
+      - slide2:Google Shape;83;p4(text) size=18.0pt bold=True text='Marketplace & Compet'
+      ... and 126 more
+  #FFFFFF  x128
+      - slide1:Google Shape;19;p3(text) size=19.5pt bold=True text='Ryvl'
+      - slide1:Google Shape;20;p3(text) size=12.0pt bold=True text='SELLER MARKET INTELL'
+      - slide1:Google Shape;21;p3(text) size=64.5pt bold=True text='Aura Mobile Accessor'
+      - slide1:Google Shape;22;p3(text) size=23.25pt bold=False text='Market intelligence '
+      - slide1:Google Shape;23;p3(fill) pos=(0.875,5.594) size=(12.292x0.01) text=''
+      - slide1:Google Shape;24;p3(text) size=15.0pt bold=False text='Last 30 days'
+      ... and 122 more
+  #707EAE  x54
+      - slide1:Google Shape;52;p3(text) size=14.25pt bold=False text='Generated automatica'
+      - slide2:Google Shape;64;p4(text) size=16.5pt bold=False text='8 of 12 sections hav'
+      - slide2:Google Shape;125;p4(text) size=12.75pt bold=False text='Section inclusion is'
+      - slide3:Google Shape;139;p5(text) size=16.5pt bold=False text='Aura Mobile Accessor'
+      - slide3:Google Shape;141;p5(text) size=12.0pt bold=True text='REVENUE'
+      - slide3:Google Shape;147;p5(text) size=12.0pt bold=True text='ORDERS'
+      ... and 48 more
+  #F0F3FA  x47
+      - slide2:Google Shape;66;p4(fill) pos=(1.208,3.483) size=(8.667x0.01) text=''
+      - slide2:Google Shape;71;p4(fill) pos=(1.208,4.146) size=(8.667x0.01) text=''
+      - slide2:Google Shape;76;p4(fill) pos=(1.208,4.808) size=(8.667x0.01) text=''
+      - slide2:Google Shape;81;p4(fill) pos=(1.208,5.471) size=(8.667x0.01) text=''
+      - slide2:Google Shape;86;p4(fill) pos=(1.208,6.133) size=(8.667x0.01) text=''
+      - slide2:Google Shape;96;p4(fill) pos=(10.792,3.483) size=(8.0x0.01) text=''
+      ... and 41 more
+  #A3AED0  x43
+      - slide2:Google Shape;62;p4(text) size=12.75pt bold=True text='02'
+      - slide2:Google Shape;67;p4(text) size=13.5pt bold=True text='01'
+      - slide2:Google Shape;72;p4(text) size=13.5pt bold=True text='02'
+      - slide2:Google Shape;77;p4(text) size=13.5pt bold=True text='03'
+      - slide2:Google Shape;82;p4(text) size=13.5pt bold=True text='04'
+      - slide2:Google Shape;87;p4(text) size=13.5pt bold=True text='05'
+      ... and 37 more
+  #E9EDF7  x27
+      - slide2:Google Shape;59;p4(fill) pos=(0.0,2.175) size=(20.0x0.01) text=''
+      - slide2:Google Shape;124;p4(fill) pos=(0.0,10.375) size=(20.0x0.01) text=''
+      - slide3:Google Shape;134;p5(fill) pos=(0.0,2.175) size=(20.0x0.01) text=''
+      - slide3:Google Shape;189;p5(fill) pos=(0.0,10.375) size=(20.0x0.01) text=''
+      - slide4:Google Shape;213;p6(fill) pos=(13.208,4.915) size=(6.292x0.01) text=''
+      - slide4:Google Shape;216;p6(fill) pos=(15.31,5.235) size=(0.01x1.017) text=''
+      ... and 21 more
+  #F4F7FE  x23
+      - slide1:Google Shape;47;p3(fill) pos=(14.042,0.0) size=(5.958x11.25) text=''
+      - slide2:Google Shape;109;p4(fill) pos=(17.325,4.344) size=(1.467x0.296) text=''
+      - slide2:Google Shape;114;p4(fill) pos=(17.325,5.006) size=(1.467x0.296) text=''
+      - slide2:Google Shape;118;p4(fill) pos=(17.955,5.669) size=(0.836x0.296) text=''
+      - slide4:Google Shape;222;p6(fill) pos=(13.208,6.71) size=(6.292x2.542) text=''
+      - slide7:Google Shape;322;p9(fill) pos=(14.034,3.925) size=(4.779x0.167) text=''
+      ... and 17 more
+  #422AFB  x20
+      - slide2:Google Shape;121;p4(text) size=12.0pt bold=True text='HOW THIS REPORT IS B'
+      - slide4:Google Shape;215;p6(text) size=33.0pt bold=True text='82nd'
+      - slide4:Google Shape;230;p6(text) size=15.75pt bold=False text='Your position'
+      - slide4:Google Shape;231;p6(text) size=19.5pt bold=True text='82'
+      - slide5:Google Shape;250;p7(fill) pos=(12.438,2.906) size=(0.146x0.146) text=''
+      - slide5:Google Shape;263;p7(text) size=24.0pt bold=True text='82'
+      ... and 14 more
+  #01B574  x17
+      - slide2:Google Shape;70;p4(text) size=11.25pt bold=True text='Included'
+      - slide2:Google Shape;75;p4(text) size=11.25pt bold=True text='Included'
+      - slide2:Google Shape;80;p4(text) size=11.25pt bold=True text='Included'
+      - slide2:Google Shape;85;p4(text) size=11.25pt bold=True text='Included'
+      - slide2:Google Shape;90;p4(text) size=11.25pt bold=True text='Included'
+      - slide2:Google Shape;94;p4(text) size=11.25pt bold=True text='Included'
+      ... and 11 more
+  #E6FAF5  x15
+      - slide2:Google Shape;69;p4(fill) pos=(8.987,3.019) size=(0.888x0.296) text=''
+      - slide2:Google Shape;74;p4(fill) pos=(8.987,3.681) size=(0.888x0.296) text=''
+      - slide2:Google Shape;79;p4(fill) pos=(8.987,4.344) size=(0.888x0.296) text=''
+      - slide2:Google Shape;84;p4(fill) pos=(8.987,5.006) size=(0.888x0.296) text=''
+      - slide2:Google Shape;89;p4(fill) pos=(8.987,5.669) size=(0.888x0.296) text=''
+      - slide2:Google Shape;93;p4(fill) pos=(8.987,6.331) size=(0.888x0.296) text=''
+      ... and 9 more
+  #F2EFFF  x13
+      - slide2:Google Shape;120;p4(fill) pos=(10.458,6.675) size=(8.667x1.627) text=''
+      - slide2:Google Shape;126;p4(fill) pos=(17.706,10.633) size=(1.419x0.367) text=''
+      - slide3:Google Shape;191;p5(fill) pos=(17.706,10.633) size=(1.419x0.367) text=''
+      - slide4:Google Shape;232;p6(fill) pos=(13.208,9.46) size=(6.292x1.206) text=''
+      - slide5:Google Shape;265;p7(fill) pos=(14.322,6.033) size=(4.803x4.05) text=''
+      - slide5:Google Shape;271;p7(fill) pos=(17.706,10.633) size=(1.419x0.367) text=''
+      ... and 7 more
+  #B37610  x10
+      - slide3:Google Shape;162;p5(text) size=12.0pt bold=True text='Below threshold'
+      - slide3:Google Shape;178;p5(text) size=10.5pt bold=True text='WATCH'
+      - slide9:Google Shape;398;p11(text) size=14.25pt bold=True text='+32%'
+      - slide9:Google Shape;444;p11(text) size=12.0pt bold=True text='MOST ACTIVE REPRICER'
+      - slide11:Google Shape;568;p13(text) size=11.25pt bold=True text='WATCH'
+      - slide11:Google Shape;571;p13(text) size=21.0pt bold=True text='11 days'
+      ... and 4 more
+  #EE5D50  x9
+      - slide7:Google Shape;311;p9(fill) pos=(9.833,2.967) size=(0.188x0.025) text=''
+      - slide9:Google Shape;407;p11(fill) pos=(8.663,4.188) size=(0.859x0.125) text=''
+      - slide9:Google Shape;408;p11(text) size=14.25pt bold=True text='55%'
+      - slide11:Google Shape;561;p13(text) size=11.25pt bold=True text='CRITICAL'
+      - slide11:Google Shape;564;p13(text) size=21.0pt bold=True text='6 days'
+      - slide12:Google Shape;615;p14(fill) pos=(0.875,2.517) size=(9.021x0.058) text=''
+      ... and 3 more
+  #FFF6DA  x8
+      - slide3:Google Shape;161;p5(fill) pos=(15.01,3.904) size=(1.517x0.304) text=''
+      - slide3:Google Shape;177;p5(fill) pos=(11.421,5.596) size=(0.781x0.3) text=''
+      - slide9:Google Shape;397;p11(fill) pos=(13.269,3.371) size=(0.866x0.367) text=''
+      - slide9:Google Shape;443;p11(fill) pos=(14.677,2.517) size=(4.448x2.223) text=''
+      - slide11:Google Shape;567;p13(fill) pos=(1.208,4.579) size=(0.908x0.338) text=''
+      - slide11:Google Shape;573;p13(fill) pos=(1.208,5.675) size=(0.908x0.338) text=''
+      ... and 2 more
+  #4B3AF0  x7
+      - slide1:Google Shape;16;p3(fill) pos=(0.0,0.0) size=(14.042x11.25) text=''
+      - slide1:Google Shape;49;p3(text) size=12.0pt bold=True text='Confidential'
+      - slide3:Google Shape;164;p5(fill) pos=(0.875,4.729) size=(10.005x5.354) text=''
+      - slide6:Google Shape;278;p8(fill) pos=(0.0,0.0) size=(0.271x11.25) text=''
+      - slide7:Google Shape;336;p9(fill) pos=(13.721,8.383) size=(5.404x1.7) text=''
+      - slide11:Google Shape;594;p13(fill) pos=(12.175,7.635) size=(6.95x2.448) text=''
+      ... and 1 more
+  #FFB547  x4
+      - slide9:Google Shape;439;p11(fill) pos=(8.663,6.237) size=(1.234x0.125) text=''
+      - slide10:Google Shape;535;p12(fill) pos=(13.646,5.879) size=(1.912x0.167) text=''
+      - slide12:Google Shape;631;p14(fill) pos=(0.875,6.209) size=(9.021x0.058) text=''
+      - slide12:Google Shape;639;p14(fill) pos=(10.104,6.209) size=(9.021x0.058) text=''
+  #01875A  x4
+      - slide9:Google Shape;448;p11(text) size=12.0pt bold=True text='SUPPLY VOID'
+      - slide11:Google Shape;586;p13(text) size=12.0pt bold=True text='Demand you can absor'
+      - slide11:Google Shape;593;p13(text) size=12.0pt bold=True text='Demand you can absor'
+      - slide13:Google Shape;677;p15(text) size=13.5pt bold=True text='Approved'
+  #E1E7F5  x3
+      - slide1:Google Shape;51;p3(fill) pos=(14.542,9.835) size=(4.958x0.01) text=''
+      - slide4:Google Shape;226;p6(fill) pos=(13.521,7.852) size=(5.667x0.01) text=''
+      - slide4:Google Shape;229;p6(fill) pos=(13.521,8.479) size=(5.667x0.01) text=''
+  #C6CEE6  x3
+      - slide2:Google Shape;107;p4(text) size=13.5pt bold=True text='—'
+      - slide2:Google Shape;112;p4(text) size=13.5pt bold=True text='—'
+      - slide2:Google Shape;116;p4(text) size=13.5pt bold=True text='—'
+  #3965FF  x3
+      - slide3:Google Shape;156;p5(text) size=12.0pt bold=True text='100 = market median'
+      - slide3:Google Shape;186;p5(text) size=10.5pt bold=True text='POSITION'
+      - slide7:Google Shape;331;p9(fill) pos=(14.034,5.325) size=(1.72x0.167) text=''
+  #FEEFEE  x3
+      - slide11:Google Shape;560;p13(fill) pos=(1.208,3.483) size=(1.081x0.338) text=''
+      - slide12:Google Shape;617;p14(fill) pos=(8.814,2.956) size=(0.728x0.338) text=''
+      - slide12:Google Shape;625;p14(fill) pos=(18.043,2.956) size=(0.728x0.338) text=''
+  #6CF2BD  x2
+      - slide1:Google Shape;38;p3(text) size=15.0pt bold=True text='+18.4%'
+      - slide1:Google Shape;42;p3(text) size=15.0pt bold=True text='+12.0%'
+  #EFF4FB  x2
+      - slide3:Google Shape;155;p5(fill) pos=(10.396,3.904) size=(1.894x0.304) text=''
+      - slide3:Google Shape;185;p5(fill) pos=(11.421,7.65) size=(0.955x0.3) text=''
+  #E9E3FF  x1
+      - slide1:Google Shape;48;p3(line)
+  #D9D3FF  x1
+      - slide5:Google Shape;248;p7(fill) pos=(10.738,2.906) size=(0.146x0.146) text=''
+  #0B1437  x1
+      - slide9:Google Shape;380;p11(fill) pos=(1.0,2.621) size=(13.344x0.583) text=''
+  #7A5A18  x1
+      - slide9:Google Shape;446;p11(text) size=15.75pt bold=False text='Moved price on 27 of'
+  #0A6A4A  x1
+      - slide9:Google Shape;450;p11(text) size=15.75pt bold=False text='Out of stock on 45% '
+  #5B45FF  x1
+      - slide10:Google Shape;493;p12(fill) pos=(6.917,4.619) size=(3.281x0.146) text=''
+  #7551FF  x1
+      - slide10:Google Shape;501;p12(fill) pos=(6.917,5.552) size=(2.669x0.146) text=''
+  #8E74FF  x1
+      - slide10:Google Shape;509;p12(fill) pos=(6.917,6.485) size=(2.231x0.146) text=''
+  #A995FF  x1
+      - slide10:Google Shape;515;p12(fill) pos=(6.917,7.419) size=(1.619x0.146) text=''
+  #6AD2FF  x1
+      - slide10:Google Shape;527;p12(fill) pos=(13.646,4.421) size=(3.668x0.167) text=''
+
+====================================================================================================
+DISTINCT FONT FAMILIES
+====================================================================================================
+  Inter  (used in 358 runs)

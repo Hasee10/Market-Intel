@@ -410,6 +410,29 @@ only thing both sides depend on.
 
 ## 5. Section inclusion rules
 
+> **Design refresh, 2026-08-04.** The visual system was replaced with the
+> approved reference deck at
+> `docs/report-reference/new-slides/New_Slides.pptx` (structurally extracted
+> via python-pptx, every value below taken from that file rather than
+> approximated). Canvas moved 13.333x7.5in -> **20x11.25in**, the palette
+> moved to brand purple `#4B3AF0` / accent `#422AFB` on an `#F4F7FE` canvas,
+> and the deck gained two new slide types: a **dynamic table of contents**
+> (lists every candidate section with Included / Not enough data / Omitted
+> status - omitted sections are shown, not hidden) and **chapter divider**
+> slides (full-bleed purple, ghost numeral, 3-stat strip). Both only appear
+> once a report clears `MIN_SECTIONS_FOR_CHAPTERS` (5 content sections), so
+> a thin report stays 2 slides rather than gaining ceremony it hasn't
+> earned. The old 13.333in renderer and its palette are gone, not
+> deprecated.
+>
+> One deliberate divergence from the reference: that deck built its
+> percentile/price-ladder visuals as **pre-rendered picture objects** and
+> used zero native tables or charts. This implementation rebuilds those as
+> real shapes and native chart objects - verified on generated output:
+> 22 slides, 2 native charts, **0 pictures**. Pasting images would have
+> reproduced exactly the flattened-slide failure this whole rebuild exists
+> to fix.
+
 | # | Section | Included when | Omitted/collapsed when |
 |---|---|---|---|
 | 1 | Cover & metadata | Always | Never omitted |

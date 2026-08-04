@@ -2,35 +2,44 @@
 
 import pptxgen from 'pptxgenjs';
 import type { ReportSnapshot } from '../../schema';
-import { buildSectionPlan, type PlannedSection, ROWS_PER_TABLE_PAGE } from '../../section-plan';
-import { formatCurrency, formatDate, formatPercent } from '../../design-tokens';
+import { buildSectionPlan, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
+import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatPercent } from '../../design-tokens';
 import {
-  addBackground,
-  addHeader,
-  addFooter,
-  addKpiCardRow,
-  kpiCardFromGrowth,
-  addNativeTable,
-  addBarChart,
-  addLineChart,
-  addInsightCallout,
-  addRecommendationCard,
-  addSectionDivider,
-  addConfidentialityLabel,
-  MARGIN,
-  CONTENT_W,
   SLIDE_W,
   SLIDE_H,
+  MARGIN,
+  CONTENT_W,
+  CONTENT_TOP,
+  TYPE,
+  addCanvas,
+  addHeader,
+  addFooter,
+  addCard,
+  addCardHeading,
+  addEyebrow,
+  addKpiCardRow,
+  kpiCardFromGrowth,
+  addPill,
+  addBarRows,
+  addDataRows,
+  addInsightPanel,
+  addRecommendationCard,
+  addSectionDivider,
+  addConfidentialityPill,
+  addNativeBarChart,
+  addNativeLineChart,
+  type KpiCardSpec,
+  type BarRowSpec,
 } from './components';
 
-// Generates the entire deck from scratch, in code, every time - no base
-// .pptx template file is loaded or modified. This is the direct fix for
-// two problems found in the previous system: (1) a fixed 11-slide template
-// that always emitted every slide regardless of data (docs/reports-v2-
-// architecture.md §5's "dynamic slide count" section), and (2) fragile
-// coupling to Google-Slides-auto-generated shape names. Every element here
-// is a native OOXML object (text/table/chart/shape) via pptxgenjs -
-// genuinely editable in PowerPoint, nothing flattened to an image.
+// Generates the entire deck from scratch, in code - no base .pptx template
+// file is loaded or modified. Layout, palette and type scale mirror the
+// approved reference deck (docs/report-reference/new-slides/New_Slides.pptx),
+// but every element here is a native OOXML object (text/table/chart/shape)
+// via pptxgenjs, so the output is genuinely editable in PowerPoint. There is
+// deliberately no addImage call in this file: the reference deck pasted
+// pre-rendered pictures for some of its charts, which is exactly the
+// flattened-image failure mode the brief forbids.
 export async function buildReportDeck(snapshot: ReportSnapshot): Promise<Buffer> {
   const plan = buildSectionPlan(snapshot);
   const pptx = new pptxgen();
@@ -40,13 +49,12 @@ export async function buildReportDeck(snapshot: ReportSnapshot): Promise<Buffer>
   pptx.company = 'Ryvl';
   pptx.title = `${snapshot.workspace.businessName} - ${snapshot.metadata.period.label}`;
 
-  // One running index across the whole deck (not per-section) - the "Slide
-  // N" label in every header comes from here, so it always matches the
-  // deck's actual, data-driven length instead of a number baked in per slide.
+  // One running index across the whole deck - the "NN" label in every header
+  // comes from here, so it always matches the deck's real, data-driven length.
   let slideIndex = 0;
-  const label = (section: PlannedSection) => {
+  const label = () => {
     slideIndex += 1;
-    return pageLabel(section, slideIndex);
+    return String(slideIndex).padStart(2, '0');
   };
 
   for (const section of plan.sections) {
@@ -55,91 +63,108 @@ export async function buildReportDeck(snapshot: ReportSnapshot): Promise<Buffer>
         slideIndex += 1;
         buildCoverSlide(pptx, snapshot);
         break;
+      case 'toc':
+        buildTocSlide(pptx, snapshot, plan, label());
+        break;
+      case 'section_divider':
+        slideIndex += 1;
+        addSectionDivider(
+          pptx,
+          section.chapterNumber ?? 1,
+          section.chapterTotal ?? 1,
+          section.title,
+          section.dividerSubtitle ?? '',
+          section.dividerStats ?? [],
+          snapshot.metadata.mode,
+        );
+        break;
       case 'executive_snapshot':
-        buildExecutiveSnapshotSlide(pptx, snapshot, section, label(section));
+        buildExecutiveSnapshotSlide(pptx, snapshot, label());
         break;
       case 'market_position':
-        buildMarketPositionSlide(pptx, snapshot, section, label(section));
+        buildMarketPositionSlide(pptx, snapshot, label());
         break;
       case 'pricing_intelligence':
-        buildPricingIntelligenceSlide(pptx, snapshot, section, label(section));
+        buildPricingIntelligenceSlide(pptx, snapshot, label());
         break;
       case 'competitor_tracking':
-        buildCompetitorTrackingSlide(pptx, snapshot, section, label(section));
+        buildCompetitorTrackingSlide(pptx, snapshot, section, label());
         break;
       case 'sku_performance':
-        buildSkuPerformanceSlide(pptx, snapshot, section, label(section));
+        buildSkuPerformanceSlide(pptx, snapshot, section, label());
         break;
       case 'inventory_risk':
-        buildInventoryRiskSlide(pptx, snapshot, section, label(section));
+        buildInventoryRiskSlide(pptx, snapshot, label());
         break;
       case 'portfolio_contribution':
-        buildPortfolioSlide(pptx, snapshot, section, label(section));
+        buildPortfolioSlide(pptx, snapshot, label());
         break;
       case 'customer_health':
-        buildCustomerHealthSlide(pptx, snapshot, section, label(section));
+        buildCustomerHealthSlide(pptx, snapshot, label());
         break;
       case 'recommendations':
-        buildRecommendationsSlide(pptx, snapshot, section, label(section));
+        buildRecommendationsSlide(pptx, snapshot, label());
         break;
       case 'roadmap':
-        buildRoadmapSlide(pptx, snapshot, section, label(section));
+        buildRoadmapSlide(pptx, snapshot, label());
         break;
       case 'methodology':
-        buildMethodologySlide(pptx, snapshot, section, label(section));
+        buildMethodologySlide(pptx, snapshot, label());
         break;
       case 'appendix':
-        buildAppendixSlide(pptx, snapshot, section, label(section));
+        buildAppendixSlide(pptx, snapshot, label());
         break;
     }
   }
 
-  const buffer = (await pptx.write({ outputType: 'nodebuffer' })) as Buffer;
-  return buffer;
+  return (await pptx.write({ outputType: 'nodebuffer' })) as Buffer;
 }
 
 function sourceLine(snapshot: ReportSnapshot): string {
-  return `Source: ${snapshot.methodology.dataSources.map((s) => s.name).join(' · ')} · Generated ${formatDate(snapshot.metadata.generatedAt)}`;
-}
-
-function pageLabel(section: PlannedSection, totalIndex: number): string {
-  return section.pageCount > 1 ? `Slide ${totalIndex} · ${section.page + 1}/${section.pageCount}` : `Slide ${totalIndex}`;
+  return `Source: ${snapshot.methodology.dataSources.map((s) => s.name).join(' - ')}  ·  Generated ${formatDate(snapshot.metadata.generatedAt)}`;
 }
 
 // -- Cover -------------------------------------------------------------
 
 function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
   const slide = pptx.addSlide();
-  addBackground(slide, '0B1437');
+  addCanvas(slide, COLORS.canvas);
+
+  // Split canvas: brand-purple content panel left, light strip right.
+  const panelW = 14.042;
+  slide.addShape('rect', { x: 0, y: 0, w: panelW, h: SLIDE_H, fill: { color: COLORS.brand }, line: { type: 'none' } });
+
   slide.addText('Ryvl', {
     x: MARGIN,
-    y: 0.5,
+    y: 0.667,
     w: 3,
-    h: 0.4,
-    fontFace: 'Inter',
-    fontSize: 16,
+    h: 0.36,
+    fontFace: FONT_FAMILY,
+    fontSize: 18,
     bold: true,
-    color: '4318FF',
+    color: COLORS.paper,
   });
-  slide.addText(`Ref: ${snapshot.metadata.reportId.slice(0, 8).toUpperCase()}`, {
-    x: SLIDE_W - MARGIN - 3,
-    y: 0.5,
-    w: 3,
-    h: 0.4,
-    align: 'right',
-    fontFace: 'Inter',
-    fontSize: 10,
-    color: 'A3AED0',
-  });
-  slide.addText(`${snapshot.workspace.businessName}`, {
+  slide.addText('SELLER MARKET INTELLIGENCE  ·  PERIODIC BRIEFING', {
     x: MARGIN,
     y: 2.6,
-    w: CONTENT_W,
-    h: 1.4,
-    fontFace: 'Inter',
-    fontSize: 40,
+    w: panelW - MARGIN * 2,
+    h: 0.32,
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.kpiLabel,
     bold: true,
-    color: 'FFFFFF',
+    color: COLORS.paper,
+    charSpacing: 2,
+    transparency: 35,
+  });
+  slide.addText(snapshot.workspace.businessName, {
+    x: MARGIN,
+    y: 3.2,
+    w: panelW - MARGIN * 2,
+    h: 1.8,
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.coverTitle,
+    bold: true,
+    color: COLORS.paper,
   });
   slide.addText(
     snapshot.workspace.categories.length > 0
@@ -147,87 +172,255 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
       : 'Seller market intelligence report',
     {
       x: MARGIN,
-      y: 3.85,
-      w: CONTENT_W,
-      h: 0.5,
-      fontFace: 'Inter',
-      fontSize: 15,
-      color: 'A3AED0',
+      y: 5.15,
+      w: panelW - MARGIN * 2,
+      h: 0.6,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.coverSubtitle,
+      color: COLORS.paper,
+      transparency: 20,
     },
   );
-  slide.addText(`Period: ${snapshot.metadata.period.label}  ·  Generated ${formatDate(snapshot.metadata.generatedAt)}`, {
-    x: MARGIN,
-    y: SLIDE_H - 1.1,
-    w: CONTENT_W,
-    h: 0.4,
-    fontFace: 'Inter',
-    fontSize: 11,
-    color: '667085',
+  slide.addText(
+    `${snapshot.metadata.period.label}   ·   Generated ${formatDate(snapshot.metadata.generatedAt)}   ·   Ref: ${snapshot.metadata.reportId.slice(0, 8).toUpperCase()}`,
+    {
+      x: MARGIN,
+      y: 6.1,
+      w: panelW - MARGIN * 2,
+      h: 0.4,
+      fontFace: FONT_FAMILY,
+      fontSize: 14,
+      color: COLORS.paper,
+      transparency: 35,
+    },
+  );
+
+  // Headline KPI strip along the bottom of the purple panel - only the
+  // metrics that actually exist, never padded to a fixed count.
+  const cards: KpiCardSpec[] = [];
+  const currency = snapshot.workspace.reportingCurrency;
+  if (snapshot.revenue) {
+    cards.push(kpiCardFromGrowth('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency), true));
+    cards.push(kpiCardFromGrowth('Orders', snapshot.revenue.orders, (v) => String(Math.round(v)), true));
+  }
+  if (snapshot.competitorBenchmarks) {
+    cards.push({
+      label: 'Competitors tracked',
+      valueText: String(snapshot.competitorBenchmarks.scorecards.length),
+      onDark: true,
+    });
+  }
+  if (cards.length > 0) {
+    slide.addShape('rect', {
+      x: MARGIN,
+      y: 8.5,
+      w: panelW - MARGIN * 2,
+      h: 0.012,
+      fill: { color: COLORS.paper },
+      line: { type: 'none' },
+    });
+    addKpiCardRow(slide, cards, MARGIN, 8.9, panelW - MARGIN * 2, 1.3);
+  }
+
+  // Right strip: report metadata block, no decorative imagery.
+  slide.addText('PREPARED FOR', {
+    x: panelW + 0.75,
+    y: 3.2,
+    w: SLIDE_W - panelW - 1.5,
+    h: 0.3,
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.kpiLabel,
+    bold: true,
+    color: COLORS.grayLight,
+    charSpacing: 1.2,
   });
-  addConfidentialityLabel(slide, snapshot.metadata.mode);
+  slide.addText(snapshot.workspace.businessName, {
+    x: panelW + 0.75,
+    y: 3.55,
+    w: SLIDE_W - panelW - 1.5,
+    h: 0.9,
+    fontFace: FONT_FAMILY,
+    fontSize: 22,
+    bold: true,
+    color: COLORS.ink,
+  });
+  slide.addText('REPORTING PERIOD', {
+    x: panelW + 0.75,
+    y: 4.7,
+    w: SLIDE_W - panelW - 1.5,
+    h: 0.3,
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.kpiLabel,
+    bold: true,
+    color: COLORS.grayLight,
+    charSpacing: 1.2,
+  });
+  slide.addText(snapshot.metadata.period.label, {
+    x: panelW + 0.75,
+    y: 5.05,
+    w: SLIDE_W - panelW - 1.5,
+    h: 0.5,
+    fontFace: FONT_FAMILY,
+    fontSize: 18,
+    color: COLORS.ink,
+  });
+
+  addConfidentialityPill(slide, snapshot.metadata.mode, SLIDE_W - MARGIN - 2.42, 10.5);
+}
+
+// -- Table of contents ---------------------------------------------------
+
+function buildTocSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionPlan, pageLabel: string): void {
+  const slide = pptx.addSlide();
+  addCanvas(slide);
+  addHeader(
+    slide,
+    "What's in this report",
+    `${plan.includedSectionCount} of ${plan.candidateSectionCount} sections have enough tracked data this cycle`,
+    pageLabel,
+  );
+
+  const colGap = 0.58;
+  const colW = (CONTENT_W - colGap) / 2;
+  const rowPitch = 0.663;
+  const perColumn = Math.ceil(plan.toc.length / 2);
+  const cardH = perColumn * rowPitch + 0.75;
+
+  [0, 1].forEach((col) => {
+    const entries = plan.toc.slice(col * perColumn, (col + 1) * perColumn);
+    if (entries.length === 0) return;
+    const x = MARGIN + col * (colW + colGap);
+    addCard(slide, x, CONTENT_TOP, colW, cardH);
+
+    entries.forEach((entry, i) => {
+      const y = CONTENT_TOP + 0.46 + i * rowPitch;
+      const included = entry.status === 'included';
+      slide.addText(entry.number != null ? String(entry.number).padStart(2, '0') : '—', {
+        x: x + 0.42,
+        y,
+        w: 0.7,
+        h: 0.36,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowSubtitle,
+        bold: true,
+        color: included ? COLORS.grayLight : COLORS.grayLightest,
+      });
+      slide.addText(entry.title, {
+        x: x + 1.15,
+        y: y - 0.04,
+        w: colW - 3.6,
+        h: 0.4,
+        fontFace: FONT_FAMILY,
+        fontSize: 18,
+        bold: included,
+        color: included ? COLORS.ink : COLORS.grayLight,
+      });
+      const pillText =
+        entry.status === 'included' ? 'Included' : entry.status === 'omitted' ? 'Omitted' : 'Not enough data';
+      addPill(
+        slide,
+        pillText,
+        entry.status === 'included' ? 'positive' : 'neutral',
+        x + colW - 2.1,
+        y,
+        1.68,
+      );
+      if (i < entries.length - 1) {
+        slide.addShape('rect', {
+          x: x + 0.42,
+          y: y + rowPitch - 0.17,
+          w: colW - 0.84,
+          h: 0.012,
+          fill: { color: COLORS.hairlineSoft },
+          line: { type: 'none' },
+        });
+      }
+    });
+  });
+
+  addInsightPanel(
+    slide,
+    'How this report is built',
+    'Sections appear only when the underlying data supports them. Anything marked "not enough data" was considered and left out rather than shown with a misleading zero - the methodology page lists every source and limitation behind the numbers here.',
+    MARGIN,
+    CONTENT_TOP + cardH + 0.4,
+    CONTENT_W,
+    1.5,
+  );
+
+  addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
 }
 
 // -- Executive snapshot --------------------------------------------------
 
-function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Executive Snapshot & Key Signals', snapshot.metadata.period.label, label);
+  addCanvas(slide);
+  addHeader(
+    slide,
+    'Executive Snapshot & Key Signals',
+    `${snapshot.workspace.businessName} · ${snapshot.metadata.period.label}`,
+    pageLabel,
+  );
 
-  const cards = [];
   const currency = snapshot.workspace.reportingCurrency;
+  const cards: KpiCardSpec[] = [];
   if (snapshot.revenue) {
     cards.push(kpiCardFromGrowth('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)));
     cards.push(kpiCardFromGrowth('Orders', snapshot.revenue.orders, (v) => String(Math.round(v))));
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
     cards.push({
-      label: 'Price Index',
+      label: 'Price index',
       valueText: snapshot.marketplacePerformance.priceIndex.value.toFixed(0),
       deltaText: '100 = at market median',
     });
   }
   if (snapshot.inventoryRisk) {
     cards.push({
-      label: 'Stockout Risk SKUs',
+      label: 'Stockout risk SKUs',
       valueText: String(snapshot.inventoryRisk.lowStockSkuCount),
       deltaText: 'Below low-stock threshold',
     });
   }
+  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
-  addKpiCardRow(slide, cards, MARGIN, 1.85, CONTENT_W, 1.15);
+  const lowerY = CONTENT_TOP + 2.25;
+  const lowerH = 10.375 - lowerY - 0.4;
+  const narrative = snapshot.appendix?.aiSummary as string | undefined;
+  const signals = snapshot.marketSignals.slice(0, 4);
 
-  const narrative = (snapshot.appendix?.aiSummary as string | undefined) ?? null;
-  const calloutY = 3.25;
-  if (narrative) {
-    addInsightCallout(slide, narrative, MARGIN, calloutY, CONTENT_W, 0.9);
-  }
-
-  const signalsY = narrative ? calloutY + 1.05 : calloutY;
-  const topSignals = snapshot.marketSignals.slice(0, 3);
-  if (topSignals.length > 0) {
-    slide.addText('WHAT CHANGED THIS CYCLE', {
-      x: MARGIN,
-      y: signalsY,
-      w: CONTENT_W,
-      h: 0.3,
-      fontFace: 'Inter',
-      fontSize: 10,
-      bold: true,
-      color: '667085',
-      charSpacing: 1,
-    });
-    topSignals.forEach((signal, i) => {
-      slide.addText(`•  ${signal.description}`, {
-        x: MARGIN,
-        y: signalsY + 0.32 + i * 0.34,
-        w: CONTENT_W,
-        h: 0.32,
-        fontFace: 'Inter',
-        fontSize: 11,
-        color: '1B2559',
+  if (signals.length > 0) {
+    const signalsW = narrative ? CONTENT_W * 0.58 : CONTENT_W;
+    addCard(slide, MARGIN, lowerY, signalsW, lowerH);
+    addCardHeading(slide, 'What changed this cycle', MARGIN + 0.42, lowerY + 0.36, signalsW - 0.84);
+    signals.forEach((signal, i) => {
+      const sy = lowerY + 1.0 + i * 0.92;
+      slide.addShape('rect', {
+        x: MARGIN + 0.42,
+        y: sy + 0.12,
+        w: 0.06,
+        h: 0.52,
+        fill: { color: COLORS.brandAccent },
+        line: { type: 'none' },
+      });
+      slide.addText(signal.description, {
+        x: MARGIN + 0.75,
+        y: sy,
+        w: signalsW - 1.4,
+        h: 0.76,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.body,
+        color: COLORS.ink,
+        valign: 'middle',
       });
     });
+  }
+
+  if (narrative) {
+    const panelX = signals.length > 0 ? MARGIN + CONTENT_W * 0.58 + 0.42 : MARGIN;
+    const panelW = signals.length > 0 ? CONTENT_W * 0.42 - 0.42 : CONTENT_W;
+    addInsightPanel(slide, 'Read', narrative, panelX, lowerY, panelW, lowerH);
   }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -235,39 +428,51 @@ function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, se
 
 // -- Market position -----------------------------------------------------
 
-function buildMarketPositionSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildMarketPositionSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const mp = snapshot.marketplacePerformance;
   if (!mp) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
+  addCanvas(slide);
   addHeader(
     slide,
     'Market Position & Benchmark Percentiles',
-    `Scope: ${mp.scope.platformNames.join(', ') || 'tracked marketplaces'}`,
-    label,
+    `Tracked across ${mp.scope.platformNames.join(', ') || 'tracked marketplaces'}`,
+    pageLabel,
   );
 
+  const cards: KpiCardSpec[] = [];
   if (mp.priceIndex) {
-    addKpiCardRow(
-      slide,
-      [{ label: 'Price Index vs. Market', valueText: mp.priceIndex.value.toFixed(0), deltaText: '100 = at market median' }],
-      MARGIN,
-      1.85,
-      3.2,
-      1.15,
-    );
+    cards.push({
+      label: 'Price index vs. market',
+      valueText: mp.priceIndex.value.toFixed(0),
+      deltaText: '100 = at market median',
+    });
   }
+  if (snapshot.pricePositioning?.percentile != null) {
+    cards.push({
+      label: 'Your percentile',
+      valueText: `${snapshot.pricePositioning.percentile}th`,
+      deltaText: 'Of the tracked price range',
+    });
+  }
+  cards.push({ label: 'Platforms in scope', valueText: String(mp.scope.platformNames.length) });
+  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+
+  const chartY = CONTENT_TOP + 2.25;
+  const chartH = 10.375 - chartY - 0.4;
+  addCard(slide, MARGIN, chartY, CONTENT_W, chartH);
+  addCardHeading(slide, 'Where your price sits in the tracked market', MARGIN + 0.42, chartY + 0.36, CONTENT_W - 0.84);
 
   if (snapshot.pricePositioning?.percentile != null) {
-    addBarChart(
+    addNativeBarChart(
       slide,
       pptx,
-      ['P25', 'Your position', 'P75'],
+      ['25th pct', 'You', '75th pct'],
       [25, snapshot.pricePositioning.percentile, 75],
-      MARGIN,
-      3.2,
-      CONTENT_W,
-      3.4,
+      MARGIN + 0.42,
+      chartY + 1.0,
+      CONTENT_W - 0.84,
+      chartH - 1.5,
     );
   }
 
@@ -276,37 +481,71 @@ function buildMarketPositionSlide(pptx: pptxgen, snapshot: ReportSnapshot, secti
 
 // -- Pricing intelligence -------------------------------------------------
 
-function buildPricingIntelligenceSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildPricingIntelligenceSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const pp = snapshot.pricePositioning;
   if (!pp) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Pricing Intelligence', 'Your price vs. the tracked market', label);
+  addCanvas(slide);
+  addHeader(slide, 'Pricing Intelligence', 'Your price against the tracked market median', pageLabel);
 
   const currency = snapshot.workspace.reportingCurrency;
-  const cards = [
-    { label: 'Your Current Price', valueText: formatCurrency(pp.yourMedianPrice.value, currency) },
-    { label: 'Market Median', valueText: formatCurrency(pp.marketMedian.value, currency) },
+  const cards: KpiCardSpec[] = [
+    { label: 'Your price', valueText: formatCurrency(pp.yourMedianPrice.value, currency) },
+    { label: 'Market median', valueText: formatCurrency(pp.marketMedian.value, currency) },
   ];
   if (pp.recommendedBand) {
     cards.push({
-      label: 'Recommended Band',
+      label: 'Supported band',
       valueText: `${formatCurrency(pp.recommendedBand.low, currency)} – ${formatCurrency(pp.recommendedBand.high, currency)}`,
     });
   }
-  addKpiCardRow(slide, cards, MARGIN, 1.85, CONTENT_W, 1.15);
+  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+
+  const lowerY = CONTENT_TOP + 2.25;
+  const lowerH = 10.375 - lowerY - 0.4;
 
   if (pp.trend && pp.trend.length >= 2) {
-    addLineChart(
+    addCard(slide, MARGIN, lowerY, CONTENT_W, lowerH);
+    addCardHeading(slide, 'Market median price over time', MARGIN + 0.42, lowerY + 0.36, CONTENT_W - 0.84);
+    addNativeLineChart(
       slide,
       pptx,
       pp.trend.map((t) => formatDate(t.date)),
-      [{ name: 'Market Median Price', values: pp.trend.map((t) => t.medianPrice) }],
-      MARGIN,
-      3.25,
-      CONTENT_W,
-      3.35,
+      [{ name: 'Market median', values: pp.trend.map((t) => t.medianPrice) }],
+      MARGIN + 0.42,
+      lowerY + 1.0,
+      CONTENT_W - 0.84,
+      lowerH - 1.5,
     );
+  } else {
+    // No trend series - show the price ladder as proportional bars instead
+    // of leaving a card empty or faking a chart from two points.
+    addCard(slide, MARGIN, lowerY, CONTENT_W, lowerH);
+    addCardHeading(slide, 'Your price against the tracked range', MARGIN + 0.42, lowerY + 0.36, CONTENT_W - 0.84);
+    const max = Math.max(pp.yourMedianPrice.value, pp.marketMedian.value, pp.recommendedBand?.high ?? 0) || 1;
+    const rows: BarRowSpec[] = [
+      {
+        title: 'Your price',
+        valueText: formatCurrency(pp.yourMedianPrice.value, currency),
+        ratio: pp.yourMedianPrice.value / max,
+        color: COLORS.brandAccent,
+      },
+      {
+        title: 'Market median',
+        valueText: formatCurrency(pp.marketMedian.value, currency),
+        ratio: pp.marketMedian.value / max,
+        color: COLORS.info,
+      },
+    ];
+    if (pp.recommendedBand) {
+      rows.push({
+        title: 'Top of supported band',
+        valueText: formatCurrency(pp.recommendedBand.high, currency),
+        ratio: pp.recommendedBand.high / max,
+        color: COLORS.grayLight,
+      });
+    }
+    addBarRows(slide, rows, MARGIN + 0.42, lowerY + 1.1, CONTENT_W - 0.84);
   }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -314,18 +553,27 @@ function buildPricingIntelligenceSlide(pptx: pptxgen, snapshot: ReportSnapshot, 
 
 // -- Competitor tracking (paginated) --------------------------------------
 
-function buildCompetitorTrackingSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildCompetitorTrackingSlide(
+  pptx: pptxgen,
+  snapshot: ReportSnapshot,
+  section: PlannedSection,
+  pageLabel: string,
+): void {
   const cb = snapshot.competitorBenchmarks;
   if (!cb || !section.rowRange) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, section.title, cb.marketDefinitionSummary, label);
+  addCanvas(slide);
+  addHeader(slide, section.title, cb.marketDefinitionSummary, pageLabel);
 
   const currency = snapshot.workspace.reportingCurrency;
   const rows = cb.scorecards.slice(section.rowRange[0], section.rowRange[1]);
-  addNativeTable(
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
+
+  const colWidths = [CONTENT_W * 0.28, CONTENT_W * 0.16, CONTENT_W * 0.12, CONTENT_W * 0.16, CONTENT_W * 0.13, CONTENT_W * 0.15];
+  addDataRows(
     slide,
-    ['Competitor', 'Platform', 'SKUs', 'Median Price', 'In Stock', 'Repricing Rate'],
+    ['Competitor', 'Platform', 'SKUs', 'Median price', 'In stock', 'Repricing rate'],
     rows.map((r) => [
       r.competitorName,
       r.platformName,
@@ -334,66 +582,87 @@ function buildCompetitorTrackingSlide(pptx: pptxgen, snapshot: ReportSnapshot, s
       formatPercent(r.inStockRate * 100, 0),
       r.repricingRate != null ? formatPercent(r.repricingRate * 100, 0) : 'N/A',
     ]),
-    MARGIN,
-    1.85,
-    CONTENT_W,
+    colWidths,
+    MARGIN + 0.42,
+    CONTENT_TOP + 0.5,
+    CONTENT_W - 0.84,
+    0.86,
   );
 
   if (section.truncated) {
-    slide.addText(`+${section.truncatedCount} more tracked competitors - see your Ryvl dashboard for the full list.`, {
-      x: MARGIN,
-      y: 1.85 + (ROWS_PER_TABLE_PAGE + 1) * 0.42,
-      w: CONTENT_W,
-      h: 0.3,
-      fontFace: 'Inter',
-      fontSize: 10,
-      italic: true,
-      color: '667085',
-    });
+    slide.addText(
+      `+${section.truncatedCount} more tracked competitors — the full list stays live in your Ryvl dashboard.`,
+      {
+        x: MARGIN + 0.42,
+        y: CONTENT_TOP + 1.12 + ROWS_PER_TABLE_PAGE * 0.86,
+        w: CONTENT_W - 0.84,
+        h: 0.36,
+        fontFace: FONT_FAMILY,
+        fontSize: 14,
+        italic: true,
+        color: COLORS.gray,
+      },
+    );
   }
 
-  slide.addText('Public marketplace signals only. Private seller data remains strictly confidential.', {
-    x: MARGIN,
-    y: SLIDE_H - 0.7,
-    w: CONTENT_W,
-    h: 0.25,
-    fontFace: 'Inter',
-    fontSize: 8,
-    color: '667085',
+  slide.addText('Public marketplace signals only. Private seller data is never shown.', {
+    x: MARGIN + 0.42,
+    y: CONTENT_TOP + cardH - 0.62,
+    w: CONTENT_W - 0.84,
+    h: 0.3,
+    fontFace: FONT_FAMILY,
+    fontSize: 12,
+    color: COLORS.grayLight,
   });
+
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
 }
 
 // -- SKU performance (paginated) ------------------------------------------
 
-function buildSkuPerformanceSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildSkuPerformanceSlide(
+  pptx: pptxgen,
+  snapshot: ReportSnapshot,
+  section: PlannedSection,
+  pageLabel: string,
+): void {
   const pp = snapshot.productPerformance;
   if (!pp || !section.rowRange) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  const basisLabel = pp.contributionBasis === 'revenue' ? 'by revenue' : 'by inventory value';
-  addHeader(slide, section.title, `Top products ${basisLabel}`, label);
+  addCanvas(slide);
+  const basis = pp.contributionBasis === 'revenue' ? 'revenue' : 'inventory value';
+  addHeader(slide, section.title, `Top products by ${basis} share`, pageLabel);
 
   const rows = pp.topProducts.slice(section.rowRange[0], section.rowRange[1]);
-  addNativeTable(
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
+  addCardHeading(slide, `Top products by ${basis} share`, MARGIN + 0.42, CONTENT_TOP + 0.36, CONTENT_W - 0.84);
+
+  const maxShare = Math.max(...rows.map((r) => r.contributionShare ?? 0), 0.0001);
+  addBarRows(
     slide,
-    ['Product', 'SKU', pp.contributionBasis === 'revenue' ? 'Revenue Share' : 'Inventory Value Share'],
-    rows.map((r) => [r.title, r.sku ?? '—', r.contributionShare != null ? formatPercent(r.contributionShare * 100, 1) : 'N/A']),
-    MARGIN,
-    1.85,
-    CONTENT_W,
+    rows.map((r) => ({
+      title: r.title,
+      subtitle: r.sku,
+      valueText: r.contributionShare != null ? formatPercent(r.contributionShare * 100, 1) : 'N/A',
+      ratio: (r.contributionShare ?? 0) / maxShare,
+    })),
+    MARGIN + 0.42,
+    CONTENT_TOP + 1.05,
+    CONTENT_W - 0.84,
+    1.24,
   );
 
   if (section.truncated) {
-    slide.addText(`+${section.truncatedCount} more products - see your Ryvl dashboard for the full list.`, {
-      x: MARGIN,
-      y: 1.85 + (ROWS_PER_TABLE_PAGE + 1) * 0.42,
-      w: CONTENT_W,
-      h: 0.3,
-      fontFace: 'Inter',
-      fontSize: 10,
+    slide.addText(`+${section.truncatedCount} more products — see your Ryvl dashboard for the full catalogue.`, {
+      x: MARGIN + 0.42,
+      y: CONTENT_TOP + cardH - 0.62,
+      w: CONTENT_W - 0.84,
+      h: 0.36,
+      fontFace: FONT_FAMILY,
+      fontSize: 14,
       italic: true,
-      color: '667085',
+      color: COLORS.gray,
     });
   }
 
@@ -402,44 +671,101 @@ function buildSkuPerformanceSlide(pptx: pptxgen, snapshot: ReportSnapshot, secti
 
 // -- Inventory risk ---------------------------------------------------------
 
-function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const ir = snapshot.inventoryRisk;
   if (!ir) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Inventory & Demand Risk', `${ir.lowStockSkuCount} SKUs below your low-stock threshold`, label);
-
-  addNativeTable(
+  addCanvas(slide);
+  addHeader(
     slide,
-    ['Product', 'SKU'],
-    ir.stockoutRiskSkus.map((s) => [s.title, s.sku ?? '—']),
-    MARGIN,
-    1.85,
-    CONTENT_W * 0.55,
+    'Inventory & Demand Risk',
+    `${ir.lowStockSkuCount} SKUs below your low-stock threshold`,
+    pageLabel,
   );
 
-  if (ir.supplyVoidOpportunities && ir.supplyVoidOpportunities.length > 0) {
-    slide.addText('SUPPLY VOID OPPORTUNITIES', {
-      x: MARGIN + CONTENT_W * 0.6,
-      y: 1.85,
-      w: CONTENT_W * 0.4,
-      h: 0.3,
-      fontFace: 'Inter',
-      fontSize: 10,
+  const hasVoids = (ir.supplyVoidOpportunities?.length ?? 0) > 0;
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  const leftW = hasVoids ? CONTENT_W * 0.55 : CONTENT_W;
+
+  addCard(slide, MARGIN, CONTENT_TOP, leftW, cardH);
+  addCardHeading(slide, 'At risk of stocking out', MARGIN + 0.42, CONTENT_TOP + 0.36, leftW - 0.84);
+  addEyebrow(
+    slide,
+    `${ir.lowStockSkuCount} flagged · ${Math.min(ir.stockoutRiskSkus.length, ir.lowStockSkuCount)} shown`,
+    MARGIN + 0.42,
+    CONTENT_TOP + 0.8,
+    leftW - 0.84,
+  );
+  ir.stockoutRiskSkus.forEach((sku, i) => {
+    const y = CONTENT_TOP + 1.35 + i * 0.9;
+    slide.addText(sku.title, {
+      x: MARGIN + 0.42,
+      y,
+      w: leftW - 2.6,
+      h: 0.36,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.rowTitle,
       bold: true,
-      color: '667085',
-      charSpacing: 1,
+      color: COLORS.ink,
     });
-    ir.supplyVoidOpportunities.slice(0, 4).forEach((op, i) => {
-      slide.addText(`${op.competitorName} (${op.platformName}) is out of stock`, {
-        x: MARGIN + CONTENT_W * 0.6,
-        y: 2.25 + i * 0.4,
-        w: CONTENT_W * 0.4,
-        h: 0.36,
-        fontFace: 'Inter',
-        fontSize: 10,
-        color: '1B2559',
+    if (sku.sku) {
+      slide.addText(sku.sku, {
+        x: MARGIN + 0.42,
+        y: y + 0.32,
+        w: leftW - 2.6,
+        h: 0.28,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowSubtitle,
+        color: COLORS.grayLight,
       });
+    }
+    addPill(slide, 'Below threshold', 'warning', MARGIN + leftW - 2.1, y + 0.06, 1.68);
+    if (i < ir.stockoutRiskSkus.length - 1) {
+      slide.addShape('rect', {
+        x: MARGIN + 0.42,
+        y: y + 0.76,
+        w: leftW - 0.84,
+        h: 0.012,
+        fill: { color: COLORS.hairlineSoft },
+        line: { type: 'none' },
+      });
+    }
+  });
+
+  if (hasVoids) {
+    const rightX = MARGIN + leftW + 0.42;
+    const rightW = CONTENT_W - leftW - 0.42;
+    addCard(slide, rightX, CONTENT_TOP, rightW, cardH);
+    addCardHeading(slide, 'Demand you can absorb', rightX + 0.42, CONTENT_TOP + 0.36, rightW - 0.84);
+    addEyebrow(
+      slide,
+      'Tracked competitors currently out of stock',
+      rightX + 0.42,
+      CONTENT_TOP + 0.8,
+      rightW - 0.84,
+    );
+    ir.supplyVoidOpportunities!.slice(0, 5).forEach((op, i) => {
+      const y = CONTENT_TOP + 1.35 + i * 0.78;
+      slide.addText(op.competitorName, {
+        x: rightX + 0.42,
+        y,
+        w: rightW - 2.4,
+        h: 0.36,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowTitle,
+        bold: true,
+        color: COLORS.ink,
+      });
+      slide.addText(op.platformName, {
+        x: rightX + 0.42,
+        y: y + 0.32,
+        w: rightW - 2.4,
+        h: 0.28,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowSubtitle,
+        color: COLORS.grayLight,
+      });
+      addPill(slide, 'Out of stock', 'positive', rightX + rightW - 1.95, y + 0.06, 1.53);
     });
   }
 
@@ -448,23 +774,33 @@ function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, sectio
 
 // -- Portfolio contribution ---------------------------------------------------
 
-function buildPortfolioSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildPortfolioSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const pp = snapshot.productPerformance;
   if (!pp) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  const basisLabel = pp.contributionBasis === 'revenue' ? 'by revenue' : 'by inventory value (no per-sale line items tracked yet)';
-  addHeader(slide, 'Product Portfolio Contribution', `Category share ${basisLabel}`, label);
+  addCanvas(slide);
+  const basis =
+    pp.contributionBasis === 'revenue'
+      ? 'by revenue'
+      : 'by inventory value (per-sale line items are not tracked yet)';
+  addHeader(slide, 'Product Portfolio Contribution', `Category mix ${basis}`, pageLabel);
 
-  addBarChart(
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
+  addCardHeading(slide, 'Category share', MARGIN + 0.42, CONTENT_TOP + 0.36, CONTENT_W - 0.84);
+
+  const maxShare = Math.max(...pp.categoryBreakdown.map((c) => c.share), 0.0001);
+  addBarRows(
     slide,
-    pptx,
-    pp.categoryBreakdown.map((c) => c.category),
-    pp.categoryBreakdown.map((c) => Math.round(c.share * 1000) / 10),
-    MARGIN,
-    1.85,
-    CONTENT_W,
-    4.3,
+    pp.categoryBreakdown.slice(0, 6).map((c) => ({
+      title: c.category,
+      valueText: formatPercent(c.share * 100, 1),
+      ratio: c.share / maxShare,
+    })),
+    MARGIN + 0.42,
+    CONTENT_TOP + 1.05,
+    CONTENT_W - 0.84,
+    1.06,
   );
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -472,39 +808,54 @@ function buildPortfolioSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: P
 
 // -- Customer health -------------------------------------------------------
 
-function buildCustomerHealthSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildCustomerHealthSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const ch = snapshot.customerHealth;
   if (!ch) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Customer Health & Retention', 'Based on your own order and customer history', label);
+  addCanvas(slide);
+  addHeader(slide, 'Customer Health & Retention', 'From your own order and customer history', pageLabel);
 
-  const cards = [];
-  if (ch.retentionRate) {
-    cards.push({ label: 'Retention Rate', valueText: formatPercent(ch.retentionRate.current, 1) });
-  }
+  const cards: KpiCardSpec[] = [];
+  if (ch.retentionRate) cards.push({ label: 'Retention rate', valueText: formatPercent(ch.retentionRate.current, 1) });
   if (ch.repeatPurchaseRate != null) {
-    cards.push({ label: 'Repeat Purchase Rate', valueText: formatPercent(ch.repeatPurchaseRate, 1) });
+    cards.push({ label: 'Repeat purchase rate', valueText: formatPercent(ch.repeatPurchaseRate, 1) });
   }
   if (ch.avgClv) {
-    cards.push({ label: 'Avg. Customer LTV', valueText: formatCurrency(ch.avgClv.value, snapshot.workspace.reportingCurrency) });
+    cards.push({
+      label: 'Avg. customer LTV',
+      valueText: formatCurrency(ch.avgClv.value, snapshot.workspace.reportingCurrency),
+    });
   }
-  addKpiCardRow(slide, cards, MARGIN, 1.85, CONTENT_W, 1.15);
+  if (cards.length > 0) addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   if (ch.atRiskCohorts.length > 0) {
-    slide.addText('AT-RISK COHORTS', {
-      x: MARGIN,
-      y: 3.25,
-      w: CONTENT_W,
-      h: 0.3,
-      fontFace: 'Inter',
-      fontSize: 10,
-      bold: true,
-      color: '667085',
-      charSpacing: 1,
-    });
+    const y = cards.length > 0 ? CONTENT_TOP + 2.25 : CONTENT_TOP;
+    const h = 10.375 - y - 0.4;
+    addCard(slide, MARGIN, y, CONTENT_W, h);
+    addCardHeading(slide, 'Cohorts worth acting on', MARGIN + 0.42, y + 0.36, CONTENT_W - 0.84);
     ch.atRiskCohorts.forEach((c, i) => {
-      addInsightCallout(slide, `${c.label}: ${c.count} customers`, MARGIN, 3.6 + i * 0.9, CONTENT_W, 0.75);
+      const rowY = y + 1.05 + i * 1.0;
+      slide.addText(c.label, {
+        x: MARGIN + 0.42,
+        y: rowY,
+        w: CONTENT_W - 4,
+        h: 0.4,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowTitle,
+        bold: true,
+        color: COLORS.ink,
+      });
+      slide.addText(`${c.count} customers`, {
+        x: MARGIN + CONTENT_W - 3.4,
+        y: rowY,
+        w: 3,
+        h: 0.4,
+        align: 'right',
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.rowTitle,
+        bold: true,
+        color: COLORS.ink,
+      });
     });
   }
 
@@ -513,16 +864,22 @@ function buildCustomerHealthSlide(pptx: pptxgen, snapshot: ReportSnapshot, secti
 
 // -- Recommendations ---------------------------------------------------------
 
-function buildRecommendationsSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildRecommendationsSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Prioritised Recommendations', 'Ranked by potential impact', label);
-
+  addCanvas(slide);
   const recs = snapshot.recommendations.slice(0, 6);
-  const cardH = 0.85;
-  const gap = 0.14;
+  addHeader(
+    slide,
+    'Prioritised Recommendations',
+    `${recs.length} action${recs.length === 1 ? '' : 's'}, ordered by expected impact`,
+    pageLabel,
+  );
+
+  const available = 10.375 - CONTENT_TOP - 0.4;
+  const gap = 0.22;
+  const cardH = Math.min(1.32, (available - gap * (recs.length - 1)) / Math.max(recs.length, 1));
   recs.forEach((r, i) => {
-    addRecommendationCard(slide, r.priority, r.text, MARGIN, 1.9 + i * (cardH + gap), CONTENT_W, cardH);
+    addRecommendationCard(slide, i + 1, r.priority, r.text, MARGIN, CONTENT_TOP + i * (cardH + gap), CONTENT_W, cardH);
   });
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -530,45 +887,46 @@ function buildRecommendationsSlide(pptx: pptxgen, snapshot: ReportSnapshot, sect
 
 // -- Roadmap ---------------------------------------------------------------
 
-function buildRoadmapSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildRoadmapSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const roadmap = snapshot.strategicRoadmap;
   if (!roadmap) return;
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Strategic Action Roadmap', 'Sequenced from this report\'s findings', label);
+  addCanvas(slide);
+  addHeader(slide, 'Strategic Action Roadmap', "Sequenced from this report's findings", pageLabel);
 
-  const colW = (CONTENT_W - (roadmap.length - 1) * 0.2) / roadmap.length;
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  const gap = 0.32;
+  const colW = (CONTENT_W - gap * (roadmap.length - 1)) / roadmap.length;
   roadmap.forEach((phase, i) => {
-    const x = MARGIN + i * (colW + 0.2);
-    slide.addText(`PHASE ${String(phase.phase).padStart(2, '0')}`, {
-      x,
-      y: 1.9,
-      w: colW,
-      h: 0.28,
-      fontFace: 'Inter',
-      fontSize: 9,
-      bold: true,
-      color: '4318FF',
-      charSpacing: 1,
+    const x = MARGIN + i * (colW + gap);
+    addCard(slide, x, CONTENT_TOP, colW, cardH);
+    slide.addShape('rect', {
+      x: x + 0.42,
+      y: CONTENT_TOP + 0.42,
+      w: 0.5,
+      h: 0.07,
+      fill: { color: COLORS.brandAccent },
+      line: { type: 'none' },
     });
+    addEyebrow(slide, `Phase ${String(phase.phase).padStart(2, '0')}`, x + 0.42, CONTENT_TOP + 0.72, colW - 0.84, COLORS.brandAccent);
     slide.addText(phase.title, {
-      x,
-      y: 2.2,
-      w: colW,
-      h: 0.5,
-      fontFace: 'Inter',
-      fontSize: 14,
+      x: x + 0.42,
+      y: CONTENT_TOP + 1.1,
+      w: colW - 0.84,
+      h: 0.8,
+      fontFace: FONT_FAMILY,
+      fontSize: 22,
       bold: true,
-      color: '0B1437',
+      color: COLORS.ink,
     });
     slide.addText(phase.description, {
-      x,
-      y: 2.75,
-      w: colW,
-      h: 2.5,
-      fontFace: 'Inter',
-      fontSize: 10,
-      color: '1B2559',
+      x: x + 0.42,
+      y: CONTENT_TOP + 2.0,
+      w: colW - 0.84,
+      h: cardH - 2.5,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.body,
+      color: COLORS.gray,
       valign: 'top',
     });
   });
@@ -578,39 +936,76 @@ function buildRoadmapSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: Pla
 
 // -- Methodology -------------------------------------------------------------
 
-function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Methodology, Privacy & Data Sources', 'How this report was built', label);
+  addCanvas(slide);
+  addHeader(slide, 'Methodology, Privacy & Data Sources', 'How this report was built', pageLabel);
 
   const m = snapshot.methodology;
-  let y = 1.9;
-  slide.addText('DATA SOURCES', { x: MARGIN, y, w: CONTENT_W, h: 0.28, fontFace: 'Inter', fontSize: 10, bold: true, color: '667085', charSpacing: 1 });
-  y += 0.34;
-  for (const source of m.dataSources) {
-    slide.addText(`${source.name}: ${source.description}`, {
-      x: MARGIN,
-      y,
-      w: CONTENT_W,
-      h: 0.32,
-      fontFace: 'Inter',
-      fontSize: 10.5,
-      color: '1B2559',
-    });
-    y += 0.36;
-  }
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  const colGap = 0.58;
+  const colW = (CONTENT_W - colGap) / 2;
 
-  y += 0.2;
-  slide.addText('LIMITATIONS', { x: MARGIN, y, w: CONTENT_W, h: 0.28, fontFace: 'Inter', fontSize: 10, bold: true, color: '667085', charSpacing: 1 });
-  y += 0.34;
-  for (const limitation of m.limitations) {
-    slide.addText(`•  ${limitation}`, { x: MARGIN, y, w: CONTENT_W, h: 0.4, fontFace: 'Inter', fontSize: 10.5, color: '1B2559' });
-    y += 0.42;
-  }
+  addCard(slide, MARGIN, CONTENT_TOP, colW, cardH);
+  addCardHeading(slide, 'Data sources', MARGIN + 0.42, CONTENT_TOP + 0.36, colW - 0.84);
+  m.dataSources.forEach((source, i) => {
+    const y = CONTENT_TOP + 1.0 + i * 1.15;
+    slide.addText(source.name, {
+      x: MARGIN + 0.42,
+      y,
+      w: colW - 0.84,
+      h: 0.34,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.rowTitle,
+      bold: true,
+      color: COLORS.ink,
+    });
+    slide.addText(source.description, {
+      x: MARGIN + 0.42,
+      y: y + 0.36,
+      w: colW - 0.84,
+      h: 0.62,
+      fontFace: FONT_FAMILY,
+      fontSize: 14,
+      color: COLORS.gray,
+    });
+  });
+
+  const rightX = MARGIN + colW + colGap;
+  addCard(slide, rightX, CONTENT_TOP, colW, cardH);
+  addCardHeading(slide, 'Limitations', rightX + 0.42, CONTENT_TOP + 0.36, colW - 0.84);
+  m.limitations.forEach((limitation, i) => {
+    const y = CONTENT_TOP + 1.0 + i * 1.15;
+    slide.addShape('rect', {
+      x: rightX + 0.42,
+      y: y + 0.1,
+      w: 0.06,
+      h: 0.5,
+      fill: { color: COLORS.warningAccent },
+      line: { type: 'none' },
+    });
+    slide.addText(limitation, {
+      x: rightX + 0.75,
+      y,
+      w: colW - 1.2,
+      h: 0.95,
+      fontFace: FONT_FAMILY,
+      fontSize: 14,
+      color: COLORS.ink,
+    });
+  });
 
   slide.addText(
     `Report status: ${snapshot.privacy.approval.status}${snapshot.privacy.approval.reviewedBy ? ` · Reviewed by ${snapshot.privacy.approval.reviewedBy}` : ''}`,
-    { x: MARGIN, y: SLIDE_H - 0.9, w: CONTENT_W, h: 0.3, fontFace: 'Inter', fontSize: 9, color: '667085' },
+    {
+      x: rightX + 0.42,
+      y: CONTENT_TOP + cardH - 0.7,
+      w: colW - 0.84,
+      h: 0.32,
+      fontFace: FONT_FAMILY,
+      fontSize: 12,
+      color: COLORS.grayLight,
+    },
   );
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -618,17 +1013,25 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, section:
 
 // -- Appendix (internal mode only) ------------------------------------------
 
-function buildAppendixSlide(pptx: pptxgen, snapshot: ReportSnapshot, section: PlannedSection, label: string): void {
+function buildAppendixSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: string): void {
   const slide = pptx.addSlide();
-  addBackground(slide);
-  addHeader(slide, 'Appendix', 'Internal notes - not included in client-safe exports', label);
+  addCanvas(slide);
+  addHeader(slide, 'Appendix', 'Internal notes - never included in client-safe exports', pageLabel);
 
+  const cardH = 10.375 - CONTENT_TOP - 0.4;
+  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
   const entries = Object.entries(snapshot.appendix ?? {}).filter(([key]) => key !== 'aiSummary');
-  let y = 1.9;
-  for (const [key, value] of entries) {
-    slide.addText(`${key}: ${JSON.stringify(value)}`, { x: MARGIN, y, w: CONTENT_W, h: 0.4, fontFace: 'Inter', fontSize: 9, color: '667085' });
-    y += 0.4;
-  }
+  entries.forEach(([key, value], i) => {
+    slide.addText(`${key}: ${JSON.stringify(value)}`, {
+      x: MARGIN + 0.42,
+      y: CONTENT_TOP + 0.5 + i * 0.5,
+      w: CONTENT_W - 0.84,
+      h: 0.44,
+      fontFace: FONT_FAMILY,
+      fontSize: 12,
+      color: COLORS.gray,
+    });
+  });
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
 }

@@ -228,6 +228,17 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
   (`report_snapshots`/`report_reviews`/`report_exports`) is applied and
   confirmed live. Phases 5 (internal review API) and 6 (seller-facing
   reports list UI) are still not built.
+- **The report's visual design was replaced later the same day** with the
+  approved deck at `docs/report-reference/new-slides/New_Slides.pptx`
+  (20x11.25in canvas, brand purple `#4B3AF0`, dynamic table-of-contents
+  slide, chapter dividers). The values in `design-tokens.ts` and the
+  geometry in `render/pptx/components.ts` were extracted structurally from
+  that file with python-pptx, not eyeballed — if you're changing the look,
+  re-extract rather than guessing. Note the reference deck itself used
+  pasted picture "charts" and zero native tables; this implementation
+  deliberately does **not** copy that, since flattened images are the exact
+  thing the report brief forbids. Generated output is verified at 0
+  pictures.
 
 ## Things to not do (from prior explicit correction)
 
