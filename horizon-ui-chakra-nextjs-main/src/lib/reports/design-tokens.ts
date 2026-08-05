@@ -66,8 +66,17 @@ export function formatCurrency(value: number, currency = 'PKR'): string {
   return new Intl.NumberFormat('en-PK', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value);
 }
 
+// Plain percentage formatter - deliberately NO "+" prefix. Every call site
+// in the renderers uses this for an absolute rate or share (in-stock rate,
+// repricing rate, contribution share, retention rate), never a
+// period-over-period delta - a real generated report surfaced "+100%" for
+// an in-stock rate and "+87.0%" for a SKU's inventory-value share, both
+// nonsensical since neither is a change from anything. Delta text (e.g.
+// "+18.4% vs. prior period") is built separately with its own explicit
+// sign logic in components.ts's kpiCardFromGrowth - never through this
+// function - so there is no legitimate call site that needs the "+" back.
 export function formatPercent(value: number | null, decimals = 1): string {
-  return value != null ? `${value >= 0 ? '+' : ''}${value.toFixed(decimals)}%` : 'N/A';
+  return value != null ? `${value.toFixed(decimals)}%` : 'N/A';
 }
 
 export function formatMetricName(metricName: string): string {

@@ -48,6 +48,25 @@ export function validateSnapshot(snapshot: ReportSnapshot): ValidationResult {
     const p = snapshot.pricePositioning.percentile;
     if (p < 0 || p > 100) push(true, 'invalid_percentile', `Price percentile ${p} is outside 0-100.`);
   }
+  // Price index is a ratio (your median price / market median * 100), not a
+  // bounded percentage - a legitimate premium-priced seller can sit well
+  // above 100. It's not "invalid" the way a percentile outside 0-100 is, but
+  // a real seller's catalog surfaced a genuine case of an implausible value
+  // (2758 - a mixed test catalog with one wildly-priced outlier item, not a
+  // calc bug: see collectors/revenue-and-products.ts's switch to median
+  // instead of mean for the underlying fix). Flagged as non-blocking so a
+  // reviewer catches an outlier-driven catalog before approving, without
+  // blocking every genuinely premium-priced seller.
+  if (snapshot.marketplacePerformance?.priceIndex != null) {
+    const idx = snapshot.marketplacePerformance.priceIndex.value;
+    if (idx > 500 || idx < 5) {
+      push(
+        false,
+        'implausible_price_index',
+        `Price index ${idx.toFixed(0)} is far outside a typical 20-300 range - check for a catalog outlier before approving.`,
+      );
+    }
+  }
   for (const row of snapshot.competitorBenchmarks?.scorecards ?? []) {
     if (row.inStockRate < 0 || row.inStockRate > 1) {
       push(true, 'invalid_rate', `${row.competitorName}'s in-stock rate ${row.inStockRate} is outside 0-1.`);

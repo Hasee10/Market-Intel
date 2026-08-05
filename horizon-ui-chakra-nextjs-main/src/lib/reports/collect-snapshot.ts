@@ -27,7 +27,7 @@ export async function collectSnapshot(seller: Seller, options: CollectSnapshotOp
 
   const [domain, fxRates] = await Promise.all([getPrimaryDomain(seller.id), getLatestFxRates()]);
 
-  const { revenue, productPerformance, inventoryRisk, avgSellPrice } = await collectRevenueAndProducts(
+  const { revenue, productPerformance, inventoryRisk, medianSellPrice } = await collectRevenueAndProducts(
     seller,
     periodStart,
     previousPeriodStart,
@@ -35,7 +35,7 @@ export async function collectSnapshot(seller: Seller, options: CollectSnapshotOp
   );
 
   const [{ marketplacePerformance, pricePositioning }, competitorBenchmarks, customerHealth] = await Promise.all([
-    collectMarketplaceAndPricing(domain?.categorySlug ?? null, avgSellPrice, reportingCurrency, fxRates, asOf),
+    collectMarketplaceAndPricing(domain?.categorySlug ?? null, medianSellPrice, reportingCurrency, fxRates, asOf),
     collectCompetitorBenchmarks(domain?.categorySlug ?? null, reportingCurrency, seller.id, asOf),
     collectCustomerHealth(seller.id, reportingCurrency, asOf),
   ]);

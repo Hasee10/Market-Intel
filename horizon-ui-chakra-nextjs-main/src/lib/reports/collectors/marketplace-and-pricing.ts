@@ -17,7 +17,7 @@ export interface MarketplaceAndPricingResult {
 
 export async function collectMarketplaceAndPricing(
   categorySlug: string | null,
-  avgSellPrice: number | null,
+  medianSellPrice: number | null,
   targetCurrency: string,
   fxRates: FxRates,
   asOf: string,
@@ -40,8 +40,8 @@ export async function collectMarketplaceAndPricing(
     return { marketplacePerformance: null, pricePositioning: null, categorySlug };
   }
 
-  const priceIndexRatio = safeRatio(avgSellPrice ?? 0, categoryPricing.median);
-  const priceIndex = avgSellPrice != null && priceIndexRatio != null ? priceIndexRatio * 100 : null;
+  const priceIndexRatio = safeRatio(medianSellPrice ?? 0, categoryPricing.median);
+  const priceIndex = medianSellPrice != null && priceIndexRatio != null ? priceIndexRatio * 100 : null;
 
   const marketplacePerformance: MarketplacePerformanceSection = {
     scope: { categorySlugs: scope.categorySlugs, platformNames: categoryPricing.samplePlatforms },
@@ -63,13 +63,13 @@ export async function collectMarketplaceAndPricing(
       ? { low: categoryPricing.p25, high: categoryPricing.p75 }
       : null;
 
-  const percentile = computePercentile(avgSellPrice, categoryPricing);
+  const percentile = computePercentile(medianSellPrice, categoryPricing);
 
   const pricePositioning: PricePositioningSection | null =
-    avgSellPrice == null
+    medianSellPrice == null
       ? null
       : {
-          yourMedianPrice: { value: avgSellPrice, source: 'seller_private', asOf },
+          yourMedianPrice: { value: medianSellPrice, source: 'seller_private', asOf },
           marketMedian: { value: categoryPricing.median, source: 'public_marketplace', asOf },
           percentile,
           recommendedBand,

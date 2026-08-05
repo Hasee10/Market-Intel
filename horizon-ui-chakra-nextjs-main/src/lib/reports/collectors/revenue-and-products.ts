@@ -5,6 +5,7 @@ import { convertCurrency, type FxRates } from '@/lib/market-intel/fx';
 import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/low-stock-job';
 import type { Seller } from '@/lib/market-intel/seller';
 import { buildGrowthMetric } from '../metrics/growth';
+import { median } from '../metrics/statistics';
 import type { InventoryRiskSection, ProductPerformanceSection, RevenueSection } from '../schema';
 
 const WEEKLY_BUCKETS = 6;
@@ -14,8 +15,18 @@ export interface RevenueAndProductsResult {
   revenue: RevenueSection | null;
   productPerformance: ProductPerformanceSection | null;
   inventoryRisk: InventoryRiskSection | null;
-  /** Simple mean of active products' sell price, for the price-index/positioning collector. Null if no active products. */
-  avgSellPrice: number | null;
+  /**
+   * Median (not mean) of active products' sell price, for the price-index/
+   * positioning collector. Median, deliberately: a mean is not robust to a
+   * single outlier SKU (a seller mixing a Rs 12 accessory with an Rs 1.8M
+   * flagship would see their "average price" dragged toward the flagship,
+   * producing a price-index ratio in the thousands of percent against a
+   * category median - this is the exact failure mode a real seller's
+   * downloaded report surfaced). The category-side comparison
+   * (categoryPricing.median) is also a median, so this keeps the ratio
+   * apples-to-apples instead of mean-vs-median. Null if no active products.
+   */
+  medianSellPrice: number | null;
 }
 
 // Revenue, product performance and inventory risk all come from the same
@@ -113,10 +124,7 @@ export async function collectRevenueAndProducts(
           categoryBreakdown: buildCategoryBreakdown(activeProducts),
         };
 
-  const avgSellPrice =
-    activeProducts.length > 0
-      ? activeProducts.reduce((sum, p) => sum + Number(p.sell_price ?? 0), 0) / activeProducts.length
-      : null;
+  const medianSellPrice = median(activeProducts.map((p) => Number(p.sell_price ?? 0)));
 
   const lowStockSkus = activeProducts.filter((p) => Number(p.stock_qty ?? 0) < LOW_STOCK_THRESHOLD);
   const inventoryRisk: InventoryRiskSection | null =
@@ -139,7 +147,7 @@ export async function collectRevenueAndProducts(
           supplyVoidOpportunities: null, // populated by the market-signals rule engine, not here
         };
 
-  return { revenue, productPerformance, inventoryRisk, avgSellPrice };
+  return { revenue, productPerformance, inventoryRisk, medianSellPrice };
 }
 
 function buildWeeklySeries(

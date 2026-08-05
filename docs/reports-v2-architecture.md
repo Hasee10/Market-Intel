@@ -802,6 +802,35 @@ pagination tests indirectly, but has no PDF-specific overflow test yet).
 - ~~Migration 025 is written but not applied~~ — **applied and confirmed
   live 2026-08-04** (via `psql`, see §9 Phase 0). `saveSnapshot()` now
   succeeds; report history/versioning is live, not silently inert.
+- **Two real bugs found and fixed 2026-08-05 by reviewing an actual
+  downloaded report** (seller "tt" - a demo/test account, but the bugs are
+  real code bugs, not test-data artifacts):
+  1. **Price index used a mean, not a median.** "tt"'s catalogue mixes a
+     Rs 12 accessory with a Rs 1,800,000 item; the mean (Rs 370,945) was
+     dragged toward the outlier, producing a nonsensical "price index: 2758"
+     against a Rs 13,449 category median - visually indistinguishable from
+     the original "+2657.7%" bug this whole rebuild was meant to fix, even
+     though the calculation itself was mathematically correct. Fixed:
+     `collectors/revenue-and-products.ts` now computes `medianSellPrice`
+     (a real median, via the new `metrics/statistics.ts`) instead of a
+     `reduce`-and-divide mean - median-vs-median against
+     `categoryPricing.median` is the correct comparison, and a median
+     resists a single outlier the way a mean cannot. Also added a
+     non-blocking `implausible_price_index` validation warning (>500 or
+     <5) so a reviewer catches a similar outlier-driven catalogue before
+     approving a client-safe export, without blocking every genuinely
+     premium-priced seller.
+  2. **`formatPercent()` always prepended a "+" sign**, meant for
+     period-over-period deltas, but every real call site in both renderers
+     uses it for a plain rate or share (in-stock rate, repricing rate,
+     contribution share, retention rate) - none of which are deltas. The
+     real report showed "+100%" for an in-stock rate and "+87.0%" for a
+     SKU's inventory-value share. Fixed by removing the prefix entirely;
+     delta text was never built through this function anyway (it has its
+     own explicit sign logic in `components.ts`'s `kpiCardFromGrowth`).
+  Both are covered by regression tests (`metrics/statistics.test.ts`,
+  `design-tokens.test.ts`) that reproduce the exact numbers from the real
+  report, not just synthetic edge cases.
 - **Biggest risk, added after deeper verification**: real SKU-level revenue
   attribution needs an order-line-item table that doesn't exist (§2 item
   0). If you want "product portfolio contribution"/"SKU performance" to
