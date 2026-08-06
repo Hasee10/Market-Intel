@@ -124,10 +124,12 @@ describe('PPTX slide count is genuinely dynamic, not fixed', () => {
     expect(thinCount).toBe(2);
 
     // Concrete ceiling proof: 40 competitors never produces 40/5=8 slides -
-    // it's capped at MAX_CONTINUATION_PAGES(2)+1 = 3 slides for that section.
+    // MAX_CONTINUATION_PAGES is 0 (matching the reference deck, which never
+    // continues this table onto a second slide - see section-plan.ts's
+    // comment on the constant), so this is always exactly 1 slide, truncated.
     const richPlan = buildSectionPlan(richSeller);
     const competitorSlides = richPlan.sections.filter((s) => s.kind === 'competitor_tracking');
-    expect(competitorSlides.length).toBe(3);
+    expect(competitorSlides.length).toBe(1);
     expect(competitorSlides[competitorSlides.length - 1].truncated).toBe(true);
   });
 

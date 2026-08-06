@@ -51,7 +51,15 @@ describe('buildSectionPlan - inclusion rules (floor)', () => {
 });
 
 describe('buildSectionPlan - pagination (ceiling)', () => {
-  it('a large competitor table paginates instead of overflowing one slide', () => {
+  // MAX_CONTINUATION_PAGES is 0 (see section-plan.ts's comment on it): the
+  // reference deck never emits a continuation slide for either table this
+  // feeds, no matter how many rows exist - it stays on one page and
+  // truncates with a "+N more" note. These two tests used to document the
+  // opposite (up to 3 pages before truncating), which was the "dump every
+  // competitor across 3 slides" anti-pattern the report brief calls out by
+  // name - see git history for the pre-fix version if that behaviour is
+  // ever needed again.
+  it('a competitor table larger than one page truncates rather than continuing to a second slide', () => {
     const scorecards = Array.from({ length: 12 }, (_, i) => ({
       competitorName: `Competitor ${i}`,
       platformName: 'Daraz',
@@ -64,14 +72,12 @@ describe('buildSectionPlan - pagination (ceiling)', () => {
       baseSnapshot({ competitorBenchmarks: { scorecards, marketDefinitionSummary: 'Daraz · 12 identified' } }),
     );
     const pages = plan.sections.filter((s) => s.kind === 'competitor_tracking');
-    // 12 rows at ROWS_PER_TABLE_PAGE=5 would naturally need 3 pages, which
-    // equals MAX_CONTINUATION_PAGES(2) + 1 primary - exactly at the ceiling,
-    // not over it, so nothing should be marked truncated here.
     expect(pages.length).toBe(MAX_CONTINUATION_PAGES + 1);
-    expect(pages[pages.length - 1].truncated).toBeFalsy();
+    expect(pages[0].truncated).toBe(true);
+    expect(pages[0].truncatedCount).toBe(12 - ROWS_PER_TABLE_PAGE);
   });
 
-  it('caps continuation pages and reports a truncated count instead of growing without bound', () => {
+  it('caps at a single page and reports a truncated count instead of growing without bound', () => {
     const scorecards = Array.from({ length: 40 }, (_, i) => ({
       competitorName: `Competitor ${i}`,
       platformName: 'Daraz',

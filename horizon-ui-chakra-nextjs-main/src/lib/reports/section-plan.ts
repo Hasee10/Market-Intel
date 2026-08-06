@@ -54,7 +54,16 @@ export interface SectionPlan {
 }
 
 export const ROWS_PER_TABLE_PAGE = 5;
-export const MAX_CONTINUATION_PAGES = 2; // ceiling rule - at most 3 pages total (1 + 2 continuations) per table section
+// The reference deck (docs/report-reference/v3/New-Slides.pptx) never emits a
+// continuation slide for either table this feeds (competitor_tracking,
+// sku_performance) - even with far more rows than fit on one page, it stays
+// on a single page and truncates with a "+N more - see dashboard" note
+// (verified: zero "(continued)" slides anywhere in that deck's shape dump,
+// including a competitor table with 40+ rows reduced to "+37 more..."). This
+// was previously 2, allowing up to 3 pages total and producing exactly the
+// "dump every competitor across 3 slides" anti-pattern the report brief
+// explicitly calls out. 0 means: always exactly one page, truncate the rest.
+export const MAX_CONTINUATION_PAGES = 0;
 
 /**
  * Below this many content sections, the report skips the table-of-contents
