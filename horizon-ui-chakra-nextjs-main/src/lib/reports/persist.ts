@@ -98,6 +98,15 @@ export async function listSnapshotsForSeller(sellerId: string, limit = 20): Prom
 // Append-only status transition - writes a new report_reviews row and
 // updates the status column in place (the status column itself is mutable
 // state, unlike the row's data/version, which never changes after insert).
+//
+// SECURITY: this function has no caller-identity check of its own - it
+// trusts `reviewerIdentifier` completely and will happily transition any
+// snapshot to 'approved' for whoever calls it. That's safe today only
+// because nothing in production calls it yet (Phase 5 of
+// docs/reports-v2-architecture.md - the internal staff review API - isn't
+// built). When that API is built, it must authenticate the caller as
+// internal staff BEFORE calling this, not after; this function is a
+// low-level primitive, not the authorization boundary.
 export async function transitionStatus(
   snapshotId: string,
   newStatus: ReportStatus,

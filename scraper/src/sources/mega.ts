@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { config } from '../config.js';
 import {
   CATEGORY_DELAY_MS,
+  CircuitOpenError,
   DEFAULT_HEADERS,
   PAGE_DELAY_MS,
   parsePriceText,
@@ -84,7 +85,7 @@ async function scrapeCategory(categorySlug: string): Promise<RawProduct[]> {
     if (pageNum > 1) await randomDelay(PAGE_DELAY_MS);
 
     const url = `https://www.mega.pk/${categorySlug}/${pageNum > 1 ? `?page=${pageNum}` : ''}`;
-    const res = await politeFetch(url, `mega ${categorySlug} p${pageNum}`, DEFAULT_HEADERS);
+    const res = await politeFetch(url, `mega ${categorySlug} p${pageNum}`, DEFAULT_HEADERS, 'mega');
     const $ = cheerio.load(await res.text());
     const pageProducts = parseCards($, categorySlug);
 
@@ -110,6 +111,10 @@ export async function scrapeMega(): Promise<SourceResult> {
       products.push(...(await scrapeCategory(category)));
     } catch (err) {
       console.error(`[mega] category "${category}" failed:`, (err as Error).message);
+      // The platform is genuinely blocking this run (politeFetch's
+      // per-platform circuit breaker tripped) - stop trying the remaining
+      // categories rather than hammering them one by one for the same result.
+      if (err instanceof CircuitOpenError) break;
     }
   }
 

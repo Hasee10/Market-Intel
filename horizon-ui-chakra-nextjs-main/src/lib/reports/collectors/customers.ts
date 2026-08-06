@@ -1,5 +1,6 @@
 'server-only';
 
+import type { FxRates } from '@/lib/market-intel/fx';
 import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/rfm';
 import { buildGrowthMetric } from '../metrics/growth';
 import type { CustomerHealthSection } from '../schema';
@@ -11,10 +12,11 @@ export async function collectCustomerHealth(
   sellerId: string,
   reportingCurrency: string,
   asOf: string,
+  fxRates: FxRates,
 ): Promise<CustomerHealthSection | null> {
   const [churn, atRisk] = await Promise.all([
     getLatestChurnSnapshot(sellerId),
-    getAtRiskCustomers(sellerId, reportingCurrency),
+    getAtRiskCustomers(sellerId, reportingCurrency, fxRates),
   ]);
 
   if (!churn && atRisk.length === 0) return null;

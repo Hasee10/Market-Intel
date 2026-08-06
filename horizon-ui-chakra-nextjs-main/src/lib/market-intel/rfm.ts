@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
+import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 
 export type ChurnSnapshot = {
   snapshotDate: string;
@@ -76,7 +76,15 @@ const MIN_CUSTOMERS_FOR_RFM = 5;
 // last order) combined with a frequency or monetary score in the top 3
 // (previously an engaged/valuable customer, not just a one-time visitor
 // going quiet, which wouldn't be worth flagging).
-export async function getAtRiskCustomers(sellerId: string, reportingCurrency: string): Promise<AtRiskCustomer[]> {
+// fxRatesOverride: report generation fetches one fx snapshot for the whole
+// run and threads it through every collector (see
+// docs/reports-v2-architecture.md's currency-consistency note); other
+// callers omit it and get a fresh fetch.
+export async function getAtRiskCustomers(
+  sellerId: string,
+  reportingCurrency: string,
+  fxRatesOverride?: FxRates,
+): Promise<AtRiskCustomer[]> {
   const supabase = await createClient();
 
   const [{ data, error }, fxRates] = await Promise.all([
@@ -86,7 +94,7 @@ export async function getAtRiskCustomers(sellerId: string, reportingCurrency: st
       .eq('seller_id', sellerId)
       .gt('orders_count', 0)
       .not('last_order_at', 'is', null),
-    getLatestFxRates(),
+    fxRatesOverride ? Promise.resolve(fxRatesOverride) : getLatestFxRates(),
   ]);
 
   if (error || !data || data.length < MIN_CUSTOMERS_FOR_RFM) return [];

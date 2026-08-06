@@ -62,6 +62,26 @@ describe('validateSnapshot', () => {
     expect(result.issues.some((i) => i.code === 'privacy_leak')).toBe(true);
   });
 
+  it('empty-row guard does not false-positive on a normally paginated competitor table', () => {
+    // 12 competitors -> section-plan.ts's paginate() produces 3 pages
+    // (5/5/2 rows). This is a regression guard on that pagination math
+    // itself: if a future change to paginate() ever computed a rowRange
+    // whose slice comes back empty for a page marked "included" (an
+    // off-by-one, a stale row count, etc.), this would start failing.
+    const scorecards = Array.from({ length: 12 }, (_, i) => ({
+      competitorName: `Competitor ${i}`,
+      platformName: 'Daraz',
+      skuCount: 5,
+      medianPrice: { value: 1000, source: 'public_marketplace' as const, asOf: '2026-08-04' },
+      inStockRate: 0.9,
+      repricingRate: 0.1,
+    }));
+    const result = validateSnapshot(
+      baseSnapshot({ competitorBenchmarks: { scorecards, marketDefinitionSummary: 'Daraz · 12 identified' } }),
+    );
+    expect(result.issues.some((i) => i.code === 'empty_section_row_range')).toBe(false);
+  });
+
   it('flags an in-stock rate outside 0-1 as invalid', () => {
     const result = validateSnapshot(
       baseSnapshot({

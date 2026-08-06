@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { CATEGORY_DELAY_MS, JSON_HEADERS, PAGE_DELAY_MS, politeFetch, randomDelay } from './polite.js';
+import { CATEGORY_DELAY_MS, CircuitOpenError, JSON_HEADERS, PAGE_DELAY_MS, politeFetch, randomDelay } from './polite.js';
 import type { RawProduct, SourceResult } from '../types.js';
 
 // ShoppersPK - general-merchandise retailer with real depth in home, kitchen,
@@ -76,7 +76,7 @@ async function scrapeCategory(categorySlug: string): Promise<RawProduct[]> {
     const url =
       `https://www.shopperspk.com/wp-json/wc/store/products` +
       `?per_page=${PER_PAGE}&page=${page}&category=${encodeURIComponent(categorySlug)}`;
-    const res = await politeFetch(url, `shopperspk ${categorySlug} p${page}`, JSON_HEADERS);
+    const res = await politeFetch(url, `shopperspk ${categorySlug} p${page}`, JSON_HEADERS, 'shopperspk');
     const data = (await res.json()) as WooProduct[];
     if (!Array.isArray(data) || data.length === 0) break;
 
@@ -119,6 +119,7 @@ export async function scrapeShopperspk(): Promise<SourceResult> {
       products.push(...(await scrapeCategory(category)));
     } catch (err) {
       console.error(`[shopperspk] category "${category}" failed:`, (err as Error).message);
+      if (err instanceof CircuitOpenError) break;
     }
   }
 

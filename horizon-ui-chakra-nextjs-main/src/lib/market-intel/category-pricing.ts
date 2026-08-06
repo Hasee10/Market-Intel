@@ -8,9 +8,14 @@ export type CategoryPricing = {
   categorySlug: string;
   count: number;
   minPrice: number;
-  p25: number;
+  // Null below MIN_SAMPLE_FOR_BAND (migration 026's sample-size guard inside
+  // market_scope_price_stats itself, not just trusted at this layer) - a
+  // percentile computed from a handful of rows is a guess dressed up as
+  // precision. median/count/minPrice/maxPrice stay populated at any sample
+  // size >= 1; only p25/p75 are gated.
+  p25: number | null;
   median: number;
-  p75: number;
+  p75: number | null;
   maxPrice: number;
   avgPrice: number;
   samplePlatforms: string[];
@@ -83,9 +88,12 @@ export async function getCategoryPricing(sellerCategorySlug: string, targetCurre
     categorySlug: sellerCategorySlug,
     count,
     minPrice: Number(data.min_price),
-    p25: Number(data.p25),
+    // Number(null) is 0 in JS - must check for null explicitly, not just
+    // coerce, now that the SQL function itself can withhold these below
+    // its sample-size threshold.
+    p25: data.p25 != null ? Number(data.p25) : null,
     median: Number(data.median),
-    p75: Number(data.p75),
+    p75: data.p75 != null ? Number(data.p75) : null,
     maxPrice: Number(data.max_price),
     avgPrice: Number(data.avg_price),
     samplePlatforms: (data.platform_names ?? []).filter(Boolean).slice(0, 5),

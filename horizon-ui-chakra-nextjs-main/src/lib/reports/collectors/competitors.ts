@@ -1,5 +1,6 @@
 'server-only';
 
+import type { FxRates } from '@/lib/market-intel/fx';
 import { getCompetitorLandscape } from '@/lib/market-intel/competitors';
 import type { CompetitorBenchmarksSection } from '../schema';
 
@@ -15,10 +16,11 @@ export async function collectCompetitorBenchmarks(
   targetCurrency: string,
   sellerId: string,
   asOf: string,
+  fxRates: FxRates,
 ): Promise<CompetitorBenchmarksSection | null> {
   if (!categorySlug) return null;
 
-  const landscape = await getCompetitorLandscape(categorySlug, targetCurrency, sellerId);
+  const landscape = await getCompetitorLandscape(categorySlug, targetCurrency, sellerId, fxRates);
   if (landscape.scorecards.length === 0) return null; // no named-seller source in this category - omit, don't fake it
 
   // A competitor row with no priced listing at all can't carry a Sourced<number>

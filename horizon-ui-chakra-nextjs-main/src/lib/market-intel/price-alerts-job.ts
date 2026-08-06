@@ -6,6 +6,10 @@ import { createNotification } from '@/lib/notifications/notify';
 // A price move smaller than this is noise (scrape jitter, rounding) - not
 // worth alerting on. In_stock flips always alert regardless of price.
 const PRICE_CHANGE_THRESHOLD_PCT = 5;
+// Same near-zero-baseline guard as lib/reports/metrics/growth.ts - `oldPrice > 0`
+// alone let a Rs 0.01 baseline through and could fire a spurious alert from
+// a percent-change in the thousands.
+const MIN_BASELINE_PRICE = 0.01;
 
 type WatchedItemRow = {
   id: string;
@@ -53,7 +57,7 @@ export async function runPriceAlertsJob(): Promise<PriceAlertsJobResult> {
     const newInStock = product.in_stock;
 
     const priceChangedEnough =
-      oldPrice != null && oldPrice > 0
+      oldPrice != null && Math.abs(oldPrice) >= MIN_BASELINE_PRICE
         ? Math.abs((newPrice - oldPrice) / oldPrice) * 100 >= PRICE_CHANGE_THRESHOLD_PCT
         : oldPrice == null;
     const stockChanged = oldInStock != null && newInStock != null && oldInStock !== newInStock;

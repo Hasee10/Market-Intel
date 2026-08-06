@@ -129,11 +129,18 @@ export async function saveProducts(platformSlug: string, products: RawProduct[])
       recorded_at: now,
     }));
 
-    const historyRes = await fetch(`${config.supabaseUrl}/rest/v1/market_price_history`, {
-      method: 'POST',
-      headers: headers({ Prefer: 'return=minimal' }),
-      body: JSON.stringify(historyRows),
-    });
+    // on_conflict + ignore-duplicates against the (product_id, recorded_date)
+    // unique index (migration 026): a retried batch, or two runs landing on
+    // the same calendar day, becomes a safe no-op instead of a duplicate row
+    // that would double-weight that day's median in market_scope_price_trend.
+    const historyRes = await fetch(
+      `${config.supabaseUrl}/rest/v1/market_price_history?on_conflict=product_id,recorded_date`,
+      {
+        method: 'POST',
+        headers: headers({ Prefer: 'resolution=ignore-duplicates,return=minimal' }),
+        body: JSON.stringify(historyRows),
+      },
+    );
     if (!historyRes.ok) {
       throw new Error(`market_price_history insert failed: ${historyRes.status} ${await historyRes.text()}`);
     }

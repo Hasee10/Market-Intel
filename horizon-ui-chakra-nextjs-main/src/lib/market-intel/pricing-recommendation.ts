@@ -11,6 +11,11 @@ import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 // and correct at this data volume - see new_implementation_doc.md Phase 4.
 const MIN_MARGIN_PCT = 0.15;
 const MATCH_BAND_PCT = 0.05;
+// Same near-zero-baseline guard as lib/reports/metrics/growth.ts - a
+// product priced at literally Rs 0 (bad data entry, a free promo item)
+// isn't something to compute a "recommended price" percentage change
+// against; skipped rather than producing a divide-by-near-zero diffPct.
+const MIN_BASELINE_PRICE = 0.01;
 
 export type PricingRecommendation = {
   productId: string;
@@ -70,10 +75,21 @@ export async function getPricingRecommendations(
     // against the competitor band below.
     const costPrice = convertCurrency(Number(product.cost_price), product.currency, reportingCurrency, fxRates);
     const currentPrice = convertCurrency(Number(product.sell_price), product.currency, reportingCurrency, fxRates);
+    if (Math.abs(currentPrice) < MIN_BASELINE_PRICE) continue;
     const match = matchByProductId.get(product.id);
 
-    const competitorLow = match?.matchedPrice != null ? match.matchedPrice * (1 - MATCH_BAND_PCT) : categoryPricing.p25;
-    const competitorHigh = match?.matchedPrice != null ? match.matchedPrice * (1 + MATCH_BAND_PCT) : categoryPricing.p75;
+    // Without a confident product match, the competitor band falls back to
+    // the category's P25/P75 - which migration 026 now withholds below its
+    // sample-size threshold (`strictNullChecks` is off project-wide, so
+    // this must be checked explicitly, not trusted to a compile error).
+    // No confident match AND no real percentile band means there is nothing
+    // honest to recommend against - skip the product rather than silently
+    // treating a missing bound as 0 (JS's Math.max(x, null) coerces null to
+    // 0, which would recommend flooring the price at the cost-margin line).
+    if (match?.matchedPrice == null && (categoryPricing.p25 == null || categoryPricing.p75 == null)) continue;
+
+    const competitorLow = match?.matchedPrice != null ? match.matchedPrice * (1 - MATCH_BAND_PCT) : (categoryPricing.p25 as number);
+    const competitorHigh = match?.matchedPrice != null ? match.matchedPrice * (1 + MATCH_BAND_PCT) : (categoryPricing.p75 as number);
 
     const minAllowed = costPrice * (1 + MIN_MARGIN_PCT);
     const marginConstrained = minAllowed > competitorHigh;

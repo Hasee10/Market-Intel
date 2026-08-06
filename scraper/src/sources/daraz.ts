@@ -45,6 +45,27 @@ const CATEGORY_DELAY_MS: [number, number] = [8000, 15000];
 // A failed page is retried in place (increasing backoff) before the category
 // gives up on it, since a single challenge page is often transient.
 const PAGE_RETRY_BACKOFFS_MS = [15_000, 45_000, 90_000];
+const MAX_RETRY_AFTER_MS = 120_000;
+
+// If this many categories in a row fail outright (all of their own page
+// retries exhausted), Daraz is genuinely blocking this run - stop trying
+// the remaining categories rather than working through the same wall one
+// by one. Same idea as polite.ts's per-platform circuit breaker, kept as a
+// local counter here since this file doesn't share polite.ts's module
+// (Daraz goes through CloakBrowser, not politeFetch).
+const MAX_CONSECUTIVE_CATEGORY_FAILURES = 3;
+
+function parseRetryAfterMs(value: string | undefined): number | null {
+  if (!value) return null;
+  const seconds = Number(value);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.min(seconds * 1000, MAX_RETRY_AFTER_MS);
+  const dateMs = Date.parse(value);
+  if (Number.isFinite(dateMs)) {
+    const delta = dateMs - Date.now();
+    return delta > 0 ? Math.min(delta, MAX_RETRY_AFTER_MS) : 0;
+  }
+  return null;
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -198,8 +219,14 @@ async function fetchPage(page: Page, categorySlug: string, pageNum: number): Pro
       );
     }
 
-    const backoff = PAGE_RETRY_BACKOFFS_MS[attempt];
-    console.warn(`[daraz] category "${categorySlug}" page ${pageNum} retrying in ${backoff / 1000}s (attempt ${attempt + 2})`);
+    // A 429 response's Retry-After (if Daraz sends one) is a more reliable
+    // signal than the fixed backoff ladder - respected when present, falling
+    // back to the ladder otherwise.
+    const retryAfterMs = status === 429 ? parseRetryAfterMs(response?.headers()['retry-after']) : null;
+    const backoff = retryAfterMs ?? PAGE_RETRY_BACKOFFS_MS[attempt];
+    console.warn(
+      `[daraz] category "${categorySlug}" page ${pageNum} retrying in ${(backoff / 1000).toFixed(1)}s (attempt ${attempt + 2})${retryAfterMs != null ? ' [Retry-After]' : ''}`,
+    );
     await sleep(backoff);
   }
 }
@@ -258,13 +285,23 @@ export async function scrapeDaraz(): Promise<SourceResult> {
   await withBrowserSession(async (browser) => {
     const page = await browser.newPage();
 
+    let consecutiveFailures = 0;
     for (let i = 0; i < config.darazCategories.length; i += 1) {
       const category = config.darazCategories[i];
       if (i > 0) await randomDelay(CATEGORY_DELAY_MS);
       try {
         products.push(...(await scrapeCategory(page, category)));
+        consecutiveFailures = 0;
       } catch (err) {
         console.error(`[daraz] category "${category}" failed:`, (err as Error).message);
+        consecutiveFailures += 1;
+        if (consecutiveFailures >= MAX_CONSECUTIVE_CATEGORY_FAILURES) {
+          console.warn(
+            `[daraz] ${consecutiveFailures} categories in a row failed outright - stopping the remaining ` +
+              `${config.darazCategories.length - i - 1} categories this run rather than hammering a block.`,
+          );
+          break;
+        }
       }
     }
 

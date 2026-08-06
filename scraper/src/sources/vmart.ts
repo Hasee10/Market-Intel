@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { CATEGORY_DELAY_MS, JSON_HEADERS, PAGE_DELAY_MS, politeFetch, randomDelay } from './polite.js';
+import { CATEGORY_DELAY_MS, CircuitOpenError, JSON_HEADERS, PAGE_DELAY_MS, politeFetch, randomDelay } from './polite.js';
 import type { RawProduct, SourceResult } from '../types.js';
 
 // Vmart.pk - Pakistani computing/gaming-peripherals retailer (gaming mice,
@@ -49,7 +49,7 @@ async function scrapeCollection(collectionHandle: string): Promise<RawProduct[]>
     if (page > 1) await randomDelay(PAGE_DELAY_MS);
 
     const url = `https://vmart.pk/collections/${collectionHandle}/products.json?limit=${PAGE_LIMIT}&page=${page}`;
-    const res = await politeFetch(url, `vmart ${collectionHandle} p${page}`, JSON_HEADERS);
+    const res = await politeFetch(url, `vmart ${collectionHandle} p${page}`, JSON_HEADERS, 'vmart');
     const data = (await res.json()) as ShopifyProductsResponse;
     if (!data.products?.length) break;
 
@@ -96,6 +96,7 @@ export async function scrapeVmart(): Promise<SourceResult> {
       products.push(...(await scrapeCollection(collection)));
     } catch (err) {
       console.error(`[vmart] collection "${collection}" failed:`, (err as Error).message);
+      if (err instanceof CircuitOpenError) break;
     }
   }
 

@@ -770,6 +770,12 @@ The current `/api/reports/generate` route only ever produces `mode:
 'internal'` self-view downloads for the seller's own dashboard (see the
 route's own comment on why that's a deliberately different, lower-risk
 path than the formal client-safe delivery flow in §7).
+**`transitionStatus()` itself has no caller-identity check** (confirmed
+during the 2026-08-05 Grok-review pass, see its own code comment) - it
+trusts `reviewerIdentifier` completely. Safe today only because nothing
+calls it. Whoever builds this route must authenticate the caller as
+internal staff before calling `transitionStatus()`, not treat that
+function as the authorization boundary itself.
 
 **Phase 6 — seller-facing UI — NOT DONE.**
 No `dashboard/reports/` list/detail pages exist yet. `DownloadReportButton`

@@ -55,11 +55,14 @@ export async function collectMarketplaceAndPricing(
     perPlatform: [],
   };
 
-  // Only build a recommended band with a large enough sample - a band from
-  // 3 listings is a guess dressed up as a recommendation.
-  const MIN_SAMPLE_FOR_BAND = 15;
+  // Only build a recommended band when p25/p75 exist - migration 026 moved
+  // the sample-size threshold into market_scope_price_stats itself (a band
+  // from 3 listings is a guess dressed up as a recommendation), so this
+  // trusts that single source of truth instead of duplicating a magic
+  // threshold number at this layer, which could drift out of sync with the
+  // SQL function's own.
   const recommendedBand =
-    categoryPricing.count >= MIN_SAMPLE_FOR_BAND
+    categoryPricing.p25 != null && categoryPricing.p75 != null
       ? { low: categoryPricing.p25, high: categoryPricing.p75 }
       : null;
 
@@ -79,19 +82,22 @@ export async function collectMarketplaceAndPricing(
   return { marketplacePerformance, pricePositioning, categorySlug };
 }
 
-function computePercentile(
+export function computePercentile(
   price: number | null,
-  pricing: { minPrice: number; p25: number; median: number; p75: number; maxPrice: number },
+  pricing: { minPrice: number; p25: number | null; median: number; p75: number | null; maxPrice: number },
 ): number | null {
   if (price == null) return null;
-  // Coarse 5-point interpolation across the known percentile stops (10/25/50/75/90-ish
+  // Coarse interpolation across the known percentile stops (10/25/50/75/90-ish
   // via min/max as soft bounds) - deliberately not a fabricated exact percentile,
-  // since only 5 real stops exist in the source data.
+  // since only as many real stops exist as the source data actually supports.
+  // p25/p75 are null below migration 026's sample-size threshold - drop to a
+  // 3-point min/median/max interpolation rather than letting a null flow into
+  // the arithmetic below and produce NaN (null - number is NaN in JS, not 0).
   const stops: [number, number][] = [
     [pricing.minPrice, 5],
-    [pricing.p25, 25],
+    ...(pricing.p25 != null ? ([[pricing.p25, 25]] as [number, number][]) : []),
     [pricing.median, 50],
-    [pricing.p75, 75],
+    ...(pricing.p75 != null ? ([[pricing.p75, 75]] as [number, number][]) : []),
     [pricing.maxPrice, 95],
   ];
   if (price <= stops[0][0]) return stops[0][1];

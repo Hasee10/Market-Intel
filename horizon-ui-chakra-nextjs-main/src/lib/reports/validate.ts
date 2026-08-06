@@ -1,4 +1,5 @@
 import type { ReportSnapshot } from './schema';
+import { buildSectionPlan } from './section-plan';
 
 export interface ValidationIssue {
   code: string;
@@ -128,6 +129,31 @@ export function validateSnapshot(snapshot: ReportSnapshot): ValidationResult {
   // time (a draft is allowed to fail this check; export.ts/persist.ts is
   // what actually refuses to hand out a client_safe file for a non-approved
   // snapshot - see docs/reports-v2-architecture.md §7 step 4).
+
+  // Empty-row guard - defense-in-depth against a future collector/filter
+  // change decoupling from section-plan.ts's own inclusion predicates. Runs
+  // the real section plan and, for every table-backed section it decided to
+  // include, re-slices the same underlying array the renderer would and
+  // asserts that slice is non-empty. A drift here (a section marked
+  // "included" whose actual row range comes back empty) is exactly the
+  // "blank table on a real slide" failure mode this check exists to catch.
+  for (const section of buildSectionPlan(snapshot).sections) {
+    if (!section.rowRange) continue;
+    const [start, end] = section.rowRange;
+    let rowCount = 0;
+    if (section.kind === 'competitor_tracking') {
+      rowCount = snapshot.competitorBenchmarks?.scorecards.slice(start, end).length ?? 0;
+    } else if (section.kind === 'sku_performance') {
+      rowCount = snapshot.productPerformance?.topProducts.slice(start, end).length ?? 0;
+    }
+    if (rowCount === 0) {
+      push(
+        true,
+        'empty_section_row_range',
+        `Section "${section.kind}" (page ${section.page + 1}/${section.pageCount}) was included but its row range [${start}, ${end}) is empty.`,
+      );
+    }
+  }
 
   const passed = issues.every((i) => !i.blocking);
   return { passed, issues };

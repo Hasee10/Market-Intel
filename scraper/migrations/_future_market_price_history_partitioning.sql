@@ -1,0 +1,122 @@
+-- NOT PART OF THE APPLIED MIGRATION SEQUENCE. Drafted, not applied - same
+-- underscore-prefixed convention as _pending_apply_to_new_project.sql,
+-- signaling "exists for reference, do not run this as-is against the
+-- numbered sequence."
+--
+-- Written during the Grok architecture review pass (2026-08-05,
+-- docs/reports-v2-architecture.md) as a ready-to-execute design for when
+-- market_price_history actually needs it - not applied now because the
+-- table is still small (49,393 rows as of 2026-08-05, ~9-18K added per
+-- scrape run, cadence ~every 2 days) and a full backfill-and-swap on live
+-- data is real operational risk for a problem that doesn't exist yet.
+--
+-- TRIGGER CONDITION - re-evaluate and apply when EITHER:
+--   - market_price_history exceeds ~5,000,000 rows, or
+--   - market_scope_price_trend / market_scope_price_stats query latency
+--     becomes visibly slow (check via Supabase's query performance view,
+--     or user-visible slowness on the Market Definition / Pricing
+--     Intelligence report pages).
+-- Re-check the actual row count before running any of this - the numbers
+-- above are 2026-08-05 estimates, not a promise this file stays current.
+--
+-- APPROACH: Postgres cannot ALTER an existing table to add partitioning in
+-- place. The standard approach - and the one below - is: create a new
+-- partitioned table, backfill from the old one, swap names inside a
+-- transaction, keep the old table around (renamed) until the swap is
+-- verified, then drop it. Test this against a staging copy first; this
+-- file is a design, not a rehearsed runbook.
+
+-- ---------------------------------------------------------------------------
+-- 1. New partitioned table, monthly range partitions
+-- ---------------------------------------------------------------------------
+-- Monthly, not daily: at current/projected volume (a few hundred thousand
+-- rows/month), daily partitions would create hundreds of tiny partitions
+-- with more planner/catalog overhead than they save. Re-evaluate the
+-- interval if actual volume ends up an order of magnitude higher than
+-- estimated above.
+
+-- create table market_price_history_partitioned (
+--   like market_price_history including defaults including indexes
+-- ) partition by range (recorded_at);
+--
+-- Create partitions covering the existing data's date range plus a few
+-- months forward - script-generate this list at execution time rather than
+-- hardcoding it here, since "now" isn't known when this file is written:
+--
+-- create table market_price_history_y2026m08 partition of market_price_history_partitioned
+--   for values from ('2026-08-01') to ('2026-09-01');
+-- create table market_price_history_y2026m09 partition of market_price_history_partitioned
+--   for values from ('2026-09-01') to ('2026-10-01');
+-- ... one per month, plus a default partition to catch anything outside
+-- the pre-created range rather than erroring on insert:
+-- create table market_price_history_default partition of market_price_history_partitioned default;
+
+-- ---------------------------------------------------------------------------
+-- 2. Backfill
+-- ---------------------------------------------------------------------------
+-- Batch the copy (e.g. 100k rows at a time by id range) rather than one
+-- giant INSERT ... SELECT, to avoid a long-held lock and a huge WAL spike
+-- on a live database still serving report/dashboard reads.
+--
+-- insert into market_price_history_partitioned select * from market_price_history
+--   where id > :last_copied_id order by id limit 100000;
+-- -- repeat, tracking :last_copied_id, until no rows remain.
+
+-- ---------------------------------------------------------------------------
+-- 3. Swap (inside a transaction, brief lock)
+-- ---------------------------------------------------------------------------
+-- begin;
+--   -- catch anything inserted between the last backfill batch and this swap
+--   insert into market_price_history_partitioned
+--     select * from market_price_history
+--     where recorded_at > (select max(recorded_at) from market_price_history_partitioned)
+--   on conflict (product_id, recorded_date) do nothing;
+--
+--   alter table market_price_history rename to market_price_history_old;
+--   alter table market_price_history_partitioned rename to market_price_history;
+-- commit;
+--
+-- Verify row counts and a few spot-check queries (market_scope_price_trend
+-- against a known category) before proceeding to step 4. Keep
+-- market_price_history_old around for at least a few days as a rollback
+-- path, not dropped in the same session as the swap.
+
+-- ---------------------------------------------------------------------------
+-- 4. Retention: roll up old daily data before dropping partitions
+-- ---------------------------------------------------------------------------
+-- Raw daily points kept for ~150 days (roughly 5 months - long enough for
+-- the report system's trend charts, which default to a 90-day lookback,
+-- to always have full daily resolution plus headroom). Older than that,
+-- summarize into weekly medians before the partition is dropped, rather
+-- than losing the history outright.
+
+-- create table if not exists market_price_history_weekly (
+--   product_id uuid not null references market_products(id) on delete cascade,
+--   week_start date not null,
+--   median_price numeric,
+--   min_price numeric,
+--   max_price numeric,
+--   sample_count integer not null,
+--   primary key (product_id, week_start)
+-- );
+--
+-- insert into market_price_history_weekly (product_id, week_start, median_price, min_price, max_price, sample_count)
+-- select
+--   product_id,
+--   date_trunc('week', recorded_at)::date,
+--   percentile_cont(0.5) within group (order by price),
+--   min(price),
+--   max(price),
+--   count(*)
+-- from market_price_history
+--   where recorded_at < now() - interval '150 days'
+--   group by product_id, date_trunc('week', recorded_at)
+-- on conflict (product_id, week_start) do nothing;
+--
+-- -- Then, per partition older than the retention window:
+-- -- alter table market_price_history detach partition market_price_history_y2026m01;
+-- -- drop table market_price_history_y2026m01;
+--
+-- A recurring job (cron, same cadence as the scraper or looser) should run
+-- the rollup + detach + drop as a routine maintenance task once this is
+-- live, not a one-time manual step.

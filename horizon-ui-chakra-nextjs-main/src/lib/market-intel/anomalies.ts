@@ -7,6 +7,12 @@ import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 const LOOKBACK_DAYS = 30;
 const MIN_DAYS_FOR_BASELINE = 7;
 const Z_SCORE_THRESHOLD = 2;
+// Same near-zero-baseline guard as lib/reports/metrics/growth.ts's
+// buildGrowthMetric (kept as a local constant rather than importing from
+// lib/reports/ - that module depends on this one, not the other way
+// around). A strict `=== 0` check let a Rs 0.01 old price through and
+// produce a percent-change in the thousands.
+const MIN_BASELINE_PRICE = 0.01;
 
 function mean(values: number[]): number {
   return values.reduce((s, v) => s + v, 0) / values.length;
@@ -144,7 +150,7 @@ export async function detectCompetitorPriceAnomalies(
   const changes: { product: (typeof matched)[number]; oldPrice: number; newPrice: number; pctChange: number }[] = [];
   for (const product of matched) {
     const rawOldPrice = oldestPriceByProduct.get(product.id);
-    if (rawOldPrice == null || rawOldPrice === 0 || product.price == null) continue;
+    if (rawOldPrice == null || Math.abs(rawOldPrice) < MIN_BASELINE_PRICE || product.price == null) continue;
     // Convert after computing pctChange in native currency (a ratio, so
     // conversion doesn't change it) - oldPrice/newPrice are then converted
     // for display alongside the rest of the market-intel dashboard.

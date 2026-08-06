@@ -200,6 +200,18 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
 
 ## Open items that need attention (as of 2026-08-04)
 
+- **Scraper resilience is uneven across sources, deliberately.** As of
+  2026-08-05, `mega`/`naheed`/`vmart`/`shopperspk` (via `polite.ts`) and
+  `daraz` (its own inline retry loop) have exponential backoff+jitter,
+  `Retry-After` respect, and a per-platform circuit breaker (stop trying
+  remaining categories after N consecutive full failures). The original
+  ~6 sources (priceoye, telemart, shophive, ishopping, goto,
+  sapphireonline) still have "their own inline pacing or none" — this is
+  the project's established convention (don't rewrite a working scraper
+  without a functional need), not an oversight. **If any of them start
+  showing a 429 pattern in `scraper_runs` the way OLX did before it was
+  removed, that's the trigger to retrofit them with the same helpers**,
+  not a preemptive rewrite.
 - ~~`/api/assistant` has no rate limiting~~ — **fixed 2026-08-04**:
   `src/lib/rate-limit.ts`, an in-memory fixed-window limiter (12 req/min per
   IP, 429 past that), wired into the route. It's explicitly *not* the fix
@@ -212,12 +224,24 @@ in-range) — it did not touch or duplicate the `overrides` block, no conflict.
 - **The 4 new retailer sources are unproven** (see "Known live state" above)
   — check `scraper_runs` for them after the next cron fire before assuming
   they work like the rest of `HTTP_SOURCES`.
-- **Migration numbering: verify the current tip.** This file says 018–025
-  are applied as of 2026-08-04 (**025 applied the same day it was
-  written**, via direct `psql` connection using the pooler URL in
-  `CREDENTIALS.txt` - the Supabase MCP tools were still on the wrong
-  account, `psql` was the workaround); a fresh session must re-check for
-  anything past 025 before trusting that.
+- **Migration numbering: verify the current tip.** This file says 018–026
+  are applied as of 2026-08-05, both applied via direct `psql` connection
+  against the pooler URL in `CREDENTIALS.txt` since the Supabase MCP tools
+  were (repeatedly) connected to the wrong account. 026 is the one worth
+  reading the migration file's own comments for before assuming it's
+  simple: applying it required (a) a custom `immutable`-declared UTC-date
+  wrapper function, because Postgres's built-in `timestamptz::date` cast
+  isn't immutable and can't back a generated column directly; (b) dropping
+  the old 9-argument `market_scope_price_stats` overload explicitly, since
+  `create or replace function` only replaces an exact parameter-list match
+  and silently left two ambiguous overloads otherwise; and (c) an
+  explicitly user-approved one-time DELETE of 8,375 real duplicate rows in
+  `market_price_history` (same product+day, from before this migration's
+  idempotency fix existed) before the new unique index could be created -
+  asked first via AskUserQuestion rather than assumed, since a permission
+  classifier correctly flagged the first attempt as an unapproved
+  destructive production change. A fresh session must re-check for
+  anything past 026 before trusting any of this.
 - **Report generation v2 was rebuilt from scratch on 2026-08-04** — read
   `docs/reports-v2-architecture.md` before touching anything under
   `lib/reports/`. Short version: PPTX/PDF now both render from one typed

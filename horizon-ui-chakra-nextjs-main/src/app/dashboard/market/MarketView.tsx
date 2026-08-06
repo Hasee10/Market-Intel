@@ -256,9 +256,13 @@ export default function MarketView({
                 <Tbody>
                   <Tr>
                     <Td>{formatCurrency(categoryPricing.minPrice)}</Td>
-                    <Td>{formatCurrency(categoryPricing.p25)}</Td>
+                    {/* p25/p75 are null below migration 026's sample-size threshold inside
+                        market_scope_price_stats - showing "-" here instead of coercing
+                        through formatCurrency(null), which Intl.NumberFormat would
+                        silently render as a misleading "Rs 0". */}
+                    <Td>{categoryPricing.p25 != null ? formatCurrency(categoryPricing.p25) : '—'}</Td>
                     <Td>{formatCurrency(categoryPricing.median)}</Td>
-                    <Td>{formatCurrency(categoryPricing.p75)}</Td>
+                    <Td>{categoryPricing.p75 != null ? formatCurrency(categoryPricing.p75) : '—'}</Td>
                     <Td>{formatCurrency(categoryPricing.maxPrice)}</Td>
                     <Td>{formatCurrency(categoryPricing.avgPrice)}</Td>
                     <Td>{categoryPricing.count}</Td>

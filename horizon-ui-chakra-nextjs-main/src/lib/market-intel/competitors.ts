@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
+import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 import { getMarketScope, type MarketScope } from '@/lib/market-intel/market-definition';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
@@ -98,6 +98,12 @@ export async function getCompetitorLandscape(
   sellerCategorySlug: string,
   targetCurrency: string,
   sellerId?: string,
+  // Report generation fetches one fx snapshot for the whole run and threads
+  // it through every collector so every section agrees on the same rates
+  // (see docs/reports-v2-architecture.md's currency-consistency note) - other
+  // callers (the Competitors dashboard page) omit this and get a fresh fetch,
+  // which is fine for a single-section page render.
+  fxRatesOverride?: FxRates,
 ): Promise<CompetitorLandscape> {
   const scope = await getMarketScope(sellerCategorySlug, sellerId);
   const empty: CompetitorLandscape = {
@@ -112,7 +118,7 @@ export async function getCompetitorLandscape(
   if (scope.categorySlugs.length === 0) return empty;
 
   const supabase = await createClient();
-  const fxRates = await getLatestFxRates();
+  const fxRates = fxRatesOverride ?? (await getLatestFxRates());
 
   const [scorecardsRes, anonymousRes] = await Promise.all([
     supabase.rpc('market_competitor_scorecards', {

@@ -2,6 +2,7 @@ import * as cheerio from 'cheerio';
 import { config } from '../config.js';
 import {
   CATEGORY_DELAY_MS,
+  CircuitOpenError,
   DEFAULT_HEADERS,
   PAGE_DELAY_MS,
   politeFetch,
@@ -84,7 +85,7 @@ async function scrapeCategory(categoryPath: string): Promise<RawProduct[]> {
     if (pageNum > 1) await randomDelay(PAGE_DELAY_MS);
 
     const url = `https://www.naheed.pk/${categoryPath}${pageNum > 1 ? `?p=${pageNum}` : ''}`;
-    const res = await politeFetch(url, `naheed ${categoryPath} p${pageNum}`, DEFAULT_HEADERS);
+    const res = await politeFetch(url, `naheed ${categoryPath} p${pageNum}`, DEFAULT_HEADERS, 'naheed');
     const $ = cheerio.load(await res.text());
     const pageProducts = parseCards($, categoryPath);
 
@@ -108,6 +109,7 @@ export async function scrapeNaheed(): Promise<SourceResult> {
       products.push(...(await scrapeCategory(category)));
     } catch (err) {
       console.error(`[naheed] category "${category}" failed:`, (err as Error).message);
+      if (err instanceof CircuitOpenError) break;
     }
   }
 
