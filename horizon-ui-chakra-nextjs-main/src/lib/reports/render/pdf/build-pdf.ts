@@ -1,9 +1,11 @@
 'server-only';
 
 import PDFDocument from 'pdfkit';
-import type { ReportSnapshot } from '../../schema';
+import type { MarketSignalKind, ReportSnapshot } from '../../schema';
 import { buildSectionPlan, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
-import { COLORS, formatCurrency, formatDate, formatPercent } from '../../design-tokens';
+import { COLORS, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
+import { median } from '../../metrics/statistics';
+import { safeRatio } from '../../metrics/growth';
 
 // Mirrors render/pptx/build-deck.ts section-for-section against the same
 // ReportSnapshot and the same section plan, so both formats come from one
@@ -46,7 +48,7 @@ export async function buildReportPdf(snapshot: ReportSnapshot): Promise<Buffer> 
     switch (section.kind) {
       case 'cover':
         slideIndex += 1;
-        renderCover(doc, snapshot);
+        renderCover(doc, snapshot, plan);
         break;
       case 'toc':
         renderToc(doc, snapshot, plan, label());
@@ -164,7 +166,10 @@ interface KpiSpec {
   delta?: string | null;
   deltaColor?: string;
   onDark?: boolean;
+  sparkline?: number[] | null;
 }
+
+const MIN_SPARKLINE_POINTS = 3;
 
 function kpiRow(doc: PDFKit.PDFDocument, cards: KpiSpec[], x: number, y: number, w: number, h = 1.96 * IN) {
   if (cards.length === 0) return;
@@ -173,12 +178,19 @@ function kpiRow(doc: PDFKit.PDFDocument, cards: KpiSpec[], x: number, y: number,
   cards.forEach((c, i) => {
     const cx = x + i * (cardW + gap);
     const pad = c.onDark ? 0 : 0.33 * IN;
+    const hasSparkline = !c.onDark && (c.sparkline?.length ?? 0) >= MIN_SPARKLINE_POINTS;
     if (!c.onDark) doc.roundedRect(cx, y, cardW, h, CARD_RADIUS).fill(hex(COLORS.paper));
     doc
       .fillColor(hex(c.onDark ? COLORS.paper : COLORS.gray))
       .font(FONT_BOLD)
       .fontSize(12)
-      .text(c.label.toUpperCase(), cx + pad, y + (c.onDark ? 0 : 0.29 * IN), { width: cardW - pad * 2, characterSpacing: 1.2 });
+      .text(c.label.toUpperCase(), cx + pad, y + (c.onDark ? 0 : 0.29 * IN), {
+        width: hasSparkline ? cardW - pad * 2 - 76 : cardW - pad * 2,
+        characterSpacing: 1.2,
+      });
+    if (hasSparkline) {
+      sparkline(doc, c.sparkline as number[], cx + cardW - pad - 72, y + 17, 72, 30);
+    }
     doc
       .fillColor(hex(c.onDark ? COLORS.paper : COLORS.ink))
       .font(FONT_BOLD)
@@ -191,6 +203,123 @@ function kpiRow(doc: PDFKit.PDFDocument, cards: KpiSpec[], x: number, y: number,
         .fontSize(15)
         .text(c.delta, cx + pad, y + h - (c.onDark ? 0.35 * IN : 0.62 * IN), { width: cardW - pad * 2, lineBreak: false });
     }
+  });
+}
+
+/** Tiny native vector trend line - no axes/gridlines, mirrors render/pptx/components.ts's addSparkline. */
+function sparkline(doc: PDFKit.PDFDocument, values: number[], x: number, y: number, w: number, h: number, color: string = COLORS.brandAccent) {
+  const max = Math.max(...values);
+  const min = Math.min(...values);
+  const span = max - min || 1;
+  const stepX = w / Math.max(values.length - 1, 1);
+  doc.save().lineWidth(1.5).strokeColor(hex(color));
+  values.forEach((v, i) => {
+    const px = x + i * stepX;
+    const py = y + h - ((v - min) / span) * h;
+    if (i === 0) doc.moveTo(px, py);
+    else doc.lineTo(px, py);
+  });
+  doc.stroke();
+  doc.restore();
+}
+
+/** Deterministic badge for a market signal's kind - same mapping as render/pptx/components.ts's signalBadge. */
+function signalBadge(kind: MarketSignalKind): { label: string; bg: string; fg: string } {
+  switch (kind) {
+    case 'price_war':
+    case 'new_entrant':
+      return { label: 'WATCH', bg: COLORS.warningBg, fg: COLORS.warning };
+    case 'supply_void':
+      return { label: 'OPENING', bg: COLORS.positiveBg, fg: COLORS.positive };
+    case 'demand_rising':
+      return { label: 'POSITION', bg: COLORS.infoBg, fg: COLORS.info };
+  }
+}
+
+/** "82" -> "nd", "3" -> "rd", "11" -> "th", etc. */
+function ordinalSuffix(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  switch (n % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
+}
+
+/** Solid brand-purple insight card with optional bottom micro-metric row - mirrors render/pptx/components.ts's addInsightCard. */
+function insightCard(
+  doc: PDFKit.PDFDocument,
+  eyebrowText: string,
+  body: string,
+  microMetrics: { label: string; value: string }[],
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+) {
+  doc.roundedRect(x, y, w, h, CARD_RADIUS).fill(hex(COLORS.brand));
+  doc.save().opacity(0.85);
+  doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(12).text(eyebrowText.toUpperCase(), x + 30, y + 30, { width: w - 60, characterSpacing: 1.5 });
+  doc.restore();
+  const bodyH = microMetrics.length > 0 ? h - 155 : h - 83;
+  doc.fillColor(hex(COLORS.paper)).font(FONT).fontSize(16.5).text(body, x + 30, y + 60, { width: w - 60, height: bodyH });
+
+  if (microMetrics.length > 0) {
+    const stripY = y + h - 94;
+    doc.rect(x + 30, stripY, w - 60, 1).fill(hex(COLORS.paper));
+    const colW = (w - 60) / microMetrics.length;
+    microMetrics.forEach((m, i) => {
+      const mx = x + 30 + i * colW;
+      doc.save().opacity(0.7);
+      doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(11).text(m.label.toUpperCase(), mx, stripY + 16, { width: colW - 14, characterSpacing: 1 });
+      doc.restore();
+      doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(19).text(m.value, mx, stripY + 35, { width: colW - 14, lineBreak: false });
+    });
+  }
+}
+
+/** Small tinted-background callout card - used by competitor tracking's highlight column. */
+function highlightCard(doc: PDFKit.PDFDocument, eyebrowText: string, title: string, body: string, bg: string, x: number, y: number, w: number, h: number) {
+  doc.roundedRect(x, y, w, h, CARD_RADIUS).fill(hex(bg));
+  eyebrow(doc, eyebrowText, x + 22, y + 16, w - 44, COLORS.gray);
+  doc.fillColor(hex(COLORS.ink)).font(FONT_BOLD).fontSize(15).text(title, x + 22, y + 36, { width: w - 44, lineBreak: false });
+  doc.fillColor(hex(COLORS.gray)).font(FONT).fontSize(12).text(body, x + 22, y + 58, { width: w - 44, height: h - 74 });
+}
+
+interface PriceLadderRung {
+  label: string;
+  valueText: string;
+  value: number;
+  color?: string;
+  emphasized?: boolean;
+}
+
+/** Horizontal proportional-bar price ladder - mirrors render/pptx/components.ts's addPriceLadder. */
+function priceLadder(doc: PDFKit.PDFDocument, rungs: PriceLadderRung[], x: number, y: number, w: number, pitch = 52) {
+  const max = Math.max(...rungs.map((r) => r.value), 1);
+  const trackW = w - 150;
+  const trackH = 12;
+  rungs.forEach((r, i) => {
+    const rowY = y + i * pitch;
+    doc
+      .fillColor(hex(r.emphasized ? COLORS.ink : COLORS.gray))
+      .font(r.emphasized ? FONT_BOLD : FONT)
+      .fontSize(13.5)
+      .text(r.label, x, rowY, { width: 158, lineBreak: false });
+    doc.roundedRect(x, rowY + 23, trackW, trackH, trackH / 2).fill(hex(COLORS.canvas));
+    const fillW = Math.max(trackW * Math.min(r.value / max, 1), 2);
+    doc.roundedRect(x, rowY + 23, fillW, trackH, trackH / 2).fill(hex(r.color ?? COLORS.brandAccent));
+    doc
+      .fillColor(hex(COLORS.ink))
+      .font(FONT_BOLD)
+      .fontSize(13.5)
+      .text(r.valueText, x + w - 133, rowY, { width: 133, align: 'right', lineBreak: false });
   });
 }
 
@@ -287,7 +416,7 @@ function insightPanel(doc: PDFKit.PDFDocument, eyebrowText: string, body: string
 
 // -- Section renderers ----------------------------------------------------
 
-function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
+function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: SectionPlan) {
   canvas(doc);
   const panelW = 14.042 * IN;
   doc.rect(0, 0, panelW, H).fill(hex(COLORS.brand));
@@ -319,26 +448,55 @@ function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot) {
       { width: panelW - MARGIN * 2 },
     );
 
+  // "This cycle covers" - included TOC entries, 2 columns. Only ever lists
+  // what actually made it into the deck.
+  const includedTitles = plan.toc.filter((e) => e.status === 'included').map((e) => e.title);
+  if (includedTitles.length > 0) {
+    doc.save().opacity(0.7);
+    doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(12).text('THIS CYCLE COVERS', MARGIN, 6.56 * IN, { width: panelW - MARGIN * 2, characterSpacing: 1.5 });
+    doc.restore();
+    const colW = (panelW - MARGIN * 2 - 22) / 2;
+    const perCol = Math.ceil(includedTitles.length / 2);
+    doc.save().opacity(0.92);
+    includedTitles.forEach((title, i) => {
+      const col = Math.floor(i / perCol);
+      const row = i % perCol;
+      doc
+        .fillColor(hex(COLORS.paper))
+        .font(FONT)
+        .fontSize(14)
+        .text(`•  ${title}`, MARGIN + col * (colW + 22), (6.92 + row * 0.38) * IN, { width: colW, lineBreak: false });
+    });
+    doc.restore();
+  }
+
   const cards: KpiSpec[] = [];
   const currency = snapshot.workspace.reportingCurrency;
   if (snapshot.revenue) {
     cards.push(growthKpi('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency), true));
     cards.push(growthKpi('Orders', snapshot.revenue.orders, (v) => String(Math.round(v)), true));
   }
-  if (snapshot.competitorBenchmarks) {
-    cards.push({ label: 'Competitors tracked', value: String(snapshot.competitorBenchmarks.scorecards.length), onDark: true });
+  if (snapshot.marketplacePerformance?.priceIndex) {
+    cards.push({ label: 'Price index', value: snapshot.marketplacePerformance.priceIndex.value.toFixed(0), delta: 'vs. market', onDark: true });
   }
   if (cards.length > 0) {
     doc.rect(MARGIN, 8.5 * IN, panelW - MARGIN * 2, 1).fill(hex(COLORS.paper));
     kpiRow(doc, cards, MARGIN, 8.9 * IN, panelW - MARGIN * 2, 1.3 * IN);
   }
 
-  eyebrow(doc, 'Prepared for', panelW + 54, 3.2 * IN, W - panelW - 108, COLORS.grayLight);
-  doc.fillColor(hex(COLORS.ink)).font(FONT_BOLD).fontSize(22).text(snapshot.workspace.businessName, panelW + 54, 3.55 * IN, { width: W - panelW - 108 });
-  eyebrow(doc, 'Reporting period', panelW + 54, 4.7 * IN, W - panelW - 108, COLORS.grayLight);
-  doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(18).text(snapshot.metadata.period.label, panelW + 54, 5.05 * IN, { width: W - panelW - 108 });
+  // Right strip: minimal - metadata already lives on the left panel.
+  doc
+    .fillColor(hex(COLORS.gray))
+    .font(FONT)
+    .fontSize(13)
+    .text(
+      `Generated automatically from your store data and Ryvl's tracked market scan. Every figure traces to a source listed on the methodology page.`,
+      panelW + 48,
+      H - 1.4 * IN,
+      { width: W - panelW - 96 },
+    );
 
-  confidentialityPill(doc, snapshot, W - MARGIN - 240, 10.5 * IN);
+  confidentialityPill(doc, snapshot, W - MARGIN - 240, 0.667 * IN);
 }
 
 function renderToc(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: SectionPlan, pageLabel: string) {
@@ -454,7 +612,7 @@ function renderExecutiveSnapshot(doc: PDFKit.PDFDocument, snapshot: ReportSnapsh
   const currency = snapshot.workspace.reportingCurrency;
   const cards: KpiSpec[] = [];
   if (snapshot.revenue) {
-    cards.push(growthKpi('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)));
+    cards.push({ ...growthKpi('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)), sparkline: snapshot.revenue.weeklySeries?.map((p) => p.value) ?? null });
     cards.push(growthKpi('Orders', snapshot.revenue.orders, (v) => String(Math.round(v))));
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
@@ -470,21 +628,37 @@ function renderExecutiveSnapshot(doc: PDFKit.PDFDocument, snapshot: ReportSnapsh
   const narrative = snapshot.appendix?.aiSummary as string | undefined;
   const signals = snapshot.marketSignals.slice(0, 4);
 
-  if (signals.length > 0) {
-    const signalsW = narrative ? CONTENT_W * 0.58 : CONTENT_W;
-    card(doc, MARGIN, lowerY, signalsW, lowerH);
-    cardHeading(doc, 'What changed this cycle', MARGIN + 30, lowerY + 26, signalsW - 60);
-    signals.forEach((signal, i) => {
-      const sy = lowerY + 72 + i * 66;
-      doc.rect(MARGIN + 30, sy + 8, 4, 38).fill(hex(COLORS.brandAccent));
-      doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(16.5).text(signal.description, MARGIN + 54, sy, { width: signalsW - 100 });
-    });
+  // Insight card (purple, ~55%) left, "what changed" (white, ~45%) right -
+  // matches the reference deck's priority: the narrated read is primary.
+  if (narrative) {
+    const insightW = signals.length > 0 ? CONTENT_W * 0.55 : CONTENT_W;
+    const microMetrics: { label: string; value: string }[] = [];
+    if (snapshot.revenue) {
+      const ordersChange = snapshot.revenue.orders.changePct;
+      microMetrics.push({
+        label: 'Order volume',
+        value: ordersChange != null ? `${ordersChange >= 0 ? '+' : ''}${ordersChange.toFixed(1)}%` : String(Math.round(snapshot.revenue.orders.current)),
+      });
+      microMetrics.push({ label: 'Avg. order value', value: formatCurrency(snapshot.revenue.avgOrderValue.current, currency) });
+    }
+    if (snapshot.pricePositioning?.percentile != null) {
+      microMetrics.push({ label: 'Market percentile', value: `${snapshot.pricePositioning.percentile}${ordinalSuffix(snapshot.pricePositioning.percentile)}` });
+    }
+    insightCard(doc, 'Ryvl insight', narrative, microMetrics.slice(0, 3), MARGIN, lowerY, insightW, lowerH);
   }
 
-  if (narrative) {
-    const panelX = signals.length > 0 ? MARGIN + CONTENT_W * 0.58 + 30 : MARGIN;
-    const panelW = signals.length > 0 ? CONTENT_W * 0.42 - 30 : CONTENT_W;
-    insightPanel(doc, 'Read', narrative, panelX, lowerY, panelW, lowerH);
+  if (signals.length > 0) {
+    const signalsX = narrative ? MARGIN + CONTENT_W * 0.55 + 30 : MARGIN;
+    const signalsW = narrative ? CONTENT_W * 0.45 - 30 : CONTENT_W;
+    card(doc, signalsX, lowerY, signalsW, lowerH);
+    cardHeading(doc, 'What changed this cycle', signalsX + 30, lowerY + 26, signalsW - 60);
+    signals.forEach((signal, i) => {
+      const sy = lowerY + 72 + i * 70;
+      const badge = signalBadge(signal.kind);
+      pill(doc, badge.label, badge.bg, badge.fg, signalsX + 30, sy, 68);
+      doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(16.5).text(signal.description, signalsX + 30, sy + 30, { width: signalsW - 60 });
+      if (i < signals.length - 1) doc.rect(signalsX + 30, sy + 66, signalsW - 60, 1).fill(hex(COLORS.hairlineSoft));
+    });
   }
 
   footer(doc, snapshot);
@@ -496,10 +670,11 @@ function renderMarketPosition(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot,
   canvas(doc);
   header(doc, 'Market Position & Benchmark Percentiles', `Tracked across ${mp.scope.platformNames.join(', ') || 'tracked marketplaces'}`, pageLabel);
 
+  const percentile = snapshot.pricePositioning?.percentile ?? null;
   const cards: KpiSpec[] = [];
   if (mp.priceIndex) cards.push({ label: 'Price index vs. market', value: mp.priceIndex.value.toFixed(0), delta: '100 = at market median' });
-  if (snapshot.pricePositioning?.percentile != null) {
-    cards.push({ label: 'Your percentile', value: `${snapshot.pricePositioning.percentile}th`, delta: 'Of the tracked price range' });
+  if (percentile != null) {
+    cards.push({ label: 'Your percentile', value: `${percentile}${ordinalSuffix(percentile)}`, delta: 'Of the tracked price range' });
   }
   cards.push({ label: 'Platforms in scope', value: String(mp.scope.platformNames.length) });
   kpiRow(doc, cards, MARGIN, CONTENT_TOP, CONTENT_W);
@@ -509,12 +684,12 @@ function renderMarketPosition(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot,
   card(doc, MARGIN, chartY, CONTENT_W, chartH);
   cardHeading(doc, 'Where your price sits in the tracked market', MARGIN + 30, chartY + 26, CONTENT_W - 60);
 
-  if (snapshot.pricePositioning?.percentile != null) {
+  if (percentile != null) {
     barRows(
       doc,
       [
         { title: '25th percentile', valueText: '25', ratio: 0.25, color: COLORS.grayLight },
-        { title: 'Your position', valueText: `${snapshot.pricePositioning.percentile}`, ratio: snapshot.pricePositioning.percentile / 100, color: COLORS.brandAccent },
+        { title: 'Your position', valueText: `${percentile}`, ratio: percentile / 100, color: COLORS.brandAccent },
         { title: '75th percentile', valueText: '75', ratio: 0.75, color: COLORS.grayLight },
       ],
       MARGIN + 30,
@@ -522,6 +697,15 @@ function renderMarketPosition(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot,
       CONTENT_W - 60,
       86,
     );
+    const read =
+      percentile >= 75
+        ? 'You price above three quarters of the tracked set.'
+        : percentile >= 50
+          ? 'You price above the market median, inside the upper half of the tracked set.'
+          : percentile >= 25
+            ? 'You price below the market median, inside the lower half of the tracked set.'
+            : 'You price below three quarters of the tracked set.';
+    doc.fillColor(hex(COLORS.gray)).font(FONT_ITALIC).fontSize(14).text(read, MARGIN + 30, chartY + chartH - 50, { width: CONTENT_W - 60 });
   }
 
   footer(doc, snapshot);
@@ -534,41 +718,74 @@ function renderPricingIntelligence(doc: PDFKit.PDFDocument, snapshot: ReportSnap
   header(doc, 'Pricing Intelligence', 'Your price against the tracked market median', pageLabel);
 
   const currency = snapshot.workspace.reportingCurrency;
+  const gapPct = safeRatio(pp.yourMedianPrice.value - pp.marketMedian.value, pp.marketMedian.value);
   const cards: KpiSpec[] = [
     { label: 'Your price', value: formatCurrency(pp.yourMedianPrice.value, currency) },
     { label: 'Market median', value: formatCurrency(pp.marketMedian.value, currency) },
   ];
-  if (pp.recommendedBand) {
+  if (gapPct != null) {
+    const pct = gapPct * 100;
     cards.push({
-      label: 'Supported band',
-      value: `${formatCurrency(pp.recommendedBand.low, currency)} - ${formatCurrency(pp.recommendedBand.high, currency)}`,
+      label: 'Gap',
+      value: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`,
+      delta: pct >= 0 ? 'Above market median' : 'Below market median',
+      deltaColor: pct >= 0 ? COLORS.positive : COLORS.negative,
     });
   }
   kpiRow(doc, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   const lowerY = CONTENT_TOP + 2.25 * IN;
   const lowerH = FOOTER_RULE_Y - lowerY - 0.4 * IN;
-  card(doc, MARGIN, lowerY, CONTENT_W, lowerH);
+  const hasTrend = pp.trend != null && pp.trend.length >= 2;
+  const ladderW = hasTrend ? CONTENT_W * 0.36 - 30 : CONTENT_W;
+  const ladderX = hasTrend ? MARGIN + CONTENT_W * 0.64 + 30 : MARGIN;
 
-  if (pp.trend && pp.trend.length >= 2) {
-    cardHeading(doc, 'Market median price over time', MARGIN + 30, lowerY + 26, CONTENT_W - 60);
-    lineChart(doc, pp.trend.map((t) => t.medianPrice), pp.trend.map((t) => formatDate(t.date)), MARGIN + 30, lowerY + 76, CONTENT_W - 60, lowerH - 120);
-  } else {
-    cardHeading(doc, 'Your price against the tracked range', MARGIN + 30, lowerY + 26, CONTENT_W - 60);
-    const max = Math.max(pp.yourMedianPrice.value, pp.marketMedian.value, pp.recommendedBand?.high ?? 0) || 1;
-    const rows: BarRow[] = [
-      { title: 'Your price', valueText: formatCurrency(pp.yourMedianPrice.value, currency), ratio: pp.yourMedianPrice.value / max, color: COLORS.brandAccent },
-      { title: 'Market median', valueText: formatCurrency(pp.marketMedian.value, currency), ratio: pp.marketMedian.value / max, color: COLORS.info },
-    ];
-    if (pp.recommendedBand) {
-      rows.push({
-        title: 'Top of supported band',
-        valueText: formatCurrency(pp.recommendedBand.high, currency),
-        ratio: pp.recommendedBand.high / max,
-        color: COLORS.grayLight,
-      });
-    }
-    barRows(doc, rows, MARGIN + 30, lowerY + 80, CONTENT_W - 60, 86);
+  if (hasTrend) {
+    card(doc, MARGIN, lowerY, CONTENT_W * 0.64, lowerH);
+    cardHeading(doc, 'Market median price over time', MARGIN + 30, lowerY + 26, CONTENT_W * 0.64 - 60);
+    lineChart(doc, pp.trend!.map((t) => t.medianPrice), pp.trend!.map((t) => formatDate(t.date)), MARGIN + 30, lowerY + 76, CONTENT_W * 0.64 - 60, lowerH - 108);
+  }
+
+  // Price ladder - only real rungs (your price, market median, recommended
+  // band low/high) - no invented "lowest/highest tracked" the schema
+  // doesn't carry.
+  const ladderCardH = pp.recommendedBand ? lowerH - 133 : lowerH;
+  card(doc, ladderX, lowerY, ladderW, ladderCardH);
+  cardHeading(doc, 'Price ladder', ladderX + 30, lowerY + 26, ladderW - 60);
+
+  const rungs: PriceLadderRung[] = [
+    { label: 'Your price', valueText: formatCurrency(pp.yourMedianPrice.value, currency), value: pp.yourMedianPrice.value, color: COLORS.negative, emphasized: true },
+  ];
+  if (pp.recommendedBand) rungs.push({ label: 'Band - high', valueText: formatCurrency(pp.recommendedBand.high, currency), value: pp.recommendedBand.high, color: COLORS.brandAccent });
+  rungs.push({ label: 'Market median', valueText: formatCurrency(pp.marketMedian.value, currency), value: pp.marketMedian.value, color: COLORS.grayLight });
+  if (pp.recommendedBand) rungs.push({ label: 'Band - low', valueText: formatCurrency(pp.recommendedBand.low, currency), value: pp.recommendedBand.low, color: COLORS.info });
+  priceLadder(doc, rungs, ladderX + 30, lowerY + 76, ladderW - 60);
+
+  if (pp.recommendedBand) {
+    const bandY = lowerY + ladderCardH + 18;
+    const bandH = lowerH - ladderCardH - 18;
+    const inside = pp.yourMedianPrice.value >= pp.recommendedBand.low && pp.yourMedianPrice.value <= pp.recommendedBand.high;
+    doc.roundedRect(ladderX, bandY, ladderW, bandH, CARD_RADIUS).fill(hex(COLORS.brand));
+    doc.save().opacity(0.85);
+    doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(12).text('RECOMMENDED BAND', ladderX + 23, bandY + 14, { width: ladderW - 46, characterSpacing: 1.2 });
+    doc.restore();
+    doc
+      .fillColor(hex(COLORS.paper))
+      .font(FONT_BOLD)
+      .fontSize(22)
+      .text(`${formatCurrency(pp.recommendedBand.low, currency)} – ${formatCurrency(pp.recommendedBand.high, currency)}`, ladderX + 23, bandY + 36, { width: ladderW - 46 });
+    doc.save().opacity(0.9);
+    doc
+      .fillColor(hex(COLORS.paper))
+      .font(FONT)
+      .fontSize(13)
+      .text(
+        inside ? 'You are inside the recommended band.' : `You are outside the recommended band, on the ${pp.yourMedianPrice.value > pp.recommendedBand.high ? 'high' : 'low'} side.`,
+        ladderX + 23,
+        bandY + bandH - 30,
+        { width: ladderW - 46 },
+      );
+    doc.restore();
   }
 
   footer(doc, snapshot);
@@ -617,9 +834,14 @@ function renderCompetitorTracking(doc: PDFKit.PDFDocument, snapshot: ReportSnaps
   const currency = snapshot.workspace.reportingCurrency;
   const rows = cb.scorecards.slice(section.rowRange[0], section.rowRange[1]);
   const cardH = FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
-  card(doc, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
 
-  const inner = CONTENT_W - 60;
+  // Highlight cards only on the primary page - continuation pages get the
+  // full table width instead of repeating them.
+  const showHighlights = section.page === 0;
+  const tableW = showHighlights ? CONTENT_W * 0.68 : CONTENT_W;
+  card(doc, MARGIN, CONTENT_TOP, tableW, cardH);
+
+  const inner = tableW - 60;
   dataRows(
     doc,
     ['Competitor', 'Platform', 'SKUs', 'Median price', 'In stock', 'Repricing rate'],
@@ -651,6 +873,61 @@ function renderCompetitorTracking(doc: PDFKit.PDFDocument, snapshot: ReportSnaps
     .font(FONT)
     .fontSize(12)
     .text('Public marketplace signals only. Private seller data is never shown.', MARGIN + 30, CONTENT_TOP + cardH - 42, { width: inner });
+
+  if (showHighlights) {
+    const hx = MARGIN + tableW + 30;
+    const hw = CONTENT_W - tableW - 30;
+    const rowH = (cardH - 32) / 3;
+
+    const mostActive = cb.scorecards.filter((r) => r.repricingRate != null).reduce<typeof cb.scorecards[number] | null>(
+      (best, r) => (best == null || r.repricingRate! > best.repricingRate! ? r : best),
+      null,
+    );
+    if (mostActive) {
+      highlightCard(
+        doc,
+        'MOST ACTIVE REPRICER',
+        mostActive.competitorName,
+        `Repricing ${formatPercent(mostActive.repricingRate! * 100, 0)} of tracked SKUs this cycle on ${mostActive.platformName}.`,
+        COLORS.warningBg,
+        hx,
+        CONTENT_TOP,
+        hw,
+        rowH,
+      );
+    }
+
+    const supplyVoidCandidate = cb.scorecards.filter((r) => r.skuCount >= 5).reduce<typeof cb.scorecards[number] | null>(
+      (worst, r) => (worst == null || r.inStockRate < worst.inStockRate ? r : worst),
+      null,
+    );
+    if (supplyVoidCandidate) {
+      highlightCard(
+        doc,
+        'SUPPLY VOID',
+        supplyVoidCandidate.competitorName,
+        `Only ${formatPercent(supplyVoidCandidate.inStockRate * 100, 0)} in stock across ${supplyVoidCandidate.skuCount} tracked SKUs on ${supplyVoidCandidate.platformName}.`,
+        COLORS.positiveBg,
+        hx,
+        CONTENT_TOP + rowH + 16,
+        hw,
+        rowH,
+      );
+    }
+
+    const medianPrices = cb.scorecards.map((r) => r.medianPrice.value);
+    const inStockRates = cb.scorecards.map((r) => r.inStockRate);
+    const repricingRates = cb.scorecards.map((r) => r.repricingRate).filter((v): v is number => v != null);
+    const medPrice = median(medianPrices);
+    const medStock = median(inStockRates);
+    const medReprice = repricingRates.length > 0 ? median(repricingRates) : null;
+    if (medPrice != null) {
+      const parts = [`Median price ${formatCurrency(medPrice, currency)}`];
+      if (medStock != null) parts.push(`${formatPercent(medStock * 100, 0)} in stock`);
+      if (medReprice != null) parts.push(`${formatPercent(medReprice * 100, 0)} repricing rate`);
+      highlightCard(doc, 'TRACKED-SET MEDIANS', 'Across all tracked competitors', parts.join(' · '), COLORS.canvas, hx, CONTENT_TOP + (rowH + 16) * 2, hw, rowH);
+    }
+  }
 
   footer(doc, snapshot);
 }
@@ -710,22 +987,62 @@ function renderInventoryRisk(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, 
     const y = CONTENT_TOP + 100 + i * 64;
     doc.fillColor(hex(COLORS.ink)).font(FONT_BOLD).fontSize(16.5).text(sku.title, MARGIN + 30, y, { width: leftW - 200, lineBreak: false });
     if (sku.sku) doc.fillColor(hex(COLORS.grayLight)).font(FONT).fontSize(13.5).text(sku.sku, MARGIN + 30, y + 22, { width: leftW - 200, lineBreak: false });
-    pill(doc, 'Below threshold', COLORS.warningBg, COLORS.warning, MARGIN + leftW - 150, y + 4, 120);
+    if (sku.daysOfCoverEstimate != null) {
+      const critical = sku.daysOfCoverEstimate < 7;
+      pill(
+        doc,
+        `${Math.round(sku.daysOfCoverEstimate)}d cover left`,
+        critical ? COLORS.negativeBg : COLORS.warningBg,
+        critical ? COLORS.negative : COLORS.warning,
+        MARGIN + leftW - 170,
+        y + 4,
+        140,
+      );
+    } else {
+      pill(doc, 'Below threshold', COLORS.warningBg, COLORS.warning, MARGIN + leftW - 150, y + 4, 120);
+    }
     if (i < ir.stockoutRiskSkus.length - 1) doc.rect(MARGIN + 30, y + 52, leftW - 60, 1).fill(hex(COLORS.hairlineSoft));
   });
+
+  const sellerCategories = new Set((snapshot.productPerformance?.categoryBreakdown ?? []).map((c) => c.category.toLowerCase()));
+  let overlapCount = 0;
 
   if (hasVoids) {
     const rx = MARGIN + leftW + 30;
     const rw = CONTENT_W - leftW - 30;
-    card(doc, rx, CONTENT_TOP, rw, cardH);
+    const netPositionH = 1.6 * IN;
+    const voidsH = cardH - netPositionH - 0.24 * IN;
+    card(doc, rx, CONTENT_TOP, rw, voidsH);
     cardHeading(doc, 'Demand you can absorb', rx + 30, CONTENT_TOP + 26, rw - 60);
     eyebrow(doc, 'Tracked competitors currently out of stock', rx + 30, CONTENT_TOP + 58, rw - 60);
     ir.supplyVoidOpportunities!.slice(0, 5).forEach((op, i) => {
       const y = CONTENT_TOP + 100 + i * 56;
-      doc.fillColor(hex(COLORS.ink)).font(FONT_BOLD).fontSize(16.5).text(op.competitorName, rx + 30, y, { width: rw - 190, lineBreak: false });
-      doc.fillColor(hex(COLORS.grayLight)).font(FONT).fontSize(13.5).text(op.platformName, rx + 30, y + 22, { width: rw - 190, lineBreak: false });
-      pill(doc, 'Out of stock', COLORS.positiveBg, COLORS.positive, rx + rw - 140, y + 4, 110);
+      const overlaps = sellerCategories.has(op.category.toLowerCase());
+      if (overlaps) overlapCount += 1;
+      doc.rect(rx + 22, y - 2, 4, 40).fill(hex(overlaps ? COLORS.positive : COLORS.hairline));
+      doc.fillColor(hex(COLORS.ink)).font(FONT_BOLD).fontSize(16.5).text(op.competitorName, rx + 40, y, { width: rw - 200, lineBreak: false });
+      doc.fillColor(hex(COLORS.grayLight)).font(FONT).fontSize(13.5).text(op.platformName, rx + 40, y + 22, { width: rw - 200, lineBreak: false });
+      pill(
+        doc,
+        overlaps ? 'In your catalogue' : 'Out of stock',
+        overlaps ? COLORS.positiveBg : COLORS.canvas,
+        overlaps ? COLORS.positive : COLORS.grayLight,
+        rx + rw - 150,
+        y + 4,
+        120,
+      );
     });
+
+    const netY = CONTENT_TOP + voidsH + 0.24 * IN;
+    const netSentence =
+      overlapCount > 0
+        ? `${overlapCount} of your ${ir.lowStockSkuCount} at-risk SKUs sit in categories where a tracked competitor is currently out of stock - restocking those first captures demand competitors can't currently serve.`
+        : `None of the tracked supply voids overlap your own catalogue's categories this cycle.`;
+    doc.roundedRect(rx, netY, rw, netPositionH, CARD_RADIUS).fill(hex(COLORS.brand));
+    doc.save().opacity(0.85);
+    doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(12).text('NET POSITION', rx + 24, netY + 20, { width: rw - 48, characterSpacing: 1.2 });
+    doc.restore();
+    doc.fillColor(hex(COLORS.paper)).font(FONT).fontSize(14).text(netSentence, rx + 24, netY + 44, { width: rw - 48, height: netPositionH - 60 });
   }
 
   footer(doc, snapshot);
@@ -738,19 +1055,36 @@ function renderPortfolio(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, page
   const basis = pp.contributionBasis === 'revenue' ? 'by revenue' : 'by inventory value (per-sale line items are not tracked yet)';
   header(doc, 'Product Portfolio Contribution', `Category mix ${basis}`, pageLabel);
 
-  const cardH = FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
-  card(doc, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
+  const sorted = [...pp.categoryBreakdown].sort((a, b) => b.share - a.share);
+  const hasConcentration = sorted.length >= 2;
+  const barsH = hasConcentration ? FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN - 1.6 * IN - 0.24 * IN : FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
+
+  card(doc, MARGIN, CONTENT_TOP, CONTENT_W, barsH);
   cardHeading(doc, 'Category share', MARGIN + 30, CONTENT_TOP + 26, CONTENT_W - 60);
 
   const maxShare = Math.max(...pp.categoryBreakdown.map((c) => c.share), 0.0001);
   barRows(
     doc,
-    pp.categoryBreakdown.slice(0, 6).map((c) => ({ title: c.category, valueText: formatPercent(c.share * 100, 1), ratio: c.share / maxShare })),
+    sorted.slice(0, 5).map((c) => ({ title: c.category, valueText: formatPercent(c.share * 100, 1), ratio: c.share / maxShare })),
     MARGIN + 30,
     CONTENT_TOP + 76,
     CONTENT_W - 60,
     76,
   );
+
+  if (hasConcentration) {
+    const topTwoShare = sorted.slice(0, 2).reduce((sum, c) => sum + c.share, 0);
+    const panelY = CONTENT_TOP + barsH + 0.24 * IN;
+    insightPanel(
+      doc,
+      'Concentration',
+      `Your top two categories - ${sorted[0].category} and ${sorted[1].category} - make up ${formatPercent(topTwoShare * 100, 1)} of tracked ${pp.contributionBasis === 'revenue' ? 'revenue' : 'inventory value'}.`,
+      MARGIN,
+      panelY,
+      CONTENT_W,
+      1.6 * IN,
+    );
+  }
 
   footer(doc, snapshot);
 }
@@ -792,24 +1126,34 @@ function renderRecommendations(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot
   header(doc, 'Prioritised Recommendations', `${recs.length} action${recs.length === 1 ? '' : 's'}, ordered by expected impact`, pageLabel);
 
   const available = FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
-  const gap = 16;
-  const cardH = Math.min(1.32 * IN, (available - gap * (recs.length - 1)) / Math.max(recs.length, 1));
+  const cols = recs.length > 1 ? 2 : 1;
+  const rows = Math.ceil(recs.length / cols);
+  const colGap = 24;
+  const rowGap = 20;
+  const cardW = (CONTENT_W - colGap * (cols - 1)) / cols;
+  const cardH = Math.min(2.15 * IN, (available - rowGap * (rows - 1)) / Math.max(rows, 1));
+
   recs.forEach((r, i) => {
-    const y = CONTENT_TOP + i * (cardH + gap);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const x = MARGIN + col * (cardW + colGap);
+    const y = CONTENT_TOP + row * (cardH + rowGap);
     const accent = r.priority === 'high' ? COLORS.negative : r.priority === 'medium' ? COLORS.warningAccent : COLORS.grayLight;
-    card(doc, MARGIN, y, CONTENT_W, cardH);
-    doc.rect(MARGIN, y + 13, 5, cardH - 26).fill(hex(accent));
-    doc.fillColor(hex(COLORS.grayLight)).font(FONT_BOLD).fontSize(16.5).text(String(i + 1).padStart(2, '0'), MARGIN + 30, y + 20, { width: 50, lineBreak: false });
+    card(doc, x, y, cardW, cardH);
+    doc.rect(x, y, cardW, 6).fill(hex(accent));
+    doc.fillColor(hex(COLORS.grayLight)).font(FONT_BOLD).fontSize(16.5).text(String(i + 1).padStart(2, '0'), x + 24, y + 24, { width: 50, lineBreak: false });
     pill(
       doc,
       r.priority.toUpperCase(),
       r.priority === 'high' ? COLORS.negativeBg : r.priority === 'medium' ? COLORS.warningBg : COLORS.canvas,
       r.priority === 'high' ? COLORS.negative : r.priority === 'medium' ? COLORS.warning : COLORS.grayLight,
-      MARGIN + 90,
-      y + 22,
+      x + 80,
+      y + 26,
       76,
     );
-    doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(16.5).text(r.text, MARGIN + 180, y + 20, { width: CONTENT_W - 220 });
+    doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(15.5).text(r.text, x + 24, y + 62, { width: cardW - 48, height: cardH - 120 });
+    const timeframe = r.priority === 'high' ? 'Act this week' : 'Next 30 days';
+    doc.fillColor(hex(COLORS.grayLight)).font(FONT_BOLD).fontSize(12).text(timeframe.toUpperCase(), x + 24, y + cardH - 34, { width: cardW - 48, characterSpacing: 1 });
   });
 
   footer(doc, snapshot);
@@ -842,8 +1186,8 @@ function renderMethodology(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, pa
 
   const m = snapshot.methodology;
   const cardH = FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
-  const colGap = 0.58 * IN;
-  const colW = (CONTENT_W - colGap) / 2;
+  const colGap = 0.4 * IN;
+  const colW = (CONTENT_W - colGap * 2) / 3;
 
   card(doc, MARGIN, CONTENT_TOP, colW, cardH);
   cardHeading(doc, 'Data sources', MARGIN + 30, CONTENT_TOP + 26, colW - 60);
@@ -862,14 +1206,29 @@ function renderMethodology(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, pa
     doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(14).text(limitation, rx + 54, y, { width: colW - 90 });
   });
 
+  const sx = rx + colW + colGap;
+  card(doc, sx, CONTENT_TOP, colW, cardH);
+  cardHeading(doc, 'Report status', sx + 30, CONTENT_TOP + 26, colW - 60);
+  const status = snapshot.privacy.approval.status;
+  const statusTone =
+    status === 'approved' ? { bg: COLORS.positiveBg, fg: COLORS.positive } : status === 'rejected' ? { bg: COLORS.negativeBg, fg: COLORS.negative } : { bg: COLORS.canvas, fg: COLORS.grayLight };
+  pill(doc, formatMetricName(status), statusTone.bg, statusTone.fg, sx + 30, CONTENT_TOP + 72, colW - 60);
+  if (snapshot.privacy.approval.reviewedBy) {
+    doc
+      .fillColor(hex(COLORS.gray))
+      .font(FONT)
+      .fontSize(14)
+      .text(`Reviewed by ${snapshot.privacy.approval.reviewedBy}`, sx + 30, CONTENT_TOP + 120, { width: colW - 60 });
+  }
+  doc.rect(sx + 30, CONTENT_TOP + cardH - 90, colW - 60, 1).fill(hex(COLORS.hairlineSoft));
   doc
     .fillColor(hex(COLORS.grayLight))
     .font(FONT)
     .fontSize(12)
     .text(
-      `Report status: ${snapshot.privacy.approval.status}${snapshot.privacy.approval.reviewedBy ? ` · Reviewed by ${snapshot.privacy.approval.reviewedBy}` : ''}`,
-      rx + 30,
-      CONTENT_TOP + cardH - 46,
+      `Ref ${snapshot.metadata.reportId.slice(0, 8).toUpperCase()} · Generated ${formatDate(snapshot.metadata.generatedAt)}`,
+      sx + 30,
+      CONTENT_TOP + cardH - 68,
       { width: colW - 60 },
     );
 

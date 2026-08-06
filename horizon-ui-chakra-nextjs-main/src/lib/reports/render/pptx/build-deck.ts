@@ -3,7 +3,7 @@
 import pptxgen from 'pptxgenjs';
 import type { ReportSnapshot } from '../../schema';
 import { buildSectionPlan, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
-import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatPercent } from '../../design-tokens';
+import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
 import {
   SLIDE_W,
   SLIDE_H,
@@ -23,14 +23,21 @@ import {
   addBarRows,
   addDataRows,
   addInsightPanel,
+  addInsightCard,
   addRecommendationCard,
   addSectionDivider,
   addConfidentialityPill,
   addNativeBarChart,
   addNativeLineChart,
+  addPriceLadder,
+  signalBadge,
   type KpiCardSpec,
   type BarRowSpec,
+  type PriceLadderRung,
+  type PillTone,
 } from './components';
+import { median } from '../../metrics/statistics';
+import { safeRatio } from '../../metrics/growth';
 
 // Generates the entire deck from scratch, in code - no base .pptx template
 // file is loaded or modified. Layout, palette and type scale mirror the
@@ -61,7 +68,7 @@ export async function buildReportDeck(snapshot: ReportSnapshot): Promise<Buffer>
     switch (section.kind) {
       case 'cover':
         slideIndex += 1;
-        buildCoverSlide(pptx, snapshot);
+        buildCoverSlide(pptx, snapshot, plan);
         break;
       case 'toc':
         buildTocSlide(pptx, snapshot, plan, label());
@@ -126,7 +133,7 @@ function sourceLine(snapshot: ReportSnapshot): string {
 
 // -- Cover -------------------------------------------------------------
 
-function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
+function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionPlan): void {
   const slide = pptx.addSlide();
   addCanvas(slide, COLORS.canvas);
 
@@ -195,6 +202,41 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
     },
   );
 
+  // "This cycle covers" - the included TOC entries, 2 columns. Only ever
+  // lists what actually made it into the deck (plan.toc's included rows) -
+  // never a fixed catalogue of sections regardless of data.
+  const includedTitles = plan.toc.filter((e) => e.status === 'included').map((e) => e.title);
+  if (includedTitles.length > 0) {
+    slide.addText('THIS CYCLE COVERS', {
+      x: MARGIN,
+      y: 6.56,
+      w: panelW - MARGIN * 2,
+      h: 0.28,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.kpiLabel,
+      bold: true,
+      color: COLORS.paper,
+      charSpacing: 1.5,
+      transparency: 30,
+    });
+    const colW = (panelW - MARGIN * 2 - 0.3) / 2;
+    const perCol = Math.ceil(includedTitles.length / 2);
+    includedTitles.forEach((title, i) => {
+      const col = Math.floor(i / perCol);
+      const row = i % perCol;
+      slide.addText(`•  ${title}`, {
+        x: MARGIN + col * (colW + 0.3),
+        y: 6.92 + row * 0.38,
+        w: colW,
+        h: 0.3,
+        fontFace: FONT_FAMILY,
+        fontSize: 14,
+        color: COLORS.paper,
+        transparency: 8,
+      });
+    });
+  }
+
   // Headline KPI strip along the bottom of the purple panel - only the
   // metrics that actually exist, never padded to a fixed count.
   const cards: KpiCardSpec[] = [];
@@ -203,10 +245,11 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
     cards.push(kpiCardFromGrowth('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency), true));
     cards.push(kpiCardFromGrowth('Orders', snapshot.revenue.orders, (v) => String(Math.round(v)), true));
   }
-  if (snapshot.competitorBenchmarks) {
+  if (snapshot.marketplacePerformance?.priceIndex) {
     cards.push({
-      label: 'Competitors tracked',
-      valueText: String(snapshot.competitorBenchmarks.scorecards.length),
+      label: 'Price index',
+      valueText: snapshot.marketplacePerformance.priceIndex.value.toFixed(0),
+      deltaText: 'vs. market',
       onDark: true,
     });
   }
@@ -219,53 +262,27 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot): void {
       fill: { color: COLORS.paper },
       line: { type: 'none' },
     });
-    addKpiCardRow(slide, cards, MARGIN, 8.9, panelW - MARGIN * 2, 1.3);
+    addKpiCardRow(slide, pptx, cards, MARGIN, 8.9, panelW - MARGIN * 2, 1.3);
   }
 
-  // Right strip: report metadata block, no decorative imagery.
-  slide.addText('PREPARED FOR', {
-    x: panelW + 0.75,
-    y: 3.2,
-    w: SLIDE_W - panelW - 1.5,
-    h: 0.3,
-    fontFace: FONT_FAMILY,
-    fontSize: TYPE.kpiLabel,
-    bold: true,
-    color: COLORS.grayLight,
-    charSpacing: 1.2,
-  });
-  slide.addText(snapshot.workspace.businessName, {
-    x: panelW + 0.75,
-    y: 3.55,
-    w: SLIDE_W - panelW - 1.5,
-    h: 0.9,
-    fontFace: FONT_FAMILY,
-    fontSize: 22,
-    bold: true,
-    color: COLORS.ink,
-  });
-  slide.addText('REPORTING PERIOD', {
-    x: panelW + 0.75,
-    y: 4.7,
-    w: SLIDE_W - panelW - 1.5,
-    h: 0.3,
-    fontFace: FONT_FAMILY,
-    fontSize: TYPE.kpiLabel,
-    bold: true,
-    color: COLORS.grayLight,
-    charSpacing: 1.2,
-  });
-  slide.addText(snapshot.metadata.period.label, {
-    x: panelW + 0.75,
-    y: 5.05,
-    w: SLIDE_W - panelW - 1.5,
-    h: 0.5,
-    fontFace: FONT_FAMILY,
-    fontSize: 18,
-    color: COLORS.ink,
-  });
+  // Right strip: minimal - metadata already lives on the left panel, so
+  // this side is just the confidentiality pill and a one-line generation
+  // note, not a duplicate of what the purple panel already states.
+  slide.addText(
+    `Generated automatically from your store data and Ryvl's tracked market scan. Every figure traces to a source listed on the methodology page.`,
+    {
+      x: panelW + 0.67,
+      y: SLIDE_H - 1.4,
+      w: SLIDE_W - panelW - 1.34,
+      h: 0.9,
+      fontFace: FONT_FAMILY,
+      fontSize: 13,
+      color: COLORS.gray,
+      valign: 'top',
+    },
+  );
 
-  addConfidentialityPill(slide, snapshot.metadata.mode, SLIDE_W - MARGIN - 2.42, 10.5);
+  addConfidentialityPill(slide, snapshot.metadata.mode, SLIDE_W - MARGIN - 2.42, 0.67);
 }
 
 // -- Table of contents ---------------------------------------------------
@@ -366,7 +383,10 @@ function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, pa
   const currency = snapshot.workspace.reportingCurrency;
   const cards: KpiCardSpec[] = [];
   if (snapshot.revenue) {
-    cards.push(kpiCardFromGrowth('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)));
+    cards.push({
+      ...kpiCardFromGrowth('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)),
+      sparkline: snapshot.revenue.weeklySeries?.map((p) => p.value) ?? null,
+    });
     cards.push(kpiCardFromGrowth('Orders', snapshot.revenue.orders, (v) => String(Math.round(v))));
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
@@ -383,47 +403,82 @@ function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, pa
       deltaText: 'Below low-stock threshold',
     });
   }
-  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+  addKpiCardRow(slide, pptx, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   const lowerY = CONTENT_TOP + 2.25;
   const lowerH = 10.375 - lowerY - 0.4;
   const narrative = snapshot.appendix?.aiSummary as string | undefined;
   const signals = snapshot.marketSignals.slice(0, 4);
 
-  if (signals.length > 0) {
-    const signalsW = narrative ? CONTENT_W * 0.58 : CONTENT_W;
-    addCard(slide, MARGIN, lowerY, signalsW, lowerH);
-    addCardHeading(slide, 'What changed this cycle', MARGIN + 0.42, lowerY + 0.36, signalsW - 0.84);
-    signals.forEach((signal, i) => {
-      const sy = lowerY + 1.0 + i * 0.92;
-      slide.addShape('rect', {
-        x: MARGIN + 0.42,
-        y: sy + 0.12,
-        w: 0.06,
-        h: 0.52,
-        fill: { color: COLORS.brandAccent },
-        line: { type: 'none' },
+  // Insight card (purple, ~55%) on the left, "what changed" (white, ~45%)
+  // on the right - matches the reference deck's proportions and priority:
+  // the narrated read is the primary artifact on this slide, not a sidebar.
+  if (narrative) {
+    const insightW = signals.length > 0 ? CONTENT_W * 0.55 : CONTENT_W;
+    const microMetrics: { label: string; value: string }[] = [];
+    if (snapshot.revenue) {
+      const ordersChange = snapshot.revenue.orders.changePct;
+      microMetrics.push({
+        label: 'Order volume',
+        value: ordersChange != null ? `${ordersChange >= 0 ? '+' : ''}${ordersChange.toFixed(1)}%` : String(Math.round(snapshot.revenue.orders.current)),
       });
+      microMetrics.push({ label: 'Avg. order value', value: formatCurrency(snapshot.revenue.avgOrderValue.current, currency) });
+    }
+    if (snapshot.pricePositioning?.percentile != null) {
+      microMetrics.push({ label: 'Market percentile', value: `${snapshot.pricePositioning.percentile}${ordinalSuffix(snapshot.pricePositioning.percentile)}` });
+    }
+    addInsightCard(slide, 'Ryvl insight', narrative, microMetrics.slice(0, 3), MARGIN, lowerY, insightW, lowerH);
+  }
+
+  if (signals.length > 0) {
+    const signalsX = narrative ? MARGIN + CONTENT_W * 0.55 + 0.42 : MARGIN;
+    const signalsW = narrative ? CONTENT_W * 0.45 - 0.42 : CONTENT_W;
+    addCard(slide, signalsX, lowerY, signalsW, lowerH);
+    addCardHeading(slide, 'What changed this cycle', signalsX + 0.42, lowerY + 0.36, signalsW - 0.84);
+    signals.forEach((signal, i) => {
+      const sy = lowerY + 1.0 + i * 0.98;
+      const badge = signalBadge(signal.kind);
+      addPill(slide, badge.label, badge.tone, signalsX + 0.42, sy, 0.95, 0.3);
       slide.addText(signal.description, {
-        x: MARGIN + 0.75,
-        y: sy,
-        w: signalsW - 1.4,
-        h: 0.76,
+        x: signalsX + 0.42,
+        y: sy + 0.4,
+        w: signalsW - 0.84,
+        h: 0.54,
         fontFace: FONT_FAMILY,
         fontSize: TYPE.body,
         color: COLORS.ink,
-        valign: 'middle',
+        valign: 'top',
       });
+      if (i < signals.length - 1) {
+        slide.addShape('rect', {
+          x: signalsX + 0.42,
+          y: sy + 0.92,
+          w: signalsW - 0.84,
+          h: 0.012,
+          fill: { color: COLORS.hairlineSoft },
+          line: { type: 'none' },
+        });
+      }
     });
   }
 
-  if (narrative) {
-    const panelX = signals.length > 0 ? MARGIN + CONTENT_W * 0.58 + 0.42 : MARGIN;
-    const panelW = signals.length > 0 ? CONTENT_W * 0.42 - 0.42 : CONTENT_W;
-    addInsightPanel(slide, 'Read', narrative, panelX, lowerY, panelW, lowerH);
-  }
-
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
+}
+
+/** "82" -> "nd", "3" -> "rd", "11" -> "th", etc. */
+function ordinalSuffix(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) return 'th';
+  switch (n % 10) {
+    case 1:
+      return 'st';
+    case 2:
+      return 'nd';
+    case 3:
+      return 'rd';
+    default:
+      return 'th';
+  }
 }
 
 // -- Market position -----------------------------------------------------
@@ -448,32 +503,53 @@ function buildMarketPositionSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageL
       deltaText: '100 = at market median',
     });
   }
-  if (snapshot.pricePositioning?.percentile != null) {
+  const percentile = snapshot.pricePositioning?.percentile ?? null;
+  if (percentile != null) {
     cards.push({
       label: 'Your percentile',
-      valueText: `${snapshot.pricePositioning.percentile}th`,
+      valueText: `${percentile}${ordinalSuffix(percentile)}`,
       deltaText: 'Of the tracked price range',
     });
   }
   cards.push({ label: 'Platforms in scope', valueText: String(mp.scope.platformNames.length) });
-  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+  addKpiCardRow(slide, pptx, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   const chartY = CONTENT_TOP + 2.25;
   const chartH = 10.375 - chartY - 0.4;
   addCard(slide, MARGIN, chartY, CONTENT_W, chartH);
   addCardHeading(slide, 'Where your price sits in the tracked market', MARGIN + 0.42, chartY + 0.36, CONTENT_W - 0.84);
 
-  if (snapshot.pricePositioning?.percentile != null) {
+  if (percentile != null) {
     addNativeBarChart(
       slide,
       pptx,
       ['25th pct', 'You', '75th pct'],
-      [25, snapshot.pricePositioning.percentile, 75],
+      [25, percentile, 75],
       MARGIN + 0.42,
       chartY + 1.0,
       CONTENT_W - 0.84,
-      chartH - 1.5,
+      chartH - 1.9,
     );
+    // Deterministic "read" line - plain arithmetic on the percentile
+    // already shown above, never an LLM restating (or misstating) it.
+    const read =
+      percentile >= 75
+        ? 'You price above three quarters of the tracked set.'
+        : percentile >= 50
+          ? 'You price above the market median, inside the upper half of the tracked set.'
+          : percentile >= 25
+            ? 'You price below the market median, inside the lower half of the tracked set.'
+            : 'You price below three quarters of the tracked set.';
+    slide.addText(read, {
+      x: MARGIN + 0.42,
+      y: chartY + chartH - 0.7,
+      w: CONTENT_W - 0.84,
+      h: 0.4,
+      fontFace: FONT_FAMILY,
+      fontSize: 14,
+      italic: true,
+      color: COLORS.gray,
+    });
   }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -489,63 +565,103 @@ function buildPricingIntelligenceSlide(pptx: pptxgen, snapshot: ReportSnapshot, 
   addHeader(slide, 'Pricing Intelligence', 'Your price against the tracked market median', pageLabel);
 
   const currency = snapshot.workspace.reportingCurrency;
+  const gapPct = safeRatio(pp.yourMedianPrice.value - pp.marketMedian.value, pp.marketMedian.value);
   const cards: KpiCardSpec[] = [
     { label: 'Your price', valueText: formatCurrency(pp.yourMedianPrice.value, currency) },
     { label: 'Market median', valueText: formatCurrency(pp.marketMedian.value, currency) },
   ];
-  if (pp.recommendedBand) {
+  if (gapPct != null) {
+    const pct = gapPct * 100;
     cards.push({
-      label: 'Supported band',
-      valueText: `${formatCurrency(pp.recommendedBand.low, currency)} – ${formatCurrency(pp.recommendedBand.high, currency)}`,
+      label: 'Gap',
+      valueText: `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`,
+      deltaText: pct >= 0 ? 'Above market median' : 'Below market median',
+      deltaDirection: pct >= 0 ? 'up' : 'down',
     });
   }
-  addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+  addKpiCardRow(slide, pptx, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   const lowerY = CONTENT_TOP + 2.25;
   const lowerH = 10.375 - lowerY - 0.4;
+  const hasTrend = pp.trend != null && pp.trend.length >= 2;
+  const ladderW = hasTrend ? CONTENT_W * 0.36 - 0.42 : CONTENT_W;
+  const ladderX = hasTrend ? MARGIN + CONTENT_W * 0.64 + 0.42 : MARGIN;
 
-  if (pp.trend && pp.trend.length >= 2) {
-    addCard(slide, MARGIN, lowerY, CONTENT_W, lowerH);
-    addCardHeading(slide, 'Market median price over time', MARGIN + 0.42, lowerY + 0.36, CONTENT_W - 0.84);
+  if (hasTrend) {
+    addCard(slide, MARGIN, lowerY, CONTENT_W * 0.64, lowerH);
+    addCardHeading(slide, 'Market median price over time', MARGIN + 0.42, lowerY + 0.36, CONTENT_W * 0.64 - 0.84);
     addNativeLineChart(
       slide,
       pptx,
-      pp.trend.map((t) => formatDate(t.date)),
-      [{ name: 'Market median', values: pp.trend.map((t) => t.medianPrice) }],
+      pp.trend!.map((t) => formatDate(t.date)),
+      [{ name: 'Market median', values: pp.trend!.map((t) => t.medianPrice) }],
       MARGIN + 0.42,
       lowerY + 1.0,
-      CONTENT_W - 0.84,
+      CONTENT_W * 0.64 - 0.84,
       lowerH - 1.5,
     );
-  } else {
-    // No trend series - show the price ladder as proportional bars instead
-    // of leaving a card empty or faking a chart from two points.
-    addCard(slide, MARGIN, lowerY, CONTENT_W, lowerH);
-    addCardHeading(slide, 'Your price against the tracked range', MARGIN + 0.42, lowerY + 0.36, CONTENT_W - 0.84);
-    const max = Math.max(pp.yourMedianPrice.value, pp.marketMedian.value, pp.recommendedBand?.high ?? 0) || 1;
-    const rows: BarRowSpec[] = [
+  }
+
+  // Price ladder - the reference deck's signature visual for this section.
+  // Rungs are only what PricePositioningSection actually carries (your
+  // price, market median, recommended band low/high) - no invented
+  // "lowest/highest tracked" value, since that isn't in the schema.
+  const ladderCardH = pp.recommendedBand ? lowerH - 1.85 : lowerH;
+  addCard(slide, ladderX, lowerY, ladderW, ladderCardH);
+  addCardHeading(slide, 'Price ladder', ladderX + 0.42, lowerY + 0.36, ladderW - 0.84);
+
+  const rungs: PriceLadderRung[] = [
+    { label: 'Your price', valueText: formatCurrency(pp.yourMedianPrice.value, currency), value: pp.yourMedianPrice.value, color: COLORS.negative, emphasized: true },
+  ];
+  if (pp.recommendedBand) {
+    rungs.push({ label: 'Band - high', valueText: formatCurrency(pp.recommendedBand.high, currency), value: pp.recommendedBand.high, color: COLORS.brandAccent });
+  }
+  rungs.push({ label: 'Market median', valueText: formatCurrency(pp.marketMedian.value, currency), value: pp.marketMedian.value, color: COLORS.grayLight });
+  if (pp.recommendedBand) {
+    rungs.push({ label: 'Band - low', valueText: formatCurrency(pp.recommendedBand.low, currency), value: pp.recommendedBand.low, color: COLORS.info });
+  }
+  addPriceLadder(slide, rungs, ladderX + 0.42, lowerY + 1.0, ladderW - 0.84);
+
+  if (pp.recommendedBand) {
+    const bandY = lowerY + ladderCardH + 0.24;
+    const bandH = lowerH - ladderCardH - 0.24;
+    const inside = pp.yourMedianPrice.value >= pp.recommendedBand.low && pp.yourMedianPrice.value <= pp.recommendedBand.high;
+    slide.addShape('roundRect', { x: ladderX, y: bandY, w: ladderW, h: bandH, rectRadius: 0.02, fill: { color: COLORS.brand }, line: { type: 'none' } });
+    slide.addText('RECOMMENDED BAND', {
+      x: ladderX + 0.32,
+      y: bandY + 0.2,
+      w: ladderW - 0.64,
+      h: 0.26,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.kpiLabel,
+      bold: true,
+      color: COLORS.paper,
+      charSpacing: 1.2,
+      transparency: 15,
+    });
+    slide.addText(`${formatCurrency(pp.recommendedBand.low, currency)} – ${formatCurrency(pp.recommendedBand.high, currency)}`, {
+      x: ladderX + 0.32,
+      y: bandY + 0.5,
+      w: ladderW - 0.64,
+      h: 0.44,
+      fontFace: FONT_FAMILY,
+      fontSize: 22,
+      bold: true,
+      color: COLORS.paper,
+    });
+    slide.addText(
+      inside ? 'You are inside the recommended band.' : `You are outside the recommended band, on the ${pp.yourMedianPrice.value > pp.recommendedBand.high ? 'high' : 'low'} side.`,
       {
-        title: 'Your price',
-        valueText: formatCurrency(pp.yourMedianPrice.value, currency),
-        ratio: pp.yourMedianPrice.value / max,
-        color: COLORS.brandAccent,
+        x: ladderX + 0.32,
+        y: bandY + bandH - 0.42,
+        w: ladderW - 0.64,
+        h: 0.32,
+        fontFace: FONT_FAMILY,
+        fontSize: 13,
+        color: COLORS.paper,
+        transparency: 10,
       },
-      {
-        title: 'Market median',
-        valueText: formatCurrency(pp.marketMedian.value, currency),
-        ratio: pp.marketMedian.value / max,
-        color: COLORS.info,
-      },
-    ];
-    if (pp.recommendedBand) {
-      rows.push({
-        title: 'Top of supported band',
-        valueText: formatCurrency(pp.recommendedBand.high, currency),
-        ratio: pp.recommendedBand.high / max,
-        color: COLORS.grayLight,
-      });
-    }
-    addBarRows(slide, rows, MARGIN + 0.42, lowerY + 1.1, CONTENT_W - 0.84);
+    );
   }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -568,12 +684,18 @@ function buildCompetitorTrackingSlide(
   const currency = snapshot.workspace.reportingCurrency;
   const rows = cb.scorecards.slice(section.rowRange[0], section.rowRange[1]);
   const cardH = 10.375 - CONTENT_TOP - 0.4;
-  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
 
-  const colWidths = [CONTENT_W * 0.28, CONTENT_W * 0.16, CONTENT_W * 0.12, CONTENT_W * 0.16, CONTENT_W * 0.13, CONTENT_W * 0.15];
+  // Highlight cards only on the first page - they describe the whole
+  // tracked set, not this page's slice, so repeating them on continuation
+  // pages would be redundant rather than informative.
+  const showHighlights = section.page === 0;
+  const tableW = showHighlights ? CONTENT_W * 0.68 - 0.42 : CONTENT_W;
+  addCard(slide, MARGIN, CONTENT_TOP, tableW, cardH);
+
+  const colWidths = [tableW * 0.28, tableW * 0.16, tableW * 0.12, tableW * 0.19, tableW * 0.12, tableW * 0.13];
   addDataRows(
     slide,
-    ['Competitor', 'Platform', 'SKUs', 'Median price', 'In stock', 'Repricing rate'],
+    ['Competitor', 'Platform', 'SKUs', 'Median price', 'In stock', 'Repricing'],
     rows.map((r) => [
       r.competitorName,
       r.platformName,
@@ -585,7 +707,7 @@ function buildCompetitorTrackingSlide(
     colWidths,
     MARGIN + 0.42,
     CONTENT_TOP + 0.5,
-    CONTENT_W - 0.84,
+    tableW - 0.84,
     0.86,
   );
 
@@ -595,7 +717,7 @@ function buildCompetitorTrackingSlide(
       {
         x: MARGIN + 0.42,
         y: CONTENT_TOP + 1.12 + ROWS_PER_TABLE_PAGE * 0.86,
-        w: CONTENT_W - 0.84,
+        w: tableW - 0.84,
         h: 0.36,
         fontFace: FONT_FAMILY,
         fontSize: 14,
@@ -608,14 +730,117 @@ function buildCompetitorTrackingSlide(
   slide.addText('Public marketplace signals only. Private seller data is never shown.', {
     x: MARGIN + 0.42,
     y: CONTENT_TOP + cardH - 0.62,
-    w: CONTENT_W - 0.84,
+    w: tableW - 0.84,
     h: 0.3,
     fontFace: FONT_FAMILY,
     fontSize: 12,
     color: COLORS.grayLight,
   });
 
+  if (showHighlights) {
+    const hx = MARGIN + tableW + 0.42;
+    const hw = CONTENT_W - tableW - 0.42;
+    let hy = CONTENT_TOP;
+
+    // Most active repricer - highest repricingRate among rows that have one.
+    const withRepricing = cb.scorecards.filter((r) => r.repricingRate != null);
+    if (withRepricing.length > 0) {
+      const top = withRepricing.reduce((a, b) => (b.repricingRate! > a.repricingRate! ? b : a));
+      const h1 = 1.9;
+      addHighlightCard(
+        slide,
+        'MOST ACTIVE REPRICER',
+        top.competitorName,
+        `Repriced ${formatPercent(top.repricingRate! * 100, 0)} of tracked SKUs this period.`,
+        COLORS.warningBg,
+        hx,
+        hy,
+        hw,
+        h1,
+      );
+      hy += h1 + 0.24;
+    }
+
+    // Supply void - lowest in-stock rate among rows with a real sample
+    // (skuCount >= 5), matching rules/market-signals.ts's own threshold for
+    // the same signal so this card and the "what changed" list never disagree.
+    const eligible = cb.scorecards.filter((r) => r.skuCount >= 5);
+    if (eligible.length > 0) {
+      const worst = eligible.reduce((a, b) => (b.inStockRate < a.inStockRate ? b : a));
+      const h2 = 1.9;
+      addHighlightCard(
+        slide,
+        'SUPPLY VOID',
+        worst.competitorName,
+        `Out of stock on ${formatPercent((1 - worst.inStockRate) * 100, 0)} of their tracked assortment.`,
+        COLORS.positiveBg,
+        hx,
+        hy,
+        hw,
+        h2,
+      );
+      hy += h2 + 0.24;
+    }
+
+    // Tracked-set medians - median() over the whole set, not just this page.
+    const medPrice = median(cb.scorecards.map((r) => r.medianPrice.value));
+    const medStock = median(cb.scorecards.map((r) => r.inStockRate));
+    const medReprice = median(withRepricing.map((r) => r.repricingRate!));
+    const h3 = CONTENT_TOP + cardH - hy;
+    if (h3 > 1 && (medPrice != null || medStock != null || medReprice != null)) {
+      addCard(slide, hx, hy, hw, h3);
+      addCardHeading(slide, 'Tracked-set medians', hx + 0.36, hy + 0.3, hw - 0.72);
+      const statRows: [string, string | null][] = [
+        ['Median price', medPrice != null ? formatCurrency(medPrice, currency) : null],
+        ['Median in-stock', medStock != null ? formatPercent(medStock * 100, 0) : null],
+        ['Median repricing', medReprice != null ? formatPercent(medReprice * 100, 0) : null],
+      ];
+      let sy = hy + 0.8;
+      for (const [label, value] of statRows) {
+        if (value == null) continue;
+        slide.addText(label, { x: hx + 0.36, y: sy, w: hw - 1.7, h: 0.3, fontFace: FONT_FAMILY, fontSize: TYPE.rowSubtitle, color: COLORS.gray });
+        slide.addText(value, { x: hx + hw - 1.7, y: sy, w: 1.35, h: 0.3, align: 'right', fontFace: FONT_FAMILY, fontSize: TYPE.rowSubtitle, bold: true, color: COLORS.ink });
+        sy += 0.4;
+      }
+    }
+  }
+
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
+}
+
+function addHighlightCard(
+  slide: pptxgen.Slide,
+  eyebrow: string,
+  title: string,
+  body: string,
+  bg: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  slide.addShape('roundRect', { x, y, w, h, rectRadius: 0.02, fill: { color: bg }, line: { type: 'none' } });
+  addEyebrow(slide, eyebrow, x + 0.36, y + 0.26, w - 0.72, COLORS.ink);
+  slide.addText(title, {
+    x: x + 0.36,
+    y: y + 0.56,
+    w: w - 0.72,
+    h: 0.4,
+    fontFace: FONT_FAMILY,
+    fontSize: 18,
+    bold: true,
+    color: COLORS.ink,
+  });
+  slide.addText(body, {
+    x: x + 0.36,
+    y: y + 0.98,
+    w: w - 0.72,
+    h: h - 1.15,
+    fontFace: FONT_FAMILY,
+    fontSize: 13,
+    color: COLORS.gray,
+    valign: 'top',
+  });
 }
 
 // -- SKU performance (paginated) ------------------------------------------
@@ -719,7 +944,17 @@ function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLa
         color: COLORS.grayLight,
       });
     }
-    addPill(slide, 'Below threshold', 'warning', MARGIN + leftW - 2.1, y + 0.06, 1.68);
+    // Real days-of-cover drives a CRITICAL/WATCH severity split when the
+    // data exists; falls back to the generic "Below threshold" pill when
+    // it doesn't (which is always, today - no sell-through-rate data
+    // source exists yet, see collectors/revenue-and-products.ts - this
+    // branch is forward-compatible code, not a currently-visible change).
+    if (sku.daysOfCoverEstimate != null) {
+      const critical = sku.daysOfCoverEstimate < 7;
+      addPill(slide, `${Math.round(sku.daysOfCoverEstimate)}d cover left`, critical ? 'negative' : 'warning', MARGIN + leftW - 2.1, y + 0.06, 1.68);
+    } else {
+      addPill(slide, 'Below threshold', 'warning', MARGIN + leftW - 2.1, y + 0.06, 1.68);
+    }
     if (i < ir.stockoutRiskSkus.length - 1) {
       slide.addShape('rect', {
         x: MARGIN + 0.42,
@@ -735,17 +970,21 @@ function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLa
   if (hasVoids) {
     const rightX = MARGIN + leftW + 0.42;
     const rightW = CONTENT_W - leftW - 0.42;
-    addCard(slide, rightX, CONTENT_TOP, rightW, cardH);
-    addCardHeading(slide, 'Demand you can absorb', rightX + 0.42, CONTENT_TOP + 0.36, rightW - 0.84);
-    addEyebrow(
-      slide,
-      'Tracked competitors currently out of stock',
-      rightX + 0.42,
-      CONTENT_TOP + 0.8,
-      rightW - 0.84,
-    );
-    ir.supplyVoidOpportunities!.slice(0, 5).forEach((op, i) => {
-      const y = CONTENT_TOP + 1.35 + i * 0.78;
+    const voids = ir.supplyVoidOpportunities!.slice(0, 4);
+
+    // Genuine category-overlap check against the seller's own catalogue,
+    // not an unverified "you can absorb this" claim - a void only gets the
+    // overlap tag when its category name actually matches one the seller
+    // carries (case-insensitive). No overlap data -> no tag, not a guess.
+    const sellerCategories = new Set((snapshot.productPerformance?.categoryBreakdown ?? []).map((c) => c.category.toLowerCase()));
+    const overlapping = voids.filter((op) => op.category && sellerCategories.has(op.category.toLowerCase()));
+
+    const voidsCardH = 1.0 + voids.length * 0.78;
+    addCard(slide, rightX, CONTENT_TOP, rightW, voidsCardH);
+    addCardHeading(slide, 'Supply void opportunities', rightX + 0.42, CONTENT_TOP + 0.36, rightW - 0.84);
+    voids.forEach((op, i) => {
+      const y = CONTENT_TOP + 1.0 + i * 0.78;
+      const isOverlap = op.category && sellerCategories.has(op.category.toLowerCase());
       slide.addText(op.competitorName, {
         x: rightX + 0.42,
         y,
@@ -765,8 +1004,42 @@ function buildInventoryRiskSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLa
         fontSize: TYPE.rowSubtitle,
         color: COLORS.grayLight,
       });
-      addPill(slide, 'Out of stock', 'positive', rightX + rightW - 1.95, y + 0.06, 1.53);
+      addPill(slide, isOverlap ? 'In your catalogue' : 'Out of stock', 'positive', rightX + rightW - 2.1, y + 0.06, 1.68);
     });
+
+    // Net position - a template sentence built from real counts (overlap
+    // count vs. total at-risk count), not an AI narrative.
+    const netY = CONTENT_TOP + voidsCardH + 0.24;
+    const netH = cardH - voidsCardH - 0.24;
+    if (netH > 1) {
+      slide.addShape('roundRect', { x: rightX, y: netY, w: rightW, h: netH, rectRadius: 0.02, fill: { color: COLORS.brand }, line: { type: 'none' } });
+      slide.addText('NET POSITION', {
+        x: rightX + 0.36,
+        y: netY + 0.28,
+        w: rightW - 0.72,
+        h: 0.26,
+        fontFace: FONT_FAMILY,
+        fontSize: TYPE.kpiLabel,
+        bold: true,
+        color: COLORS.paper,
+        charSpacing: 1.2,
+        transparency: 15,
+      });
+      const netText =
+        overlapping.length > 0
+          ? `${overlapping.length} of your ${ir.lowStockSkuCount} at-risk SKU${ir.lowStockSkuCount === 1 ? '' : 's'} sit in categories where a tracked competitor is currently out of stock — reordering there covers your own risk and captures their gap.`
+          : `None of the ${voids.length} tracked supply voids overlap your own catalogue categories this cycle.`;
+      slide.addText(netText, {
+        x: rightX + 0.36,
+        y: netY + 0.6,
+        w: rightW - 0.72,
+        h: netH - 0.8,
+        fontFace: FONT_FAMILY,
+        fontSize: 13,
+        color: COLORS.paper,
+        valign: 'top',
+      });
+    }
   }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -785,14 +1058,23 @@ function buildPortfolioSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel:
       : 'by inventory value (per-sale line items are not tracked yet)';
   addHeader(slide, 'Product Portfolio Contribution', `Category mix ${basis}`, pageLabel);
 
-  const cardH = 10.375 - CONTENT_TOP - 0.4;
-  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
+  const totalH = 10.375 - CONTENT_TOP - 0.4;
+  const sorted = [...pp.categoryBreakdown].sort((a, b) => b.share - a.share);
+  // Top-2 concentration - real arithmetic on data already in the snapshot,
+  // never a fabricated "your portfolio is concentrated" claim.
+  const topTwoShare = sorted.slice(0, 2).reduce((sum, c) => sum + c.share, 0);
+  const hasConcentration = sorted.length >= 2;
+  const concentrationH = hasConcentration ? 1.6 : 0;
+  const barsH = totalH - (hasConcentration ? concentrationH + 0.24 : 0);
+
+  addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, barsH);
   addCardHeading(slide, 'Category share', MARGIN + 0.42, CONTENT_TOP + 0.36, CONTENT_W - 0.84);
 
-  const maxShare = Math.max(...pp.categoryBreakdown.map((c) => c.share), 0.0001);
+  const shown = sorted.slice(0, 5);
+  const maxShare = Math.max(...shown.map((c) => c.share), 0.0001);
   addBarRows(
     slide,
-    pp.categoryBreakdown.slice(0, 6).map((c) => ({
+    shown.map((c) => ({
       title: c.category,
       valueText: formatPercent(c.share * 100, 1),
       ratio: c.share / maxShare,
@@ -802,6 +1084,18 @@ function buildPortfolioSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel:
     CONTENT_W - 0.84,
     1.06,
   );
+
+  if (hasConcentration) {
+    addInsightPanel(
+      slide,
+      'Concentration',
+      `Your top two categories, ${sorted[0].category} and ${sorted[1].category}, hold ${formatPercent(topTwoShare * 100, 1)} of ${pp.contributionBasis === 'revenue' ? 'revenue' : 'inventory value'} between them.`,
+      MARGIN,
+      CONTENT_TOP + barsH + 0.24,
+      CONTENT_W,
+      concentrationH,
+    );
+  }
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
 }
@@ -826,7 +1120,7 @@ function buildCustomerHealthSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageL
       valueText: formatCurrency(ch.avgClv.value, snapshot.workspace.reportingCurrency),
     });
   }
-  if (cards.length > 0) addKpiCardRow(slide, cards, MARGIN, CONTENT_TOP, CONTENT_W);
+  if (cards.length > 0) addKpiCardRow(slide, pptx, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   if (ch.atRiskCohorts.length > 0) {
     const y = cards.length > 0 ? CONTENT_TOP + 2.25 : CONTENT_TOP;
@@ -875,11 +1169,31 @@ function buildRecommendationsSlide(pptx: pptxgen, snapshot: ReportSnapshot, page
     pageLabel,
   );
 
+  // 2-column grid, matching the reference deck - a stacked single column
+  // reads as a plain list; two columns of taller cards give each
+  // recommendation room for its own timeframe label without crowding.
   const available = 10.375 - CONTENT_TOP - 0.4;
-  const gap = 0.22;
-  const cardH = Math.min(1.32, (available - gap * (recs.length - 1)) / Math.max(recs.length, 1));
+  const colGap = 0.32;
+  const rowGap = 0.32;
+  const cols = recs.length > 1 ? 2 : 1;
+  const rows = Math.ceil(recs.length / cols);
+  const cardW = (CONTENT_W - colGap * (cols - 1)) / cols;
+  const cardH = Math.min(2.15, (available - rowGap * (rows - 1)) / Math.max(rows, 1));
   recs.forEach((r, i) => {
-    addRecommendationCard(slide, i + 1, r.priority, r.text, MARGIN, CONTENT_TOP + i * (cardH + gap), CONTENT_W, cardH);
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const timeframe = r.priority === 'high' ? 'Act this week' : 'Next 30 days';
+    addRecommendationCard(
+      slide,
+      i + 1,
+      r.priority,
+      r.text,
+      timeframe,
+      MARGIN + col * (cardW + colGap),
+      CONTENT_TOP + row * (cardH + rowGap),
+      cardW,
+      cardH,
+    );
   });
 
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
@@ -943,17 +1257,17 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabe
 
   const m = snapshot.methodology;
   const cardH = 10.375 - CONTENT_TOP - 0.4;
-  const colGap = 0.58;
-  const colW = (CONTENT_W - colGap) / 2;
+  const colGap = 0.42;
+  const colW = (CONTENT_W - colGap * 2) / 3;
 
   addCard(slide, MARGIN, CONTENT_TOP, colW, cardH);
-  addCardHeading(slide, 'Data sources', MARGIN + 0.42, CONTENT_TOP + 0.36, colW - 0.84);
+  addCardHeading(slide, 'Data sources', MARGIN + 0.36, CONTENT_TOP + 0.32, colW - 0.72);
   m.dataSources.forEach((source, i) => {
     const y = CONTENT_TOP + 1.0 + i * 1.15;
     slide.addText(source.name, {
-      x: MARGIN + 0.42,
+      x: MARGIN + 0.36,
       y,
-      w: colW - 0.84,
+      w: colW - 0.72,
       h: 0.34,
       fontFace: FONT_FAMILY,
       fontSize: TYPE.rowTitle,
@@ -961,9 +1275,9 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabe
       color: COLORS.ink,
     });
     slide.addText(source.description, {
-      x: MARGIN + 0.42,
+      x: MARGIN + 0.36,
       y: y + 0.36,
-      w: colW - 0.84,
+      w: colW - 0.72,
       h: 0.62,
       fontFace: FONT_FAMILY,
       fontSize: 14,
@@ -971,13 +1285,13 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabe
     });
   });
 
-  const rightX = MARGIN + colW + colGap;
-  addCard(slide, rightX, CONTENT_TOP, colW, cardH);
-  addCardHeading(slide, 'Limitations', rightX + 0.42, CONTENT_TOP + 0.36, colW - 0.84);
+  const midX = MARGIN + colW + colGap;
+  addCard(slide, midX, CONTENT_TOP, colW, cardH);
+  addCardHeading(slide, 'Limitations', midX + 0.36, CONTENT_TOP + 0.32, colW - 0.72);
   m.limitations.forEach((limitation, i) => {
     const y = CONTENT_TOP + 1.0 + i * 1.15;
     slide.addShape('rect', {
-      x: rightX + 0.42,
+      x: midX + 0.36,
       y: y + 0.1,
       w: 0.06,
       h: 0.5,
@@ -985,9 +1299,9 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabe
       line: { type: 'none' },
     });
     slide.addText(limitation, {
-      x: rightX + 0.75,
+      x: midX + 0.68,
       y,
-      w: colW - 1.2,
+      w: colW - 1.04,
       h: 0.95,
       fontFace: FONT_FAMILY,
       fontSize: 14,
@@ -995,16 +1309,39 @@ function buildMethodologySlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabe
     });
   });
 
+  const rightX = MARGIN + (colW + colGap) * 2;
+  addCard(slide, rightX, CONTENT_TOP, colW, cardH);
+  addCardHeading(slide, 'Report status', rightX + 0.36, CONTENT_TOP + 0.32, colW - 0.72);
+  const statusTone: PillTone =
+    snapshot.privacy.approval.status === 'approved'
+      ? 'positive'
+      : snapshot.privacy.approval.status === 'rejected'
+        ? 'negative'
+        : 'neutral';
+  addPill(slide, formatMetricName(snapshot.privacy.approval.status), statusTone, rightX + 0.36, CONTENT_TOP + 0.9, 1.6, 0.4);
   slide.addText(
-    `Report status: ${snapshot.privacy.approval.status}${snapshot.privacy.approval.reviewedBy ? ` · Reviewed by ${snapshot.privacy.approval.reviewedBy}` : ''}`,
+    snapshot.privacy.approval.reviewedBy ? `Reviewed by ${snapshot.privacy.approval.reviewedBy}.` : 'Not yet reviewed.',
     {
-      x: rightX + 0.42,
-      y: CONTENT_TOP + cardH - 0.7,
-      w: colW - 0.84,
-      h: 0.32,
+      x: rightX + 0.36,
+      y: CONTENT_TOP + 1.5,
+      w: colW - 0.72,
+      h: 0.4,
       fontFace: FONT_FAMILY,
-      fontSize: 12,
-      color: COLORS.grayLight,
+      fontSize: 14,
+      color: COLORS.ink,
+    },
+  );
+  slide.addShape('rect', { x: rightX + 0.36, y: CONTENT_TOP + 2.15, w: colW - 0.72, h: 0.012, fill: { color: COLORS.hairline }, line: { type: 'none' } });
+  slide.addText(
+    `Report ref ${snapshot.metadata.reportId.slice(0, 8).toUpperCase()} · generated ${formatDate(snapshot.metadata.generatedAt)} for ${snapshot.metadata.period.label.toLowerCase()}.`,
+    {
+      x: rightX + 0.36,
+      y: CONTENT_TOP + 2.4,
+      w: colW - 0.72,
+      h: 0.6,
+      fontFace: FONT_FAMILY,
+      fontSize: 13,
+      color: COLORS.gray,
     },
   );
 

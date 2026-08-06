@@ -1,6 +1,6 @@
 import type pptxgen from 'pptxgenjs';
 import { COLORS, FONT_FAMILY } from '../../design-tokens';
-import type { GrowthMetric, ReportMode } from '../../schema';
+import type { GrowthMetric, MarketSignalKind, ReportMode } from '../../schema';
 
 // Reusable, code-driven building blocks for every slide. Geometry, type
 // scale and palette below are taken from the approved reference deck
@@ -203,11 +203,20 @@ export interface KpiCardSpec {
   deltaDirection?: GrowthMetric['direction'];
   /** Renders on the brand-purple background (cover/divider) rather than a white card. */
   onDark?: boolean;
+  /**
+   * Raw series for a tiny trend indicator in the card's top-right corner.
+   * Only rendered when length >= MIN_SPARKLINE_POINTS - a 2-point "trend"
+   * is just a line between two dots, which implies more signal than it has.
+   */
+  sparkline?: number[] | null;
 }
+
+export const MIN_SPARKLINE_POINTS = 3;
 
 /** KPI cards split the given width evenly across however many are passed - never a fixed slot count. */
 export function addKpiCardRow(
   slide: pptxgen.Slide,
+  pptx: pptxgen,
   cards: KpiCardSpec[],
   x: number,
   y: number,
@@ -234,11 +243,13 @@ export function addKpiCardRow(
     const textColor = card.onDark ? COLORS.paper : COLORS.ink;
     const labelColor = card.onDark ? COLORS.paper : COLORS.gray;
     const pad = card.onDark ? 0 : 0.33;
+    const hasSparkline = !card.onDark && (card.sparkline?.length ?? 0) >= MIN_SPARKLINE_POINTS;
+    const labelW = hasSparkline ? cardW - pad * 2 - 1.05 : cardW - pad * 2;
 
     slide.addText(card.label.toUpperCase(), {
       x: cardX + pad,
       y: y + (card.onDark ? 0 : 0.29),
-      w: cardW - pad * 2,
+      w: labelW,
       h: 0.28,
       fontFace: FONT_FAMILY,
       fontSize: TYPE.kpiLabel,
@@ -247,6 +258,9 @@ export function addKpiCardRow(
       charSpacing: 1.2,
       transparency: card.onDark ? 30 : 0,
     });
+    if (hasSparkline) {
+      addSparkline(slide, pptx, card.sparkline as number[], cardX + cardW - pad - 1.0, y + 0.24, 1.0, 0.42);
+    }
     slide.addText(card.valueText, {
       x: cardX + pad,
       y: y + (card.onDark ? 0.3 : 0.66),
@@ -277,6 +291,41 @@ export function addKpiCardRow(
         color: deltaColor,
       });
     }
+  });
+}
+
+/**
+ * Tiny native trend indicator - no axes, no legend, no gridlines, just the
+ * line - meant to sit inside a KPI card's corner. A real chart object (not
+ * a picture), gated by the caller on MIN_SPARKLINE_POINTS.
+ */
+export function addSparkline(
+  slide: pptxgen.Slide,
+  pptx: pptxgen,
+  values: number[],
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: string = COLORS.brandAccent,
+): void {
+  slide.addChart(pptx.ChartType.line, [{ name: 'trend', labels: values.map((_, i) => String(i + 1)), values }], {
+    x,
+    y,
+    w,
+    h,
+    chartColors: [color],
+    showLegend: false,
+    showValue: false,
+    showTitle: false,
+    lineSize: 2,
+    lineDataSymbol: 'none',
+    catAxisHidden: true,
+    valAxisHidden: true,
+    catAxisLineShow: false,
+    valAxisLineShow: false,
+    plotArea: { border: { pt: 0, color: 'FFFFFF' } },
+    chartArea: { border: { pt: 0, color: 'FFFFFF' } },
   });
 }
 
@@ -504,11 +553,19 @@ export function addInsightPanel(
   });
 }
 
+/**
+ * Priority accent runs along the TOP edge (matching the reference deck),
+ * not a left-side strip. `timeframe` ("Act this week" / "Next 30 days") is
+ * a deterministic label derived from priority by the caller - never a
+ * fabricated urgency claim, just a plain-English restatement of the same
+ * priority the badge already shows.
+ */
 export function addRecommendationCard(
   slide: pptxgen.Slide,
   index: number,
   priority: 'high' | 'medium' | 'low',
   text: string,
+  timeframe: string | null,
   x: number,
   y: number,
   w: number,
@@ -517,27 +574,205 @@ export function addRecommendationCard(
   const tone: PillTone = priority === 'high' ? 'negative' : priority === 'medium' ? 'warning' : 'neutral';
   const accent = priority === 'high' ? COLORS.negative : priority === 'medium' ? COLORS.warningAccent : COLORS.grayLight;
   slide.addShape('roundRect', { x, y, w, h, rectRadius: CARD_RADIUS, fill: { color: COLORS.paper }, line: { type: 'none' } });
-  slide.addShape('rect', { x, y: y + 0.18, w: 0.07, h: h - 0.36, fill: { color: accent }, line: { type: 'none' } });
+  slide.addShape('rect', { x, y, w, h: 0.06, fill: { color: accent }, line: { type: 'none' } });
   slide.addText(String(index).padStart(2, '0'), {
-    x: x + 0.42,
-    y: y + 0.28,
-    w: 0.8,
-    h: 0.4,
+    x: x + 0.36,
+    y: y + 0.37,
+    w: 0.6,
+    h: 0.52,
     fontFace: FONT_FAMILY,
-    fontSize: TYPE.rowTitle,
+    fontSize: 22,
     bold: true,
     color: COLORS.grayLight,
   });
-  addPill(slide, priority.toUpperCase(), tone, x + 1.25, y + 0.3, 1.05);
+  addPill(slide, priority.toUpperCase(), tone, x + w - 1.15, y + 0.44, 0.75, 0.34);
   slide.addText(text, {
-    x: x + 2.5,
-    y: y + 0.22,
-    w: w - 2.95,
-    h: h - 0.44,
+    x: x + 0.36,
+    y: y + 0.99,
+    w: w - 0.72,
+    h: h - (timeframe ? 1.7 : 1.3),
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.rowTitle,
+    bold: true,
+    color: COLORS.ink,
+    valign: 'top',
+  });
+  if (timeframe) {
+    slide.addText(timeframe, {
+      x: x + 0.36,
+      y: y + h - 0.56,
+      w: w - 0.72,
+      h: 0.28,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.rowSubtitle,
+      color: COLORS.grayLight,
+    });
+  }
+}
+
+/**
+ * Deterministic badge for a market signal's kind - never invented, always a
+ * direct mapping from the rule-engine's own classification
+ * (rules/market-signals.ts). "price_war"/"new_entrant" read as things worth
+ * watching; "supply_void" as an opening; "demand_rising" as a statement
+ * about the seller's own position.
+ */
+export function signalBadge(kind: MarketSignalKind): { label: string; tone: PillTone } {
+  switch (kind) {
+    case 'price_war':
+      return { label: 'WATCH', tone: 'warning' };
+    case 'new_entrant':
+      return { label: 'WATCH', tone: 'warning' };
+    case 'supply_void':
+      return { label: 'OPENING', tone: 'positive' };
+    case 'demand_rising':
+      return { label: 'POSITION', tone: 'info' };
+  }
+}
+
+/**
+ * Solid brand-purple "hero" card for the AI-narrated executive summary,
+ * with an optional 3-metric micro-row along the bottom - both eyebrow and
+ * micro-metrics are always real snapshot data, never invented to fill space.
+ */
+export function addInsightCard(
+  slide: pptxgen.Slide,
+  eyebrow: string,
+  body: string,
+  microMetrics: { label: string; value: string }[],
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+): void {
+  slide.addShape('roundRect', { x, y, w, h, rectRadius: CARD_RADIUS, fill: { color: COLORS.brand }, line: { type: 'none' } });
+  slide.addText(eyebrow.toUpperCase(), {
+    x: x + 0.42,
+    y: y + 0.42,
+    w: w - 0.84,
+    h: 0.3,
+    fontFace: FONT_FAMILY,
+    fontSize: TYPE.kpiLabel,
+    bold: true,
+    color: COLORS.paper,
+    charSpacing: 1.5,
+    transparency: 15,
+  });
+  const bodyH = microMetrics.length > 0 ? h - 2.15 : h - 1.15;
+  slide.addText(body, {
+    x: x + 0.42,
+    y: y + 0.84,
+    w: w - 0.84,
+    h: bodyH,
     fontFace: FONT_FAMILY,
     fontSize: TYPE.body,
-    color: COLORS.ink,
-    valign: 'middle',
+    color: COLORS.paper,
+    valign: 'top',
+  });
+
+  if (microMetrics.length > 0) {
+    const stripY = y + h - 1.3;
+    slide.addShape('rect', { x: x + 0.42, y: stripY, w: w - 0.84, h: HAIRLINE_H, fill: { color: COLORS.paper }, line: { type: 'none' } });
+    const colW = (w - 0.84) / microMetrics.length;
+    microMetrics.forEach((m, i) => {
+      const mx = x + 0.42 + i * colW;
+      slide.addText(m.label.toUpperCase(), {
+        x: mx,
+        y: stripY + 0.22,
+        w: colW - 0.2,
+        h: 0.24,
+        fontFace: FONT_FAMILY,
+        fontSize: 11,
+        bold: true,
+        color: COLORS.paper,
+        charSpacing: 1,
+        transparency: 30,
+      });
+      slide.addText(m.value, {
+        x: mx,
+        y: stripY + 0.48,
+        w: colW - 0.2,
+        h: 0.4,
+        fontFace: FONT_FAMILY,
+        fontSize: 19,
+        bold: true,
+        color: COLORS.paper,
+      });
+    });
+  }
+}
+
+export interface PriceLadderRung {
+  label: string;
+  valueText: string;
+  /** Raw numeric value, used only to compute proportional bar width - never displayed directly (valueText is). */
+  value: number;
+  color?: string;
+  emphasized?: boolean;
+}
+
+/**
+ * Horizontal proportional-bar price ladder - the reference deck's
+ * signature Pricing Intelligence visual. Rungs are whatever the caller has
+ * real data for (typically: your price, market median, recommended band
+ * low/high) - never padded with invented "lowest/highest tracked" values
+ * the schema doesn't carry.
+ */
+export function addPriceLadder(
+  slide: pptxgen.Slide,
+  rungs: PriceLadderRung[],
+  x: number,
+  y: number,
+  w: number,
+  rowPitch = 0.72,
+): void {
+  const max = Math.max(...rungs.map((r) => r.value), 1);
+  const trackX = x;
+  const trackW = w - 2.1;
+  const trackH = 0.17;
+
+  rungs.forEach((rung, i) => {
+    const rowY = y + i * rowPitch;
+    slide.addText(rung.label, {
+      x,
+      y: rowY,
+      w: 2.2,
+      h: 0.28,
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.rowSubtitle,
+      bold: rung.emphasized,
+      color: rung.emphasized ? COLORS.ink : COLORS.gray,
+    });
+    slide.addShape('roundRect', {
+      x: trackX,
+      y: rowY + 0.32,
+      w: trackW,
+      h: trackH,
+      rectRadius: 0.5,
+      fill: { color: COLORS.canvas },
+      line: { type: 'none' },
+    });
+    const fillW = Math.max(trackW * Math.min(rung.value / max, 1), 0.03);
+    slide.addShape('roundRect', {
+      x: trackX,
+      y: rowY + 0.32,
+      w: fillW,
+      h: trackH,
+      rectRadius: 0.5,
+      fill: { color: rung.color ?? COLORS.brandAccent },
+      line: { type: 'none' },
+    });
+    slide.addText(rung.valueText, {
+      x: x + w - 1.85,
+      y: rowY,
+      w: 1.85,
+      h: 0.28,
+      align: 'right',
+      fontFace: FONT_FAMILY,
+      fontSize: TYPE.rowSubtitle,
+      bold: true,
+      color: COLORS.ink,
+    });
   });
 }
 
