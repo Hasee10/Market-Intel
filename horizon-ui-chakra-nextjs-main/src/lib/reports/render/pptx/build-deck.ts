@@ -3,6 +3,7 @@
 import pptxgen from 'pptxgenjs';
 import type { ReportSnapshot } from '../../schema';
 import { buildSectionPlan, appendixEntries, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
+import { coverIllustrationPath, ILLUSTRATION_ASPECT_RATIO } from '../../assets/illustrations';
 import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
 import {
   SLIDE_W,
@@ -42,11 +43,12 @@ import { safeRatio } from '../../metrics/growth';
 // Generates the entire deck from scratch, in code - no base .pptx template
 // file is loaded or modified. Layout, palette and type scale mirror the
 // approved reference deck (docs/report-reference/new-slides/New_Slides.pptx),
-// but every element here is a native OOXML object (text/table/chart/shape)
-// via pptxgenjs, so the output is genuinely editable in PowerPoint. There is
-// deliberately no addImage call in this file: the reference deck pasted
-// pre-rendered pictures for some of its charts, which is exactly the
-// flattened-image failure mode the brief forbids.
+// but every element that carries data is a native OOXML object
+// (text/table/chart/shape) via pptxgenjs, so it stays genuinely editable and
+// never a flattened picture standing in for a chart - the one place this
+// file calls addImage is the cover slide's decorative illustration, which
+// encodes no data (see assets/illustrations.ts for why that's a different
+// case from the "flattened chart" failure mode).
 export async function buildReportDeck(snapshot: ReportSnapshot): Promise<Buffer> {
   const plan = buildSectionPlan(snapshot);
   const pptx = new pptxgen();
@@ -278,8 +280,21 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionP
   }
 
   // Right strip: minimal - metadata already lives on the left panel, so
-  // this side is just the confidentiality pill and a one-line generation
-  // note, not a duplicate of what the purple panel already states.
+  // this side is just the confidentiality pill, a one-line generation note,
+  // and a decorative illustration (never a data visual - see
+  // assets/illustrations.ts) filling the empty space between them.
+  const illustrationPath = coverIllustrationPath();
+  if (illustrationPath) {
+    const illustrationW = 4.6;
+    const illustrationH = illustrationW / ILLUSTRATION_ASPECT_RATIO;
+    slide.addImage({
+      path: illustrationPath,
+      x: panelW + (SLIDE_W - panelW - illustrationW) / 2,
+      y: 3.9,
+      w: illustrationW,
+      h: illustrationH,
+    });
+  }
   slide.addText(
     `Generated automatically from your store data and Ryvl's tracked market scan. Every figure traces to a source listed on the methodology page.`,
     {

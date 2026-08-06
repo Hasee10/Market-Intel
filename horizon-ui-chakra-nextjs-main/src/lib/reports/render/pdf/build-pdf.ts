@@ -6,12 +6,15 @@ import { buildSectionPlan, appendixEntries, type PlannedSection, type SectionPla
 import { COLORS, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
 import { median } from '../../metrics/statistics';
 import { safeRatio } from '../../metrics/growth';
+import { coverIllustrationPath, ILLUSTRATION_ASPECT_RATIO } from '../../assets/illustrations';
 
 // Mirrors render/pptx/build-deck.ts section-for-section against the same
 // ReportSnapshot and the same section plan, so both formats come from one
-// structured source without needing to share rendering code. Native vector
-// PDF throughout - pdfkit draws every bar and rule directly, nothing is
-// rasterized.
+// structured source without needing to share rendering code. Every data
+// visual is native vector - pdfkit draws every bar and rule directly, none
+// of it rasterized. The one exception is the cover slide's decorative
+// illustration (doc.image()), which encodes no data - see
+// assets/illustrations.ts.
 const IN = 72;
 const W = 20 * IN;
 const H = 11.25 * IN;
@@ -493,7 +496,18 @@ function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: Se
     kpiRow(doc, cards, MARGIN, kpiY * IN, panelW - MARGIN * 2, 1.3 * IN);
   }
 
-  // Right strip: minimal - metadata already lives on the left panel.
+  // Right strip: minimal - metadata already lives on the left panel, plus a
+  // decorative illustration (never a data visual) filling the empty space.
+  const illustrationPath = coverIllustrationPath();
+  if (illustrationPath) {
+    const illustrationW = 4.6 * IN;
+    const illustrationH = illustrationW / ILLUSTRATION_ASPECT_RATIO;
+    doc.image(illustrationPath, panelW + (W - panelW - illustrationW) / 2, 3.9 * IN, {
+      width: illustrationW,
+      height: illustrationH,
+    });
+  }
+
   doc
     .fillColor(hex(COLORS.gray))
     .font(FONT)

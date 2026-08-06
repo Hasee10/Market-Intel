@@ -102,12 +102,16 @@ describe('sparkline gating', () => {
     expect(MIN_SPARKLINE_POINTS).toBe(3);
   });
 
-  it('data-rich deck with a 6-point weeklySeries includes at least one native chart, no rasters', async () => {
+  it('data-rich deck includes at least one native chart, and no raster stands in for a data visual', async () => {
     const buffer = await buildReportDeck(richSnapshot);
     const charts = await chartCount(buffer);
     const pictures = await pictureCount(buffer);
     expect(charts).toBeGreaterThan(0);
-    expect(pictures).toBe(0);
+    // Exactly one picture is expected now: the cover slide's decorative
+    // illustration (assets/illustrations.ts), which encodes no data. More
+    // than that would mean something started rasterizing an actual chart -
+    // the failure mode this test originally existed to catch.
+    expect(pictures).toBe(1);
   });
 
   it('a seller with fewer than 3 revenue data points renders without a sparkline-driven crash', async () => {
