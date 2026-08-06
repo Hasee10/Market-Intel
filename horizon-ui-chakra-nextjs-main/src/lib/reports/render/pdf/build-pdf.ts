@@ -2,7 +2,7 @@
 
 import PDFDocument from 'pdfkit';
 import type { MarketSignalKind, ReportSnapshot } from '../../schema';
-import { buildSectionPlan, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
+import { buildSectionPlan, appendixEntries, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
 import { COLORS, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
 import { median } from '../../metrics/statistics';
 import { safeRatio } from '../../metrics/growth';
@@ -451,6 +451,9 @@ function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: Se
   // "This cycle covers" - included TOC entries, 2 columns. Only ever lists
   // what actually made it into the deck.
   const includedTitles = plan.toc.filter((e) => e.status === 'included').map((e) => e.title);
+  // Bottom edge of the two-column list below, used to keep the divider/KPI
+  // strip from overlapping it - see the comment where it's consumed.
+  let listBottomY = 6.84;
   if (includedTitles.length > 0) {
     doc.save().opacity(0.7);
     doc.fillColor(hex(COLORS.paper)).font(FONT_BOLD).fontSize(12).text('THIS CYCLE COVERS', MARGIN, 6.56 * IN, { width: panelW - MARGIN * 2, characterSpacing: 1.5 });
@@ -468,6 +471,7 @@ function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: Se
         .text(`•  ${title}`, MARGIN + col * (colW + 22), (6.92 + row * 0.38) * IN, { width: colW, lineBreak: false });
     });
     doc.restore();
+    listBottomY = 6.92 + perCol * 0.38;
   }
 
   const cards: KpiSpec[] = [];
@@ -480,8 +484,13 @@ function renderCover(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, plan: Se
     cards.push({ label: 'Price index', value: snapshot.marketplacePerformance.priceIndex.value.toFixed(0), delta: 'vs. market', onDark: true });
   }
   if (cards.length > 0) {
-    doc.rect(MARGIN, 8.5 * IN, panelW - MARGIN * 2, 1).fill(hex(COLORS.paper));
-    kpiRow(doc, cards, MARGIN, 8.9 * IN, panelW - MARGIN * 2, 1.3 * IN);
+    // Only pushed down when the TOC list above actually needs the room (the
+    // maximum 9-section case needs a 5th row that overlaps the fixed 8.5in
+    // line otherwise) - the common case is pixel-identical to before.
+    const dividerY = Math.max(8.5, listBottomY + 0.14);
+    const kpiY = dividerY + 0.4;
+    doc.rect(MARGIN, dividerY * IN, panelW - MARGIN * 2, 1).fill(hex(COLORS.paper));
+    kpiRow(doc, cards, MARGIN, kpiY * IN, panelW - MARGIN * 2, 1.3 * IN);
   }
 
   // Right strip: minimal - metadata already lives on the left panel.
@@ -901,7 +910,10 @@ function renderCompetitorTracking(doc: PDFKit.PDFDocument, snapshot: ReportSnaps
       (worst, r) => (worst == null || r.inStockRate < worst.inStockRate ? r : worst),
       null,
     );
-    if (supplyVoidCandidate) {
+    // A tie at 100% in-stock across every eligible competitor is not a
+    // finding - reduce still returns someone, which used to render
+    // "SUPPLY VOID ... Only 100% in stock", contradicting its own headline.
+    if (supplyVoidCandidate && supplyVoidCandidate.inStockRate < 1) {
       highlightCard(
         doc,
         'SUPPLY VOID',
@@ -1142,14 +1154,17 @@ function renderRecommendations(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot
     card(doc, x, y, cardW, cardH);
     doc.rect(x, y, cardW, 6).fill(hex(accent));
     doc.fillColor(hex(COLORS.grayLight)).font(FONT_BOLD).fontSize(16.5).text(String(i + 1).padStart(2, '0'), x + 24, y + 24, { width: 50, lineBreak: false });
+    // 76pt fit "HIGH"/"LOW" but let "MEDIUM" overflow the pill shape at the
+    // same 12pt bold font - pill() uses lineBreak:false, so unlike pptx this
+    // doesn't wrap, it just draws text past the rounded-rect edge instead.
     pill(
       doc,
       r.priority.toUpperCase(),
       r.priority === 'high' ? COLORS.negativeBg : r.priority === 'medium' ? COLORS.warningBg : COLORS.canvas,
       r.priority === 'high' ? COLORS.negative : r.priority === 'medium' ? COLORS.warning : COLORS.grayLight,
-      x + 80,
+      x + 62,
       y + 26,
-      76,
+      94,
     );
     doc.fillColor(hex(COLORS.ink)).font(FONT).fontSize(15.5).text(r.text, x + 24, y + 62, { width: cardW - 48, height: cardH - 120 });
     const timeframe = r.priority === 'high' ? 'Act this week' : 'Next 30 days';
@@ -1241,7 +1256,7 @@ function renderAppendix(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot, pageL
 
   const cardH = FOOTER_RULE_Y - CONTENT_TOP - 0.4 * IN;
   card(doc, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
-  const entries = Object.entries(snapshot.appendix ?? {}).filter(([key]) => key !== 'aiSummary');
+  const entries = appendixEntries(snapshot.appendix);
   entries.forEach(([key, value], i) => {
     doc
       .fillColor(hex(COLORS.gray))

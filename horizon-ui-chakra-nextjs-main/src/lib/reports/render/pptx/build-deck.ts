@@ -2,7 +2,7 @@
 
 import pptxgen from 'pptxgenjs';
 import type { ReportSnapshot } from '../../schema';
-import { buildSectionPlan, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
+import { buildSectionPlan, appendixEntries, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
 import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
 import {
   SLIDE_W,
@@ -206,6 +206,9 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionP
   // lists what actually made it into the deck (plan.toc's included rows) -
   // never a fixed catalogue of sections regardless of data.
   const includedTitles = plan.toc.filter((e) => e.status === 'included').map((e) => e.title);
+  // Bottom edge of the two-column list below, used to keep the divider/KPI
+  // strip from overlapping it - see the comment where it's consumed.
+  let listBottomY = 6.84;
   if (includedTitles.length > 0) {
     slide.addText('THIS CYCLE COVERS', {
       x: MARGIN,
@@ -235,6 +238,7 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionP
         transparency: 8,
       });
     });
+    listBottomY = 6.92 + perCol * 0.38;
   }
 
   // Headline KPI strip along the bottom of the purple panel - only the
@@ -254,15 +258,23 @@ function buildCoverSlide(pptx: pptxgen, snapshot: ReportSnapshot, plan: SectionP
     });
   }
   if (cards.length > 0) {
+    // 8.5/8.9 were fixed regardless of how many rows the TOC list above
+    // actually rendered - fine for the common 6-8 item case, but a report
+    // with the maximum 9 included sections needs a 5th list row that
+    // physically overlapped this hairline and the KPI row below it. Only
+    // pushed down when the list actually needs the room, so the common case
+    // is pixel-identical to before.
+    const dividerY = Math.max(8.5, listBottomY + 0.14);
+    const kpiY = dividerY + 0.4;
     slide.addShape('rect', {
       x: MARGIN,
-      y: 8.5,
+      y: dividerY,
       w: panelW - MARGIN * 2,
       h: 0.012,
       fill: { color: COLORS.paper },
       line: { type: 'none' },
     });
-    addKpiCardRow(slide, pptx, cards, MARGIN, 8.9, panelW - MARGIN * 2, 1.3);
+    addKpiCardRow(slide, pptx, cards, MARGIN, kpiY, panelW - MARGIN * 2, 1.3);
   }
 
   // Right strip: minimal - metadata already lives on the left panel, so
@@ -765,8 +777,13 @@ function buildCompetitorTrackingSlide(
     // (skuCount >= 5), matching rules/market-signals.ts's own threshold for
     // the same signal so this card and the "what changed" list never disagree.
     const eligible = cb.scorecards.filter((r) => r.skuCount >= 5);
-    if (eligible.length > 0) {
-      const worst = eligible.reduce((a, b) => (b.inStockRate < a.inStockRate ? b : a));
+    const worst = eligible.length > 0 ? eligible.reduce((a, b) => (b.inStockRate < a.inStockRate ? b : a)) : null;
+    // A tie at 100% in-stock across every eligible competitor is not a
+    // finding - `reduce` still returns *someone* (ties resolve to the first
+    // element), which used to render "SUPPLY VOID ... Out of stock on 0%",
+    // contradicting its own headline. Only surface this card when someone is
+    // genuinely short of stock.
+    if (worst && worst.inStockRate < 1) {
       const h2 = 1.9;
       addHighlightCard(
         slide,
@@ -1357,7 +1374,7 @@ function buildAppendixSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageLabel: 
 
   const cardH = 10.375 - CONTENT_TOP - 0.4;
   addCard(slide, MARGIN, CONTENT_TOP, CONTENT_W, cardH);
-  const entries = Object.entries(snapshot.appendix ?? {}).filter(([key]) => key !== 'aiSummary');
+  const entries = appendixEntries(snapshot.appendix);
   entries.forEach(([key, value], i) => {
     slide.addText(`${key}: ${JSON.stringify(value)}`, {
       x: MARGIN + 0.42,

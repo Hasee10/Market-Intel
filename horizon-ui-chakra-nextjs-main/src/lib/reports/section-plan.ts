@@ -1,4 +1,5 @@
 import type { ReportSnapshot } from './schema';
+import { formatCurrency } from './design-tokens';
 
 export type SectionKind =
   | 'cover'
@@ -51,6 +52,17 @@ export interface SectionPlan {
   /** Content sections actually included, i.e. excluding cover/toc/dividers/methodology. */
   includedSectionCount: number;
   candidateSectionCount: number;
+}
+
+// 'aiSummary' is rendered in the Executive Snapshot's insight card, not
+// duplicated here - the appendix slide is for other internal notes. Both
+// renderers (build-deck.ts, build-pdf.ts) and this inclusion gate must use
+// the exact same filter, or the gate can decide "there is content" while the
+// renderer then filters everything out and draws an empty box - which is
+// exactly what happened when appendix carried only an aiSummary key and the
+// gate checked Object.keys(...).length > 0 without excluding it first.
+export function appendixEntries(appendix: Record<string, unknown> | null | undefined): [string, unknown][] {
+  return Object.entries(appendix ?? {}).filter(([key]) => key !== 'aiSummary');
 }
 
 export const ROWS_PER_TABLE_PAGE = 5;
@@ -293,7 +305,7 @@ export function buildSectionPlan(snapshot: ReportSnapshot): SectionPlan {
     sections.push(...content, methodologyPage);
   }
 
-  if (snapshot.metadata.mode === 'internal' && snapshot.appendix && Object.keys(snapshot.appendix).length > 0) {
+  if (snapshot.metadata.mode === 'internal' && appendixEntries(snapshot.appendix).length > 0) {
     sections.push({ kind: 'appendix', title: SECTION_TITLES.appendix!, page: 0, pageCount: 1 });
   }
 
@@ -340,12 +352,21 @@ function dividerStatsFor(kinds: SectionKind[], snapshot: ReportSnapshot): { labe
 
   if (kinds.includes('executive_snapshot') && snapshot.revenue) {
     add('Orders this period', String(Math.round(snapshot.revenue.orders.current)));
-    add(
-      'Revenue change',
-      snapshot.revenue.revenue.changePct != null
-        ? `${snapshot.revenue.revenue.changePct >= 0 ? '+' : ''}${snapshot.revenue.revenue.changePct.toFixed(1)}%`
-        : null,
-    );
+    if (snapshot.revenue.revenue.changePct != null) {
+      add(
+        'Revenue change',
+        `${snapshot.revenue.revenue.changePct >= 0 ? '+' : ''}${snapshot.revenue.revenue.changePct.toFixed(1)}%`,
+      );
+    } else {
+      // A brand-new seller has no prior period to diff against - showing a
+      // fabricated "+0%" would be a lie, so this falls back to a snapshot
+      // value rather than a delta. avgOrderValue.current always exists
+      // (GrowthMetric.current is non-optional), unlike changePct.
+      add(
+        'Avg order value',
+        formatCurrency(snapshot.revenue.avgOrderValue.current, snapshot.workspace.reportingCurrency),
+      );
+    }
   }
   if (kinds.includes('market_position') && snapshot.marketplacePerformance?.priceIndex) {
     add('Price index', snapshot.marketplacePerformance.priceIndex.value.toFixed(0));
@@ -353,15 +374,32 @@ function dividerStatsFor(kinds: SectionKind[], snapshot: ReportSnapshot): { labe
   }
   if (kinds.includes('competitor_tracking') && snapshot.competitorBenchmarks) {
     add('Competitors tracked', String(snapshot.competitorBenchmarks.scorecards.length));
+    // Distinct platforms among the tracked competitors, not a second copy of
+    // the same count - this and market_position's own "Platforms tracked"
+    // above are deliberately the same label for the same kind of fact.
+    add(
+      'Platforms tracked',
+      String(new Set(snapshot.competitorBenchmarks.scorecards.map((s) => s.platformName)).size),
+    );
   }
   if (kinds.includes('sku_performance') && snapshot.productPerformance) {
     add('Active products', String(snapshot.productPerformance.activeProductCount));
+    add('Products ranked', String(snapshot.productPerformance.topProducts.length));
   }
   if (kinds.includes('inventory_risk') && snapshot.inventoryRisk) {
     add('SKUs at risk', String(snapshot.inventoryRisk.lowStockSkuCount));
+    // A genuinely different number from lowStockSkuCount, not a restatement
+    // of it - competitor stockouts overlapping this seller's own catalogue.
+    add('Supply-void openings', String(snapshot.inventoryRisk.supplyVoidOpportunities?.length ?? 0));
   }
   if (kinds.includes('customer_health') && snapshot.customerHealth) {
     add('At-risk customers', String(snapshot.customerHealth.atRiskCount ?? 0));
+    add(
+      'Repeat purchase rate',
+      snapshot.customerHealth.repeatPurchaseRate != null
+        ? `${snapshot.customerHealth.repeatPurchaseRate.toFixed(1)}%`
+        : null,
+    );
   }
   if (kinds.includes('recommendations')) {
     add('Actions', String(snapshot.recommendations.length));

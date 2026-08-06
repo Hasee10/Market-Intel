@@ -585,7 +585,11 @@ export function addRecommendationCard(
     bold: true,
     color: COLORS.grayLight,
   });
-  addPill(slide, priority.toUpperCase(), tone, x + w - 1.15, y + 0.44, 0.75, 0.34);
+  // 0.75in was sized for "HIGH"/"LOW" and wrapped "MEDIUM" mid-word at the
+  // same 12pt bold font (PowerPoint/Google Slides don't shrink-to-fit an
+  // addText box by default). 0.95in matches signalBadge's pill width just
+  // above, already proven to fit the similarly-sized "POSITION" (8 chars).
+  addPill(slide, priority.toUpperCase(), tone, x + w - 1.35, y + 0.44, 0.95, 0.34);
   slide.addText(text, {
     x: x + 0.36,
     y: y + 0.99,
@@ -752,7 +756,15 @@ export function addPriceLadder(
       fill: { color: COLORS.canvas },
       line: { type: 'none' },
     });
-    const fillW = Math.max(trackW * Math.min(rung.value / max, 1), 0.03);
+    // A pure linear scale makes any rung more than ~10x smaller than the
+    // largest one (e.g. a recommended-band low next to a much higher band
+    // high) render as an invisible hairline - the rung's own value label is
+    // still exact text, but the bar next to it should at least be visible as
+    // a bar. Floor the fill at 6% of the track so every rung reads as a real
+    // bar; this does distort proportionality for the smallest values, which
+    // is an intentional legibility trade-off, not an attempt to mislead -
+    // the exact number is always printed beside the bar.
+    const fillW = Math.max(trackW * Math.min(rung.value / max, 1), trackW * 0.06);
     slide.addShape('roundRect', {
       x: trackX,
       y: rowY + 0.32,
