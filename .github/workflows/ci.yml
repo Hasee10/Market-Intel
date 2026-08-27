@@ -96,6 +96,16 @@ jobs:
         with:
           node-version: "22"
 
+      # horizon-ui-chakra-nextjs-main carries audit-ci.jsonc, which allowlists
+      # one specific, triaged, permanently-unpatched advisory (image-size via
+      # pptxgenjs - see the file's own comment) so that one known exception
+      # doesn't fail the check forever while still catching any new one.
+      # scraper has no such file, so it falls back to plain npm audit.
       - name: Audit ${{ matrix.package }}
         working-directory: ${{ matrix.package }}
-        run: npm audit --audit-level=high
+        run: |
+          if [ -f audit-ci.jsonc ]; then
+            npx --yes audit-ci@7.1.0 --config audit-ci.jsonc
+          else
+            npm audit --audit-level=high
+          fi

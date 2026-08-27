@@ -1,0 +1,23 @@
+{
+  // Runs in CI in place of plain `npm audit --audit-level=high` for this
+  // package only (see ci.yml's audit job) - lets one specific, triaged,
+  // permanently-unpatched advisory stop failing the check without silencing
+  // any future high-severity finding.
+  "high": true,
+  "allowlist": [
+    // image-size: ICNS/JXL/HEIF parsers allow denial-of-service via an
+    // infinite loop. No patched version exists for ANY release, including
+    // the latest (GHSA advisory range is "<= 2.0.2", first_patched_version:
+    // null) - a version bump can never fix this, so audit-ci would flag it
+    // forever otherwise.
+    //
+    // Pulled in transitively by pptxgenjs, but unreachable in this app:
+    // pptxgenjs's compiled dist code never actually calls image-size - it
+    // calls `require('sizeof')` instead (a stale/renamed reference to a
+    // package that isn't even installed), so the vulnerable parser code
+    // path cannot execute here. Verified by grepping pptxgenjs's dist for
+    // "image-size" (zero matches) vs "sizeof(" (the real call site).
+    "GHSA-w3rx-r6r6-pgpr",
+    "GHSA-5p2g-fcmc-qvqq"
+  ]
+}
