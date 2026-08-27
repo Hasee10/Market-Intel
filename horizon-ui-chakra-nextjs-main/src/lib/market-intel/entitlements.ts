@@ -58,14 +58,25 @@ const FEATURE_MIN_TIER: Record<Feature, PlanTier> = {
   peer_benchmarks: 'premium',
 };
 
-// No dev escape hatch. BYPASS_ENTITLEMENTS=1 used to unlock every gate, which
-// meant local development never once exercised the free-tier experience -
-// the thing every new seller actually sees. To view paid/premium screens,
-// set your own `sellers.plan_tier` in Supabase, which is also how a real
-// upgrade happens today (there is no checkout yet).
-export function hasFeature(planTier: string, feature: Feature): boolean {
+// DEMO MODE: every feature is unlocked for every seller, regardless of
+// sellers.plan_tier, so the full app (including paid/premium screens) can be
+// walked through live without seeding plan_tier rows in Supabase first.
+// There is no billing provider wired up yet (see header comment), so this
+// does not bypass any real payment - it only skips the manual-tier-setting
+// step. The real per-feature tier logic below is untouched and still fully
+// tested (see tierMeetsRequirement's tests in entitlements.test.ts) - flip
+// DEMO_ALL_FEATURES_UNLOCKED back to false to restore real gating once a
+// checkout flow exists and paid tiers need to mean something again.
+const DEMO_ALL_FEATURES_UNLOCKED = true;
+
+export function tierMeetsRequirement(planTier: string, feature: Feature): boolean {
   const tier = (planTier in TIER_RANK ? planTier : 'free') as PlanTier;
   return TIER_RANK[tier] >= TIER_RANK[FEATURE_MIN_TIER[feature]];
+}
+
+export function hasFeature(planTier: string, feature: Feature): boolean {
+  if (DEMO_ALL_FEATURES_UNLOCKED) return true;
+  return tierMeetsRequirement(planTier, feature);
 }
 
 export function minTierFor(feature: Feature): PlanTier {
