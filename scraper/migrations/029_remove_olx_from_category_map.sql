@@ -1,0 +1,24 @@
+-- OLX Pakistan was fully disabled as a scraper source on 2026-08-03
+-- (30b00f8, CLASSIFIED_SOURCES = [] in scraper/src/sources/index.ts) after
+-- standing IP-level 429 blocks from GitHub Actions runner IPs. Its scraper
+-- file was deleted and market_products has zero OLX rows as a result - but
+-- the 18 market_category_map rows created that same day (2026-08-03) were
+-- never cleaned up, so every seller's Market page kept counting OLX as a
+-- "covered platform" for their category even though it contributes zero
+-- actual listings. This is what a screenshot review on 2026-08-28 caught:
+-- "994 listings across 2 platforms... Daraz, OLX Pakistan" for a seller
+-- whose OLX coverage was, in reality, nothing.
+--
+-- Applied live via the Supabase REST API on 2026-08-28 (with explicit user
+-- authorization for that one-time service-role write) - this migration
+-- file exists to document the change in repo history, matching this
+-- project's convention that every schema/data correction gets a numbered
+-- migration, not to be re-run against the same database.
+--
+-- If OLX is ever re-enabled with a working proxy (see memory.md's Ask 2
+-- tier (b) notes), re-running the taxonomy sync job that originally
+-- populated market_category_map is the right way to re-add its rows -
+-- hand-inserting them here would drift from whatever categories OLX
+-- actually supports today.
+delete from market_category_map
+where platform_id = (select id from market_platforms where slug = 'olx');
