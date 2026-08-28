@@ -117,10 +117,10 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
         <DrawerHeader>Competitor listings{product ? ` — ${product.title}` : ''}</DrawerHeader>
         <DrawerBody>
           <Text fontSize="sm" color={mutedColor} mb="16px">
-            Listings below are in the same category and within 15% of your price - the price range that actually
-            competes for the same buyer, regardless of whether the product name matches yours. Daraz listings are
-            other marketplace sellers; listings from other platforms are individual retailers stocking a
-            comparable item, not competing sellers on the same marketplace.
+            Listings below are in the same category and closely match this product&apos;s title - price isn&apos;t
+            used to decide what counts as a match, only shown here for comparison. Daraz listings are other marketplace
+            sellers; listings from other platforms are individual retailers stocking a comparable item, not
+            competing sellers on the same marketplace.
           </Text>
 
           {loading && (

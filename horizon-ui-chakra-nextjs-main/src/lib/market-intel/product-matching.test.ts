@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Smoke test for findCompetitorsForProduct's price-bracket matching model
-// (2026-08-28): same category + seller price +/-15% is the hard filter,
-// title similarity is a ranking signal only, never an inclusion filter.
+// Smoke test for findCompetitorsForProduct's matching model (revised
+// 2026-08-28): title similarity (Jaccard, MIN_COMPETITOR_CONFIDENCE) is the
+// hard filter deciding inclusion; price is never a filter, only a sort
+// tiebreak. Results are then selected round-robin across platforms so one
+// platform's denser candidate pool can't crowd out another's.
 
 const marketRows: any[] = [];
 const upsertedMatchRows: any[] = [];
@@ -95,54 +97,33 @@ beforeEach(() => {
 });
 
 describe('findCompetitorsForProduct', () => {
-  it('excludes candidates outside the +/-15% price bracket even with a matching title', async () => {
-    marketRows.push(
-      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'in-bracket' }),
-      marketRow({ title: 'RTX 4070 GPU', price: 300000, url: 'way-too-expensive' }),
-    );
-
-    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
-
-    expect(result).toHaveLength(1);
-    expect(result[0].matchedUrl).toBe('in-bracket');
-  });
-
-  it('includes a differently-titled product that falls in the same price bracket (the GPU case)', async () => {
-    marketRows.push(marketRow({ title: 'Completely Different Brand Graphics Card', price: 108000, url: 'diff-name-same-price' }));
-
-    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
-
-    expect(result).toHaveLength(1);
-    expect(result[0].matchedUrl).toBe('diff-name-same-price');
-  });
-
-  it('ranks higher title-similarity matches first within the bracket', async () => {
-    marketRows.push(
-      marketRow({ title: 'Totally Unrelated Item Name', price: 105000, url: 'low-similarity' }),
-      marketRow({ title: 'RTX 4070 GPU', price: 95000, url: 'high-similarity' }),
-    );
-
-    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
-
-    expect(result[0].matchedUrl).toBe('high-similarity');
-  });
-
-  it('excludes a candidate with no price when a bracket exists (cannot judge it)', async () => {
-    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: null, url: 'no-price' }));
+  it('excludes a candidate below the confidence threshold even at an identical price', async () => {
+    marketRows.push(marketRow({ title: 'Completely Unrelated Item Name', price: 100000, url: 'no-title-overlap' }));
 
     const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
 
     expect(result).toHaveLength(0);
   });
 
-  it('falls back to no price filter when the seller product has no sell_price yet', async () => {
-    sellerProductRow = { id: 'sp1', title: 'RTX 4070 GPU', sell_price: null, currency: 'PKR' };
-    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 999999, url: 'any-price-allowed' }));
+  it('includes a candidate with a very different price when title confidence is high', async () => {
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 999999, url: 'far-off-price' }));
 
     const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
 
     expect(result).toHaveLength(1);
-    expect(result[0].matchedUrl).toBe('any-price-allowed');
+    expect(result[0].matchedUrl).toBe('far-off-price');
+  });
+
+  it('ranks higher title-similarity matches first', async () => {
+    marketRows.push(
+      marketRow({ title: 'RTX 4070 GPU Variant', price: 95000, url: 'lower-similarity' }),
+      marketRow({ title: 'RTX 4070 GPU', price: 105000, url: 'exact-title' }),
+    );
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result).toHaveLength(2);
+    expect(result[0].matchedUrl).toBe('exact-title');
   });
 
   it('passes rating/ratingCount/soldCount through as null, never coerced to 0', async () => {
@@ -155,7 +136,7 @@ describe('findCompetitorsForProduct', () => {
   });
 
   it('persists the top matches into seller_product_competitor_matches, keyed by seller+market product', async () => {
-    marketRows.push(marketRow({ id: 'mp-target', title: 'RTX 4070 GPU', price: 100000, url: 'in-bracket' }));
+    marketRows.push(marketRow({ id: 'mp-target', title: 'RTX 4070 GPU', price: 100000, url: 'match' }));
 
     await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
 
@@ -170,11 +151,12 @@ describe('findCompetitorsForProduct', () => {
     expect(upsertedMatchRows[0].first_matched_at).toBeUndefined();
   });
 
-  it('does not persist anything when no candidates are in bracket', async () => {
-    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 300000, url: 'way-too-expensive' }));
+  it('returns an empty array and persists nothing when nothing meets the confidence threshold', async () => {
+    marketRows.push(marketRow({ title: 'Totally Unrelated Product', price: 100000, url: 'no-match' }));
 
-    await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
 
+    expect(result).toHaveLength(0);
     expect(upsertedMatchRows).toHaveLength(0);
   });
 
@@ -186,5 +168,21 @@ describe('findCompetitorsForProduct', () => {
     const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus', 'PKR', 5);
 
     expect(result).toHaveLength(5);
+  });
+
+  it('round-robins across platforms so a dense platform cannot crowd out a smaller one', async () => {
+    for (let i = 0; i < 10; i++) {
+      marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000, url: `shopperspk-${i}`, market_platforms: { name: 'ShoppersPK' } }));
+    }
+    marketRows.push(
+      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-1', market_platforms: { name: 'Daraz' } }),
+      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-2', market_platforms: { name: 'Daraz' } }),
+    );
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus', 'PKR', 5);
+
+    const platforms = result.map((r) => r.matchedPlatformName);
+    expect(platforms).toContain('Daraz');
+    expect(platforms.filter((p) => p === 'Daraz')).toHaveLength(2);
   });
 });

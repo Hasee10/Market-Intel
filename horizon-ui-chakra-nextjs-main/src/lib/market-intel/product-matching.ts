@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
-import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/similarity';
+import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
 // titles. market_product_matches (009_product_matches.sql) already models
@@ -121,14 +121,28 @@ export async function findTopProductMatches(
 // question (competitor listings for one product a seller is looking at) and
 // the two are allowed to diverge independently later.
 //
-// Matching model (confirmed with product owner 2026-08-28, using a GPU
-// example): a $300 and a $1500 GPU are not competitors even if their titles
-// overlap, and two different GPU models at a similar price ARE competitors
-// even if their titles don't overlap at all. So price bracket (same
-// category, seller's price +/-PRICE_BRACKET_PCT) is the hard filter that
-// decides inclusion; title similarity is only a ranking signal within that
-// bracket, not a filter - it surfaces near-identical listings first without
-// excluding a genuinely comparable but differently-named product.
+// Matching model (revised 2026-08-28, after the price-bracket-only model
+// below produced wrong matches in practice - a seller's diaper listing was
+// being shown against baby toys/rattles/plates just because they shared a
+// category and a price band): title similarity (Jaccard, MIN_COMPETITOR_
+// CONFIDENCE) is now the hard filter deciding inclusion - price is no
+// longer a filter at all, only a sort tiebreak among equally-confident
+// matches. Results are then selected round-robin across platforms so one
+// platform's denser candidate pool (e.g. ShoppersPK/Naheed vs Daraz in
+// toys-and-baby, ~11x the row count) can't crowd out every other platform's
+// genuine matches. Word-overlap similarity has a real ceiling for
+// cross-brand matches of the same product type - see MIN_COMPETITOR_
+// CONFIDENCE's comment in similarity.ts for why the threshold is set where
+// it is and what that trade-off means.
+//
+// (Superseded decision, kept for history: this previously used same-
+// category + seller's price +/-15% as the hard filter, with title
+// similarity as ranking-only - reasoned via a GPU example where two
+// differently-named GPUs at a similar price were judged more likely
+// competitors than a same-named GPU at 3x the price. That still holds for
+// genuinely fungible commodities, but doesn't generalize to categories like
+// toys-and-baby where price bands are shared by completely unrelated
+// products.)
 //
 // rating/ratingCount/soldCount are populated for Daraz today (a real
 // multi-seller marketplace) and may be null everywhere else - never coerced
@@ -159,7 +173,6 @@ export type CompetitorListing = {
 // closest matches to still surface without returning the whole candidate
 // pool.
 const MAX_COMPETITOR_MATCHES = 15;
-const PRICE_BRACKET_PCT = 0.15;
 
 export async function findCompetitorsForProduct(
   sellerId: string,
@@ -198,10 +211,6 @@ export async function findCompetitorsForProduct(
     sellerProductRes.data.sell_price != null
       ? convertCurrency(Number(sellerProductRes.data.sell_price), sellerProductRes.data.currency ?? 'PKR', reportingCurrency, fxRates)
       : null;
-  // No listed sell_price yet (still being set up) - fall back to
-  // category-only, title-ranked results rather than returning nothing.
-  const bracketMin = sellerPrice != null ? sellerPrice * (1 - PRICE_BRACKET_PCT) : null;
-  const bracketMax = sellerPrice != null ? sellerPrice * (1 + PRICE_BRACKET_PCT) : null;
 
   const scored = marketProductsRes.data
     .map((row) => {
@@ -221,24 +230,58 @@ export async function findCompetitorsForProduct(
         priceDiff: sellerPrice != null && matchedPrice != null ? Math.abs(matchedPrice - sellerPrice) : null,
       };
     })
-    .filter((listing) => {
-      if (bracketMin == null || bracketMax == null) return true;
-      // A candidate with no price can't be judged against the bracket -
-      // exclude it rather than guessing it belongs.
-      if (listing.matchedPrice == null) return false;
-      return listing.matchedPrice >= bracketMin && listing.matchedPrice <= bracketMax;
-    })
+    // Title similarity is the only hard filter now - price is never used to
+    // exclude a candidate, only to break ties below among equally-confident
+    // matches (see the header comment above for why this replaced the old
+    // price-bracket filter).
+    .filter((listing) => listing.confidence >= MIN_COMPETITOR_CONFIDENCE)
     .sort((a, b) => {
       if (b.confidence !== a.confidence) return b.confidence - a.confidence;
       if (a.priceDiff == null || b.priceDiff == null) return 0;
       return a.priceDiff - b.priceDiff;
     });
 
-  const top = scored.slice(0, limit);
+  const top = selectDiverseTopN(scored, limit);
 
   await persistCompetitorMatches(supabase, sellerId, sellerProductId, top);
 
   return top.map(({ priceDiff, marketProductId, ...listing }) => listing);
+}
+
+// Round-robins across platforms instead of a flat top-N slice, so a single
+// platform's denser candidate pool (e.g. ShoppersPK/Naheed vs Daraz in
+// toys-and-baby, ~11x the row count) can't crowd out every other platform's
+// closest matches. `sorted` must already be confidence-desc (then price-diff
+// asc) - grouping by platform preserves that order per platform, so taking
+// the front of each platform's queue in turn is always "best remaining for
+// that platform." Once a platform's queue empties it's skipped, so the
+// remaining slots naturally fill from whichever platforms still have
+// candidates - no separate fallback pass needed.
+function selectDiverseTopN<T extends { matchedPlatformName: string | null }>(sorted: T[], limit: number): T[] {
+  const byPlatform = new Map<string, T[]>();
+  for (const item of sorted) {
+    const key = item.matchedPlatformName ?? '__unknown__';
+    const queue = byPlatform.get(key);
+    if (queue) queue.push(item);
+    else byPlatform.set(key, [item]);
+  }
+
+  const result: T[] = [];
+  const platforms = [...byPlatform.keys()];
+  let tookAny = true;
+  while (result.length < limit && tookAny) {
+    tookAny = false;
+    for (const platform of platforms) {
+      if (result.length >= limit) break;
+      const queue = byPlatform.get(platform)!;
+      const next = queue.shift();
+      if (next) {
+        result.push(next);
+        tookAny = true;
+      }
+    }
+  }
+  return result;
 }
 
 // Best-effort: upserts the seller's currently-viewed top matches so a
