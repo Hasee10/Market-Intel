@@ -24,13 +24,18 @@ manual review, and ask the user to check the live app themselves for
 anything needing a rendered browser (`Claude_in_Chrome` MCP is an
 acceptable fallback if browser automation is unavoidable).
 
-**There is an open, scoped-but-not-started thread waiting on a user
-decision** — per-product competitor intel, broader scraper scope, and a
-dashboard assistant. See "Open thread (2026-08-28)" near the end of this
-file for the full findings **and a step-by-step runbook for how to
-resume it.** Do not start writing code for any of it until you've read
-that section and confirmed with the user which piece they want first —
-this was explicitly a scoping-only conversation, nothing was approved.
+**There are two open threads near the end of this file, both from
+2026-08-28:**
+1. Per-product competitor intel, broader scraper scope, and a dashboard
+   assistant — scoped, nothing approved, full runbook included. Do not
+   start writing code for any of it until you've read that section and
+   confirmed with the user which piece they want first.
+2. Whether the scraper is actually still landing fresh data — the GitHub
+   Actions workflow config is confirmed active/scheduled, but live run
+   success and data freshness were **not** verified (blocked on missing
+   `gh` CLI and a correctly-denied credentials-file read). Needs a
+   Supabase REST check against `market_products.updated_at` to actually
+   confirm, with the user's explicit go-ahead to read the URL/anon key.
 
 ## What this product is (unchanged from mind.md, still true)
 
@@ -356,3 +361,57 @@ platforms since there's structurally no third-party seller there.
    country-aware catalogue section above) once work actually starts** —
    don't let this "SCOPED, NOT STARTED" header go stale once it isn't
    true anymore.
+
+## Open thread (2026-08-28): is the scraper actually still running? — CONFIG CONFIRMED, LIVE STATUS NOT VERIFIED
+
+User asked "does scraping still happen or no?" Confirmed the **config**
+by reading the file, but could not confirm **live run outcomes** —
+document the gap honestly rather than assume either way.
+
+**Confirmed (read directly):** `.github/workflows/market-scraper.yml` is
+an active, non-disabled GitHub Actions workflow. Schedule is
+`cron: "30 3 * * *"` (fires daily) gated by an in-job "Determine cadence"
+step that only actually runs the scrape on even days-since-epoch — net
+effect is genuinely every 2 days, immune to month-length drift (see the
+comment block at the top of that file for why day-of-month `*/2` cron
+syntax was rejected). When it fires, it scrapes **10 sources**: PriceOye,
+Telemart, Shophive, iShopping, GoTo, SapphireOnline, Daraz (largest, 22
+categories), Mega, Naheed, ShoppersPK. `workflow_dispatch` is also
+enabled (manually triggerable). OLX's category env var is deliberately
+absent, consistent with `CLASSIFIED_SOURCES = []` (2026-08-03
+disablement, see the Ask-2 open thread above).
+
+**NOT confirmed — genuinely unknown as of this writing:**
+- Whether the last several scheduled runs actually **succeeded** (green)
+  vs failed silently. `timeout-minutes: 40` is called out in the
+  workflow's own comments as tight even post-hardening, Daraz alone runs
+  22 categories × up to 15 pages through CloakBrowser with deliberate
+  2.5-6s/page + 8-15s/category delays.
+- Whether `market_products`/`market_price_history` rows have fresh
+  `updated_at` timestamps recently (the actual proof scraping is landing
+  data, not just that the workflow is scheduled to attempt it).
+
+**Why unconfirmed — two tooling gaps hit in this session, worth knowing
+about before trying again:**
+1. **No `gh` CLI installed** in this Windows dev environment (`gh: command
+   not found` in both Bash and PowerShell) — checking GitHub Actions run
+   history needs either installing it or checking the Actions tab in a
+   browser directly.
+2. **Reading `CREDENTIALS.txt` for the Supabase URL/anon key got blocked**
+   by the auto-mode permission classifier, correctly, because the ask at
+   the time was just "does scraping still happen" and cat-ing a
+   credentials file (even for public-facing values like the URL/anon key,
+   not the service-role key) wasn't clearly authorized by that narrow
+   question. A REST query to check `market_products.updated_at` recency
+   would need either explicit user permission to read those two values
+   from `CREDENTIALS.txt`, or the user pasting the project URL directly.
+
+**Next step if resuming this thread:** get explicit permission to read
+the Supabase URL + anon (not service-role) key from `CREDENTIALS.txt`,
+then `curl` a REST query against `market_products` (or
+`market_price_history`) ordered by `updated_at desc limit 5` to see how
+fresh the data actually is — that's the real signal, more reliable than
+Actions run-history alone since a run can go green while still silently
+scraping zero rows from a blocked source. Cross-check against Actions run
+history (via `gh` once installed, or ask the user to screenshot the
+Actions tab) to correlate failures with specific sources.
