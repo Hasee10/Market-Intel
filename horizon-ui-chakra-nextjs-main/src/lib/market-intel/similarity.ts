@@ -22,13 +22,29 @@ export const MIN_CONFIDENCE = 0.3;
 // built here (see this file's header comment).
 export const MIN_COMPETITOR_CONFIDENCE = 0.2;
 
+// Naive singularization - not a real stemmer, just enough to stop a plain
+// plural/singular mismatch from zeroing out a real match now that title
+// confidence is a hard filter (MIN_COMPETITOR_CONFIDENCE): a seller titling
+// their product "Laptops" tokenized to a completely different word than a
+// competitor listing titled "Laptop", so they shared zero tokens and never
+// matched despite being the same product. Same MVP-level string-comparison
+// philosophy as the rest of this file - a few common-suffix rules, not a
+// dictionary or a real stemming library.
+function singularize(token: string): string {
+  if (token.length > 4 && token.endsWith('ies')) return token.slice(0, -3) + 'y';
+  if (token.length > 4 && token.endsWith('es')) return token.slice(0, -2);
+  if (token.length > 3 && token.endsWith('s') && !token.endsWith('ss')) return token.slice(0, -1);
+  return token;
+}
+
 export function tokenize(title: string): Set<string> {
   return new Set(
     title
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, ' ')
       .split(/\s+/)
-      .filter((token) => token.length > 1 && !STOPWORDS.has(token)),
+      .filter((token) => token.length > 1 && !STOPWORDS.has(token))
+      .map(singularize),
   );
 }
 
