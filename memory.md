@@ -593,3 +593,87 @@ Actions run-history alone since a run can go green while still silently
 scraping zero rows from a blocked source. Cross-check against Actions run
 history (via `gh` once installed, or ask the user to screenshot the
 Actions tab) to correlate failures with specific sources.
+
+## Fixed (2026-08-28): platform imbalance in Competitors matches
+
+`MAX_COMPETITOR_MATCHES` in
+`horizon-ui-chakra-nextjs-main/src/lib/market-intel/product-matching.ts`
+raised **5 → 15**. At 5, a category with one platform's candidate pool
+much denser than another's (e.g. toys-and-baby: ShoppersPK/Naheed ~1319
+active rows vs Daraz ~120) let the dense platform's matches crowd out
+every other platform's listings from a seller's competitor view entirely
+— not a bug in the matching logic itself, just too small a cutoff for
+the real row-count skew across platforms. 15 gives a smaller platform's
+closest matches room to surface without returning the whole candidate
+pool. Verified: `tsc --noEmit` clean,
+`vitest run src/lib/market-intel/product-matching.test.ts` 9/9. Commit
+`2abfca5`.
+
+## Done: Ask 3 — seller-aware dashboard assistant (2026-08-28, same session as the above fix)
+
+User said "raise the competitor match limit to fix the imbalance and
+proceed with the next phase please," then when asked to choose between
+Ask 2 (scraper broadening) and Ask 3 (assistant) for "the next phase,"
+said **"both or 1 by 1 as you deem better"** — delegating sequencing.
+Assistant was picked first over scraper work specifically because it
+carries no production/rate-limit risk, unlike anything touching OLX or
+scrape volume (see the Ask-2 cautionary precedent above). **Ask 2 is
+still open, not started.**
+
+Went through Plan Mode (Explore → Plan → verified every referenced
+function/column against real code → approved) since it touches several
+new files. Shipped, code-complete, all tests green (90/90, no
+regressions), committed `bf9ff18` — **not yet browser-verified**, same
+caveat as Ask 1 below (this session's standing instruction was "dont run
+previews idiot" — no `mcp__Claude_Preview__*`/browser-automation tool was
+or should be used to check it; the user needs to check it themselves).
+
+What it is: a floating chat widget, bottom-left on every authenticated
+dashboard page (mounted once in `AdminShell.tsx`, not per-route), posting
+to a new session-authenticated `/api/assistant/seller` route — distinct
+from the pre-existing public, unauthenticated marketing-site widget/route
+that Ask 3's original scoping note (above) correctly identified as not
+reusable as-is. Reuses the Groq calling *pattern* (`callGroqChat` from
+`src/lib/ai/groq-client.ts`, Llama 3.1-8b-instant) but adds a new
+seller-grounded context layer.
+
+Key design decisions:
+- **Context is fresh-per-request, not cached.** No caching layer at all
+  — deliberately, to avoid staleness bugs, at the cost of a Groq call
+  plus a few DB reads on every message. Fine at current scale; revisit if
+  latency or Groq spend becomes a problem.
+- **Context is capped at 4000 chars**, assembled priority-ordered
+  (seller's own products first, then market scope, competitor landscape,
+  watchlist, then — only if the latest message plausibly names one of the
+  seller's own products via Jaccard token-overlap from
+  `src/lib/market-intel/similarity.ts` — that product's own competitor
+  matches) and truncated from the end if it would exceed the cap, so the
+  most load-bearing sections survive.
+- **Advisory-only is enforced mechanically, not just by prompt wording.**
+  The code path only ever calls read functions; there is no tool/function
+  calling wired into the Groq request, so the model has no mechanism to
+  invoke a mutating endpoint no matter what a user or a prompt-injection
+  attempt asks it to do. This directly delivers the "ship it
+  advisory/read-only first" recommendation from the original scoping note
+  above.
+- **No persistence.** Conversation history is client-side only for now
+  (matches the marketing widget's existing behavior) — the request
+  contract already sends full history per call, so adding a persisted-
+  history table later is additive, not a breaking change.
+- Rate-limited per seller (20 req/min via the existing generic
+  `isRateLimited` helper, keyed on `seller.id` not IP).
+- New files: `src/lib/ai/seller-assistant-context.ts`,
+  `src/lib/ai/seller-assistant.ts`,
+  `src/app/api/assistant/seller/route.ts`,
+  `src/components/marketintel/SellerAssistantWidget.tsx`, plus a
+  `.test.ts` for each of the first three (12 new tests total). Modified:
+  `AdminShell.tsx` (mounts the widget).
+- Explicitly out of scope this round (per the approved plan): streaming
+  responses, persisted/exportable chat history, proactive insights (the
+  assistant only responds, never initiates), and any tool-calling.
+
+**Next step if resuming either thread:** Ask 2 (scraper scope
+broadening) is the one remaining unstarted item from the original
+3-item scoping — see its entry above and the runbook below, which still
+applies (re-verify OLX-disabled status and design a rate budget before
+any scraper-volume change).
