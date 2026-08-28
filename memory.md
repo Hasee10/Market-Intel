@@ -332,10 +332,11 @@ the design:
    market_product_id, confidence, first_matched_at, last_confirmed_at;
    unique on seller_product_id+market_product_id), RLS via the same
    `seller_id in (select id from sellers where user_id = auth.uid())`
-   owner-all policy used everywhere else. **Not yet applied to the
-   Supabase project** — per this repo's convention, migrations are applied
-   manually via the SQL Editor; ask the user before running it (or use the
-   Supabase MCP `apply_migration` tool with explicit permission first).
+   owner-all policy used everywhere else. **Applied by the user via the
+   Supabase SQL Editor on 2026-08-28 and confirmed live** — verified by
+   direct REST curl against the anon key (table exists, RLS correctly
+   returns `[]` for an unauthenticated request rather than a 42P01
+   "relation does not exist" error).
 2. `product-matching.ts` — `findCompetitorsForProduct()` now also fetches
    `market_products.id`, and calls a new private `persistCompetitorMatches()`
    after computing the top-N, which upserts them into the new table.
@@ -348,28 +349,54 @@ the design:
    and no `first_matched_at` override, and persists nothing when nothing is
    in-bracket.
 
-**No UI changes this round** — nothing to show yet since there's no history
-until sellers start opening drawers post-migration. A "tracked competitors"
-view (price sparkline, active/decommissioned badge) is the natural next
-step once the table has real data, but was explicitly deferred.
+**A "tracked competitors" view (price sparkline, active/decommissioned
+badge) is the natural next step now that the table has real data
+accumulating** — not built yet, no ask for it yet either.
 
-**Migration 028 is written but NOT applied to the live Supabase project as
-of this writing** — until it's applied, `persistCompetitorMatches()` will
-fail its upsert on every real request (harmlessly swallowed, per the
-best-effort design above, but no history will actually accumulate). Apply
-it before relying on this feature.
+**Follow-up, same day: visual polish + "why so few results" +
+missing-assistant check.** After the migration went live and the user
+confirmed (via screenshot) the drawer opens and works in production, they
+asked for three things in one message: (a) make `CompetitorsDrawer.tsx`
+visually better, (b) explain why so few competitor listings show up (a
+ShoppersPK-heavy result set with a mismatched "Eyebrow Trimmer" title and
+a visible un-decoded `&amp;` bug), (c) whether the dashboard-embedded
+seller-aware assistant ("Ask 3" below) exists yet.
+- (a) shipped: `CompetitorsDrawer.tsx` now decodes HTML entities via a
+  detached-textarea trick (browser's own parser, only `.value` ever read
+  back — never re-rendered as HTML) before displaying titles, adds a
+  platform `Badge`, an external-link icon on to each listing link, a star
+  icon next to ratings, a full-title `Tooltip` for the 2-line-truncated
+  title, and right-aligned sold-count formatting. `tsc --noEmit` clean,
+  `vitest` still 78/78. Committed as `e11d436`.
+- (b) diagnosed but not yet changed: `MAX_COMPETITOR_MATCHES = 5` in
+  `product-matching.ts` truncates the ranked list hard. Category row
+  counts confirmed live via REST: Daraz has ~120 active rows in
+  `toys-games`/`mother-baby`; ShoppersPK+Naheed combined have ~1319 active
+  rows in `baby`/`kids-babies` for the same seller-facing
+  `toys-and-baby` category. The underlying data is *not* scarce — the
+  visible ShoppersPK-heavy, thin result set is the cap plus the
+  price-bracket+confidence sort naturally favoring whichever platform has
+  the densest candidate pool in-bracket, not a data gap. Options if the
+  user wants a fix: raise the limit, or diversify results across
+  platforms (e.g. top-N per platform instead of one global top-5). Not
+  actioned yet — needs a decision from the user.
+- (c) answered directly: the "AI assistant at the bottom" does not exist.
+  It's Ask 3 below (dashboard-embedded seller-aware assistant) — scoped in
+  this same thread, never implemented. Would need its own Plan Mode
+  session (new schema/multi-file effort) if prioritized.
 
 **Verified:** `tsc --noEmit` clean, `vitest` 78/78 pass (69 original + 7
 price-bracket + 2 persistence, no regressions). Diff matches the approved
 plan's file list exactly (checked via `git status`/`git diff --stat`),
 plus the price-bracket revision reviewed and confirmed by the user.
+Migration applied and confirmed live (see above). CompetitorsDrawer visual
+polish committed (`e11d436`).
 
-**Not verified — genuinely outstanding:** no browser walkthrough (does the
-drawer actually open, does the table render correctly, does the "no
-matches" empty state look right). Per the hard Claude_Preview ban, this
-needs the user to check in their own browser. **Not committed or pushed
-yet either** — working tree has these changes uncommitted as of this
-writing; awaiting explicit go-ahead to commit.
+**Not verified — genuinely outstanding:** no browser walkthrough of the
+*new* visual polish specifically (drawer-opens-at-all was already
+confirmed by the user via screenshot before this polish pass). Per the
+hard Claude_Preview ban, this needs the user to check in their own
+browser/deployed build.
 
 ## Open thread (2026-08-28): per-product competitor intel + broader scraper scope + dashboard assistant — SCOPED, NOT STARTED
 
