@@ -177,7 +177,18 @@ export type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  // Populated only for products a separate review-scraper job has already
+  // visited (currently PriceOye only - see migrations/031). reviewCount is
+  // the true total, not just topReviews.length; 0 means "none scraped yet
+  // or genuinely zero," never distinguished further at this layer.
+  reviewCount: number;
+  topReviews: { author: string | null; rating: number | null; text: string }[];
 };
+
+// Capped small on purpose - this is a "does this listing have real reviews
+// worth glancing at" signal in the drawer, not a review-browsing feature
+// (explicitly descoped - see migrations/031's header comment).
+const MAX_REVIEW_SNIPPETS = 2;
 
 // Raised from 5 (2026-08-28): at 5, categories with a much denser in-bracket
 // candidate pool on one platform (e.g. ShoppersPK/Naheed in toys-and-baby,
@@ -258,7 +269,52 @@ export async function findCompetitorsForProduct(
 
   await persistCompetitorMatches(supabase, sellerId, sellerProductId, top);
 
-  return top.map(({ priceDiff, marketProductId, ...listing }) => listing);
+  const reviewsByProduct = await fetchReviewSnippets(
+    supabase,
+    top.map((t) => t.marketProductId),
+  );
+
+  return top.map(({ priceDiff, marketProductId, ...listing }) => ({
+    ...listing,
+    reviewCount: reviewsByProduct.get(marketProductId)?.count ?? 0,
+    topReviews: reviewsByProduct.get(marketProductId)?.snippets ?? [],
+  }));
+}
+
+// Second query rather than a join on the main market_products select above -
+// most candidates in `scored` never make it into `top`, so fetching reviews
+// only for the final, already-diversity-selected N keeps this cheap. Missing
+// entirely for a product just means "not scraped yet" (see migrations/031),
+// same fail-soft posture as everything else in this function - a review
+// query error never breaks the listings response.
+async function fetchReviewSnippets(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  marketProductIds: string[],
+): Promise<Map<string, { count: number; snippets: CompetitorListing['topReviews'] }>> {
+  const result = new Map<string, { count: number; snippets: CompetitorListing['topReviews'] }>();
+  if (marketProductIds.length === 0) return result;
+
+  const { data, error } = await supabase
+    .from('market_product_reviews')
+    .select('product_id, author, rating, review_text')
+    .in('product_id', marketProductIds)
+    .order('reviewed_at', { ascending: false });
+
+  if (error || !data) return result;
+
+  for (const row of data) {
+    const entry = result.get(row.product_id) ?? { count: 0, snippets: [] };
+    entry.count += 1;
+    if (entry.snippets.length < MAX_REVIEW_SNIPPETS) {
+      entry.snippets.push({
+        author: row.author,
+        rating: row.rating != null ? Number(row.rating) : null,
+        text: row.review_text,
+      });
+    }
+    result.set(row.product_id, entry);
+  }
+  return result;
 }
 
 // Round-robins across platforms instead of a flat top-N slice, so a single

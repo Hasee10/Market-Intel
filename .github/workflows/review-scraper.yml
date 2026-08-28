@@ -1,0 +1,58 @@
+name: Review Scraper
+
+# Separate job/schedule from market-scraper.yml on purpose: that workflow's
+# 40-minute budget is already dominated by Daraz's 22-category listing walk
+# (see its own comments), and this job adds a genuinely new kind of request -
+# one extra fetch per PRODUCT (not per category) to get review text, which
+# doesn't exist in any listing-page response. Running daily, since review
+# text changes far slower than price/stock. Only PriceOye is scraped for
+# reviews right now - see scraper/migrations/031_market_product_reviews.sql
+# for why (Daraz's reviews load via a signed internal API a plain fetch
+# can't reach; other sources have no reviews field in their structured
+# endpoints at all).
+#
+# REVIEW_SCRAPE_BATCH_SIZE bounds how many products get (re-)scraped per run
+# - full-catalog coverage builds up incrementally across daily runs instead
+# of one large spike, the same failure mode that got OLX IP-blocked (see
+# market-scraper.yml's history). Overridable per manual run via
+# workflow_dispatch for a smaller first real-world test before trusting the
+# steady-state default.
+on:
+  schedule:
+    - cron: "15 4 * * *"
+  workflow_dispatch:
+    inputs:
+      batch_size:
+        description: "Products to process this run (overrides the default - use a small number for a first test)"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  scrape-reviews:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: scraper/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --prefer-offline
+
+      - name: Run review scraper
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SCRAPER_PROXY: ${{ secrets.SCRAPER_PROXY }}
+          REVIEW_SCRAPE_BATCH_SIZE: ${{ github.event.inputs.batch_size }}
+        run: npm run scrape-reviews

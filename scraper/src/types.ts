@@ -23,6 +23,18 @@ export interface RawProduct {
   soldCount?: number;
 }
 
+// One review scraped from a product's own detail page - see
+// scraper/src/reviews/. Kept separate from RawProduct (which comes from the
+// category-listing scrape) since fetching reviews is a distinct, separately-
+// scheduled job that visits one product page at a time, not part of the
+// listing pipeline.
+export interface RawReview {
+  author?: string;
+  rating?: number;
+  text: string;
+  reviewedAt?: string;
+}
+
 export interface SourceResult {
   platformSlug: string;
   products: RawProduct[];

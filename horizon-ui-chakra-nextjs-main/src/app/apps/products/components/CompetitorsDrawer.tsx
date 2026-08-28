@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import {
   Badge,
@@ -26,7 +26,7 @@ import {
   Tr,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { MdOutlineOpenInNew, MdOutlineStar } from 'react-icons/md';
+import { MdOutlineOpenInNew, MdOutlineStar, MdExpandMore, MdExpandLess } from 'react-icons/md';
 
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
@@ -40,6 +40,8 @@ type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  reviewCount: number;
+  topReviews: { author: string | null; rating: number | null; text: string }[];
 };
 
 type CompetitorsDrawerProps = {
@@ -75,9 +77,20 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
   const [loading, setLoading] = useState(false);
   const [listings, setListings] = useState<CompetitorListing[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
   const rowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
   const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
+  const reviewBg = useColorModeValue('gray.50', 'whiteAlpha.50');
+
+  const toggleExpanded = (i: number) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!isOpen || !product) return;
@@ -157,13 +170,16 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                         <span>Sold</span>
                       </Tooltip>
                     </Th>
+                    <Th>Reviews</Th>
                   </Tr>
                 </Thead>
                 <Tbody>
                   {listings.map((listing, i) => {
                     const title = decodeHtmlEntities(listing.matchedTitle);
+                    const isExpanded = expandedRows.has(i);
                     return (
-                      <Tr key={`${listing.matchedUrl}-${i}`} _hover={{ bg: rowHoverBg }}>
+                      <Fragment key={`${listing.matchedUrl}-${i}`}>
+                      <Tr _hover={{ bg: rowHoverBg }}>
                         <Td maxW="240px">
                           <Tooltip label={title} openDelay={400}>
                             <Link
@@ -208,7 +224,53 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                         <Td isNumeric fontSize="sm" color={mutedColor}>
                           {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
                         </Td>
+                        <Td fontSize="sm">
+                          {listing.reviewCount > 0 ? (
+                            <Flex
+                              as="button"
+                              align="center"
+                              gap="2px"
+                              color="brand.500"
+                              cursor="pointer"
+                              onClick={() => toggleExpanded(i)}
+                            >
+                              <Text as="span">{listing.reviewCount} review{listing.reviewCount === 1 ? '' : 's'}</Text>
+                              <Icon as={isExpanded ? MdExpandLess : MdExpandMore} boxSize="14px" />
+                            </Flex>
+                          ) : (
+                            <Text as="span" color={mutedColor}>
+                              —
+                            </Text>
+                          )}
+                        </Td>
                       </Tr>
+                      {isExpanded && listing.topReviews.length > 0 && (
+                        <Tr>
+                          <Td colSpan={6} bg={reviewBg} py="10px">
+                            <Stack spacing="8px">
+                              {listing.topReviews.map((review, ri) => (
+                                <Box key={ri}>
+                                  <Flex align="center" gap="6px" mb="2px">
+                                    {review.rating != null && (
+                                      <Flex align="center" gap="2px">
+                                        <Icon as={MdOutlineStar} boxSize="11px" color="yellow.400" />
+                                        <Text as="span" fontSize="xs" fontWeight="600">
+                                          {review.rating.toFixed(1)}
+                                        </Text>
+                                      </Flex>
+                                    )}
+                                    <Text as="span" fontSize="xs" color={mutedColor}>
+                                      {review.author ?? 'Anonymous'}
+                                    </Text>
+                                  </Flex>
+                                  <Text fontSize="sm">{decodeHtmlEntities(review.text)}</Text>
+                                </Box>
+                              ))}
+                            </Stack>
+                          </Td>
+                        </Tr>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </Tbody>

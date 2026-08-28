@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const marketRows: any[] = [];
 const upsertedMatchRows: any[] = [];
+let reviewRows: any[] = [];
 let sellerProductRow: any = { id: 'sp1', title: 'RTX 4070 GPU', sell_price: 100000, currency: 'PKR' };
 
 vi.mock('@/lib/supabase/server', () => ({
@@ -43,6 +44,15 @@ vi.mock('@/lib/supabase/server', () => ({
             upsertedMatchRows.push(...rows);
             return { error: null };
           },
+        };
+      }
+      if (table === 'market_product_reviews') {
+        return {
+          select: () => ({
+            in: () => ({
+              order: async (): Promise<{ data: any[]; error: null }> => ({ data: reviewRows, error: null }),
+            }),
+          }),
         };
       }
       throw new Error(`unexpected table ${table}`);
@@ -93,6 +103,7 @@ function marketRow(overrides: Partial<MarketRow>): MarketRow {
 beforeEach(() => {
   marketRows.length = 0;
   upsertedMatchRows.length = 0;
+  reviewRows = [];
   sellerProductRow = { id: 'sp1', title: 'RTX 4070 GPU', sell_price: 100000, currency: 'PKR' };
 });
 
@@ -184,5 +195,29 @@ describe('findCompetitorsForProduct', () => {
     const platforms = result.map((r) => r.matchedPlatformName);
     expect(platforms).toContain('Daraz');
     expect(platforms.filter((p) => p === 'Daraz')).toHaveLength(2);
+  });
+
+  it('attaches review count and up to 2 snippets when reviews have been scraped for a match', async () => {
+    marketRows.push(marketRow({ id: 'mp-reviewed', title: 'RTX 4070 GPU', price: 100000, url: 'reviewed' }));
+    reviewRows = [
+      { product_id: 'mp-reviewed', author: 'Ali', rating: 5, review_text: 'Great card' },
+      { product_id: 'mp-reviewed', author: null, rating: 4, review_text: 'Good value' },
+      { product_id: 'mp-reviewed', author: 'Sana', rating: 3, review_text: 'Runs hot' },
+    ];
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].reviewCount).toBe(3);
+    expect(result[0].topReviews).toHaveLength(2);
+    expect(result[0].topReviews[0]).toEqual({ author: 'Ali', rating: 5, text: 'Great card' });
+  });
+
+  it('defaults reviewCount to 0 and topReviews to an empty array when nothing has been scraped', async () => {
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'no-reviews' }));
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].reviewCount).toBe(0);
+    expect(result[0].topReviews).toEqual([]);
   });
 });

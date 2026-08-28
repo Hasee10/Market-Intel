@@ -32,6 +32,15 @@ export const config = {
   shopperspkCategories: splitList(process.env.SHOPPERSPK_CATEGORIES) as string[],
 
   logLevel: process.env.LOG_LEVEL ?? 'info',
+
+  // Review scraper (scraper/src/reviews/) - a separate job/workflow from the
+  // main listing scrape. Caps how many products get their reviews (re-)
+  // scraped in one run, so full-catalog coverage builds up incrementally
+  // across scheduled runs instead of one massive request-volume spike
+  // against a site that already rate-limits (the same failure mode that got
+  // OLX IP-blocked). Default kept small deliberately - raise once a real run
+  // has been observed to behave.
+  reviewScrapeBatchSize: Number(process.env.REVIEW_SCRAPE_BATCH_SIZE) || 250,
 };
 
 export function requireDatabase(): void {

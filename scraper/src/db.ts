@@ -1,5 +1,5 @@
 import { config, requireDatabase } from './config.js';
-import type { RawClassifiedListing, RawProduct } from './types.js';
+import type { RawClassifiedListing, RawProduct, RawReview } from './types.js';
 
 const UPSERT_BATCH_SIZE = 200;
 
@@ -171,6 +171,78 @@ async function markStaleProducts(platformId: string, categorySlugs: string[], ru
   );
   if (!res.ok) {
     throw new Error(`market_products stale-marking failed: ${res.status} ${await res.text()}`);
+  }
+}
+
+/**
+ * Fetches up to `limit` active products for the given platform slugs whose
+ * reviews haven't been scraped, or were scraped more than `cooldownDays`
+ * ago - oldest/never-scraped first, so coverage builds up across runs
+ * instead of the same head-of-catalog products being reprocessed forever.
+ * This is the single knob (config.reviewScrapeBatchSize) that keeps any one
+ * run's added request volume bounded - see config.ts's comment.
+ */
+export async function getReviewScrapeBatch(
+  platformSlugs: string[],
+  limit: number,
+  cooldownDays = 14,
+): Promise<Array<{ id: string; url: string }>> {
+  requireDatabase();
+  const platformIds = await Promise.all(platformSlugs.map(getPlatformId));
+  const cutoff = new Date(Date.now() - cooldownDays * 24 * 60 * 60 * 1000).toISOString();
+
+  const platformFilter = platformIds.map((id) => encodeURIComponent(id)).join(',');
+  const res = await fetch(
+    `${config.supabaseUrl}/rest/v1/market_products` +
+      `?platform_id=in.(${platformFilter})` +
+      `&is_active=eq.true` +
+      `&or=(reviews_scraped_at.is.null,reviews_scraped_at.lt.${encodeURIComponent(cutoff)})` +
+      `&order=reviews_scraped_at.asc.nullsfirst` +
+      `&limit=${limit}&select=id,url`,
+    { headers: headers() },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to load review-scrape batch: ${res.status} ${await res.text()}`);
+  }
+  return (await res.json()) as Array<{ id: string; url: string }>;
+}
+
+/**
+ * Upserts reviews for one product and stamps reviews_scraped_at - called
+ * even when `reviews` is empty, so a product with genuinely zero reviews
+ * doesn't get retried every run within the cooldown window.
+ */
+export async function saveProductReviews(productId: string, reviews: RawReview[]): Promise<void> {
+  requireDatabase();
+
+  if (reviews.length > 0) {
+    const rows = reviews.map((r) => ({
+      product_id: productId,
+      author: r.author ?? null,
+      rating: r.rating ?? null,
+      review_text: r.text,
+      reviewed_at: r.reviewedAt ?? null,
+    }));
+    const res = await fetch(
+      `${config.supabaseUrl}/rest/v1/market_product_reviews?on_conflict=product_id,author,review_text`,
+      {
+        method: 'POST',
+        headers: headers({ Prefer: 'resolution=ignore-duplicates,return=minimal' }),
+        body: JSON.stringify(rows),
+      },
+    );
+    if (!res.ok) {
+      throw new Error(`market_product_reviews upsert failed: ${res.status} ${await res.text()}`);
+    }
+  }
+
+  const stampRes = await fetch(`${config.supabaseUrl}/rest/v1/market_products?id=eq.${productId}`, {
+    method: 'PATCH',
+    headers: headers({ Prefer: 'return=minimal' }),
+    body: JSON.stringify({ reviews_scraped_at: new Date().toISOString() }),
+  });
+  if (!stampRes.ok) {
+    throw new Error(`market_products reviews_scraped_at stamp failed: ${stampRes.status} ${await stampRes.text()}`);
   }
 }
 

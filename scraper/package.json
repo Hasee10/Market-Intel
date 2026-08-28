@@ -7,6 +7,7 @@
   "scripts": {
     "start": "tsx src/run.ts",
     "match-products": "tsx src/match-products.ts",
+    "scrape-reviews": "tsx src/reviews/run.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
