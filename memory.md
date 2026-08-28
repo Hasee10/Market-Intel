@@ -7,25 +7,28 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `7beea2a` (2026-08-28), pushed to
+**Current HEAD as of this writing:** `231a8e0` (2026-08-28), pushed to
 `origin/main`, working tree clean except for this file. Ask 1 (per-product
 competitor drawer), Ask 3 (dashboard assistant), Ask 2 tier (a)
 (tracked-matches column), a slice of Ask 2 tier (b) (got-scraping wired
 into `polite.ts`), auto-category-assignment on product add/CSV import, a
 data cleanup (18 stale OLX rows removed from `market_category_map`,
-migration 029 — fixes the "2 platforms" stale-count issue flagged in
-multiple places below), and the `seller_product_price_history` table +
-read path (infrastructure only, migration 030 — see "Done:
-seller_product_price_history table" further down) are all shipped and
-pushed.
+migration 029), the `seller_product_price_history` table + read path
+(infrastructure only, migration 030), and a fix to the Competitors
+matching algorithm itself (strict title filter replacing the price
+bracket, platform round-robin — see "Done: fix Competitors matching"
+further down) are all shipped and pushed.
 
-**Note:** `node_modules` in this working directory may be in a
-partially-reinstalled state from a failed repair attempt during the
-price-history work — if `next`/lint commands misbehave, that's likely why
-(a concurrent process, probably another session sharing this directory,
-was holding files open mid-reinstall); a clean `rm -rf node_modules &&
-npm ci` once nothing else is using this directory concurrently should fix
-it, not a code problem.
+**`node_modules` lock issue from the price-history session is resolved** —
+a full `npm install` completed successfully during the matching-fix work
+(687 packages added/8 changed, ~2 min). It took several attempts across
+both sessions (repeated `UNKNOWN`/`ENOTEMPTY` errors on different packages
+each time — `lodash`, `es-abstract`, `@popperjs/core`, `next` itself,
+`typescript` was fully missing at one point) before one finally completed
+without a concurrent lock interrupting it. If this recurs: don't fight a
+live lock by retrying rapidly — space out attempts, and know that a
+partial `rm -rf node_modules` can make things temporarily worse (it did
+here) before a full reinstall fixes it.
 
 Still open within Ask 2 tier (b): new retailer sites (waiting on the user
 to name targets), OLX proxy fix, review-text scraping — **do not start
@@ -1142,3 +1145,103 @@ gap in this project's history.
 vs-competitor comparison UI/logic this table exists to eventually support
 — still a genuine "later stage" per the original flag, not requested yet.
 `IProduct` was deliberately not touched (history stays a separate fetch).
+
+## Done (2026-08-28): fix Competitors matching — strict title filter, no price constraint, platform diversity
+
+User reported (screenshot) that a seller's "Bona Papa Super Diapers" was
+matched against baby toys/rattles/plates, all from one platform
+(ShoppersPK), with rating/sold blank on every row. Scoped via Plan Mode
+(3 parallel Explore agents + 1 Plan agent, then direct re-reads of the
+actual current files before finalizing — line numbers in the exploration
+reports had drifted slightly from what the earlier competitor-drawer
+polish session left behind).
+
+**Root cause, confirmed by reading the code, not assumed:**
+`findCompetitorsForProduct` (`product-matching.ts`) had category + a
++/-15% price bracket as its only hard filters. Title similarity (Jaccard)
+was computed but used only for *sorting*, never as a filter — no minimum-
+confidence cutoff existed for this function (unlike its sibling
+`findTopProductMatches`, which does gate on `MIN_CONFIDENCE`). So when a
+category+price-band had no genuinely similar products, the function
+didn't return fewer results — it padded the top-15 with whatever passed
+the price filter regardless of title relevance. Separately, ShoppersPK+
+Naheed have ~11x Daraz's candidate density in `toys-and-baby` (~1319 vs
+~120 active rows, per the earlier competitor-limit fix note above), so a
+flat top-N-by-confidence sort let the densest platform dominate. Blank
+ratings confirmed as a **separate, non-bug** root cause: ShoppersPK's
+scraper never extracts `rating`/`ratingCount`/`soldCount` at all — an
+all-ShoppersPK result set will always show blank ratings, correctly.
+
+This reverses a prior, explicitly-documented decision (`product-
+matching.ts`'s own header comment: "confirmed with product owner
+2026-08-28, using a GPU example" — price bracket as hard filter, title
+as ranking-only). Reversed based on direct user instruction + real
+evidence it produced wrong matches at category-level granularity, not a
+casual override — the old reasoning is kept in a comment for history,
+not deleted.
+
+**Scope-narrowing confirmed with the user before implementing:** the
+PPTX report needs **no changes** — its "Competitor Tracking" slide
+(`getCompetitorLandscape`/`market_competitor_scorecards`) is a fully
+separate entity-level aggregate view with no per-product title/price
+matching and no stale "15%" claim anywhere in it, confirmed via an
+Explore pass (`grep` across `src/lib/reports/` for any matching-related
+import or "15%"/price-bracket copy — zero hits).
+
+**Shipped:**
+1. `similarity.ts` — new `MIN_COMPETITOR_CONFIDENCE = 0.2`, separate from
+   the existing `MIN_CONFIDENCE = 0.3` (untouched, still used by
+   `findTopProductMatches`). Deliberately lower than 0.3: with no price
+   bracket as a second signal, title confidence alone must admit genuine
+   cross-brand matches too — worked through the actual token math in the
+   comment (a real diaper-brand-vs-diaper-brand match scores ~0.125
+   Jaccard, since brand tokens dominate the union; the toy-rattle
+   mismatch scores ~0). **Documented explicitly as a known ceiling of
+   word-overlap similarity, not a promise of perfect product-type
+   detection** — a real fix needs an embeddings/classifier model,
+   already flagged as deliberately not built (no embedding-provider
+   decision made).
+2. `product-matching.ts` — removed `PRICE_BRACKET_PCT` and the price-
+   bracket filter entirely. `confidence >= MIN_COMPETITOR_CONFIDENCE` is
+   now the hard filter; price (`priceDiff`) stays only as a sort
+   tiebreak among equally-confident matches, never an exclusion. Added
+   `selectDiverseTopN()` — round-robins the confidence-filtered, sorted
+   candidates across platforms (one platform's queue exhausting falls
+   through to filling remaining slots from other platforms automatically,
+   no separate fallback pass needed) so a denser platform can't crowd out
+   a smaller one's genuine matches. `persistCompetitorMatches` and
+   migration 028 unchanged — no price/bracket column ever existed there.
+3. `CompetitorsDrawer.tsx` — replaced the stale "within 15% of your
+   price... regardless of whether the product name matches yours" copy
+   with language describing the title-match model. Empty state kept
+   as-is (will legitimately trigger more often now for genuinely unique
+   products — correct behavior, not a regression).
+4. `product-matching.test.ts` — removed the 4 tests asserting the exact
+   behavior being reversed (bracket exclusion, the GPU same-price-
+   different-title case, null-price exclusion, no-sell_price fallback);
+   kept/renamed the still-valid ones; added tests for confidence-
+   threshold exclusion, price no longer filtering (a matching title at a
+   wildly different price is now included), and platform round-robin
+   diversity.
+
+**Verified — full pass this time, not partial:** `tsc --noEmit` clean,
+`vitest run` **110/110** (down from 111 — net one fewer test after
+consolidating the bracket tests into fewer, more targeted ones), `npm run
+lint` clean (caught and fixed one real unescaped-apostrophe JSX error in
+the new drawer copy - `react/no-unescaped-entities` would have failed
+CI), `npm run build` clean with CI's placeholder Supabase env vars. No
+migration/schema change - nothing to apply to the live DB for this fix.
+Not browser-verified per standing rule — ask the user to check a real
+product's Competitors drawer once deployed, ideally one already known to
+have genuine cross-platform competitors, to sanity-check
+`MIN_COMPETITOR_CONFIDENCE = 0.2` isn't too strict in practice; that
+number is a reasoned estimate from the token math, not something that
+could be verified against live data from this environment.
+
+**`node_modules` note**: this session hit the same file-lock corruption
+the price-history session flagged (see header) — worse this time (a
+partial `rm -rf node_modules` left it half-deleted, `typescript` itself
+went missing). A full `npm install` eventually completed cleanly (687
+added/8 changed). If a future session hits this again: don't rapid-fire
+retry against what's very likely another concurrent session's live lock
+on this same directory; space attempts out.
