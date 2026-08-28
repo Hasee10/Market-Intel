@@ -7,27 +7,38 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `cc63128` (2026-08-28), pushed to
-`origin/main`, working tree clean. Ask 1 (per-product competitor drawer),
-Ask 3 (dashboard assistant), Ask 2 tier (a) (tracked-matches column), a
-slice of Ask 2 tier (b) (got-scraping wired into `polite.ts`),
-auto-category-assignment on product add/CSV import (see "Done:
-auto-assign category" below), and a data cleanup (18 stale OLX rows
-removed from `market_category_map`, migration 029 — fixes the "2
-platforms" stale-count issue flagged in multiple places below) are all
-shipped and pushed. Still open within Ask 2 tier (b): new retailer sites
-(waiting on the user to name targets), OLX proxy fix, review-text
-scraping — **do not start any of these without the user naming targets/
-confirming, per the standing runbook below.** Also flagged but not yet
-built: a `seller_product_price_history` table (doesn't exist today —
-needed before seller-vs-competitor price comparison-over-time can be
-built, see "Flagged (2026-08-28)" note below) — **explicitly a later-
-stage item per the user, not something to build unprompted.** The Vercel
-landing-page hydration crash (2026-08-21) is also still unresolved,
-blocked on the user confirming whether an Incognito-window test showed
-the crash going away (ad-blocker extension was the leading suspect) — no
-confirmation received as of this writing. Run `git status`/`git log`
-before assuming this is still current — it won't be for long.
+**Current HEAD as of this writing:** `7beea2a` (2026-08-28), pushed to
+`origin/main`, working tree clean except for this file. Ask 1 (per-product
+competitor drawer), Ask 3 (dashboard assistant), Ask 2 tier (a)
+(tracked-matches column), a slice of Ask 2 tier (b) (got-scraping wired
+into `polite.ts`), auto-category-assignment on product add/CSV import, a
+data cleanup (18 stale OLX rows removed from `market_category_map`,
+migration 029 — fixes the "2 platforms" stale-count issue flagged in
+multiple places below), and the `seller_product_price_history` table +
+read path (infrastructure only, migration 030 — see "Done:
+seller_product_price_history table" further down) are all shipped and
+pushed.
+
+**Note:** `node_modules` in this working directory may be in a
+partially-reinstalled state from a failed repair attempt during the
+price-history work — if `next`/lint commands misbehave, that's likely why
+(a concurrent process, probably another session sharing this directory,
+was holding files open mid-reinstall); a clean `rm -rf node_modules &&
+npm ci` once nothing else is using this directory concurrently should fix
+it, not a code problem.
+
+Still open within Ask 2 tier (b): new retailer sites (waiting on the user
+to name targets), OLX proxy fix, review-text scraping — **do not start
+any of these without the user naming targets/confirming, per the standing
+runbook below.** The Vercel landing-page hydration crash (2026-08-21) is
+also still unresolved, blocked on the user confirming whether an
+Incognito-window test showed the crash going away (ad-blocker extension
+was the leading suspect) — no confirmation received as of this writing.
+Migration 030 is written but **not yet applied to the live DB** (same
+manual-via-SQL-Editor convention as every prior migration) — the actual
+seller-vs-competitor price comparison feature it enables is still a real
+"later stage," not built. Run `git status`/`git log` before assuming this
+is still current — it won't be for long.
 
 **Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
 this project — hangs unrecoverably across two clean-restart attempts, user
@@ -1079,3 +1090,55 @@ no change to the fixed 12-slug `seller_categories` list itself.
 **Not browser-verified** per standing rule (no `Claude_Preview` tools) —
 ask the user to try adding a product and importing a small CSV without a
 category column themselves.
+
+## Done (2026-08-28): seller_product_price_history table (infrastructure only)
+
+Picked up from the "still open" list when asked to "complete the remaining
+things" — the other two open items (naming new scraper targets, confirming
+the Vercel Incognito result) need information only the user has; this one
+didn't. Scoped via Plan Mode (Explore pass over the real schema/routes
+first), plan approved, then built.
+
+**Shipped:**
+- `scraper/migrations/030_seller_product_price_history.sql` — new table,
+  mirrors `market_price_history`'s shape but simpler (no day-dedupe, since
+  a seller editing their own price has none of the repeated-scrape pressure
+  that motivated `026`'s hardening). Populated by a trigger on
+  `seller_products` (`is distinct from` on `sell_price`, fires on insert
+  too), not app-level insert calls — matches this project's existing
+  trigger convention (`013`, `018`) and is the only way to reliably catch
+  every write path including bulk-import's `upsert()`, which has no
+  pre-image to diff at the app layer. RLS is read-only for the seller,
+  mirroring `seller_price_alerts_select_own` (`014`).
+- `src/lib/market-intel/price-history.ts` — `getSellerPriceHistory()`, a
+  direct scoped query (not an RPC — bounded to one product, unlike
+  `forecast.ts`'s cross-catalog aggregation).
+- `src/app/api/products/[id]/price-history/route.ts` — new GET route,
+  structurally mirrors `[id]/competitors/route.ts`.
+- `price-history.test.ts` — 3 tests, same `vi.mock` pattern as
+  `competitors.test.ts`.
+
+**Verified:** `tsc --noEmit` clean, `vitest run` 111/111 (108 existing + 3
+new, zero regressions) — both run *before* the `node_modules` trouble
+below. **`npm run lint`/`npm run build` could not be completed locally**
+this pass: a concurrent process (very likely another session sharing this
+same working directory — this session already saw a "port 3000 in use by
+another chat's dev server" collision earlier) is holding files open in
+`node_modules`, so every reinstall attempt failed with a file-lock error
+on a different package each time (`lodash`, `es-abstract`,
+`@popperjs/core`, then `next` itself). Not caused by this change — no
+`package.json`/lockfile edits. Did not keep retrying against a live lock.
+CI runs the full `tsc`/`lint`/`test`/`build` pipeline in a clean isolated
+environment on push, so check the Actions tab for this commit
+(`7beea2a`) if picking this thread back up, rather than assuming lint/
+build are clean just because they weren't checked here.
+
+**Not applied to the live DB** — same "Supabase SQL Editor, manually"
+convention as every prior migration. Until applied, the new route fails
+soft (empty history array), same as every other not-yet-applied-migration
+gap in this project's history.
+
+**Not built (explicitly out of scope this round):** the actual seller-
+vs-competitor comparison UI/logic this table exists to eventually support
+— still a genuine "later stage" per the original flag, not requested yet.
+`IProduct` was deliberately not touched (history stays a separate fetch).
