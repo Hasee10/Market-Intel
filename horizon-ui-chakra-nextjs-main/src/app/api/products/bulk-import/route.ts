@@ -1,10 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { GroqNotConfiguredError, suggestCategoriesBatch } from '@/lib/ai/suggest-category';
 import { MAX_IMPORT_ROWS } from '@/lib/csv';
 import { getCountryProductConfig } from '@/lib/market-intel/countries';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
+
+// The extra Groq round-trips for auto-categorization can push a large
+// import past a short serverless default.
+export const maxDuration = 60;
+
+// Bounds how many rows in one import get auto-categorized, so a 5000-row
+// CSV (MAX_IMPORT_ROWS) can't turn into thousands of sequential Groq calls.
+// Rows beyond this stay uncategorized (category_id: null), same as today,
+// and the count is surfaced in the response rather than dropped silently.
+const AUTO_CATEGORIZE_MAX_ROWS = 1000;
+const CATEGORIZE_BATCH_SIZE = 25;
+const CATEGORIZE_CONCURRENCY = 4;
 
 type ImportRow = {
   sku?: string;
@@ -99,6 +112,63 @@ export async function POST(request: NextRequest) {
     });
   }
 
+  const supabase = await createClient();
+  const needsCategory = [...withSku, ...withoutSku].filter((r) => !r.categoryId);
+  const toCategorize = needsCategory.slice(0, AUTO_CATEGORIZE_MAX_ROWS);
+  let leftUncategorized = needsCategory.length - toCategorize.length;
+
+  if (toCategorize.length > 0) {
+    const { data: categories } = await supabase.from('seller_categories').select('id, slug, name');
+
+    if (categories && categories.length > 0) {
+      const bySlug = new Map(categories.map((c) => [c.slug, c.id]));
+      const categoryList = categories.map((c) => ({ slug: c.slug, name: c.name }));
+
+      const batches: ImportRow[][] = [];
+      for (let i = 0; i < toCategorize.length; i += CATEGORIZE_BATCH_SIZE) {
+        batches.push(toCategorize.slice(i, i + CATEGORIZE_BATCH_SIZE));
+      }
+
+      let systemicFailure = false;
+      for (let i = 0; i < batches.length && !systemicFailure; i += CATEGORIZE_CONCURRENCY) {
+        const wave = batches.slice(i, i + CATEGORIZE_CONCURRENCY);
+        const waveResults = await Promise.all(
+          wave.map(async (batch) => {
+            try {
+              return await suggestCategoriesBatch(
+                batch.map((r) => r.title!),
+                categoryList,
+              );
+            } catch (err) {
+              // Groq not configured (or some other systemic failure) - no
+              // point retrying the remaining batches one by one, they'll
+              // all fail the same way. Rows in unprocessed batches simply
+              // keep category_id: null, same as today.
+              if (err instanceof GroqNotConfiguredError) systemicFailure = true;
+              return batch.map(() => null);
+            }
+          }),
+        );
+
+        wave.forEach((batch, batchIndex) => {
+          waveResults[batchIndex].forEach((suggestion, rowIndex) => {
+            if (suggestion) {
+              const categoryId = bySlug.get(suggestion.categorySlug);
+              if (categoryId) batch[rowIndex].categoryId = categoryId;
+            }
+          });
+        });
+      }
+
+      // Recount directly from final state rather than tracking counts
+      // through the loop above - correct regardless of where (or whether)
+      // a systemic failure stopped processing early.
+      leftUncategorized += toCategorize.filter((r) => !r.categoryId).length;
+    } else {
+      leftUncategorized += toCategorize.length;
+    }
+  }
+
   const toRow = (r: ImportRow, importKey: string | null) => ({
     seller_id: seller.id,
     sku: r.sku || null,
@@ -112,8 +182,6 @@ export async function POST(request: NextRequest) {
     currency: r.currency && VALID_CURRENCY_CODES.has(r.currency) ? r.currency : defaultCurrency,
     updated_at: new Date().toISOString(),
   });
-
-  const supabase = await createClient();
 
   // Two batches, not one: Supabase's upsert() takes a single conflict
   // target for the whole call, and has-SKU / no-SKU rows need different
@@ -149,7 +217,12 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     succeeded: true,
-    data: { imported: withSku.length + withoutSku.length, skipped, skippedReasons },
+    data: {
+      imported: withSku.length + withoutSku.length,
+      skipped,
+      skippedReasons,
+      leftUncategorized,
+    },
     errors: [],
     message: 'Products imported successfully',
   });

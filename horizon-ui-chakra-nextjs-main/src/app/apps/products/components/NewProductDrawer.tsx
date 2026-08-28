@@ -87,42 +87,65 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
     setAiConfidence(null);
   };
 
-  const handleSuggestCategory = async () => {
-    if (!title.trim()) {
-      toast({ title: 'Enter a title first', status: 'warning' });
-      return;
-    }
-
-    setSuggesting(true);
-    setAiConfidence(null);
-    try {
-      const response = await fetch('/api/products/suggest-category', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title }),
-      });
-      const result = await response.json();
-
-      if (!response.ok || !result.succeeded) {
-        // 503 = GROQ_API_KEY not configured yet - a real, expected state
-        // until that key is added, not a bug to alarm the seller about.
-        toast({
-          title: response.status === 503 ? 'AI suggestions not enabled yet' : 'Could not suggest a category',
-          description: result.message,
-          status: response.status === 503 ? 'info' : 'error',
-        });
+  // silent=true is used by the auto-trigger effect below - a background
+  // suggestion firing while the seller is still typing shouldn't pop a
+  // warning toast just because the title was momentarily too short.
+  const runSuggestCategory = useCallback(
+    async (currentTitle: string, silent = false) => {
+      if (!currentTitle.trim()) {
+        if (!silent) toast({ title: 'Enter a title first', status: 'warning' });
         return;
       }
 
-      setCategoryId(result.data.categoryId);
-      setAiConfidence(result.data.confidence);
-      toast({ title: `Suggested: ${result.data.categoryName}`, status: 'success' });
-    } catch (error) {
-      toast({ title: 'Could not suggest a category', status: 'error' });
-    } finally {
-      setSuggesting(false);
-    }
-  };
+      setSuggesting(true);
+      setAiConfidence(null);
+      try {
+        const response = await fetch('/api/products/suggest-category', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title: currentTitle }),
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.succeeded) {
+          // 503 = GROQ_API_KEY not configured yet - a real, expected state
+          // until that key is added, not a bug to alarm the seller about.
+          // Silent (auto) failures don't need a toast at all - the seller
+          // can still pick a category manually with no explanation needed.
+          if (!silent) {
+            toast({
+              title: response.status === 503 ? 'AI suggestions not enabled yet' : 'Could not suggest a category',
+              description: result.message,
+              status: response.status === 503 ? 'info' : 'error',
+            });
+          }
+          return;
+        }
+
+        setCategoryId(result.data.categoryId);
+        setAiConfidence(result.data.confidence);
+        if (!silent) toast({ title: `Suggested: ${result.data.categoryName}`, status: 'success' });
+      } catch (error) {
+        if (!silent) toast({ title: 'Could not suggest a category', status: 'error' });
+      } finally {
+        setSuggesting(false);
+      }
+    },
+    [toast],
+  );
+
+  const handleSuggestCategory = () => runSuggestCategory(title);
+
+  // Auto-assigns a category as the seller types, so picking one manually
+  // becomes the exception rather than a required step. Debounced so it
+  // doesn't fire on every keystroke, and only while no category is set yet
+  // - once the seller has one (manually chosen or already suggested), typing
+  // more into the title doesn't fight that choice.
+  useEffect(() => {
+    if (!isOpen || categoryId || title.trim().length < 2) return;
+    const timer = setTimeout(() => runSuggestCategory(title, true), 600);
+    return () => clearTimeout(timer);
+  }, [isOpen, title, categoryId, runSuggestCategory]);
 
   const handleSubmit = async () => {
     if (!title.trim()) {

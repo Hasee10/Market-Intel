@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { suggestCategory } from '@/lib/ai/suggest-category';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { IProduct } from '@/types/products';
@@ -79,13 +80,36 @@ export async function POST(request: NextRequest) {
   const body = await request.json();
   const supabase = await createClient();
 
+  // Safety net for the "auto-assigned" guarantee: the frontend already
+  // suggests a category as the seller types, but if a request arrives
+  // without one anyway (a fast submit before the suggestion resolves, or
+  // any other API caller), classify here rather than leaving it null.
+  // Never blocks product creation - any failure just falls back to null,
+  // same as if this block didn't run at all.
+  let categoryId: string | null = body.categoryId || null;
+  if (!categoryId && body.title) {
+    try {
+      const { data: categories } = await supabase.from('seller_categories').select('id, slug, name');
+      if (categories && categories.length > 0) {
+        const suggestion = await suggestCategory(
+          body.title,
+          categories.map((c) => ({ slug: c.slug, name: c.name })),
+        );
+        categoryId = categories.find((c) => c.slug === suggestion.categorySlug)?.id ?? null;
+      }
+    } catch {
+      // Groq not configured, network error, bad response, etc. - leave
+      // categoryId null and let the seller categorize manually later.
+    }
+  }
+
   const { data, error } = await supabase
     .from('seller_products')
     .insert({
       seller_id: seller.id,
       title: body.title,
       sku: body.sku || null,
-      category_id: body.categoryId || null,
+      category_id: categoryId,
       cost_price: body.costPrice ?? null,
       sell_price: body.sellPrice ?? null,
       currency: body.currency || 'PKR',
