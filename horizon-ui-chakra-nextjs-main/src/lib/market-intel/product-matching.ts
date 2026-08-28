@@ -152,7 +152,13 @@ export type CompetitorListing = {
   confidence: number;
 };
 
-const MAX_COMPETITOR_MATCHES = 5;
+// Raised from 5 (2026-08-28): at 5, categories with a much denser in-bracket
+// candidate pool on one platform (e.g. ShoppersPK/Naheed in toys-and-baby,
+// ~1319 active rows vs Daraz's ~120) crowded out every other platform's
+// listings entirely. 15 gives enough headroom for a smaller platform's
+// closest matches to still surface without returning the whole candidate
+// pool.
+const MAX_COMPETITOR_MATCHES = 15;
 const PRICE_BRACKET_PCT = 0.15;
 
 export async function findCompetitorsForProduct(
