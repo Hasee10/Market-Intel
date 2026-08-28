@@ -24,6 +24,14 @@ manual review, and ask the user to check the live app themselves for
 anything needing a rendered browser (`Claude_in_Chrome` MCP is an
 acceptable fallback if browser automation is unavoidable).
 
+**There is an open, scoped-but-not-started thread waiting on a user
+decision** — per-product competitor intel, broader scraper scope, and a
+dashboard assistant. See "Open thread (2026-08-28)" near the end of this
+file for the full findings **and a step-by-step runbook for how to
+resume it.** Do not start writing code for any of it until you've read
+that section and confirmed with the user which piece they want first —
+this was explicitly a scoping-only conversation, nothing was approved.
+
 ## What this product is (unchanged from mind.md, still true)
 
 **Ryvl / Market Intel** — market intelligence for online sellers, primarily
@@ -307,9 +315,44 @@ platforms" Competitors stat (OLX is off); don't promise
 location/review-per-seller for the 10 single-retailer-storefront
 platforms since there's structurally no third-party seller there.
 
-**Next step if resuming this thread:** nothing has been prioritized yet —
-user said to fully scope it out first rather than pick a phase. Ask the
-user which of the three (auto-matching + surface existing fields /
-re-enable OLX safely / review-text scraping for watchlisted items /
-the assistant) they want to sequence first before writing an
-implementation plan.
+**Flagged to fix regardless of which phase comes next:** the stale "2
+platforms" Competitors stat (OLX is off); don't promise
+location/review-per-seller for the 10 single-retailer-storefront
+platforms since there's structurally no third-party seller there.
+
+### How to resume this thread (runbook for whichever Claude picks this up)
+
+1. **Don't write code first.** Nothing here was approved — it's findings
+   from a research pass, not a plan. The user's own words: "reason with
+   me and research well before proceeding with anything." Re-litigating
+   the findings above isn't needed (they came from reading the actual
+   code, cited file-by-file) unless something looks stale — but the
+   *decision* of what to build and in what order is still the user's,
+   not something to infer from this doc.
+2. **Ask the user what's changed and what they want first**, in plain
+   terms: has the OLX/rate-limit situation changed? Do they still want
+   all three (competitor matching, scraper broadening, assistant), or has
+   priority shifted? Don't assume "resume = start building Ask 1."
+3. **Once they pick a direction, re-verify the load-bearing facts above
+   before acting on them** — specifically: is OLX still disabled
+   (`scraper/src/sources/index.ts`, `CLASSIFIED_SOURCES`), do
+   `market_products.rating`/`.rating_count`/`.sold_count` still exist and
+   populate the way described, is the Competitors page still purely
+   category-scoped. These are cheap to recheck and this doc going stale
+   is exactly the failure mode it's trying to prevent (see `mind.md`'s
+   fate at the top of this file).
+4. **If the direction involves a schema change or touches multiple
+   files/routes** (true for all four sub-options — auto-matching,
+   OLX re-enable, review scraping, or the assistant) — use Plan Mode
+   first, the same way the country-aware catalogue work was scoped, and
+   get the plan approved before implementing. Don't skip straight to
+   Edit/Write calls.
+5. **If the direction is scraper work touching request volume or
+   re-enabling OLX** — treat the 2026-08-03 OLX shutdown as a hard
+   constraint, not a historical footnote: design the rate/request budget
+   *before* writing scrape logic, not after something gets rate-limited
+   again.
+6. **Update this section (or replace it with a "done" writeup like the
+   country-aware catalogue section above) once work actually starts** —
+   don't let this "SCOPED, NOT STARTED" header go stale once it isn't
+   true anymore.
