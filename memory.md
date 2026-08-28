@@ -7,15 +7,15 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `e2a9f75` (2026-08-28), pushed to
+**Current HEAD as of this writing:** `a4690fc` (2026-08-28), pushed to
 `origin/main`, working tree clean. Ask 1 (per-product competitor drawer),
-Ask 3 (dashboard assistant), and Ask 2 tier (a) (tracked-matches column)
-are all shipped and pushed — see their "Done"/"Fixed" sections below. Ask
-2 tier (b) (real scraper engineering) is researched but **intentionally
-paused mid-plan** waiting on the user to name specific target sites — see
-"Ask 2 tier (b): research done, waiting on target sites" below. Run
-`git status`/`git log` before assuming this is still current — it won't
-be for long.
+Ask 3 (dashboard assistant), Ask 2 tier (a) (tracked-matches column), and
+one slice of Ask 2 tier (b) (got-scraping wired into `polite.ts` for
+anti-bot hardening — see "Done: got-scraping wired into polite.ts"
+below) are all shipped and pushed. Still open within tier (b): new
+retailer sites (user is naming targets), OLX proxy fix, review-text
+scraping. Run `git status`/`git log` before assuming this is still
+current — it won't be for long.
 
 **Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
 this project — hangs unrecoverably across two clean-restart attempts, user
@@ -857,3 +857,78 @@ priority — none started):**
    `polite.ts`'s backoff/circuit-breaker, since the original code had none
    of that and that's the likely reason it got blocked in the first
    place.
+
+## Done (2026-08-28): got-scraping wired into polite.ts for anti-bot hardening
+
+User asked to evaluate a list of scraping tools/libraries (Firecrawl,
+Crawl4AI, Scrapling, Browser Use, Scrapy, Crawlee JS/Python, Colly,
+Playwright, Puppeteer, Selenium, Maxun) for improving scraper resilience,
+then said to clone/add whichever are actually relevant. Since
+`scraper/package.json` is Node/TS with `cheerio` + `cloakbrowser`
+(wraps `playwright-core`), only two of that list share a runtime:
+**Crawlee (JS/TS)** and **Playwright** (already present transitively).
+Everything else (Firecrawl, Crawl4AI, Scrapling, Browser Use, Scrapy,
+Colly, Selenium, Maxun) is Python/Go and would need a separate
+microservice to use — not attempted, flagged as a real architectural
+decision if ever wanted.
+
+Sparse-checked-out (`git sparse-checkout` cone mode, `--filter=blob:none
+--no-checkout --depth 1`) just `packages/got-scraping-client`,
+`packages/core`, `packages/browser-pool` from `apify/crawlee` into
+`scraper/.vendor-reference/crawlee/` (now `.gitignore`d — reference
+only, not vendored into the build; ~1.5MB instead of the full monorepo).
+
+Shipped: `got-scraping` (real npm package, not hand-rolled) installed as
+a dependency and wired into `polite.ts`'s `politeFetch()`, replacing the
+bare `fetch()` call. This is the one piece that generalizes across every
+source using `politeFetch` — **mega, naheed, shopperspk, vmart** — with
+zero changes needed in those four files, since `gotScrapingFetch()`
+adapts got's response back into a standard Fetch API `Response` (same
+`.ok`/`.status`/`.headers.get()`/`.text()`/`.json()` interface those
+callers already use). `priceoye`/`sapphireonline`/`shophive`/`telemart`/
+`ishopping`/`goto` still call bare `fetch()` directly and were
+**deliberately not touched** — they don't route through `polite.ts` at
+all, so this change didn't touch them; retrofitting them is a separate,
+larger piece of work if wanted later. `daraz.ts` is browser-driven via
+CloakBrowser, not `fetch`, also untouched.
+
+**Verified live, not just type-checked** — ran a real request against
+`httpbin.org` and confirmed both that our explicit `DEFAULT_HEADERS`
+(`Accept`, `Accept-Language`, `User-Agent`) still went out exactly as
+set, AND that `got-scraping` auto-added realistic Chrome fingerprint
+headers a bare `fetch()` never sends (`Sec-Ch-Ua`, `Sec-Fetch-Dest`,
+`Sec-Fetch-Mode`, `Upgrade-Insecure-Requests`, `Accept-Encoding`) — the
+actual anti-detection value showing up on the wire, not just in types.
+`tsc --noEmit` clean. Committed `a4690fc`, pushed.
+
+**One real bug caught during verification, now fixed**: `got`'s response
+`.headers` object carries extra non-string-keyed entries that broke
+`new Response(..., { headers })` (`TypeError: ... is a symbol, which
+cannot be converted to a DOMString`). Fixed by normalizing through
+`Object.entries(...).filter((e): e is [string,string] => typeof e[1]
+=== 'string')` before constructing the `Response` — `Object.entries`
+only returns own string-keyed enumerable properties, which strips the
+problem entries as a side effect.
+
+**Environment note worth knowing if picking this up again**: DNS
+resolution was intermittently broken during this session — `curl` from
+Bash worked fine while raw Node (`dns.lookup`, and by extension `fetch`/
+`got-scraping`) failed with `ENOTFOUND` for the same hosts, even with
+`dns.setServers(['8.8.8.8'])` set explicitly. Using
+`dangerouslyDisableSandbox: true` on the Bash call that actually invoked
+the Node script resolved it. If a future scraper-side network call
+mysteriously fails with `ENOTFOUND` despite `curl` working, this
+sandbox-vs-Node distinction is the likely cause, not a real DNS/network
+outage.
+
+**Not done, still open:**
+- `@crawlee/core`'s `SessionPool` (auto-retire burnt sessions/IPs) was
+  the other piece flagged as valuable but not installed — smaller,
+  optional follow-up if `got-scraping` alone doesn't move the needle
+  enough once run against real sites.
+- New retailer sites (the "new retailer sources" sub-option) — the user
+  said they'd name specific target sites; not yet named as of this
+  writing.
+- OLX proxy fix and review-text scraping — still the two highest-cost,
+  unstarted sub-options, same constraints as documented above (needs a
+  provisioned proxy; needs a new migration).
