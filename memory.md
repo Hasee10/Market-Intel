@@ -932,3 +932,38 @@ outage.
 - OLX proxy fix and review-text scraping — still the two highest-cost,
   unstarted sub-options, same constraints as documented above (needs a
   provisioned proxy; needs a new migration).
+
+**Decided (2026-08-28): staying Node-only, Python sidecar (Scrapling/
+Crawl4AI) explicitly deferred, not rejected.** User asked why the full
+tool list from the earlier evaluation wasn't all "cloned and used" —
+answer given: Firecrawl/Crawl4AI/Scrapling/Browser Use/Scrapy are Python,
+not npm packages, so using them means running a second process (a Python
+service the Node scraper calls over HTTP), not just installing a
+dependency. Of that list, two have real, non-overlapping value worth
+naming honestly rather than dismissing as "wrong language, skip":
+- **Scrapling** — adaptive/self-healing selectors, directly addresses
+  scraper maintenance burden when a site's HTML changes (something
+  `polite.ts`/each source's hand-written cheerio selectors have no
+  answer for today).
+- **Crawl4AI** — LLM-assisted structured extraction from a new site
+  without hand-writing selectors first; most valuable for onboarding
+  *new* retailer sources fast, not for the 10 already-tuned sources.
+(Firecrawl and Scrapy were judged lower-value: Firecrawl mostly
+duplicates what CloakBrowser + existing selectors already do; Scrapy is
+a second full framework with no unique capability over Crawlee. Browser
+Use was judged a poor fit for a scheduled cron job — LLM-per-page-action
+cost and nondeterminism cut against a job that scrapes the same category
+pages every run.)
+
+Given user's answer was "do what is necessary, no compulsion" (explicit
+delegation of the call), the decision made: **don't stand up the sidecar
+now** — nothing in the current 10 sources has an active selector-drift
+problem, so Scrapling's value is currently theoretical, not urgent.
+**Trigger conditions to revisit, matching this project's existing pattern
+of "wait for a real signal, don't rewrite preemptively"** (same reasoning
+`polite.ts`'s own header comment uses for why the original seven sources
+weren't retrofitted): reconsider Scrapling if a source starts silently
+returning nulls/empty results after a site redesign (maintenance pain
+becomes real); reconsider Crawl4AI specifically when the user names new
+retailer sites, if hand-writing selectors for them turns out to be slow
+enough that automated extraction would clearly pay for itself.
