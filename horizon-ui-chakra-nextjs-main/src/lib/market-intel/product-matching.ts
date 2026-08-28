@@ -27,7 +27,20 @@ export type ProductMatch = {
 };
 
 const MAX_SELLER_PRODUCTS = 20;
-const MAX_MARKET_CANDIDATES = 300;
+
+// Raised from 300 (2026-08-28): the market_products query below has no
+// ORDER BY, so a small cap on a category with thousands of active rows
+// spanning several segments (e.g. "Mobiles & Electronics" - Audio, Laptops
+// & Computing, Phones, Tablets - 3,556 rows across 9 platforms) could
+// sample an arbitrary 300 rows that happen to miss the segment a given
+// seller product actually belongs to entirely. Found live: this function's
+// "Closest competitor match per product" panel showed "no confident
+// matches" for the whole category despite real matching data existing -
+// same root cause as the identical bug in findCompetitorsForProduct below,
+// which shares this constant. Cost of raising this is
+// negligible: even at MAX_SELLER_PRODUCTS (20) x 3000 candidates, jaccard
+// on small token sets is still sub-second in JS.
+const MAX_MARKET_CANDIDATES = 3000;
 
 // Bounded on purpose: this recomputes similarity in-process on every call
 // (no persisted match table yet), so it's capped to the seller's most
@@ -174,22 +187,6 @@ export type CompetitorListing = {
 // pool.
 const MAX_COMPETITOR_MATCHES = 15;
 
-// Separate, much larger cap than MAX_MARKET_CANDIDATES (300, shared with
-// findTopProductMatches - which genuinely needs a small cap since it runs
-// per-candidate comparisons across up to 20 seller products in one call).
-// This function only ever handles one seller product per call, so the cost
-// of scoring more candidates in JS is trivial - but the query below has no
-// ORDER BY, so a small cap on a category with thousands of active rows
-// across several segments (e.g. "Mobiles & Electronics" spanning Audio,
-// Laptops & Computing, Phones, Tablets) could sample an arbitrary 300 rows
-// that happen to miss the seller's actual segment entirely. Found live:
-// a product titled "Laptops" returned zero matches in a category with
-// 3,556 active listings, because none of an unordered 300-row sample
-// happened to be laptops. Raising this doesn't fix the lack of an ORDER BY
-// (still arbitrary which rows get dropped if a category exceeds this too),
-// but 3000 covers real categories seen so far with room to spare.
-const MAX_COMPETITOR_CANDIDATES = 3000;
-
 export async function findCompetitorsForProduct(
   sellerId: string,
   sellerProductId: string,
@@ -215,7 +212,7 @@ export async function findCompetitorsForProduct(
       .eq('is_active', true)
       .in('category_slug', scope.categorySlugs)
       .in('platform_id', scope.activePlatformIds)
-      .limit(MAX_COMPETITOR_CANDIDATES),
+      .limit(MAX_MARKET_CANDIDATES),
     getLatestFxRates(),
   ]);
 
