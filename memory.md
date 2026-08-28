@@ -7,15 +7,18 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `a4690fc` (2026-08-28), pushed to
+**Current HEAD as of this writing:** `d01acf2` (2026-08-28), pushed to
 `origin/main`, working tree clean. Ask 1 (per-product competitor drawer),
-Ask 3 (dashboard assistant), Ask 2 tier (a) (tracked-matches column), and
-one slice of Ask 2 tier (b) (got-scraping wired into `polite.ts` for
-anti-bot hardening — see "Done: got-scraping wired into polite.ts"
-below) are all shipped and pushed. Still open within tier (b): new
-retailer sites (user is naming targets), OLX proxy fix, review-text
-scraping. Run `git status`/`git log` before assuming this is still
-current — it won't be for long.
+Ask 3 (dashboard assistant), Ask 2 tier (a) (tracked-matches column), a
+slice of Ask 2 tier (b) (got-scraping wired into `polite.ts`), and
+auto-category-assignment on product add/CSV import (see "Done:
+auto-assign category" below) are all shipped and pushed. Still open
+within Ask 2 tier (b): new retailer sites (user is naming targets), OLX
+proxy fix, review-text scraping. Also flagged but not yet built: a
+`seller_product_price_history` table (doesn't exist today — needed
+before seller-vs-competitor price comparison-over-time can be built, see
+"Flagged (2026-08-28)" note below). Run `git status`/`git log` before
+assuming this is still current — it won't be for long.
 
 **Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
 this project — hangs unrecoverably across two clean-restart attempts, user
@@ -967,3 +970,103 @@ returning nulls/empty results after a site redesign (maintenance pain
 becomes real); reconsider Crawl4AI specifically when the user names new
 retailer sites, if hand-writing selectors for them turns out to be slow
 enough that automated extraction would clearly pay for itself.
+
+## Flagged (2026-08-28): seller-vs-competitor price history has a real gap
+
+User asked to be "ready" for a later-stage feature: tracking price
+history comparisons between a seller's own product and each matched
+competitor over time. Checked the actual schema before agreeing readiness
+was real, and it isn't fully there yet:
+- `market_price_history` (migration 001) already tracks **competitor**
+  (`market_products`) price snapshots over time — `product_id, price,
+  compare_at_price, in_stock, recorded_at`. This half is fine.
+- **`seller_products` has no price-history table at all** — only a
+  current `sell_price` + `updated_at`. There is no record of what a
+  seller's own price was last week, only what it is right now.
+- `seller_product_competitor_matches` (migration 028) stores the match
+  itself (`confidence`, `first_matched_at`, `last_confirmed_at`) with no
+  price-at-time-of-match snapshot.
+
+**To actually build this later**, the missing piece is a
+`seller_product_price_history` table (new migration) capturing the
+seller's own price changes over time — most naturally populated by a
+trigger or application-level insert whenever `seller_products.sell_price`
+changes, mirroring how `market_price_history` gets populated on each
+scrape. Not built now (explicitly a later stage per the user) — flagging
+here so "we're ready for that" isn't assumed true without this table
+existing when the stage actually arrives.
+
+Also confirmed while checking scraper source files for this: only
+**Daraz** and **PriceOye** populate `rating`/`ratingCount` among the 10
+active sources (`sold_count` is Daraz-only) — the other 8 simply don't
+expose that data on their listing pages. Adding a new scraper source
+does NOT automatically bring rating/sold-count data; it depends entirely
+on whether that specific site displays it, and requires per-source
+extraction code same as any other field. The columns already exist on
+`market_products` (migrations 001, 019), so no schema change is needed
+when a new source does expose them.
+
+## Done (2026-08-28): auto-assign category on product add / CSV import
+
+Sellers previously had to manually pick from the fixed 12-category list
+(`seller_categories`, migration 011) — required on the manual add-product
+form, and silently left `null` on CSV bulk import (no category column
+existed in the import mapping at all). User asked for this to be
+automatic on both entry paths. Went through Plan Mode (approved
+2026-08-28) since it touched 4 files across frontend + 2 API routes +
+a shared AI module.
+
+**What already existed and was reused, not rebuilt:** `suggestCategory()`
+(`horizon-ui-chakra-nextjs-main/src/lib/ai/suggest-category.ts`) — Groq
+(`llama-3.1-8b-instant`, temp 0, JSON mode via `callGroqJson`)
+classifies one title into one of the 12 slugs, already wired to an
+opt-in "Suggest with AI" button in `NewProductDrawer.tsx`. The gap was
+that it was manual-only on single-add and entirely absent on bulk import.
+
+**Shipped:**
+- `NewProductDrawer.tsx`: added a 600ms-debounced `useEffect` on `title`
+  that auto-triggers the same suggestion logic (extracted into
+  `runSuggestCategory(title, silent)`) once `title.length >= 2` and no
+  category is set yet. Stops firing once a category is set (manual pick
+  or prior suggestion) — doesn't fight an explicit choice. The "Suggest
+  with AI" button still works for manual re-trigger. Silent-mode
+  failures (e.g. Groq not configured) don't toast — the seller can still
+  pick manually with no explanation needed.
+- `POST /api/products` (`route.ts`): added a server-side fallback — if a
+  request arrives with `title` but no `categoryId` (e.g. a fast submit
+  before the debounce resolves), classify server-side before insert.
+  Any failure (Groq not configured, network, bad response) falls back to
+  `category_id: null`, same as before this change existed — never blocks
+  product creation.
+- New `suggestCategoriesBatch(titles, categories)` in
+  `suggest-category.ts` — classifies many titles in one Groq call
+  (numbered list in, `{"results": [{"index", "categorySlug",
+  "confidence"}]}` out) since a 5000-row CSV (`MAX_IMPORT_ROWS`) can't
+  afford one round-trip per row. A missing/invalid index degrades to
+  `null` for that title only, not a thrown error for the whole batch.
+- `POST /api/products/bulk-import` (`route.ts`): rows missing
+  `categoryId` are now classified in batches of 25 with concurrency 4.
+  **Capped at `AUTO_CATEGORIZE_MAX_ROWS = 1000` rows per import** to
+  bound latency/Groq spend on a 5000-row CSV — rows beyond the cap (or
+  if Groq isn't configured, detected via `GroqNotConfiguredError` to
+  stop wasting time on remaining batches that would fail the same way)
+  keep `category_id: null` exactly like before, and the count is
+  surfaced as a new `leftUncategorized` field in the response — not a
+  silent cap. Added `export const maxDuration = 60;` to the route since
+  the extra Groq round-trips can push a large import past a short
+  serverless default.
+- 14 new tests across 3 new files (`suggest-category.test.ts`,
+  `products/route.test.ts`, `bulk-import/route.test.ts`) — batch mapping
+  correctness, the POST fallback, the cap, and the
+  `GroqNotConfiguredError` early-stop behavior. Full suite 108/108,
+  `tsc --noEmit` clean. Committed `d01acf2`, pushed.
+
+**Not in scope this round (explicitly deferred in the plan):** no CSV
+column mapping for a category name/slug the seller's own export might
+already carry (only auto-classifies rows with no category at all); no
+retroactive re-categorization of existing `category_id = null` products;
+no change to the fixed 12-slug `seller_categories` list itself.
+
+**Not browser-verified** per standing rule (no `Claude_Preview` tools) —
+ask the user to try adding a product and importing a small CSV without a
+category column themselves.
