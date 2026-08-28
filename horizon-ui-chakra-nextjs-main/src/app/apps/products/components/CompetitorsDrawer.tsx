@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import {
+  Badge,
   Box,
   Drawer,
   DrawerBody,
@@ -10,6 +11,8 @@ import {
   DrawerContent,
   DrawerHeader,
   DrawerOverlay,
+  Flex,
+  Icon,
   Link,
   Skeleton,
   Stack,
@@ -23,6 +26,7 @@ import {
   Tr,
   useColorModeValue,
 } from '@chakra-ui/react';
+import { MdOutlineOpenInNew, MdOutlineStar } from 'react-icons/md';
 
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
@@ -52,6 +56,19 @@ const formatCurrency = (amount: number | null, currency: string) =>
 const formatRating = (rating: number | null, ratingCount: number | null) => {
   if (rating == null) return '—';
   return ratingCount != null ? `${rating.toFixed(1)} (${ratingCount})` : rating.toFixed(1);
+};
+
+// Scraped titles occasionally carry un-decoded HTML entities (e.g.
+// "Sorting &amp; Stacking") straight from the source page's markup. Decoding
+// via a detached textarea uses the browser's own parser instead of a
+// hand-rolled entity table, so it's correct for every entity, not just the
+// common ones - safe here because we only ever read `.value` back out as
+// plain text, never re-render the decoded string as HTML.
+const decodeHtmlEntities = (text: string): string => {
+  if (typeof window === 'undefined') return text;
+  const el = document.createElement('textarea');
+  el.innerHTML = text;
+  return el.value;
 };
 
 export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency }: CompetitorsDrawerProps) {
@@ -143,25 +160,57 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {listings.map((listing, i) => (
-                    <Tr key={`${listing.matchedUrl}-${i}`} _hover={{ bg: rowHoverBg }}>
-                      <Td maxW="220px">
-                        <Link href={listing.matchedUrl} isExternal noOfLines={2} fontSize="sm">
-                          {listing.matchedTitle}
-                        </Link>
-                      </Td>
-                      <Td fontSize="sm">{listing.matchedPlatformName ?? '—'}</Td>
-                      <Td isNumeric fontSize="sm">
-                        {formatCurrency(listing.matchedPrice, reportingCurrency)}
-                      </Td>
-                      <Td isNumeric fontSize="sm">
-                        {formatRating(listing.rating, listing.ratingCount)}
-                      </Td>
-                      <Td isNumeric fontSize="sm">
-                        {listing.soldCount == null ? '—' : listing.soldCount}
-                      </Td>
-                    </Tr>
-                  ))}
+                  {listings.map((listing, i) => {
+                    const title = decodeHtmlEntities(listing.matchedTitle);
+                    return (
+                      <Tr key={`${listing.matchedUrl}-${i}`} _hover={{ bg: rowHoverBg }}>
+                        <Td maxW="240px">
+                          <Tooltip label={title} openDelay={400}>
+                            <Link
+                              href={listing.matchedUrl}
+                              isExternal
+                              fontSize="sm"
+                              fontWeight="500"
+                              display="flex"
+                              alignItems="center"
+                              gap="6px"
+                              _hover={{ color: 'brand.500', textDecoration: 'none' }}
+                            >
+                              <Text as="span" noOfLines={2}>
+                                {title}
+                              </Text>
+                              <Icon as={MdOutlineOpenInNew} boxSize="12px" flexShrink={0} color={mutedColor} />
+                            </Link>
+                          </Tooltip>
+                        </Td>
+                        <Td fontSize="sm">
+                          {listing.matchedPlatformName ? (
+                            <Badge colorScheme="brand" variant="subtle" fontSize="10px" borderRadius="6px" px="8px" py="2px">
+                              {listing.matchedPlatformName}
+                            </Badge>
+                          ) : (
+                            '—'
+                          )}
+                        </Td>
+                        <Td isNumeric fontSize="sm" fontWeight="600">
+                          {formatCurrency(listing.matchedPrice, reportingCurrency)}
+                        </Td>
+                        <Td isNumeric fontSize="sm">
+                          {listing.rating != null ? (
+                            <Flex align="center" justify="flex-end" gap="4px">
+                              <Icon as={MdOutlineStar} boxSize="12px" color="yellow.400" />
+                              <Text as="span">{formatRating(listing.rating, listing.ratingCount)}</Text>
+                            </Flex>
+                          ) : (
+                            '—'
+                          )}
+                        </Td>
+                        <Td isNumeric fontSize="sm" color={mutedColor}>
+                          {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
+                        </Td>
+                      </Tr>
+                    );
+                  })}
                 </Tbody>
               </Table>
             </Box>
