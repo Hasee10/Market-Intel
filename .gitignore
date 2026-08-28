@@ -4,3 +4,7 @@ CREDENTIALS.txt
 !.env.example
 node_modules/
 .next/
+
+# Sparse-checked-out upstream source kept for local reference only (e.g.
+# Crawlee packages studied for scraper hardening) - not vendored into the build.
+.vendor-reference/

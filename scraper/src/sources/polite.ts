@@ -8,6 +8,9 @@
 // showing a 429 pattern in scraper_runs the way OLX did, that's the trigger
 // to retrofit it with these helpers, not a preemptive rewrite (see mind.md).
 
+import { gotScraping } from 'got-scraping';
+import { config } from '../config.js';
+
 export const DEFAULT_USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -48,6 +51,36 @@ const MAX_RETRY_AFTER_MS = 120_000; // don't let a hostile/broken Retry-After va
 function exponentialBackoffWithJitter(attempt: number): number {
   const cap = Math.min(MAX_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** attempt);
   return Math.random() * cap;
+}
+
+/**
+ * Runs the request through got-scraping instead of bare fetch() - same
+ * browser-realistic TLS/HTTP2 fingerprint and header generation Apify's
+ * Crawlee uses, without adopting the rest of that framework. The explicit
+ * headers callers already pass (DEFAULT_HEADERS/JSON_HEADERS) are kept as-is
+ * rather than replaced by header-generator output, since those Accept values
+ * are deliberately tuned per source (HTML vs JSON endpoints).
+ *
+ * Adapts got's response into the standard Fetch API Response so every
+ * existing politeFetch() caller (res.ok/.status/.headers.get()/.text()/
+ * .json()) keeps working unchanged.
+ */
+async function gotScrapingFetch(url: string, headers: Record<string, string>): Promise<Response> {
+  const gotRes = await gotScraping({
+    url,
+    headers,
+    proxyUrl: config.scraperProxy,
+    throwHttpErrors: false,
+    retry: { limit: 0 }, // politeFetch already owns retry/backoff - don't double up
+    timeout: { request: 30_000 },
+  });
+  const headerEntries = Object.entries(gotRes.headers).filter(
+    (entry): entry is [string, string] => typeof entry[1] === 'string',
+  );
+  return new Response(new Uint8Array(gotRes.rawBody), {
+    status: gotRes.statusCode,
+    headers: headerEntries,
+  });
 }
 
 /** Parses a Retry-After header - either delta-seconds (the common case here) or an HTTP-date. Returns null if absent/unparseable. */
@@ -112,7 +145,7 @@ export async function politeFetch(
 
   for (let attempt = 0; ; attempt += 1) {
     try {
-      const res = await fetch(url, { headers });
+      const res = await gotScrapingFetch(url, headers);
       if (res.ok) {
         if (platformKey) consecutiveFailuresByPlatform.set(platformKey, 0);
         return res;
