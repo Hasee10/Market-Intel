@@ -1253,3 +1253,24 @@ went missing). A full `npm install` eventually completed cleanly (687
 added/8 changed). If a future session hits this again: don't rapid-fire
 retry against what's very likely another concurrent session's live lock
 on this same directory; space attempts out.
+
+## Done (2026-08-29): two real matching bugs found live via user testing, HEAD `0930908`
+
+After the strict-title-filter fix, user tested with real products and found
+zero matches everywhere, incl. "Laptops" in a category confirmed (via the
+Competitors scorecard) to have 3,556 active listings. Root cause:
+`market_products` queries in both `findCompetitorsForProduct` and
+`findTopProductMatches` had `.limit(300)` with **no ORDER BY** - an
+arbitrary 300-row sample from thousands spanning several segments (Audio,
+Laptops & Computing, Phones, Tablets) could easily miss the one segment a
+given product belongs to. Pre-existing bug, made visible only once title
+matching became a hard filter (old price-bracket model still returned
+*wrong* results from whatever got sampled). Fixed by raising the shared
+`MAX_MARKET_CANDIDATES` 300 -> 3000 (cheap in JS, no perf concern) -
+initially fixed only `findCompetitorsForProduct` (commit `21cfa41`), then
+found the *same* bug still live in `findTopProductMatches` (Market page's
+"closest match per product" panel) and fixed that too (`0930908`). Also
+shipped in this same pass: basic singularization in `tokenize()`
+(`09ffe56`) - "Laptops" vs "Laptop" were previously unrelated tokens.
+**Not yet re-confirmed by the user** whether real matches now show for
+Laptops/diapers post-deploy - ask if picking this up again.
