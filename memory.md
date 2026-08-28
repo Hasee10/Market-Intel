@@ -7,17 +7,32 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `231a8e0` (2026-08-28), pushed to
+**Current HEAD as of this writing:** `9b0820a` (2026-08-29), pushed to
 `origin/main`, working tree clean except for this file. Ask 1 (per-product
 competitor drawer), Ask 3 (dashboard assistant), Ask 2 tier (a)
 (tracked-matches column), a slice of Ask 2 tier (b) (got-scraping wired
 into `polite.ts`), auto-category-assignment on product add/CSV import, a
 data cleanup (18 stale OLX rows removed from `market_category_map`,
 migration 029), the `seller_product_price_history` table + read path
-(infrastructure only, migration 030), and a fix to the Competitors
-matching algorithm itself (strict title filter replacing the price
-bracket, platform round-robin — see "Done: fix Competitors matching"
-further down) are all shipped and pushed.
+(infrastructure only, migration 030), a fix to the Competitors matching
+algorithm itself (strict title filter replacing the price bracket,
+platform round-robin, then two live-found `.limit(300)`-with-no-ORDER-BY
+sampling bugs fixed on top — see "Done: fix Competitors matching" and
+"Done: two real matching bugs" further down), and PriceOye review-text
+scraping + minimal display (migration 031, `scraper/src/reviews/` — see
+"Done: review-text scraping" further down) are all shipped and pushed.
+
+**New target sites named by the user for the separate scraper-expansion
+thread (Ask 2 tier b), not yet scoped/started:** Bagallery, J. (Junaid
+Jamshed), Gul Ahmed, Chase Value, Khaadi, Al-Fatah — with
+Homeshopping.pk/Symbios.pk as lower priority. User pasted a detailed
+Python-oriented scraping spec for these; this repo's scraper is Node/
+TypeScript, so the spec's *intent* (site list, category-gap priorities,
+politeness/ethics rules) should be adapted to this codebase's existing
+conventions (`scraper/src/sources/*.ts`, `polite.ts`, `RawProduct`,
+per-site live verification before writing extraction code — same as
+every prior source addition), not followed as literal Python. Needs its
+own Plan Mode pass, not started yet as of this writing.
 
 **`node_modules` lock issue from the price-history session is resolved** —
 a full `npm install` completed successfully during the matching-fix work
@@ -1274,3 +1289,50 @@ shipped in this same pass: basic singularization in `tokenize()`
 (`09ffe56`) - "Laptops" vs "Laptop" were previously unrelated tokens.
 **Not yet re-confirmed by the user** whether real matches now show for
 Laptops/diapers post-deploy - ask if picking this up again.
+
+**Update:** user re-tested with a realistic title ("HP Pavilion Laptop
+Core i5") and got 3 real PriceOye matches - confirmed both sampling
+fixes work. "Bona Papa Super Diapers" still returns zero even after the
+fixes, correctly - "Pampers Baby Dry Diapers" (same category) returns
+real matches, confirming this is "no genuine Bona Papa competitor in
+current data," not a bug (see similarity.ts's own comment on word-overlap
+ceiling for cross-brand matches). User asked whether to loosen
+`MIN_COMPETITOR_CONFIDENCE` to catch more of these - recommended against
+it (would reintroduce false positives, the original complaint) and user
+agreed to leave it at 0.2.
+
+## Done (2026-08-29): PriceOye review-text scraping + minimal display
+
+User asked to add review-text scraping. Scoped via Plan Mode (2 Explore
+agents first). Key findings: every source needs an extra per-product
+request to get reviews (none present in listing data); only PriceOye has
+a confirmed, reachable source (JSON-LD `review` array on the product
+page, live-verified with a plain HTTP fetch via `got-scraping` -
+`scraper/node_modules` had to be installed fresh in this environment
+first, it wasn't present). Daraz's reviews load via a signed Alibaba/
+Lazada Mtop API a static fetch can't reach - deferred, not guessed
+(no CloakBrowser license key available here to verify live, and browser
+automation for verification is off-limits anyway).
+
+**User's scope answers** (asked because "scrape reviews for everything"
+is a real request-volume risk, the same shape that got OLX blocked):
+full catalog eventually but spread over time via a capped batch per run
+(`REVIEW_SCRAPE_BATCH_SIZE`, default 250) rather than one sweep; "all
+present and future platforms, once I name them" (only PriceOye is
+actually buildable right now - see above); backend + minimal display,
+not a full reviews UI.
+
+**Shipped:** migration 031 (`market_product_reviews` + `market_products.
+reviews_scraped_at` for cooldown tracking, 14-day default), `scraper/src/
+reviews/` (extractor + orchestrator, reuses `polite.ts`/`randomDelay`),
+new separate workflow `.github/workflows/review-scraper.yml` (daily,
+own budget - not squeezed into `market-scraper.yml`'s already-tight
+40 minutes), `findCompetitorsForProduct` gains `reviewCount`/
+`topReviews` (2-snippet cap), `CompetitorsDrawer.tsx` shows an
+expandable "N reviews" row.
+
+**Verified:** `tsc --noEmit` clean both packages, `vitest` 114/114,
+lint/build clean. Migration **not applied to the live DB**. **Workflow
+not yet triggered** - recommend the user run it via `workflow_dispatch`
+with a small `batch_size` (e.g. 5) first, per the plan's own verification
+step, before trusting the 250 default against production.
