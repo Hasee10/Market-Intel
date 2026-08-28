@@ -672,8 +672,99 @@ Key design decisions:
   responses, persisted/exportable chat history, proactive insights (the
   assistant only responds, never initiates), and any tool-calling.
 
-**Next step if resuming either thread:** Ask 2 (scraper scope
-broadening) is the one remaining unstarted item from the original
-3-item scoping — see its entry above and the runbook below, which still
-applies (re-verify OLX-disabled status and design a rate budget before
-any scraper-volume change).
+## Done: Ask 2, tier (a) — "Your tracked matches" on the Competitors scorecard (2026-08-28) — CODE COMPLETE, NOT COMMITTED, NOT BROWSER-VERIFIED
+
+Picked up via the runbook. Re-verified all load-bearing facts before
+building (all held: OLX still disabled via `CLASSIFIED_SOURCES = []`,
+`market_products.rating`/`.rating_count`/`.sold_count` still exist and
+populate for Daraz, Competitors page still purely category-scoped).
+Scoped via Plan Mode (2 Explore agents + 1 Plan agent).
+
+**Course-correction during investigation, confirmed with the user before
+building:** the originally proposed "extend the mobiles-only cross-
+platform matcher (`scraper/src/matching.ts`) to all categories" turned
+out to be extending **dead infrastructure** — its output table
+(`market_product_matches`) is not read anywhere in the live app; the
+component that would consume it (`CrossPlatformMatches.tsx`) isn't wired
+into any page. User chose to drop that thread entirely (not wire it up,
+not extend it, not delete it either — just leave it alone) and focus
+solely on the other, genuinely feasible half of tier (a): surfacing the
+already-accumulating `seller_product_competitor_matches` table (from Ask
+1) onto the category-level Competitors scorecard.
+
+**Decision:** read-side only, no SQL function change, no migration.
+`market_competitor_scorecards()` can't gain a new output column via
+`create or replace function` without a drop-first (risky — that function
+is depended on by every Competitors-page load and the report collector).
+Instead, a third parallel data source alongside the existing
+`getCompetitorOverlap()`, using the same proven embedded-select idiom
+already in this codebase (`onboarding-status.ts:28-29`,
+`market_products!inner(...)` + dotted-path `.eq()`). Verified
+`market_products` has no RLS anywhere in the migration history before
+relying on this.
+
+**Shipped:**
+1. `competitors.ts` — new `getCompetitorMatchCounts(sellerId,
+   sellerCategorySlug)`, reads `seller_product_competitor_matches` joined
+   to `market_products` (category/platform/active filtered via the
+   embed), rolls up distinct `seller_product_id` count per
+   `seller_external_id`.
+2. `page.tsx` — fetches it alongside `getCompetitorOverlap`, gated the
+   same way (only once the scorecard has rows), passes as new
+   `matchCounts` prop.
+3. `CompetitorsView.tsx` — new "Your tracked matches" column (teal badge,
+   deliberately different color from the overlap column's styling, "not
+   yet tracked" muted text at zero), a new `COLUMN_HELP.trackedMatches`
+   tooltip, and a new sentence in the "How to read this" card explicitly
+   contrasting it with the existing overlap column — this count only
+   grows when a seller has opened that product's Competitors drawer, so
+   zero means "not reviewed yet," never "no match exists." This
+   distinction was treated as load-bearing, not cosmetic copy.
+4. `competitors.test.ts` — new file (first for this module), 4 tests:
+   count rollup across distinct products, dedup when one product matches
+   two market_products from the same competitor, null
+   `seller_external_id` skipped without throwing, empty `categorySlugs`
+   short-circuits without calling Supabase.
+
+**Verified:** `tsc --noEmit` clean. `vitest run` on the new file +
+`product-matching.test.ts` — 13/13 pass. Full suite — 93/94 pass, the 1
+failure (`render.test.ts`'s PDF timeout) confirmed pre-existing
+flakiness unrelated to this change (passes cleanly in isolation, same
+"slow local build" environment issue already documented above under
+"Environment quirks"). Diff matches the approved plan's file list
+exactly (`git diff --stat`).
+
+**Not verified — genuinely outstanding:** a Supabase REST sanity check of
+the embedded-select query against live data was planned but **not run
+this session** — reading the Supabase URL/anon key from `CREDENTIALS.txt`
+was (correctly) denied by the auto-mode permission classifier, since this
+session had no explicit fresh authorization for it (a prior session's
+one-time grant doesn't carry over). Relied instead on the fact that the
+query is a direct copy of the already-proven `onboarding-status.ts`
+pattern, not a novel one. If picking this up: either get fresh explicit
+permission to read those two values, or ask the user to confirm the new
+column renders correctly with real data in their own browser (same
+`Claude_Preview` ban as everything else — no rendered-browser check was
+attempted here either).
+
+**Committed and pushed** (`521ac92`), confirmed local HEAD matched
+`origin/main` exactly (0/0 divergence via `git rev-list --left-right
+--count`) before pushing, so this was a clean fast-forward, no rebase
+needed.
+
+## Fixed (2026-08-28): seller assistant widget overlapped the sidebar's "Paid Plan" card
+
+User screenshot showed `SellerAssistantWidget.tsx`'s floating chat bubble
+(bottom-left, per Ask 3's original design) visually colliding with the
+sidebar's upgrade-nag card in the same corner. One-line fix: `left` →
+`right` in the widget's outer `position: fixed` `Box` — the expanded chat
+panel is self-contained (fixed/responsive width, its own `mb` spacing),
+so anchoring to the opposite corner doesn't affect its internal layout.
+`tsc --noEmit` clean. Committed `e6a6cc8`, pushed. Not browser-verified
+(standing `Claude_Preview` ban) — ask the user to confirm visually.
+
+**Next step if resuming either thread:** Ask 2 tier (b) (real scraper
+engineering — OLX proxy fix, review-text scraping, new retailer sources)
+is the one remaining item from the original 3-item scoping, explicitly
+deferred pending a rate-budget design. See its entry above and the
+runbook below, which still applies.
