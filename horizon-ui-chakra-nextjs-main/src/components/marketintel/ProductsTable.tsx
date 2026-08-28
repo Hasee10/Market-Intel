@@ -1,7 +1,7 @@
 'use client';
 
-import { Badge, Button, Icon, Skeleton, Table, Tbody, Td, Th, Thead, Tr, useColorModeValue } from '@chakra-ui/react';
-import { MdEdit } from 'react-icons/md';
+import { Badge, Button, Flex, Icon, Skeleton, Table, Tbody, Td, Th, Thead, Tr, useColorModeValue } from '@chakra-ui/react';
+import { MdEdit, MdStorefront } from 'react-icons/md';
 
 import type { IProduct } from '@/types/products';
 
@@ -9,6 +9,7 @@ type ProductsTableProps = {
   data: IProduct[];
   loading?: boolean;
   onEdit?: (product: IProduct) => void;
+  onViewCompetitors?: (product: IProduct) => void;
 };
 
 const formatCurrency = (amount: number | null, currency: string) =>
@@ -20,7 +21,7 @@ const formatCurrency = (amount: number | null, currency: string) =>
 // dashboard.
 const LOW_STOCK_THRESHOLD = 10;
 
-export function ProductsTable({ data, loading, onEdit }: ProductsTableProps) {
+export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: ProductsTableProps) {
   const rowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
   const titleColor = useColorModeValue('secondaryGray.900', 'white');
   const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
@@ -73,9 +74,19 @@ export function ProductsTable({ data, loading, onEdit }: ProductsTableProps) {
                     </Badge>
                   </Td>
                   <Td>
-                    <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(product)}>
-                      Edit
-                    </Button>
+                    <Flex gap="4px">
+                      <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(product)}>
+                        Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        leftIcon={<Icon as={MdStorefront} />}
+                        onClick={() => onViewCompetitors?.(product)}
+                      >
+                        Competitors
+                      </Button>
+                    </Flex>
                   </Td>
                 </Tr>
               );

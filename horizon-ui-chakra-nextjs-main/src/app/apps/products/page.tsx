@@ -19,6 +19,7 @@ import { PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import { IProduct } from '@/types/products';
 
+import { CompetitorsDrawer } from './components/CompetitorsDrawer';
 import { EditProductDrawer } from './components/EditProductDrawer';
 import { NewProductDrawer } from './components/NewProductDrawer';
 import { ProductCard } from './components/ProductCard';
@@ -77,10 +78,12 @@ function ProductsPageContent() {
   const categoryFilterName = searchParams.get('categoryName');
 
   const [selectedProduct, setSelectedProduct] = useState<IProduct | null>(null);
+  const [competitorsProduct, setCompetitorsProduct] = useState<IProduct | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [newOpen, setNewOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const [competitorsOpen, setCompetitorsOpen] = useState(false);
 
   const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
   const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
@@ -114,6 +117,11 @@ function ProductsPageContent() {
     setEditOpen(true);
   };
 
+  const handleViewCompetitors = (product: IProduct) => {
+    setCompetitorsProduct(product);
+    setCompetitorsOpen(true);
+  };
+
   const clearCategoryFilter = () => router.push('/apps/products');
 
   const renderContent = () => {
@@ -126,7 +134,7 @@ function ProductsPageContent() {
         </SimpleGrid>
       ) : (
         <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <ProductsTable data={[]} loading onEdit={handleEditProduct} />
+          <ProductsTable data={[]} loading onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
         </Card>
       );
     }
@@ -169,14 +177,19 @@ function ProductsPageContent() {
       <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
         {productsData.data.map((p, i) => (
           <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
-            <ProductCard data={p} onEdit={handleEditProduct} />
+            <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
           </Reveal>
         ))}
       </SimpleGrid>
     ) : (
       <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
         <Box overflowX="auto">
-          <ProductsTable data={productsData.data} loading={false} onEdit={handleEditProduct} />
+          <ProductsTable
+            data={productsData.data}
+            loading={false}
+            onEdit={handleEditProduct}
+            onViewCompetitors={handleViewCompetitors}
+          />
         </Box>
       </Card>
     );
@@ -254,6 +267,13 @@ function ProductsPageContent() {
         fields={importFields}
         apiEndpoint="/api/products/bulk-import"
         onImported={handleProductCreated}
+      />
+
+      <CompetitorsDrawer
+        isOpen={competitorsOpen}
+        onClose={() => setCompetitorsOpen(false)}
+        product={competitorsProduct}
+        reportingCurrency={sellerReportingCurrency}
       />
     </>
   );

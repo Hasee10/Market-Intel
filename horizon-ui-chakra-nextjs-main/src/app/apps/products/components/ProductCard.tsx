@@ -1,7 +1,7 @@
 'use client';
 
 import { Badge, Box, Button, Flex, Icon, Text, useColorModeValue } from '@chakra-ui/react';
-import { MdEdit } from 'react-icons/md';
+import { MdEdit, MdStorefront } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 import { IProduct } from '@/types/products';
@@ -9,6 +9,7 @@ import { IProduct } from '@/types/products';
 type ProductCardProps = {
   data: IProduct;
   onEdit?: (product: IProduct) => void;
+  onViewCompetitors?: (product: IProduct) => void;
 };
 
 // Was hardcoded to 'USD' regardless of the product's actual currency -
@@ -27,7 +28,7 @@ const LOW_STOCK_THRESHOLD = 10;
 // recommendation engine already treats as the line between healthy and thin.
 const HEALTHY_MARGIN_PCT = 0.15;
 
-export function ProductCard({ data, onEdit }: ProductCardProps) {
+export function ProductCard({ data, onEdit, onViewCompetitors }: ProductCardProps) {
   const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
   const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
   const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
@@ -98,7 +99,15 @@ export function ProductCard({ data, onEdit }: ProductCardProps) {
         </Box>
       </Flex>
 
-      <Flex justify="flex-end">
+      <Flex justify="flex-end" gap="4px">
+        <Button
+          size="sm"
+          variant="ghost"
+          leftIcon={<Icon as={MdStorefront} />}
+          onClick={() => onViewCompetitors?.(data)}
+        >
+          Competitors
+        </Button>
         <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(data)}>
           Edit
         </Button>

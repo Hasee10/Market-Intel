@@ -24,18 +24,12 @@ manual review, and ask the user to check the live app themselves for
 anything needing a rendered browser (`Claude_in_Chrome` MCP is an
 acceptable fallback if browser automation is unavoidable).
 
-**There are two open threads near the end of this file, both from
-2026-08-28:**
-1. Per-product competitor intel, broader scraper scope, and a dashboard
-   assistant — scoped, nothing approved, full runbook included. Do not
-   start writing code for any of it until you've read that section and
-   confirmed with the user which piece they want first.
-2. Whether the scraper is actually still landing fresh data — the GitHub
-   Actions workflow config is confirmed active/scheduled, but live run
-   success and data freshness were **not** verified (blocked on missing
-   `gh` CLI and a correctly-denied credentials-file read). Needs a
-   Supabase REST check against `market_products.updated_at` to actually
-   confirm, with the user's explicit go-ahead to read the URL/anon key.
+**Status as of this writing (follow-up session, 2026-08-28):** scraper
+freshness is now confirmed live (see "Resolved" section below). Ask 1 of
+the competitor-intel thread (per-product competitor view) is now
+**code-complete, not yet pushed or browser-verified** — see "Done: Ask 1"
+section below. Asks 2 and 3 (broader scraper scope, dashboard assistant)
+are still scoped-only, not started.
 
 ## What this product is (unchanged from mind.md, still true)
 
@@ -242,6 +236,141 @@ it works just because the automated checks pass.
 - `CREDENTIALS.txt` at repo root has live keys, gitignored, never print in
   full.
 
+## Done: Ask 1 — per-product competitor view (2026-08-28, follow-up session) — CODE COMPLETE, NOT PUSHED, NOT BROWSER-VERIFIED
+
+Picked up the scoping thread below with the user's explicit "all are
+priority, do as you like" — chose Ask 1 first as the lowest-risk/no-new-
+scraping option, per the runbook. Re-verified load-bearing facts before
+building (all held: Daraz rows still have populated rating/rating_count/
+sold_count, OLX still disabled via `CLASSIFIED_SOURCES = []`, Competitors
+page still purely category-scoped via `p_category_slugs`). Scoped via
+Plan Mode (Explore + Plan subagents), plan approved with these decisions:
+- New `CompetitorListing` type, kept deliberately separate from the
+  Market page's `ProductMatch` (not reused, even though the shape
+  overlaps today).
+- **Shipped free for all sellers, no entitlement gate** — user's own
+  words: "make it free as of now we will make paid once all the features
+  of the app are approved by the boss." Do not silently reintroduce the
+  `product_matching` paid gate on this route without checking with the
+  user first.
+- Top 5 matches, MIN_CONFIDENCE 0.3 (same threshold as the existing
+  category-level matcher).
+- Watchlist SELECT extension (`watchlists.ts` — separate surface) deferred
+  as its own fast-follow, not bundled into this change.
+
+**Shipped:**
+1. `horizon-ui-chakra-nextjs-main/src/lib/market-intel/similarity.ts` —
+   new shared module for `tokenize()`/`jaccard()`/`STOPWORDS`/
+   `MIN_CONFIDENCE`, extracted out of `competitors.ts` and
+   `product-matching.ts` (which each had their own identical copy —
+   collapsed two duplicates instead of adding a third).
+2. `product-matching.ts` — new `CompetitorListing` type and
+   `findCompetitorsForProduct(sellerId, sellerProductId, categorySlug,
+   reportingCurrency, limit=5)`, a sibling to the existing
+   `findTopProductMatches` (which is untouched — still the Market page's
+   batch top-1-per-product feeder). rating/ratingCount/soldCount are
+   nullable end-to-end, never coerced to 0.
+3. `horizon-ui-chakra-nextjs-main/src/app/api/products/[id]/competitors/route.ts`
+   — new GET route, resolves the seller's product's category slug (double-
+   filters `id` + `seller_id`, same defense-in-depth as the existing
+   `[id]/route.ts`), no entitlement gate (see decision above).
+4. `horizon-ui-chakra-nextjs-main/src/app/apps/products/components/CompetitorsDrawer.tsx`
+   — new read-only drawer (not folded into EditProductDrawer, which is a
+   write form). Renders nulls as em-dash, labels sold_count as a "demand
+   proxy" via tooltip, distinguishes Daraz ("other marketplace sellers")
+   from single-retailer platforms ("individual retailers stocking a
+   comparable item") in an explanatory line.
+5. `page.tsx` / `ProductsTable.tsx` / `ProductCard.tsx` — new "Competitors"
+   row/card action button (separate from "Edit"), wired to the new drawer.
+
+**Revised same day, before commit:** user corrected the matching model
+with a GPU example — a $300 and a $1500 GPU aren't competitors even if
+their titles overlap; two different GPU models at a similar price ARE
+competitors even with zero title overlap. `findCompetitorsForProduct()`
+now uses category + seller price ±15% (`PRICE_BRACKET_PCT`) as the HARD
+filter (a candidate with no price is excluded, can't be judged against
+the bracket); Jaccard title-similarity is ranking-only within the
+bracket, never a filter. If the seller product has no `sell_price` yet,
+falls back to category-only/title-ranked (no bracket to apply). Drawer
+copy updated to match: "within 15% of your price - the price range that
+actually competes for the same buyer, regardless of whether the product
+name matches yours." Added
+`horizon-ui-chakra-nextjs-main/src/lib/market-intel/product-matching.test.ts`,
+7 smoke tests covering: bracket exclusion despite title match, GPU-case
+inclusion despite no title match, in-bracket ranking by similarity,
+no-price-candidate exclusion, no-sell_price fallback, null passthrough on
+rating/ratingCount/soldCount, and limit capping.
+
+**Follow-up, same day: persisted competitor matches for price-trend/
+decommission tracking.** User asked whether matches should be "tagged" for
+identification, then confirmed: persist the match so price history can be
+tracked and a listing's decommission status can be seen — not just live
+recompute-and-discard on every drawer open. Scoped via Plan Mode (Explore
+agent read the actual schema/scraper code first). Key findings that shaped
+the design:
+- `market_products.is_active` is already flipped to `false` by the
+  scraper's `markStaleProducts()` (`scraper/src/db.ts`) whenever a listing
+  drops out of a scrape run — decommission detection needs **no new
+  logic**, just join to `market_products` and read `is_active`.
+- `market_price_history` (one row/product/day, `scraper/migrations/
+  026_price_history_hardening.sql`) already gives a price time series per
+  `market_product_id` with zero new capture code needed.
+- `seller_watchlist_items` (`014_seller_watchlists_and_notifications.sql`)
+  is the closest prior art — a seller-owned table pointing at a
+  `market_product_id`, read by a cron (`price-alerts-job.ts`) that diffs
+  against last-known state. Followed the same RLS/ownership pattern for
+  the new table.
+- User confirmed via AskUserQuestion: **backend only this round** (no
+  trend/decommission UI yet — CompetitorsDrawer's live top-5 is unchanged),
+  and **persist-on-read, not a new cron** (matches only start accumulating
+  history once a seller actually opens the drawer for that product; no new
+  scheduled job).
+
+**Shipped:**
+1. `scraper/migrations/028_seller_product_competitor_matches.sql` — new
+   table `seller_product_competitor_matches` (seller_id, seller_product_id,
+   market_product_id, confidence, first_matched_at, last_confirmed_at;
+   unique on seller_product_id+market_product_id), RLS via the same
+   `seller_id in (select id from sellers where user_id = auth.uid())`
+   owner-all policy used everywhere else. **Not yet applied to the
+   Supabase project** — per this repo's convention, migrations are applied
+   manually via the SQL Editor; ask the user before running it (or use the
+   Supabase MCP `apply_migration` tool with explicit permission first).
+2. `product-matching.ts` — `findCompetitorsForProduct()` now also fetches
+   `market_products.id`, and calls a new private `persistCompetitorMatches()`
+   after computing the top-N, which upserts them into the new table.
+   Deliberately best-effort: a persistence write failure is swallowed and
+   never breaks the live listings response, since the drawer's real job is
+   showing today's top-5, not writing history. `first_matched_at` is
+   omitted from the upsert payload so it's only ever set once, at insert.
+3. `product-matching.test.ts` — 2 new tests (9 total now): persists the
+   right rows keyed by seller+market product with a real confidence score
+   and no `first_matched_at` override, and persists nothing when nothing is
+   in-bracket.
+
+**No UI changes this round** — nothing to show yet since there's no history
+until sellers start opening drawers post-migration. A "tracked competitors"
+view (price sparkline, active/decommissioned badge) is the natural next
+step once the table has real data, but was explicitly deferred.
+
+**Migration 028 is written but NOT applied to the live Supabase project as
+of this writing** — until it's applied, `persistCompetitorMatches()` will
+fail its upsert on every real request (harmlessly swallowed, per the
+best-effort design above, but no history will actually accumulate). Apply
+it before relying on this feature.
+
+**Verified:** `tsc --noEmit` clean, `vitest` 78/78 pass (69 original + 7
+price-bracket + 2 persistence, no regressions). Diff matches the approved
+plan's file list exactly (checked via `git status`/`git diff --stat`),
+plus the price-bracket revision reviewed and confirmed by the user.
+
+**Not verified — genuinely outstanding:** no browser walkthrough (does the
+drawer actually open, does the table render correctly, does the "no
+matches" empty state look right). Per the hard Claude_Preview ban, this
+needs the user to check in their own browser. **Not committed or pushed
+yet either** — working tree has these changes uncommitted as of this
+writing; awaiting explicit go-ahead to commit.
+
 ## Open thread (2026-08-28): per-product competitor intel + broader scraper scope + dashboard assistant — SCOPED, NOT STARTED
 
 User asked for three things, after country-aware catalogue shipped. This
@@ -362,7 +491,29 @@ platforms since there's structurally no third-party seller there.
    don't let this "SCOPED, NOT STARTED" header go stale once it isn't
    true anymore.
 
-## Open thread (2026-08-28): is the scraper actually still running? — CONFIG CONFIRMED, LIVE STATUS NOT VERIFIED
+## Resolved (2026-08-28): scraper freshness — CONFIRMED LIVE, LANDING DATA
+
+Follow-up session got explicit user permission to read the Supabase URL +
+anon key from `CREDENTIALS.txt` (project ref `fognozenapenvmqsopxe`) and
+ran a direct REST check. **Confirmed all 10 active sources** (priceoye,
+telemart, shophive, ishopping, goto, sapphireonline, daraz, mega, naheed,
+shopperspk) have `market_products.last_seen_at` timestamps clustered in a
+~26-minute window on **2026-08-27 ~14:23–14:49 UTC** — consistent with one
+successful full scrape run, not partial/stale data. `market_price_history`
+independently confirms the same timestamp. OLX correctly has zero rows
+being touched (still disabled, as expected). Note: `market_products` has
+no `updated_at` column, only `first_seen_at`/`last_seen_at` — use those
+for any future freshness check, not `updated_at`.
+
+**Not checked this pass** (user opted to check the Actions tab
+themselves instead of installing `gh` CLI): whether the corresponding
+GitHub Actions run showed green or red. Worth asking the user what they
+saw if picking this up again — a red run that still landed data would
+mean a partial failure worth investigating (e.g. timeout after most
+sources completed).
+
+**Superseded section below (kept for history of what was unconfirmed
+before this check):**
 
 User asked "does scraping still happen or no?" Confirmed the **config**
 by reading the file, but could not confirm **live run outcomes** —

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 import { getMarketScope, type MarketScope } from '@/lib/market-intel/market-definition';
+import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
 //
@@ -220,28 +221,8 @@ async function getScopeMedianPrice(
 // Overlap and price win/loss against the seller's own catalog
 // ---------------------------------------------------------------------------
 
-const STOPWORDS = new Set(['the', 'a', 'an', 'for', 'with', 'and', 'of', 'in', 'pack', 'pcs']);
-const MIN_CONFIDENCE = 0.3;
 const MAX_SELLER_PRODUCTS = 60;
 const MAX_MARKET_CANDIDATES = 1500;
-
-function tokenize(title: string): Set<string> {
-  return new Set(
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
-      .split(/\s+/)
-      .filter((token) => token.length > 1 && !STOPWORDS.has(token)),
-  );
-}
-
-function jaccard(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 || b.size === 0) return 0;
-  let intersection = 0;
-  for (const token of a) if (b.has(token)) intersection += 1;
-  const union = a.size + b.size - intersection;
-  return union === 0 ? 0 : intersection / union;
-}
 
 export type CompetitorOverlap = {
   externalId: string;
