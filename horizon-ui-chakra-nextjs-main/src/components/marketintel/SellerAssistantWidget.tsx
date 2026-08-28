@@ -80,7 +80,7 @@ export function SellerAssistantWidget() {
   }
 
   return (
-    <Box position="fixed" bottom={{ base: '20px', md: '28px' }} left={{ base: '20px', md: '28px' }} zIndex="40">
+    <Box position="fixed" bottom={{ base: '20px', md: '28px' }} right={{ base: '20px', md: '28px' }} zIndex="40">
       {isOpen && (
         <Reveal duration={250}>
           <Flex
