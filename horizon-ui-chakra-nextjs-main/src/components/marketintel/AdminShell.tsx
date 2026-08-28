@@ -5,6 +5,7 @@ import { Box, useDisclosure, useColorModeValue } from '@chakra-ui/react';
 import Navbar from 'components/navbar/NavbarAdmin';
 import Sidebar from 'components/sidebar/Sidebar';
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth';
+import { SellerAssistantWidget } from 'components/marketintel/SellerAssistantWidget';
 import { SidebarContext } from 'contexts/SidebarContext';
 import { usePathname } from 'next/navigation';
 import { PropsWithChildren, useEffect, useState } from 'react';
@@ -87,6 +88,8 @@ export default function AdminShell(props: AdminShellProps) {
             {children}
           </Box>
         </Box>
+
+        <SellerAssistantWidget />
       </SidebarContext.Provider>
     </Box>
   );
