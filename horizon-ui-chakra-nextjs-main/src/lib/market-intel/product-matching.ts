@@ -174,6 +174,22 @@ export type CompetitorListing = {
 // pool.
 const MAX_COMPETITOR_MATCHES = 15;
 
+// Separate, much larger cap than MAX_MARKET_CANDIDATES (300, shared with
+// findTopProductMatches - which genuinely needs a small cap since it runs
+// per-candidate comparisons across up to 20 seller products in one call).
+// This function only ever handles one seller product per call, so the cost
+// of scoring more candidates in JS is trivial - but the query below has no
+// ORDER BY, so a small cap on a category with thousands of active rows
+// across several segments (e.g. "Mobiles & Electronics" spanning Audio,
+// Laptops & Computing, Phones, Tablets) could sample an arbitrary 300 rows
+// that happen to miss the seller's actual segment entirely. Found live:
+// a product titled "Laptops" returned zero matches in a category with
+// 3,556 active listings, because none of an unordered 300-row sample
+// happened to be laptops. Raising this doesn't fix the lack of an ORDER BY
+// (still arbitrary which rows get dropped if a category exceeds this too),
+// but 3000 covers real categories seen so far with room to spare.
+const MAX_COMPETITOR_CANDIDATES = 3000;
+
 export async function findCompetitorsForProduct(
   sellerId: string,
   sellerProductId: string,
@@ -199,7 +215,7 @@ export async function findCompetitorsForProduct(
       .eq('is_active', true)
       .in('category_slug', scope.categorySlugs)
       .in('platform_id', scope.activePlatformIds)
-      .limit(MAX_MARKET_CANDIDATES),
+      .limit(MAX_COMPETITOR_CANDIDATES),
     getLatestFxRates(),
   ]);
 
