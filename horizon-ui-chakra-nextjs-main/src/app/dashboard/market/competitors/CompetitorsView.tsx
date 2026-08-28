@@ -24,7 +24,7 @@ import Card from 'components/card/Card';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
-import type { CompetitorLandscape, CompetitorOverlap } from '@/lib/market-intel/competitors';
+import type { CompetitorLandscape, CompetitorMatchStats, CompetitorOverlap } from '@/lib/market-intel/competitors';
 import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
@@ -34,6 +34,7 @@ type Props = {
   reportingCurrency: string;
   landscape: CompetitorLandscape | null;
   overlap: CompetitorOverlap[];
+  matchCounts: CompetitorMatchStats[];
   scopeSummary: MarketScopeSummary | null;
 };
 
@@ -75,6 +76,8 @@ const COLUMN_HELP = {
   sold: 'Platform-reported units sold, rounded by the platform itself. A demand proxy, not sales data.',
   overlap:
     'Your SKUs with a plausible title match in their assortment, and how many of those you price below them on. Matched by title similarity, so treat it as directional.',
+  trackedMatches:
+    'Your own products where you opened the Competitors drawer and it saved a match against this seller. Builds up from your activity, not a fresh scan — a low or zero count usually means you have not reviewed those products yet.',
 };
 
 export default function CompetitorsView({
@@ -83,6 +86,7 @@ export default function CompetitorsView({
   reportingCurrency,
   landscape,
   overlap,
+  matchCounts,
   scopeSummary,
 }: Props) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
@@ -93,6 +97,11 @@ export default function CompetitorsView({
   const overlapByCompetitor = useMemo(
     () => new Map(overlap.map((row) => [row.externalId, row])),
     [overlap],
+  );
+
+  const matchCountsByCompetitor = useMemo(
+    () => new Map(matchCounts.map((row) => [row.externalId, row])),
+    [matchCounts],
   );
 
   const header = (
@@ -219,11 +228,17 @@ export default function CompetitorsView({
                       <span>Overlap / you cheaper</span>
                     </Tooltip>
                   </Th>
+                  <Th isNumeric>
+                    <Tooltip label={COLUMN_HELP.trackedMatches} hasArrow>
+                      <span>Your tracked matches</span>
+                    </Tooltip>
+                  </Th>
                 </Tr>
               </Thead>
               <Tbody>
                 {scorecards.map((competitor) => {
                   const head2head = overlapByCompetitor.get(competitor.externalId);
+                  const trackedMatches = matchCountsByCompetitor.get(competitor.externalId);
                   const tenure = monthsSince(competitor.firstSeenAt);
                   return (
                     <Tr key={competitor.externalId}>
@@ -307,6 +322,18 @@ export default function CompetitorsView({
                           </>
                         )}
                       </Td>
+                      <Td isNumeric>
+                        {!trackedMatches || trackedMatches.matchedProductCount === 0 ? (
+                          <Text fontSize="xs" color={mutedColor}>
+                            not yet tracked
+                          </Text>
+                        ) : (
+                          <Badge colorScheme="teal" variant="subtle" fontSize="11px">
+                            {trackedMatches.matchedProductCount}{' '}
+                            {trackedMatches.matchedProductCount === 1 ? 'product' : 'products'}
+                          </Badge>
+                        )}
+                      </Td>
                     </Tr>
                   );
                 })}
@@ -327,6 +354,12 @@ export default function CompetitorsView({
               Overlap and the cheaper-than count are computed by comparing product titles, over your 60 most
               recently updated active products. They point you at the right competitor to look at; they are not
               a reconciled catalog match.
+            </Text>
+            <Text fontSize="sm" color={mutedColor} mb="6px">
+              &quot;Your tracked matches&quot; is different from overlap above: it only counts products where you
+              actually opened the Competitors drawer and a match was saved, so it accumulates over time rather
+              than recalculating on every visit. Treat a zero here as &quot;not reviewed yet,&quot; not &quot;no
+              match exists.&quot;
             </Text>
             <Text fontSize="sm" color={mutedColor}>
               Every figure is confined to your market definition. Change the segments, price band or platforms

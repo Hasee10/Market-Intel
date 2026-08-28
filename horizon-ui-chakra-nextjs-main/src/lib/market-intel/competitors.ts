@@ -334,3 +334,71 @@ export async function getCompetitorOverlap(
 
   return result;
 }
+
+// ---------------------------------------------------------------------------
+// The seller's own accumulated match history (not recomputed - read from
+// seller_product_competitor_matches, populated by product-matching.ts's
+// persistCompetitorMatches() whenever a seller opens a product's Competitors
+// drawer). Unlike getCompetitorOverlap above, this is NOT a fresh
+// title-similarity pass: it is literally how many of the seller's own
+// products have a saved match against this competitor, as of whenever they
+// last looked. It only grows as the seller opens drawers, so a low/zero
+// count here means "not reviewed yet," not "no real match exists" - that
+// distinction has to survive into the UI copy, not just live here.
+// ---------------------------------------------------------------------------
+
+const MAX_MATCH_ROWS = 2000;
+
+export type CompetitorMatchStats = {
+  externalId: string;
+  /** Distinct seller_products with a persisted match against this competitor. */
+  matchedProductCount: number;
+};
+
+type MatchRow = {
+  seller_product_id: string;
+  market_products: {
+    platform_id: string;
+    seller_external_id: string | null;
+    category_slug: string;
+    is_active: boolean;
+  } | null;
+};
+
+export async function getCompetitorMatchCounts(
+  sellerId: string,
+  sellerCategorySlug: string,
+): Promise<Map<string, CompetitorMatchStats>> {
+  const scope = await getMarketScope(sellerCategorySlug, sellerId);
+  const result = new Map<string, CompetitorMatchStats>();
+  if (scope.categorySlugs.length === 0) return result;
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('seller_product_competitor_matches')
+    .select(
+      'seller_product_id, market_products!inner(platform_id, seller_external_id, category_slug, is_active)',
+    )
+    .eq('seller_id', sellerId)
+    .eq('market_products.is_active', true)
+    .in('market_products.category_slug', scope.categorySlugs)
+    .in('market_products.platform_id', scope.activePlatformIds)
+    .limit(MAX_MATCH_ROWS);
+
+  if (error || !data) return result;
+
+  const productsByCompetitor = new Map<string, Set<string>>();
+  for (const row of data as unknown as MatchRow[]) {
+    const externalId = row.market_products?.seller_external_id;
+    if (!externalId) continue;
+    const set = productsByCompetitor.get(externalId) ?? new Set<string>();
+    set.add(row.seller_product_id);
+    productsByCompetitor.set(externalId, set);
+  }
+
+  for (const [externalId, set] of productsByCompetitor) {
+    result.set(externalId, { externalId, matchedProductCount: set.size });
+  }
+
+  return result;
+}

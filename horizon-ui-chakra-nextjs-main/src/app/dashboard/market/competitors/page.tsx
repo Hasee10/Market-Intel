@@ -1,4 +1,4 @@
-import { getCompetitorLandscape, getCompetitorOverlap } from '@/lib/market-intel/competitors';
+import { getCompetitorLandscape, getCompetitorMatchCounts, getCompetitorOverlap } from '@/lib/market-intel/competitors';
 import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
 import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
@@ -26,6 +26,13 @@ export default async function CompetitorsPage() {
       ? Array.from((await getCompetitorOverlap(seller.id, domain.categorySlug, reportingCurrency)).values())
       : [];
 
+  // Cheap indexed count, gated the same as overlap - no point running it on
+  // an empty scorecard page.
+  const matchCounts =
+    domain && seller && hasAccess && landscape && landscape.scorecards.length > 0
+      ? Array.from((await getCompetitorMatchCounts(seller.id, domain.categorySlug)).values())
+      : [];
+
   const scopeSummary =
     domain && seller ? await getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null;
 
@@ -36,6 +43,7 @@ export default async function CompetitorsPage() {
       reportingCurrency={reportingCurrency}
       landscape={landscape}
       overlap={overlap}
+      matchCounts={matchCounts}
       scopeSummary={scopeSummary}
     />
   );
