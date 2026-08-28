@@ -43,13 +43,21 @@ seller-vs-competitor price comparison feature it enables is still a real
 "later stage," not built. Run `git status`/`git log` before assuming this
 is still current — it won't be for long.
 
-**Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
-this project — hangs unrecoverably across two clean-restart attempts, user
-explicitly said "never run a preview again." Use curl+Supabase REST for
-DB/schema checks, `tsc --noEmit` + `vitest` for code correctness, careful
-manual review, and ask the user to check the live app themselves for
-anything needing a rendered browser (`Claude_in_Chrome` MCP is an
-acceptable fallback if browser automation is unavoidable).
+**Hard rule, still active — UPDATED 2026-08-28, read carefully:** never
+use ANY browser automation in this project without the user explicitly
+asking for it in that specific turn - this now includes `Claude_in_Chrome`,
+not just `mcp__Claude_Preview__*`. Earlier versions of this note called
+`Claude_in_Chrome` "an acceptable fallback if browser automation is
+unavoidable" - that framing is exactly what led to it being used
+unprompted to check a live product's Competitors drawer, which the user
+reacted to sharply ("why the fuck did you go to preview, no previews
+never"). Their objection was to browser automation in general, not just
+the local dev-server tool, even though the earlier note had drawn that
+distinction. Use curl+Supabase REST for DB/schema checks, `tsc --noEmit` +
+`vitest` for code correctness, careful manual review, and ask the user to
+check the live app themselves for anything needing a rendered browser -
+always, no exceptions, unless they explicitly say to use the browser this
+time.
 
 **Status as of this writing (follow-up session, 2026-08-28):** scraper
 freshness is now confirmed live (see "Resolved" section below). Ask 1 of
