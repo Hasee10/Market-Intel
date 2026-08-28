@@ -7,18 +7,27 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `d01acf2` (2026-08-28), pushed to
+**Current HEAD as of this writing:** `cc63128` (2026-08-28), pushed to
 `origin/main`, working tree clean. Ask 1 (per-product competitor drawer),
 Ask 3 (dashboard assistant), Ask 2 tier (a) (tracked-matches column), a
-slice of Ask 2 tier (b) (got-scraping wired into `polite.ts`), and
+slice of Ask 2 tier (b) (got-scraping wired into `polite.ts`),
 auto-category-assignment on product add/CSV import (see "Done:
-auto-assign category" below) are all shipped and pushed. Still open
-within Ask 2 tier (b): new retailer sites (user is naming targets), OLX
-proxy fix, review-text scraping. Also flagged but not yet built: a
-`seller_product_price_history` table (doesn't exist today — needed
-before seller-vs-competitor price comparison-over-time can be built, see
-"Flagged (2026-08-28)" note below). Run `git status`/`git log` before
-assuming this is still current — it won't be for long.
+auto-assign category" below), and a data cleanup (18 stale OLX rows
+removed from `market_category_map`, migration 029 — fixes the "2
+platforms" stale-count issue flagged in multiple places below) are all
+shipped and pushed. Still open within Ask 2 tier (b): new retailer sites
+(waiting on the user to name targets), OLX proxy fix, review-text
+scraping — **do not start any of these without the user naming targets/
+confirming, per the standing runbook below.** Also flagged but not yet
+built: a `seller_product_price_history` table (doesn't exist today —
+needed before seller-vs-competitor price comparison-over-time can be
+built, see "Flagged (2026-08-28)" note below) — **explicitly a later-
+stage item per the user, not something to build unprompted.** The Vercel
+landing-page hydration crash (2026-08-21) is also still unresolved,
+blocked on the user confirming whether an Incognito-window test showed
+the crash going away (ad-blocker extension was the leading suspect) — no
+confirmation received as of this writing. Run `git status`/`git log`
+before assuming this is still current — it won't be for long.
 
 **Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
 this project — hangs unrecoverably across two clean-restart attempts, user
