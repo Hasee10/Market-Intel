@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text, useColorModeValue } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
@@ -13,7 +13,8 @@ import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImpo
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { ProductsTable } from '@/components/marketintel/ProductsTable';
-import { useFetch } from '@/lib/hooks/useApi';
+import { useFetch, useProfile } from '@/lib/hooks/useApi';
+import { getCountryProductConfig } from '@/lib/market-intel/countries';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import { IProduct } from '@/types/products';
@@ -29,14 +30,32 @@ const breadcrumbItems = [
   { title: 'Products', href: '#' },
 ];
 
-const IMPORT_FIELDS: ImportField[] = [
-  { key: 'sku', label: 'SKU', required: true },
-  { key: 'title', label: 'Title', required: true },
-  { key: 'costPrice', label: 'Cost price', type: 'number' },
-  { key: 'sellPrice', label: 'Sell price', type: 'number' },
-  { key: 'stockQty', label: 'Stock quantity', type: 'number' },
-  { key: 'isActive', label: 'Active (yes/no)', type: 'boolean' },
-];
+// SKU's `required` flag is the seller's own country config, not a fixed
+// choice - a market without formal SKU conventions shouldn't be blocked
+// from importing at all just because that one column isn't in their file.
+// See countries.ts.
+function buildImportFields(skuRequired: boolean, reportingCurrency: string): ImportField[] {
+  return [
+    {
+      key: 'sku',
+      label: 'SKU',
+      required: skuRequired,
+      helperText: skuRequired
+        ? undefined
+        : 'Optional for your region - rows without one are matched by product name on re-import.',
+    },
+    { key: 'title', label: 'Title', required: true },
+    {
+      key: 'currency',
+      label: 'Currency',
+      helperText: `Defaults to your reporting currency (${reportingCurrency}) when not mapped.`,
+    },
+    { key: 'costPrice', label: 'Cost price', type: 'number' },
+    { key: 'sellPrice', label: 'Sell price', type: 'number' },
+    { key: 'stockQty', label: 'Stock quantity', type: 'number' },
+    { key: 'isActive', label: 'Active (yes/no)', type: 'boolean' },
+  ];
+}
 
 // useSearchParams() (for ?categoryId=&categoryName=, arriving via a click
 // from the Categories page) forces this into a client-side-rendered
@@ -73,6 +92,14 @@ function ProductsPageContent() {
     error: productsError,
     refetch: refetchProducts,
   } = useFetch<IApiResponse<IProduct[]>>(apiUrl);
+
+  const { data: profileData } = useProfile();
+  const sellerCountry = profileData?.data?.country;
+  const sellerReportingCurrency = profileData?.data?.reportingCurrency ?? 'PKR';
+  const importFields = useMemo(
+    () => buildImportFields(getCountryProductConfig(sellerCountry).skuRequired, sellerReportingCurrency),
+    [sellerCountry, sellerReportingCurrency],
+  );
 
   const handleProductCreated = useCallback(() => {
     refetchProducts();
@@ -224,7 +251,7 @@ function ProductsPageContent() {
         isOpen={importOpen}
         onClose={() => setImportOpen(false)}
         title="products"
-        fields={IMPORT_FIELDS}
+        fields={importFields}
         apiEndpoint="/api/products/bulk-import"
         onImported={handleProductCreated}
       />

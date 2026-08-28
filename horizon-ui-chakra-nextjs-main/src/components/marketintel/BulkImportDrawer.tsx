@@ -35,6 +35,8 @@ export type ImportField = {
   label: string;
   required?: boolean;
   type?: 'number' | 'boolean' | 'string';
+  /** Small note under the label - e.g. explaining why a field is/isn't required for this seller. */
+  helperText?: string;
 };
 
 type BulkImportDrawerProps = {
@@ -64,7 +66,9 @@ export function BulkImportDrawer({ isOpen, onClose, title, fields, apiEndpoint, 
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [importing, setImporting] = useState(false);
-  const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
+  const [result, setResult] = useState<{ imported: number; skipped: number; skippedReasons?: string[] } | null>(
+    null,
+  );
 
   const reset = () => {
     setHeaders([]);
@@ -185,6 +189,11 @@ export function BulkImportDrawer({ isOpen, onClose, title, fields, apiEndpoint, 
                         {field.label}
                         {field.required && ' *'}
                       </FormLabel>
+                      {field.helperText && (
+                        <Text fontSize="xs" color="secondaryGray.600" mb="4px">
+                          {field.helperText}
+                        </Text>
+                      )}
                       <Select
                         size="sm"
                         placeholder="Not mapped"
@@ -230,7 +239,11 @@ export function BulkImportDrawer({ isOpen, onClose, title, fields, apiEndpoint, 
             {result && (
               <Alert status="success" borderRadius="12px">
                 <AlertIcon />
-                Imported {result.imported} row(s){result.skipped > 0 && `, skipped ${result.skipped} invalid row(s)`}
+                Imported {result.imported} row(s)
+                {result.skipped > 0 &&
+                  `, skipped ${result.skipped} row(s)${
+                    result.skippedReasons?.length ? ` (${result.skippedReasons.join(', ')})` : ''
+                  }`}
               </Alert>
             )}
           </Stack>

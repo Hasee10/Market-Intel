@@ -4,8 +4,11 @@ import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
 import { PATH_DASHBOARD } from '@/lib/paths';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
 
-export async function setPrimaryDomain(categoryId: string) {
+const VALID_COUNTRY_CODES = new Set<string>(SUPPORTED_COUNTRIES.map((c) => c.code));
+
+export async function setPrimaryDomain(categoryId: string, country: string) {
   const supabase = await createClient();
 
   const {
@@ -44,7 +47,17 @@ export async function setPrimaryDomain(categoryId: string) {
     return { error: 'Could not save your domain. Please try again.' };
   }
 
-  await supabase.from('sellers').update({ onboarded_at: new Date().toISOString() }).eq('id', seller.id);
+  // Onboarding stays a single round-trip: country and onboarded_at land in
+  // the same update as the domain pick, not a separate Settings visit.
+  // An invalid/unmapped code silently keeps the column's own 'PK' default
+  // rather than erroring the whole flow over a cosmetic field.
+  await supabase
+    .from('sellers')
+    .update({
+      onboarded_at: new Date().toISOString(),
+      ...(VALID_COUNTRY_CODES.has(country) ? { country } : {}),
+    })
+    .eq('id', seller.id);
 
   redirect(PATH_DASHBOARD.market);
 }

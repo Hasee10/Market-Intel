@@ -16,6 +16,7 @@ import {
 import Card from 'components/card/Card';
 
 import { setPrimaryDomain } from './actions';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
 
 type Category = { id: string; slug: string; name: string };
 
@@ -25,6 +26,10 @@ type Props = {
 
 export function CategoryPicker({ categories }: Props) {
   const [categoryId, setCategoryId] = useState<string>('');
+  // Pre-filled to Pakistan - the existing seller base is overwhelmingly
+  // there, so onboarding stays a glance-and-continue "one quick step" for
+  // most sellers rather than turning into a second decision to make.
+  const [country, setCountry] = useState<string>('PK');
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -37,7 +42,7 @@ export function CategoryPicker({ categories }: Props) {
     setError(null);
     startTransition(() => {
       (async () => {
-        const result = await setPrimaryDomain(categoryId);
+        const result = await setPrimaryDomain(categoryId, country);
         if (result?.error) {
           setError(result.error);
         }
@@ -59,6 +64,19 @@ export function CategoryPicker({ categories }: Props) {
             {error}
           </Alert>
         )}
+
+        <FormControl>
+          <FormLabel fontSize="sm" fontWeight="500">
+            Country
+          </FormLabel>
+          <Select value={country} onChange={(e) => setCountry(e.target.value)}>
+            {SUPPORTED_COUNTRIES.map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </FormControl>
 
         <FormControl>
           <FormLabel fontSize="sm" fontWeight="500">

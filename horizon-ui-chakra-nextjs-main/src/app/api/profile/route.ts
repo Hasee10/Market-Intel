@@ -4,6 +4,7 @@ import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { sanitizeDomain } from '@/lib/domain';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
 
 function mapPublicProfile(row: any) {
   return {
@@ -51,6 +52,7 @@ export async function GET() {
       planTier: seller.planTier,
       onboardedAt: seller.onboardedAt,
       reportingCurrency: seller.reportingCurrency,
+      country: seller.country,
       publicProfile: mapPublicProfile(publicProfile),
     },
     errors: [],
@@ -96,6 +98,20 @@ export async function PUT(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { succeeded: false, data: null, errors: [error.message], message: 'Failed to update reporting currency' },
+        { status: 400 },
+      );
+    }
+  }
+
+  const validCountryCodes = new Set(SUPPORTED_COUNTRIES.map((c) => c.code));
+  let country = seller.country;
+  if (typeof body.country === 'string' && validCountryCodes.has(body.country)) {
+    country = body.country;
+    const { error } = await supabase.from('sellers').update({ country }).eq('id', seller.id);
+
+    if (error) {
+      return NextResponse.json(
+        { succeeded: false, data: null, errors: [error.message], message: 'Failed to update country' },
         { status: 400 },
       );
     }
@@ -158,6 +174,7 @@ export async function PUT(request: NextRequest) {
       planTier: seller.planTier,
       onboardedAt: seller.onboardedAt,
       reportingCurrency,
+      country,
       publicProfile: mapPublicProfile(updatedProfile),
     },
     errors: [],

@@ -26,6 +26,7 @@ import { ReferralCard } from '@/components/marketintel/ReferralCard';
 import { useProfile } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
 
 const breadcrumbItems = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
@@ -42,6 +43,7 @@ export default function SettingsPage() {
 
   const [businessName, setBusinessName] = useState('');
   const [reportingCurrency, setReportingCurrency] = useState('PKR');
+  const [country, setCountry] = useState('PK');
   const [isPublic, setIsPublic] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [showPricePosition, setShowPricePosition] = useState(false);
@@ -54,6 +56,7 @@ export default function SettingsPage() {
     if (profile) {
       setBusinessName(profile.businessName || '');
       setReportingCurrency(profile.reportingCurrency || 'PKR');
+      setCountry(profile.country || 'PK');
       setIsPublic(profile.publicProfile?.isPublic || false);
       setDisplayName(profile.publicProfile?.displayName || '');
       setShowPricePosition(profile.publicProfile?.showPricePosition || false);
@@ -73,6 +76,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           businessName,
           reportingCurrency,
+          country,
           publicProfile: {
             isPublic,
             displayName,
@@ -154,6 +158,22 @@ export default function SettingsPage() {
             </Text>
             <Select value={reportingCurrency} onChange={(e) => setReportingCurrency(e.target.value)}>
               {SUPPORTED_CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.label}
+                </option>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl mt="16px">
+            <FormLabel fontSize="sm" fontWeight="500">
+              Country
+            </FormLabel>
+            <Text fontSize="xs" color="secondaryGray.600" mb="6px">
+              Adjusts which product fields (like SKU) are required when adding or importing products,
+              so you&apos;re never forced to fill in something your market doesn&apos;t use.
+            </Text>
+            <Select value={country} onChange={(e) => setCountry(e.target.value)}>
+              {SUPPORTED_COUNTRIES.map((c) => (
                 <option key={c.code} value={c.code}>
                   {c.label}
                 </option>

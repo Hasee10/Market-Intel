@@ -12,6 +12,8 @@ export type Seller = {
   planTier: string;
   onboardedAt: string | null;
   reportingCurrency: string;
+  /** ISO 3166-1 alpha-2. Defaults to 'PK' at the DB level (migration 027). */
+  country: string;
 };
 
 export type SellerDomain = {
@@ -40,7 +42,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
 
   const { data, error } = await supabase
     .from('sellers')
-    .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency')
+    .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency, country')
     .eq('user_id', user.id)
     .single();
 
@@ -54,6 +56,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
     planTier: data.plan_tier,
     onboardedAt: data.onboarded_at,
     reportingCurrency: data.reporting_currency,
+    country: data.country,
   };
 }
 
