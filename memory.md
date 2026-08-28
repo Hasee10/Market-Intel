@@ -7,11 +7,22 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**Current HEAD as of this writing:** `f42fd39` (2026-08-06). Today's date
-context: 2026-08-28. **Uncommitted local changes exist** — the
-country-aware product catalogue work (see below) is fully written and its
-migration is applied live, but nothing has been committed or pushed yet.
-Run `git status` before assuming HEAD reflects reality.
+**Current HEAD as of this writing:** `c259ea7` (2026-08-28), pushed to
+`origin/main`, working tree clean. Country-aware product catalogue (see
+below) is fully shipped: committed, rebased onto 3 concurrent remote
+commits (incl. `5c9d5cc` "Unlock all plan-tier features for demo
+purposes" — a real behavior change to entitlements/plan-tier gating, now
+live), typecheck+tests re-verified post-rebase, pushed. User is testing it
+live themselves. Run `git status`/`git log` before assuming this is still
+current — it won't be for long.
+
+**Hard rule, still active:** never use `mcp__Claude_Preview__*` tools in
+this project — hangs unrecoverably across two clean-restart attempts, user
+explicitly said "never run a preview again." Use curl+Supabase REST for
+DB/schema checks, `tsc --noEmit` + `vitest` for code correctness, careful
+manual review, and ask the user to check the live app themselves for
+anything needing a rendered browser (`Claude_in_Chrome` MCP is an
+acceptable fallback if browser automation is unavoidable).
 
 ## What this product is (unchanged from mind.md, still true)
 
@@ -217,3 +228,88 @@ it works just because the automated checks pass.
   018–023 are confirmed applied as of this session.
 - `CREDENTIALS.txt` at repo root has live keys, gitignored, never print in
   full.
+
+## Open thread (2026-08-28): per-product competitor intel + broader scraper scope + dashboard assistant — SCOPED, NOT STARTED
+
+User asked for three things, after country-aware catalogue shipped. This
+was a scoping conversation (explicit: "reason with me and research well
+before proceeding with anything") — **nothing below is implemented.**
+Investigated via a research subagent reading actual code, not assumed.
+
+**Ask 1 — per-product competitor view.** When a seller adds a specific
+product, they want to see matching competitor listings for *that product*
+with location, reviews (+/-), and sales — not today's category-level
+Competitors page.
+- Reality found: Competitors page (`competitors.ts`,
+  `market_competitor_scorecards()` SQL fn, migration 022) is scoped purely
+  by category, never by product identity. Watchlist
+  (`lib/market-intel/watchlists.ts`, `searchMarketProducts`) is the only
+  product-specific mechanism today, but it's manual (seller searches and
+  picks) and only surfaces title/platform/price/stock — even though
+  `market_products.rating`, `.rating_count`, `.sold_count` already exist
+  and are populated for Daraz rows. That's a cheap win: surface existing
+  columns, and turn the manual watchlist search into auto-matching on
+  product add (extend the existing but underused title-similarity
+  "overlap" logic in `CompetitorsView.tsx` rather than building fresh).
+- **Location is not honestly deliverable right now for any platform.**
+  `market_products` (retailer listings — Daraz, PriceOye, etc.) has no
+  location column at all, ever. Only `market_classified_listings.city`
+  (OLX) has it, and **OLX is currently disabled** (see below) — the
+  Competitors page's "994 listings / 2 platforms" stat is stale/wrong
+  right now because of this; should be fixed regardless of what else
+  happens.
+- **10 of 11 scraped sources are single-retailer storefronts** (PriceOye,
+  Telemart, Shophive, Sapphire, Mega, Naheed, Vmart, ShoppersPK,
+  iShopping, GoTo) — the platform *is* the seller, no third-party seller
+  identity to attach location/reviews to. Only **Daraz** is a real
+  multi-seller marketplace. Any "seller-specific" competitor data
+  (location, per-seller reviews) can only ever apply to Daraz.
+- Reviews: only aggregate `rating`+`rating_count` ever scraped (Daraz,
+  PriceOye) — **no review text anywhere**, positive or negative. Getting
+  real review text/sentiment means new scraper work crawling individual
+  review pages, which multiplies request volume per listing — a real
+  rate-limit risk given what happened to OLX (see below). If built,
+  should be bounded to watchlisted products only, not the whole catalog.
+- Sales: `market_products.sold_count` (migration 019) is Daraz's own
+  displayed "X sold" badge — explicitly commented in the migration as "a
+  demand *proxy*, not sales data." Should be labeled as an estimate in any
+  UI that surfaces it, not asserted as verified sales.
+
+**Ask 2 — broaden scraper scope beyond category-general.** Two different
+risk tiers: (a) using data scrapers *already collect* for
+product-identity matching instead of only category bucketing — this is a
+matching-layer/DB change, not a scraper change, low risk; (b) actually
+scraping new fields (review text, re-enabling OLX for location) — real
+scraper engineering with real rate-limit risk. **OLX Pakistan was fully
+disabled `30b00f8` (2026-08-03)** after backoff/retry still got
+standing IP-level 429 blocks from GitHub Actions runner IPs
+(`scraper/src/sources/index.ts`, `CLASSIFIED_SOURCES = []`) — this is the
+direct cautionary precedent for why (b) needs a deliberate rate-budget
+design before shipping, not just "add more scraping."
+
+**Ask 3 — dashboard-embedded smart assistant** (bottom-left, general
+chat + sales/margin advice, reasoning grounded in the seller's own data).
+**Not reusable from what exists** — `src/lib/ai/groq-client.ts` +
+`src/app/api/assistant/route.ts` + `AssistantWidget.tsx` is the
+**public marketing-site FAQ bot only**, explicitly unauthenticated, no
+seller identity read (`route.ts`: "backs the marketing-site widget, not
+anything seller-specific"). Uses Groq (Llama 3.1-8b-instant) via plain
+fetch, not OpenAI/Anthropic. The calling *pattern* (`callGroqJson`/
+`callGroqChat`) is reusable; a seller-aware version reading their
+products/orders/competitor-scorecard data is new work. My recommendation
+(not yet agreed): ship it **advisory/read-only** first — reasons and
+recommends, doesn't take actions (change prices, edit listings) on the
+seller's behalf — matching this platform's overall posture of easing
+decisions rather than automating them away from the owner.
+
+**Flagged to fix regardless of which phase comes next:** the stale "2
+platforms" Competitors stat (OLX is off); don't promise
+location/review-per-seller for the 10 single-retailer-storefront
+platforms since there's structurally no third-party seller there.
+
+**Next step if resuming this thread:** nothing has been prioritized yet —
+user said to fully scope it out first rather than pick a phase. Ask the
+user which of the three (auto-matching + surface existing fields /
+re-enable OLX safely / review-text scraping for watchlisted items /
+the assistant) they want to sequence first before writing an
+implementation plan.
