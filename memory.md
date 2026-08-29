@@ -1630,3 +1630,79 @@ outside any repo, deleted once restored. **This is the second corruption
 event on `E:` today, in two unrelated locations** - flagged to the user
 as a real pattern worth a `chkdsk E: /f /r` at some point, not just
 another one-off. **Current working directory: `E:\Market-Intel-fresh2`.**
+
+## 2026-08-29: domain auto-assign backfill + assistant markdown fix +
+"All My Products" competitors view - `522b6e6`, `efc5925`
+
+**Domain auto-assign confirmed working end-to-end.** User re-uploaded the
+same sample CSV after the earlier fixes; Settings → Domains went from 3
+tracked categories to 10 (Beauty & Personal Care primary, plus Mobiles &
+Electronics, Fashion & Apparel, Coffee & Beverages, Grocery & Food,
+Home & Kitchen, Books & Stationery, Sports & Outdoors, Automotive,
+Toys & Baby, Health & Wellness) - real validation of the feature shipped
+in commit `522b6e6` (that commit message already covers the code itself,
+this is just confirming it worked live).
+
+**Two more real findings from the user actually using the product:**
+1. "Why aren't all 31 sources shown in Market Definition" - not a bug.
+   Verified by parsing every migration file directly: Mobiles &
+   Electronics genuinely only has 9 relevant platforms out of 31 (the
+   other 22 are fashion/furniture/beauty/pets sources that don't sell
+   electronics). Full per-category platform breakdown now documented in
+   chat, worth re-deriving with the same `node -e` migration-parsing
+   script if asked again rather than eyeballing grep.
+2. Confirmed via code read: Market Definition and Competitors are both
+   hardcoded to `getPrimaryDomain()` - a seller with 10 tracked domains
+   can only ever view/edit one at a time without switching which is
+   primary. This became the trigger for the next feature below.
+
+**Assistant markdown bug** (separate small fix, same push as domain
+backfill validation): `SellerAssistantWidget.tsx`/`AssistantWidget.tsx`
+render replies as plain `<Text>{content}</Text>`, no markdown parser -
+`seller-assistant.ts`'s system prompt never told the model that, so a
+data-heavy answer ("how many products") came back as a raw pipe-delimited
+markdown table, literal `|` and `**` characters in the chat bubble. Fixed
+by adding the same "no markdown formatting" instruction the public
+marketing assistant's prompt (`assistant-knowledge.ts`) already had -
+an existing pattern in this codebase, not a new one to invent.
+
+**"All My Products" competitors view + CSV export** (`efc5925`) - full
+Plan Mode cycle (research agent read the whole data flow first, 3
+AskUserQuestion rounds resolved real ambiguity before writing code).
+Competitors page now has two tabs: aggregated across every tracked
+domain (new), and the original single-primary-domain view (unchanged).
+New `getMarketScopeForAllDomains()` unions every domain's own scope
+rather than a new SQL path - the existing RPCs already accept
+category_slugs/platform_ids as arrays. `getCompetitorLandscape/Overlap/
+MatchCounts` each split into a public wrapper + private `*FromScope`
+helper so the three new `*AllDomains` functions reuse identical RPC
+logic. CSV export added generically (`objectsToCsv`/`triggerCsvDownload`
+in `csv.ts`, extracted from an ad hoc pattern that already existed once
+in `RetentionPanel.tsx`) - two exports per tab, scorecards and a new
+per-product matched-listings query (`getMatchedListingsForExport`).
+
+**Explicitly NOT built, confirmed via question before writing any code:**
+a sales-comparison chart (seller sales vs. competitor sales). Real
+architectural gap, not just unbuilt: `seller_orders` has no line-items
+table at all (migration search + `src/lib/reports/schema.ts` comment
+both confirm), so the seller's own sales cannot be broken down by
+product/category today, and competitor `sold_count` is only genuinely
+populated for Daraz - every other one of the 30 other sources silently
+shows as 0 in the existing RPC. Building a chart on that would show
+real-looking but false numbers. Flagged as a separate future project
+needing a new `seller_order_items` schema + a richer order-import path,
+not attempted here.
+
+**Also descoped during implementation** (was an open question in the
+plan, resolved by not building it rather than guessing): a category
+filter dropdown *within* the "All My Products" tab. The scorecard RPC
+doesn't currently tag each row with which tracked category it came from,
+so filtering the aggregate down to one category cleanly would need a
+data-shape change to the RPC/query, not just a client-side filter. Given
+the "Primary Domain" tab already covers "view exactly one category," this
+was cut to ship the rest cleanly rather than rushed - a reasonable
+day-two addition if wanted.
+
+**Verified:** tsc/lint/133-test-suite/build all clean (up from 124 -
+new tests for `getMarketScopeForAllDomains` and the three
+`*AllDomains` competitor functions + `getMatchedListingsForExport`).
