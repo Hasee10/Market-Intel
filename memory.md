@@ -1336,3 +1336,54 @@ lint/build clean. Migration **not applied to the live DB**. **Workflow
 not yet triggered** - recommend the user run it via `workflow_dispatch`
 with a small `batch_size` (e.g. 5) first, per the plan's own verification
 step, before trusting the 250 default against production.
+
+## 2026-08-29: 5 new retailer sources (Bagallery, J., Gul Ahmed, Chase
+Value, Al-Fatah) - `77361d6`
+
+User named 6 target sites for the long-open "new retailer sites" thread,
+time-boxed "complete it by night I am going to sleep." All 5 shipped are
+Shopify storefronts, sharing one new `createShopifySource` factory
+(`scraper/src/sources/shopify-source.ts`) instead of 5 near-duplicate
+files - a genuine DRY case (identical structure), unlike the *original*
+seven sources' deliberate non-sharing per `polite.ts`'s own header.
+
+**Khaadi excluded**, also from the same target list: `robots.txt`
+disallows `/women/`, which is essentially its whole real catalog. Not
+crawlable under this project's non-negotiable robots.txt rule.
+Homeshopping.pk/Symbios.pk were explicitly lower-priority in the user's
+own list and not attempted given the time-box.
+
+**Caught by live verification, not guessed:** two of the first-picked
+collection handles (gulahmed's `2-piece-khaddar`, chasevalue's `fryer`)
+looked valid in `/collections.json` (real title, listed) but returned
+`{"products":[]}` from the actual `products.json` endpoint - a real
+collection that is just currently empty, not a code bug. Caught only by
+calling `products.json` directly, not by trusting the collection listing.
+Swapped for `women-ideas-pret` (gulahmed) and `home-lifestyle-heater`
+(chasevalue) after confirming those return real live data. Lesson for
+next time: verify every *individual* collection handle's `products.json`
+before shipping, not just one representative one per site - the plan's
+initial single-collection-per-site check missed this.
+
+**Shipped:** `shopify-source.ts` (factory), 5 exported source instances
+in `sources/index.ts` (added to `HTTP_SOURCES`, plain JSON, no browser
+automation needed), 5 new `*_COLLECTIONS` env vars in `config.ts` +
+`market-scraper.yml`, migration 032 (registers the 5 platforms into
+`market_platforms` + 20 category-map rows into `market_category_map` -
+both required, same two-part pattern as migration 023; missing either
+means either `getPlatformId()` throws "Unknown platform slug" on every
+run, or products land in the DB but never surface on any seller-facing
+page since `getMarketScope()` reads `market_category_map`, not
+`market_platforms`, directly).
+
+**Verified:** `tsc --noEmit` clean. Final live-verification run (every
+configured collection, not just one per site, run through the actual
+scraper code): bagallery 3198 products, junaidjamshed 22, gulahmed 2358,
+chasevalue 53, alfatah 1516 - all real rows, zero empty collections
+remaining. **Migration 032 not applied to the live DB** - same
+"Unknown platform slug" failure precedent as Daraz's migration 019 - must
+be applied manually via the Supabase SQL Editor before the next scrape
+run picks these up. Not triggering `workflow_dispatch` myself this pass
+(5 new sources landing in one production run alongside the existing 10) -
+recommend the user trigger it once the migration is applied, to confirm
+end-to-end before it's live on the daily schedule.
