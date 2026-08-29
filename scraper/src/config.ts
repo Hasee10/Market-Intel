@@ -54,6 +54,30 @@ export const config = {
   sewmarkazCollections: splitList(process.env.SEWMARKAZ_COLLECTIONS) as string[],
   petshubCategories: splitList(process.env.PETSHUB_CATEGORIES) as string[],
 
+  // Added 2026-08-29, third batch. Zellbury/Bonanza Satrangi/Beechtree/
+  // Nishat Linen (fashion) + Interwood/Habitt/Poshish/Woods (furniture) +
+  // ChenOne (apparel + home textile) are all Shopify (same factory).
+  // Petfit.pk and Luminaria.pk are WooCommerce Store API, sharing a new
+  // factory (woocommerce-source.ts) since two more near-identical files were
+  // being added in this same batch. Fills furniture and home-decor gaps.
+  // Ethnic/Highfy/Malabis were evaluated and rejected - every domain variant
+  // resolved to a parked or unrelated page, not a real store. Nested.pk is a
+  // real store but a heavily client-rendered SPA (Vue "Materio" template)
+  // with no server-rendered product data - deferred, needs its backend API
+  // reverse-engineered separately, same bucket as Homeshopping.pk/
+  // Idealancy.pk above.
+  zellburyCollections: splitList(process.env.ZELLBURY_COLLECTIONS) as string[],
+  bonanzasatrangiCollections: splitList(process.env.BONANZASATRANGI_COLLECTIONS) as string[],
+  beechtreeCollections: splitList(process.env.BEECHTREE_COLLECTIONS) as string[],
+  nishatlinenCollections: splitList(process.env.NISHATLINEN_COLLECTIONS) as string[],
+  interwoodCollections: splitList(process.env.INTERWOOD_COLLECTIONS) as string[],
+  habittCollections: splitList(process.env.HABITT_COLLECTIONS) as string[],
+  poshishCollections: splitList(process.env.POSHISH_COLLECTIONS) as string[],
+  woodsCollections: splitList(process.env.WOODS_COLLECTIONS) as string[],
+  chenoneCollections: splitList(process.env.CHENONE_COLLECTIONS) as string[],
+  petfitCategories: splitList(process.env.PETFIT_CATEGORIES) as string[],
+  luminariaCategories: splitList(process.env.LUMINARIA_CATEGORIES) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

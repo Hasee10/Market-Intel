@@ -13,6 +13,7 @@ import { scrapeTelemart } from './telemart.js';
 import { scrapeVmart } from './vmart.js';
 import { scrapePetshub } from './petshub.js';
 import { createShopifySource } from './shopify-source.js';
+import { createWooCommerceSource } from './woocommerce-source.js';
 
 // Added 2026-08-29 - all 5 verified live as Shopify storefronts before being
 // added (robots.txt allows /collections/*/products.json, and that endpoint
@@ -67,6 +68,69 @@ export const scrapeSewmarkaz = createShopifySource({
   getCollections: () => config.sewmarkazCollections,
 });
 
+// Added 2026-08-29, third batch - fashion (Zellbury, Bonanza Satrangi,
+// Beechtree, Nishat Linen) + furniture/home (Interwood, Habitt, Poshish,
+// Woods, ChenOne) are all Shopify (same factory). Petfit.pk and
+// Luminaria.pk are WooCommerce Store API (see woocommerce-source.ts). See
+// config.ts for what was evaluated and rejected (Ethnic, Highfy, Malabis -
+// all parked/unrelated domains) or deferred (Nested.pk - real store, but a
+// client-rendered SPA with no server-rendered product data).
+export const scrapeZellbury = createShopifySource({
+  platformSlug: 'zellbury',
+  baseUrl: 'https://zellbury.com',
+  getCollections: () => config.zellburyCollections,
+});
+export const scrapeBonanzasatrangi = createShopifySource({
+  platformSlug: 'bonanzasatrangi',
+  baseUrl: 'https://bonanzasatrangi.com',
+  getCollections: () => config.bonanzasatrangiCollections,
+});
+export const scrapeBeechtree = createShopifySource({
+  platformSlug: 'beechtree',
+  baseUrl: 'https://beechtree.pk',
+  getCollections: () => config.beechtreeCollections,
+});
+export const scrapeNishatlinen = createShopifySource({
+  platformSlug: 'nishatlinen',
+  baseUrl: 'https://nishatlinen.com',
+  getCollections: () => config.nishatlinenCollections,
+});
+export const scrapeInterwood = createShopifySource({
+  platformSlug: 'interwood',
+  baseUrl: 'https://interwood.pk',
+  getCollections: () => config.interwoodCollections,
+});
+export const scrapeHabitt = createShopifySource({
+  platformSlug: 'habitt',
+  baseUrl: 'https://habitt.com',
+  getCollections: () => config.habittCollections,
+});
+export const scrapePoshish = createShopifySource({
+  platformSlug: 'poshish',
+  baseUrl: 'https://poshish.pk',
+  getCollections: () => config.poshishCollections,
+});
+export const scrapeWoods = createShopifySource({
+  platformSlug: 'woods',
+  baseUrl: 'https://woods.pk',
+  getCollections: () => config.woodsCollections,
+});
+export const scrapeChenone = createShopifySource({
+  platformSlug: 'chenone',
+  baseUrl: 'https://chenone.com',
+  getCollections: () => config.chenoneCollections,
+});
+export const scrapePetfit = createWooCommerceSource({
+  platformSlug: 'petfit',
+  baseUrl: 'https://petfit.pk',
+  getCategories: () => config.petfitCategories,
+});
+export const scrapeLuminaria = createWooCommerceSource({
+  platformSlug: 'luminaria',
+  baseUrl: 'https://luminaria.pk',
+  getCategories: () => config.luminariaCategories,
+});
+
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
@@ -92,6 +156,17 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeOutfitters,
   scrapeSewmarkaz,
   scrapePetshub,
+  scrapeZellbury,
+  scrapeBonanzasatrangi,
+  scrapeBeechtree,
+  scrapeNishatlinen,
+  scrapeInterwood,
+  scrapeHabitt,
+  scrapePoshish,
+  scrapeWoods,
+  scrapeChenone,
+  scrapePetfit,
+  scrapeLuminaria,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP

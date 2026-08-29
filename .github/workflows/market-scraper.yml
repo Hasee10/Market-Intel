@@ -156,4 +156,29 @@ jobs:
           OUTFITTERS_COLLECTIONS: boys-most-popular-products,girls-most-popular-products,accessories-women,junior-boy-shoes
           SEWMARKAZ_COLLECTIONS: home-decor,kitchen-dining,household-essentials,baskets-organizers
           PETSHUB_CATEGORIES: cat-foods-in-pakistan,dog-foods-in-pakistan,cat-accessories-in-pakistan,dog-accessories-in-pakistan
+          #
+          # Added 2026-08-29, third batch: fashion (Zellbury, Bonanza
+          # Satrangi, Beechtree, Nishat Linen) + furniture/home (Interwood,
+          # Habitt, Poshish, Woods, ChenOne) - all Shopify - plus Petfit.pk
+          # and Luminaria.pk (WooCommerce Store API). Every handle below was
+          # fetched live against its actual products.json/Store API endpoint
+          # (not just the collection/category listing) and confirmed to
+          # return real product rows before being added - see
+          # migrations/034_add_third_retailer_batch.sql. Ethnic/Highfy/
+          # Malabis were evaluated and rejected from the same candidate list
+          # - every domain variant resolved to a parked or unrelated page,
+          # not a real store. Nested.pk is a real store but a heavily
+          # client-rendered SPA with no server-rendered product data -
+          # deferred, needs its backend API investigated separately.
+          ZELLBURY_COLLECTIONS: women,men,ready-to-wear,women-bags
+          BONANZASATRANGI_COLLECTIONS: new-in-unstitched,mens,fragrances,ready-to-wear
+          BEECHTREE_COLLECTIONS: best-seller-pret,embroidered-pret,accessories,embroidered-pret-2-piece
+          NISHATLINEN_COLLECTIONS: accessories,embroidered-pret,embroidered-unstitched,bags-summer-2025
+          INTERWOOD_COLLECTIONS: living,bedroom,sofas-all,office
+          HABITT_COLLECTIONS: craft-furniture,all-dining-room-tables,chester-sideboards,blue-pottery
+          POSHISH_COLLECTIONS: living,bedroom,sofas,dining
+          WOODS_COLLECTIONS: double-beds-for-bedroom,workstations,wardrobes,computer-tables
+          CHENONE_COLLECTIONS: men-western-wear,men,home-textile,chenone-home-accessories
+          PETFIT_CATEGORIES: cat,dog,pet-accessories,pet-grooming
+          LUMINARIA_CATEGORIES: home-decor,sculptures,vases-urns,bathroom-essentials
         run: npm run start

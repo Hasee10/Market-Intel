@@ -67,6 +67,11 @@ export function createShopifySource(opts: {
         }, undefined);
 
         const price = cheapest ? Number(cheapest.price) : undefined;
+        // A $0 price isn't a real price - some B2B/custom-furniture stores
+        // (Habitt, Woods) list "contact for quote" items this way instead of
+        // omitting a price entirely. Writing that in would show sellers a
+        // fake "cheapest competitor: Rs 0", worse than no data at all.
+        if (!price) continue;
         const compareAtPrice = cheapest?.compare_at_price ? Number(cheapest.compare_at_price) : undefined;
 
         products.push({

@@ -1,5 +1,5 @@
 import { config } from '../config.js';
-import { CATEGORY_DELAY_MS, CircuitOpenError, JSON_HEADERS, PAGE_DELAY_MS, politeFetch, randomDelay } from './polite.js';
+import { CATEGORY_DELAY_MS, CircuitOpenError, JSON_HEADERS, PAGE_DELAY_MS, decodeHtmlEntities, politeFetch, randomDelay } from './polite.js';
 import type { RawProduct, SourceResult } from '../types.js';
 
 // ShoppersPK - general-merchandise retailer with real depth in home, kitchen,
@@ -86,11 +86,14 @@ async function scrapeCategory(categorySlug: string): Promise<RawProduct[]> {
       const minorUnit = p.prices?.currency_minor_unit ?? 0;
       const price = toMajorUnits(p.prices?.price, minorUnit);
       const regularPrice = toMajorUnits(p.prices?.regular_price, minorUnit);
+      // A $0 price isn't a real price - see shopify-source.ts for the same
+      // pattern on other stores' quote-only/pending-price listings.
+      if (!price) continue;
 
       products.push({
         externalId: String(p.id),
         categorySlug,
-        title: p.name,
+        title: decodeHtmlEntities(p.name),
         url: p.permalink,
         imageUrl: p.images?.[0]?.src,
         galleryUrls: p.images && p.images.length > 1 ? p.images.map((img) => img.src) : undefined,

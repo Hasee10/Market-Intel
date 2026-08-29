@@ -199,3 +199,30 @@ export function parsePriceText(text: string | undefined): number | undefined {
   const value = Number(digits);
   return Number.isFinite(value) ? value : undefined;
 }
+
+// WooCommerce Store API product names come straight out of WordPress's
+// wptexturize(), which HTML-entity-encodes titles (e.g. "Tamy&#8217;s Cat
+// Wet Food", "Mera Snacks &#038; Soft Cat Treats") - the Store API is a
+// storefront-display endpoint, not raw data, so it never decodes this back.
+// Covers the small, fixed set of entities WordPress actually emits rather
+// than pulling in a full HTML-entity-decoding dependency for one field.
+const HTML_ENTITIES: Record<string, string> = {
+  '&amp;': '&',
+  '&#038;': '&',
+  '&#8217;': '’',
+  '&#8216;': '‘',
+  '&#8220;': '“',
+  '&#8221;': '”',
+  '&#8211;': '–',
+  '&#8212;': '—',
+  '&#8230;': '…',
+  '&quot;': '"',
+  '&#039;': "'",
+  '&nbsp;': ' ',
+};
+
+const HTML_ENTITY_PATTERN = new RegExp(Object.keys(HTML_ENTITIES).join('|'), 'g');
+
+export function decodeHtmlEntities(text: string): string {
+  return text.replace(HTML_ENTITY_PATTERN, (m) => HTML_ENTITIES[m] ?? m);
+}
