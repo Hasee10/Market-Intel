@@ -126,6 +126,28 @@ export const config = {
   coffeecrestCollections: splitList(process.env.COFFEECREST_COLLECTIONS) as string[],
   snapcartCollections: splitList(process.env.SNAPCART_COLLECTIONS) as string[],
 
+  // Added 2026-08-29, sixth batch - Health & Wellness (previously weak,
+  // 2 sources) + 2 more pet-supply sources + 2 more coffee/tea specialty
+  // roasters, researched live (WebSearch, not Grok-provided this round -
+  // no specific sites were named in the brief for these three). Also the
+  // trigger for formalizing "Pet Supplies" as its own seller_categories
+  // row (migration 039) instead of the catch-all 'other' it used before -
+  // explicitly requested this round, unlike when it was first flagged and
+  // deliberately left alone (033/034's header comments) as a bigger
+  // decision than one migration should make silently.
+  //
+  // WellPakistan/MyVitaminStore/GinnasticNutrition (health), PetMaster/
+  // PetSpark (pets), Scafe/RedBerryRoasters (coffee) are Shopify.
+  // ePetStore.pk is WooCommerce Store API, slugs work fine.
+  wellpakistanCollections: splitList(process.env.WELLPAKISTAN_COLLECTIONS) as string[],
+  myvitaminstoreCollections: splitList(process.env.MYVITAMINSTORE_COLLECTIONS) as string[],
+  ginnasticnutritionCollections: splitList(process.env.GINNASTICNUTRITION_COLLECTIONS) as string[],
+  petmasterCollections: splitList(process.env.PETMASTER_COLLECTIONS) as string[],
+  petsparkCollections: splitList(process.env.PETSPARK_COLLECTIONS) as string[],
+  epetstorepkCategories: splitList(process.env.EPETSTOREPK_CATEGORIES) as string[],
+  scafeCollections: splitList(process.env.SCAFE_COLLECTIONS) as string[],
+  redberryroastersCollections: splitList(process.env.REDBERRYROASTERS_COLLECTIONS) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

@@ -222,4 +222,21 @@ jobs:
           AUTOSTOREPK_CATEGORIES: car-accessories,body-kits,car-care,car-parts
           COFFEECREST_COLLECTIONS: beverages-drinks,syrups,single-origin,blends
           SNAPCART_COLLECTIONS: tea-coffee,drinks,juices-malts-smoothies,soft-drinks-soda
+          #
+          # Added 2026-08-29, sixth batch: Health & Wellness (previously
+          # weak) + 2 more pet-supply sources + 2 more coffee/tea specialty
+          # roasters - researched live via web search this round, no
+          # specific sites named in the brief. Every handle below was
+          # fetched live against its actual products.json/Store API
+          # endpoint before being added - see migrations/039, which also
+          # formalizes "Pet Supplies" as its own seller category (was
+          # mapped to the catch-all 'other' before).
+          WELLPAKISTAN_COLLECTIONS: health-wellness,health-care-supplements,multivitamins,nutritional-supplements
+          MYVITAMINSTORE_COLLECTIONS: bone-muscle-joint-health-supplements,energy-vitality-supplements,brain-health,calcium-magnesium
+          GINNASTICNUTRITION_COLLECTIONS: post-workout,diabetes,brain-health,pre-workout
+          PETMASTER_COLLECTIONS: cats,dog,cat-treats,dog-dry-food-1
+          PETSPARK_COLLECTIONS: cat-accessories,dogs,dog-accessories,cat-dry-food
+          EPETSTOREPK_CATEGORIES: cat-food-in-pakistan,pet-accessories-in-pakistan,dog-accessories-in-pakistan,dog-food-in-pakistan
+          SCAFE_COLLECTIONS: coffee,single-origin,flavoured-syrups,matcha
+          REDBERRYROASTERS_COLLECTIONS: all-coffee,single-origin-coffee,espresso-coffee,medium-coffee
         run: npm run start

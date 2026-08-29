@@ -12,6 +12,7 @@ import {
   MdSportsSoccer,
   MdToys,
   MdOutlineWidgets,
+  MdPets,
 } from 'react-icons/md';
 import type { IconType } from 'react-icons';
 
@@ -29,6 +30,7 @@ export const CATEGORY_VISUALS: Record<string, { icon: IconType; color: string }>
   'health-and-wellness': { icon: MdFavorite, color: '#EC4899' },
   'home-and-kitchen': { icon: MdKitchen, color: '#22D3EE' },
   'mobiles-and-electronics': { icon: MdPhoneIphone, color: '#4318FF' },
+  'pet-supplies': { icon: MdPets, color: '#0EA5E9' },
   'sports-and-outdoors': { icon: MdSportsSoccer, color: '#16A34A' },
   'toys-and-baby': { icon: MdToys, color: '#FFB547' },
   other: { icon: MdOutlineWidgets, color: '#667085' },

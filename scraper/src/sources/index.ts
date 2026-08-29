@@ -228,6 +228,51 @@ export const scrapeSnapcart = createShopifySource({
   getCollections: () => config.snapcartCollections,
 });
 
+// Added 2026-08-29, sixth batch - Health & Wellness (previously weak) +
+// 2 more pet-supply sources + 2 more coffee/tea specialty roasters. See
+// config.ts for the full rundown, including the Pet Supplies
+// category-formalization note (migration 039).
+export const scrapeWellpakistan = createShopifySource({
+  platformSlug: 'wellpakistan',
+  baseUrl: 'https://wellpakistan.com',
+  getCollections: () => config.wellpakistanCollections,
+});
+export const scrapeMyvitaminstore = createShopifySource({
+  platformSlug: 'myvitaminstore',
+  baseUrl: 'https://www.myvitaminstore.pk',
+  getCollections: () => config.myvitaminstoreCollections,
+});
+export const scrapeGinnasticnutrition = createShopifySource({
+  platformSlug: 'ginnasticnutrition',
+  baseUrl: 'https://www.ginnasticnutrition.com',
+  getCollections: () => config.ginnasticnutritionCollections,
+});
+export const scrapePetmaster = createShopifySource({
+  platformSlug: 'petmaster',
+  baseUrl: 'https://petmaster.pk',
+  getCollections: () => config.petmasterCollections,
+});
+export const scrapePetspark = createShopifySource({
+  platformSlug: 'petspark',
+  baseUrl: 'https://petspark.pk',
+  getCollections: () => config.petsparkCollections,
+});
+export const scrapeEpetstorepk = createWooCommerceSource({
+  platformSlug: 'epetstorepk',
+  baseUrl: 'https://www.epetstore.pk',
+  getCategories: () => config.epetstorepkCategories,
+});
+export const scrapeScafe = createShopifySource({
+  platformSlug: 'scafe',
+  baseUrl: 'https://scafe.pk',
+  getCollections: () => config.scafeCollections,
+});
+export const scrapeRedberryroasters = createShopifySource({
+  platformSlug: 'redberryroasters',
+  baseUrl: 'https://redberryroasters.com',
+  getCollections: () => config.redberryroastersCollections,
+});
+
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
@@ -281,6 +326,14 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeAutostorepk,
   scrapeCoffeecrest,
   scrapeSnapcart,
+  scrapeWellpakistan,
+  scrapeMyvitaminstore,
+  scrapeGinnasticnutrition,
+  scrapePetmaster,
+  scrapePetspark,
+  scrapeEpetstorepk,
+  scrapeScafe,
+  scrapeRedberryroasters,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP
