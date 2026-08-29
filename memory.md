@@ -1392,3 +1392,93 @@ alfatah 1516 (~7147 total) - written to `market_products` with zero
 "Unknown platform slug" errors, confirming both halves of migration 032
 (platform registration + category mapping) landed correctly. This
 feature is fully shipped, not just locally verified.
+
+## 2026-08-29: real disk corruption on `E:\Market-Intel`, repo recovered
+via fresh clone
+
+Not a code bug - flagging because it changes the working directory going
+forward. `horizon-ui-chakra-nextjs-main/src/app/apps/products/` (9 files:
+ProductCard, CompetitorsDrawer, EditProductDrawer, NewProductDrawer, the
+categories page + its 3 components, the products page) went missing from
+disk mid-session with no corresponding git changes. Diagnosed as genuine
+NTFS corruption, not a git/tooling issue - confirmed independently by
+Git Bash (`ls`/`find`: "No such file or directory" for a listed entry),
+PowerShell (`Get-Item`: path doesn't exist), Node (`fs.lstatSync`:
+`UNKNOWN: unknown error`), Windows Explorer (can't open or delete), and
+`fsutil reparsepoint query` (direct OS answer: "The file or directory is
+corrupted and unreadable"). A full machine restart did not fix it.
+
+**Recovery: fresh `git clone` into a new directory, not a repair.** Since
+local `main` was confirmed identical to `origin/main` before and after
+(git itself was never affected, only the working-tree files), a clean
+clone was zero-risk. Cloned to `E:\Market-Intel-fresh`, fully verified
+there (`tsc --noEmit` clean, `next lint` clean, `vitest` 114/114 passed,
+`next build` succeeded including the restored `/apps/products` and
+`/apps/products/categories` routes), then made the working directory
+going forward (renaming the folder back to `Market-Intel` was blocked by
+the same corruption - the old folder's own directory entry can't be
+renamed either, needs `chkdsk E: /f /r` first, not yet run).
+
+**Old folder**: moved aside as `E:\Market-Intel-corrupted-old`, mostly
+deleted but not fully - a few dozen locked `node_modules` files plus the
+original corrupted `products` folder remain, harmless and unused. Safe to
+`chkdsk` and clean up later; not blocking anything.
+
+**Going forward: the working repo is `E:\Market-Intel-fresh`**, fully in
+sync with GitHub, everything else (remotes, branch tracking, `.env`
+pattern) identical to before.
+
+## 2026-08-29: 4 more retailer sources (Springs, Outfitters, SEW Markaz,
+Petshub.pk) - `e4d1d72`
+
+Second Grok-researched batch, verified the same way as the first
+(migration 032's batch). Springs/Outfitters/SEW Markaz reuse the existing
+`createShopifySource` factory (all genuine Shopify). Petshub.pk is
+WooCommerce Store API - new file `scraper/src/sources/petshub.ts`,
+mirroring `shopperspk.ts`'s pattern rather than sharing code (only the
+second WooCommerce source, not enough duplication yet to factor out - one
+Shopify source didn't get its own factory either until there were 5).
+
+**Rejected from the candidate list:**
+- Symbios.pk - dead/misconfigured host. Both `robots.txt` and the
+  homepage itself serve a FASTPANEL hosting-control-panel splash page,
+  not real site content. Not a bot-protection case, the site just isn't
+  actually up.
+- METRO Pakistan - hard 403 block on every request including
+  `robots.txt` itself. Real bot protection on an enterprise grocery
+  chain, matches the pattern already seen with iShopping/Goto.
+
+**Deferred, not rejected** (real stores, just need more work than a
+factory reuse):
+- Homeshopping.pk - built on VTEX (headless commerce, React SPA). No
+  simple product JSON on the page; would need VTEX's Search API
+  investigated as a separate task.
+- Idealancy.pk - real store, custom platform ("Mimcart by Mimsoft"), has
+  JSON-LD product schema per page but no bulk JSON endpoint. Scrapable in
+  principle but needs a bespoke HTML/JSON-LD source file (like
+  `daraz.ts`), not a quick add.
+
+**Taxonomy gap surfaced, not silently resolved:** `seller_categories` is
+a fixed 12-row enum with no "Pets" entry. Petshub's products are mapped
+to `other` in migration 033 rather than force-fit into an unrelated
+category, or having the migration unilaterally add a new top-level seller
+category (that would also touch onboarding/domain-selection UI - a
+product decision, not something one migration should decide alone). If a
+dedicated Pets category is wanted, that's a separate, larger piece of
+work.
+
+**Verified:** `tsc --noEmit` clean. Live-verification run through the
+actual scraper code (not the raw endpoint): springs 1685, outfitters
+2227, sewmarkaz 81, petshub 812. One gotcha caught while writing the
+verification script itself, not the source code: setting `process.env.X`
+inside a script *after* importing anything that transitively imports
+`config.ts` doesn't work, because ES module imports are hoisted and
+`config.ts` reads `process.env` at that hoisted-import moment - looked
+exactly like a source bug (0 products, no error) until traced to the
+verification script's own env-var timing, not `petshub.ts`. Real
+workflow runs are unaffected since GitHub Actions sets env vars before
+the process starts.
+
+**Migration 033 not applied to the live DB** - same manual-via-Supabase-
+SQL-Editor requirement as every prior migration, must run before these 4
+sources' next scrape.
