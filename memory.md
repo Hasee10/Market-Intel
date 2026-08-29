@@ -1528,3 +1528,105 @@ every prior migration.
 
 **Total active scraper sources as of this batch: 31** (28 plain HTTP + 3
 browser-automation via CloakBrowser: iShopping, Goto, Daraz).
+
+**Update:** migration 034 applied. Full-scale scrape triggered
+(`workflow_dispatch`, run 33243768620, 38m40s, success) - all 31 sources
+wrote data, zero "Unknown platform slug" errors, ~47,732 products total
+across the whole catalog. All 19 sources from today's 3 batches confirmed
+live in production with counts matching local verification (bagallery
+3198, junaidjamshed 23, gulahmed 2418, chasevalue 53, alfatah 1516,
+springs 1685, outfitters 2232, sewmarkaz 81, petshub 812, zellbury 3665,
+bonanzasatrangi 947, beechtree 214, nishatlinen 1528, interwood 522,
+habitt 9796, poshish 201, woods 167, chenone 345, petfit 1152,
+luminaria 416).
+
+## 2026-08-29: post-scraper session - credentials, two production bugs
+fixed, second git corruption incident - `e6fc6ca`, `d931f97`
+
+Same day, after the 3 scraper batches shipped. User sent a 6-item request
+(CSV + domain auto-assign question, primary-category suggestion, "list
+proposed dashboard changes before touching anything," save 3 API keys +
+gitignore them, scope a Python/Node backend question, diagnose why the
+platform is slow) plus a `credentials.txt` with real Groq/Mistral/
+OpenRouter keys.
+
+**Credentials:** saved to `horizon-ui-chakra-nextjs-main/.env.local`
+(confirmed gitignored - git doesn't even list it as untracked) +
+`.env.example` (placeholders only). Only `GROQ_API_KEY` is referenced by
+any code (`src/lib/ai/groq-client.ts`) - Mistral/OpenRouter aren't wired
+into anything yet, saved for future use. `.env.local` only affects local
+dev - Vercel's production env vars are separate, configured in its own
+dashboard, and need a redeploy after adding a var for it to take effect
+(this tripped the user up once - they added the key but the site kept
+failing until they understood a redeploy was required).
+
+**Python/Node backend question:** user's own follow-up answer ("do what
+makes system faster") confirmed this was a performance ask, not a real
+language preference - recommended against a rewrite (network-bound
+scraper wait times are identical in Python; Next.js API routes can't
+reasonably become Python without a whole separate service). Not built,
+correctly scoped and dropped.
+
+**Performance diagnosis, one real fix shipped (`e6fc6ca`):**
+`findCompetitorsForProduct` `await`ed `persistCompetitorMatches()`
+(a match-history write) before returning, even though that write's own
+comment already says its errors "must never break the live listings
+response." Every Competitors-drawer open was paying a full extra DB
+round-trip for a write the seller never sees the result of - worse now
+that the catalog is ~5x larger post-scraper-expansion. Fixed with
+`next/server`'s `after()` (not a bare un-awaited promise - Vercel's
+serverless runtime can freeze the function once the response is sent and
+silently drop a dangling promise; `after()` is what guarantees the write
+still completes). `after()` throws outside a real request scope, which
+broke all 10 tests in `product-matching.test.ts` when they called the
+function directly - fixed by mocking `next/server`'s `after` to invoke
+its callback immediately, preserving the exact synchronous-persist timing
+the existing assertions already relied on. Two other real levers
+(`images: unoptimized: true` in next.config.js, and the O(candidates)
+in-app similarity computation itself) were investigated and found to
+either be a no-op (no `next/image` usage anywhere in the app - confirmed
+via grep, so that flag currently does nothing) or a bigger change,
+correctly not touched without a separate go-ahead.
+
+**Two confirmed-broken production bugs found and fixed (`d931f97`), both
+surfaced by the user actually trying to use the features:**
+1. **Groq model decommissioned.** `groq-client.ts`'s default model,
+   `llama-3.1-8b-instant`, no longer exists on Groq's API - confirmed via
+   a real API call (404 `model_not_found`, not an auth error). This
+   silently broke the seller assistant chat widget AND CSV bulk-import
+   auto-categorization, both hidden behind the same generic frontend
+   error message ("I couldn't put an answer together"). Replaced with
+   `openai/gpt-oss-20b` after verifying it live against Groq's API in
+   both call shapes this file needs (plain chat + JSON-mode). Worth
+   remembering: Groq retires chat models over time - check
+   `GET /openai/v1/models` before assuming a hardcoded model id still
+   works, don't just trust what was there before.
+2. **Bulk CSV import fully broken for every seller.** `seller_products`
+   has two PARTIAL unique indexes (`... where sku is not null`,
+   `... where import_key is not null` - migrations 011/027), but
+   `bulk-import/route.ts` upserts with a plain `onConflict: 'seller_id,
+   sku'`. Postgres's `ON CONFLICT` can only match a partial index if the
+   exact `WHERE` predicate is also stated in the `ON CONFLICT` clause -
+   the Supabase JS client's `upsert()` has no way to pass that through -
+   so every bulk import hit "there is no unique or exclusion constraint
+   matching the ON CONFLICT specification." Migration 035 drops the
+   `WHERE` clauses - not a behavior change, since Postgres unique indexes
+   already treat every `NULL` as distinct from every other value by
+   default; the partial predicate never added a real constraint, it just
+   broke `ON CONFLICT` matching. **Applied to the live DB by the user.**
+
+**Second real git/filesystem corruption incident, same session, same
+drive, different location.** After committing `d931f97`, `git push`
+surfaced `inflate: data stream error`, `bad offset for revindex` -
+`git fsck --full` confirmed a genuine bad packfile in
+`E:\Market-Intel-fresh\.git`. Independently verified via `gh api` (bypasses
+local git entirely) that the actual push had landed correctly on GitHub
+regardless - the corruption was purely local. Recovered the same way as
+the first incident this session (see the "real disk corruption" entry
+above): fresh `git clone` into a new directory
+(`E:\Market-Intel-fresh2`), `git fsck --full` clean, `.env.local` copied
+over manually (untracked, never touched by clone) via a temp backup file
+outside any repo, deleted once restored. **This is the second corruption
+event on `E:` today, in two unrelated locations** - flagged to the user
+as a real pattern worth a `chkdsk E: /f /r` at some point, not just
+another one-off. **Current working directory: `E:\Market-Intel-fresh2`.**
