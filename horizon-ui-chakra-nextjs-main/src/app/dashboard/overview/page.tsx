@@ -213,11 +213,26 @@ export default function OverviewPage() {
     },
   };
 
-  const categoryPieData = categories.map((c) => c.value);
+  // Phase 2 (enterprise-look pass): the seller's own category list can run
+  // up to all 13 platform categories - a donut with a 13-colour legend at
+  // this size is illegible to anyone, not just non-technical users. `categories`
+  // already arrives sorted by value desc (route.ts), so this is just "keep
+  // the top 5, fold the rest into one Other slice" - the chart still
+  // accounts for 100% of inventory value, it just stops trying to name
+  // every sliver of it.
+  const CHART_CATEGORY_LIMIT = 5;
+  const topCategories = categories.slice(0, CHART_CATEGORY_LIMIT);
+  const otherCategoriesValue = categories.slice(CHART_CATEGORY_LIMIT).reduce((sum, c) => sum + c.value, 0);
+  const chartCategories =
+    otherCategoriesValue > 0
+      ? [...topCategories, { category: 'Other', value: otherCategoriesValue, products: 0, percentage: 0 }]
+      : topCategories;
+
+  const categoryPieData = chartCategories.map((c) => c.value);
   const totalCategoryValue = categoryPieData.reduce((sum, v) => sum + v, 0);
   const categoryPieOptions = {
-    labels: categories.map((c) => c.category),
-    colors: PALETTE.slice(0, categories.length || 1),
+    labels: chartCategories.map((c) => c.category),
+    colors: PALETTE.slice(0, chartCategories.length || 1),
     legend: { show: true, position: 'bottom' as const },
     dataLabels: { enabled: false },
     stroke: { width: 0 },
