@@ -4,8 +4,20 @@ import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
-function pctDiff(current: number, previous: number): number {
-  if (previous === 0) return current === 0 ? 0 : 100;
+// MIN_BASELINE matches lib/reports/metrics/growth.ts's buildGrowthMetric,
+// added there after a live report showed "+2657.7% above median" from a
+// percentage computed against a near-zero baseline (see that file's own
+// comment). This route had the same unguarded division - previous===0 was
+// the only case handled, so a previous value of e.g. 4.5 still produced a
+// three-to-six-figure percentage on the Overview dashboard's stat cards.
+// Returns null (never a huge or made-up number) below the floor; StatItem's
+// `diff` is already optional and StatsGrid already hides the badge when
+// diff is omitted, so null naturally renders as "no comparison shown"
+// rather than a coerced 0% or a nonsense figure.
+const MIN_BASELINE = 0.01;
+
+function pctDiff(current: number, previous: number): number | null {
+  if (Math.abs(previous) < MIN_BASELINE) return current === 0 ? 0 : null;
   return Number((((current - previous) / previous) * 100).toFixed(1));
 }
 
@@ -98,7 +110,7 @@ export async function GET() {
     {
       title: 'Revenue (30d)',
       value: formatMoney(currentRevenue),
-      diff: pctDiff(currentRevenue, priorRevenue),
+      diff: pctDiff(currentRevenue, priorRevenue) ?? undefined,
       period: 'vs prior 30 days',
       icon: 'currency-dollar',
       color: 'blue',
@@ -106,7 +118,7 @@ export async function GET() {
     {
       title: 'Orders (30d)',
       value: currentOrders.length.toLocaleString(),
-      diff: pctDiff(currentOrders.length, priorOrders.length),
+      diff: pctDiff(currentOrders.length, priorOrders.length) ?? undefined,
       period: 'vs prior 30 days',
       icon: 'shopping-cart',
       color: 'teal',
@@ -114,7 +126,7 @@ export async function GET() {
     {
       title: 'Average Order Value',
       value: formatMoney(currentAov),
-      diff: pctDiff(currentAov, priorAov),
+      diff: pctDiff(currentAov, priorAov) ?? undefined,
       period: 'vs prior 30 days',
       icon: 'receipt',
       color: 'orange',
@@ -122,7 +134,7 @@ export async function GET() {
     {
       title: 'New Customers (30d)',
       value: currentNewCustomers.toLocaleString(),
-      diff: pctDiff(currentNewCustomers, priorNewCustomers),
+      diff: pctDiff(currentNewCustomers, priorNewCustomers) ?? undefined,
       period: 'vs prior 30 days',
       icon: 'users',
       color: 'pink',

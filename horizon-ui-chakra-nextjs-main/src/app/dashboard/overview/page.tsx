@@ -2,8 +2,6 @@
 
 import NextLink from 'next/link';
 import {
-  Alert,
-  AlertIcon,
   Badge,
   Box,
   Button,
@@ -31,6 +29,7 @@ import LineChart from 'components/charts/LineChart';
 
 import { DownloadReportButton } from '@/components/marketintel/DownloadReportButton';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
+import { InsightBanner } from '@/components/marketintel/InsightBanner';
 import { OnboardingChecklist } from '@/components/marketintel/OnboardingChecklist';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid, StatItem } from '@/components/marketintel/StatsGrid';
@@ -242,16 +241,13 @@ export default function OverviewPage() {
 
       <OnboardingChecklist />
 
-      {recentAnomaly && (
-        <Alert status={recentAnomaly.direction === 'spike' ? 'info' : 'warning'} borderRadius="16px" mb="20px">
-          <AlertIcon />
-          <Text fontSize="sm">
-            Revenue {recentAnomaly.direction === 'spike' ? 'spiked' : 'dropped'} on{' '}
-            {new Date(recentAnomaly.date).toLocaleDateString()} ({formatCurrency(recentAnomaly.revenue, reportingCurrency)},
-            expected roughly {formatCurrency(recentAnomaly.expectedRange[0], reportingCurrency)}-
-            {formatCurrency(recentAnomaly.expectedRange[1], reportingCurrency)}).
-          </Text>
-        </Alert>
+      {allLoaded && (
+        <InsightBanner
+          stats={statsData?.data || []}
+          anomaly={recentAnomaly}
+          forecast={forecast}
+          currency={reportingCurrency}
+        />
       )}
 
       <StatsGrid data={statsData?.data || []} loading={statsLoading} columns={3} />
