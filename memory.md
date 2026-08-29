@@ -1772,3 +1772,36 @@ than bundling into this query fix.
 (previously had zero test coverage despite being production code).
 Migration 036 not yet applied to the live DB - same manual step as every
 prior migration.
+
+**Update:** user applied migration 036.
+
+## 2026-08-29: Sports & Outdoors batch (fourth retailer batch), 5 sources -
+`ed061c0`
+
+User's own follow-up brief named Sports & Outdoors as the weakest-covered
+category (2 sources) and asked for it fixed first, before a bigger push
+into Books & Stationery/Automotive/Coffee & Beverages later. Alisports,
+Bodybrics, HustlersOnlyPK, ActivitySphere - all Shopify. Zeesol Store -
+WooCommerce, but a new site-specific quirk: its Store API rejects
+category *slugs* (empty array despite the category having 124 real
+products) and only accepts numeric category IDs - the first WooCommerce
+source out of 5 so far where slugs don't work. Config values for zeesol
+are IDs, not slugs, clearly commented in three places (config.ts,
+workflow env, migration 037) so this doesn't get silently "fixed" back to
+slugs later by someone who doesn't know why.
+
+**Deferred:** TheSportStore.pk - real, live site, but OpenCart with no
+standard product-feed endpoint, same bucket as Idealancy.pk/
+Homeshopping.pk.
+
+**Verified:** live-verified through the actual scraper code, zero bad
+rows - alisports 926, bodybrics 71, hustlersonlypk 833, activitysphere
+100, zeesol 163 (~2,093 total). Migration 037 not yet applied to the live
+DB.
+
+**Not yet done:** Books & Stationery, Automotive, Coffee & Beverages -
+the other 3 weak/critical-gap categories from the same brief, plus
+formalizing Coffee & Beverages (currently 0 active sources). User's own
+framing was "when [Sports & Outdoors] is done... we can proceed with a
+full-fledged scraper" - a checkpoint, not a green light to keep going
+unprompted on the remaining categories.
