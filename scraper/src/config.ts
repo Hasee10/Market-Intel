@@ -98,6 +98,34 @@ export const config = {
   activitysphereCollections: splitList(process.env.ACTIVITYSPHERE_COLLECTIONS) as string[],
   zeesolCategories: splitList(process.env.ZEESOL_CATEGORIES) as string[],
 
+  // Added 2026-08-29, fifth batch - Books & Stationery, Automotive, Coffee &
+  // Beverages, closing out the same brief the Sports & Outdoors batch
+  // started (weak/critical-gap categories). BlingSpot/Katib/Mercury
+  // Stationery (books/stationery), SehgalMotors/AsadAutos/PakistanMotors/
+  // PremiumExo (automotive) and CoffeeCrest/Snapcart (coffee/beverages) are
+  // all Shopify. Stationery.pk, Assany.pk and Autostore.pk are WooCommerce
+  // Store API, slugs work fine on all three (unlike Zeesol above).
+  // Waqarmart.pk was evaluated and deferred: real site, but a custom
+  // Laravel-based platform (not WordPress despite having a /wp-json/ path -
+  // that's just a same-page redirect, the real response is a Laravel/Blade
+  // app), no standard product-feed endpoint, same bucket as
+  // Idealancy.pk/TheSportStore.pk above. Snapcart.pk is a large general
+  // marketplace (100k+ products across pharmacy/beauty/groceries too), but
+  // has a genuine, substantial Tea & Coffee category (916 products) -
+  // included for that segment specifically, not as a general marketplace.
+  blingspotCollections: splitList(process.env.BLINGSPOT_COLLECTIONS) as string[],
+  katibCollections: splitList(process.env.KATIB_COLLECTIONS) as string[],
+  mercurystationeryCollections: splitList(process.env.MERCURYSTATIONERY_COLLECTIONS) as string[],
+  stationarypkCategories: splitList(process.env.STATIONARYPK_CATEGORIES) as string[],
+  assanyCategories: splitList(process.env.ASSANY_CATEGORIES) as string[],
+  sehgalmotorsCollections: splitList(process.env.SEHGALMOTORS_COLLECTIONS) as string[],
+  asadautosCollections: splitList(process.env.ASADAUTOS_COLLECTIONS) as string[],
+  pakistanmotorsCollections: splitList(process.env.PAKISTANMOTORS_COLLECTIONS) as string[],
+  premiumexoCollections: splitList(process.env.PREMIUMEXO_COLLECTIONS) as string[],
+  autostorepkCategories: splitList(process.env.AUTOSTOREPK_CATEGORIES) as string[],
+  coffeecrestCollections: splitList(process.env.COFFEECREST_COLLECTIONS) as string[],
+  snapcartCollections: splitList(process.env.SNAPCART_COLLECTIONS) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

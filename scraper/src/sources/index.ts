@@ -162,6 +162,72 @@ export const scrapeZeesol = createWooCommerceSource({
   getCategories: () => config.zeesolCategories,
 });
 
+// Added 2026-08-29, fifth batch - Books & Stationery, Automotive, Coffee &
+// Beverages. See config.ts for the full rundown, including what was
+// deferred (Waqarmart.pk - custom Laravel platform) and the Snapcart.pk
+// scope note (a large general marketplace, included specifically for its
+// real Tea & Coffee category).
+export const scrapeBlingspot = createShopifySource({
+  platformSlug: 'blingspot',
+  baseUrl: 'https://blingspot.pk',
+  getCollections: () => config.blingspotCollections,
+});
+export const scrapeKatib = createShopifySource({
+  platformSlug: 'katib',
+  baseUrl: 'https://katib.pk',
+  getCollections: () => config.katibCollections,
+});
+export const scrapeMercurystationery = createShopifySource({
+  platformSlug: 'mercurystationery',
+  baseUrl: 'https://mercurystationery.com',
+  getCollections: () => config.mercurystationeryCollections,
+});
+export const scrapeStationarypk = createWooCommerceSource({
+  platformSlug: 'stationarypk',
+  baseUrl: 'https://stationary.pk',
+  getCategories: () => config.stationarypkCategories,
+});
+export const scrapeAssany = createWooCommerceSource({
+  platformSlug: 'assany',
+  baseUrl: 'https://assany.pk',
+  getCategories: () => config.assanyCategories,
+});
+export const scrapeSehgalmotors = createShopifySource({
+  platformSlug: 'sehgalmotors',
+  baseUrl: 'https://sehgalmotors.pk',
+  getCollections: () => config.sehgalmotorsCollections,
+});
+export const scrapeAsadautos = createShopifySource({
+  platformSlug: 'asadautos',
+  baseUrl: 'https://asadautos.pk',
+  getCollections: () => config.asadautosCollections,
+});
+export const scrapePakistanmotors = createShopifySource({
+  platformSlug: 'pakistanmotors',
+  baseUrl: 'https://pakistanmotors.pk',
+  getCollections: () => config.pakistanmotorsCollections,
+});
+export const scrapePremiumexo = createShopifySource({
+  platformSlug: 'premiumexo',
+  baseUrl: 'https://premiumexo.com',
+  getCollections: () => config.premiumexoCollections,
+});
+export const scrapeAutostorepk = createWooCommerceSource({
+  platformSlug: 'autostorepk',
+  baseUrl: 'https://www.autostore.pk',
+  getCategories: () => config.autostorepkCategories,
+});
+export const scrapeCoffeecrest = createShopifySource({
+  platformSlug: 'coffeecrest',
+  baseUrl: 'https://coffeecrest.pk',
+  getCollections: () => config.coffeecrestCollections,
+});
+export const scrapeSnapcart = createShopifySource({
+  platformSlug: 'snapcart',
+  baseUrl: 'https://snapcart.pk',
+  getCollections: () => config.snapcartCollections,
+});
+
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
@@ -203,6 +269,18 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeHustlersonlypk,
   scrapeActivitysphere,
   scrapeZeesol,
+  scrapeBlingspot,
+  scrapeKatib,
+  scrapeMercurystationery,
+  scrapeStationarypk,
+  scrapeAssany,
+  scrapeSehgalmotors,
+  scrapeAsadautos,
+  scrapePakistanmotors,
+  scrapePremiumexo,
+  scrapeAutostorepk,
+  scrapeCoffeecrest,
+  scrapeSnapcart,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP

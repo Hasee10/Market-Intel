@@ -198,4 +198,28 @@ jobs:
           HUSTLERSONLYPK_COLLECTIONS: fitness-apparel,apparel-men,women-apparel,tops
           ACTIVITYSPHERE_COLLECTIONS: women-gym-wear,men-gym-wear,women-sports-bra,men-gym-shirts
           ZEESOL_CATEGORIES: 3962,3961,3966,3963
+          #
+          # Added 2026-08-29, fifth batch: Books & Stationery, Automotive,
+          # Coffee & Beverages - closing out the same brief the Sports &
+          # Outdoors batch started. BlingSpot/Katib/Mercury Stationery,
+          # SehgalMotors/AsadAutos/PakistanMotors/PremiumExo,
+          # CoffeeCrest/Snapcart are Shopify. Stationery.pk/Assany.pk/
+          # Autostore.pk are WooCommerce (slugs work fine, unlike Zeesol
+          # above). Every handle below was fetched live against its actual
+          # products.json/Store API endpoint before being added - see
+          # migrations/038. Waqarmart.pk was evaluated and deferred: a
+          # custom Laravel-based platform with no standard product-feed
+          # endpoint.
+          BLINGSPOT_COLLECTIONS: school-supplies,kids-stationery,journals-notebooks,notepads
+          KATIB_COLLECTIONS: art-and-craft,copy-and-printer-paper,account-books,data-storage
+          MERCURYSTATIONERY_COLLECTIONS: all-pencils,all-pens,lead-pencils,brito
+          STATIONARYPK_CATEGORIES: writing-essentials,office-supplies,school-supplies-pakistan,lead-pencil-pakistan
+          ASSANY_CATEGORIES: stationery,arts-crafts,packaging-material,wall-racks-organizers
+          SEHGALMOTORS_COLLECTIONS: auto-spare-parts,body-kits-extensions,bike-accessories,air-press-sunvisors
+          ASADAUTOS_COLLECTIONS: honda,all-type-of-mats,haval,goodyear-wiper-blades
+          PAKISTANMOTORS_COLLECTIONS: interior-accessories,led-lightening-accessories,car-top-covers,exterior-accessories
+          PREMIUMEXO_COLLECTIONS: car-window-sunshades-pakistan,toyota-sunshades-pakistan,honda-sunshades-pakistan,back-rear
+          AUTOSTOREPK_CATEGORIES: car-accessories,body-kits,car-care,car-parts
+          COFFEECREST_COLLECTIONS: beverages-drinks,syrups,single-origin,blends
+          SNAPCART_COLLECTIONS: tea-coffee,drinks,juices-malts-smoothies,soft-drinks-soda
         run: npm run start

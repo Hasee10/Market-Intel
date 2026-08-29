@@ -135,6 +135,7 @@ export function SellerAssistantWidget() {
                     color={m.role === 'user' ? 'white' : heading}
                     fontSize="sm"
                     lineHeight="1.5"
+                    whiteSpace="pre-wrap"
                   >
                     {m.content}
                   </Box>
