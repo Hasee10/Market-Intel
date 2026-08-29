@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { createClient } from '@/lib/supabase/server';
 
 export type Seller = {
@@ -166,4 +167,71 @@ export async function listSellerDomains(sellerId: string): Promise<SellerDomainR
       isPrimary: row.is_primary,
     };
   });
+}
+
+export type AutoAssignDomainsResult = {
+  added: string[];
+  skippedNeedsPremium: string[];
+};
+
+// Best-effort side effect of bulk CSV import: a category a seller's rows
+// got auto-categorized into (see suggestCategoriesBatch in bulk-import's
+// route) isn't visible on Market Definition/Competitors until it's also a
+// tracked domain (seller_domains, distinct from a product's own
+// category_id) - getMarketScope() reads domains, not product categories,
+// to decide what a seller competes in. Without this, a seller importing
+// products in a brand-new category would see them listed but never show
+// up in competitor matching, with no obvious reason why.
+//
+// Mirrors api/domains/route.ts's POST handler exactly: the first domain a
+// seller ever gets is always free (is_primary: true, no plan check);
+// anything beyond that needs the Premium multi_domain entitlement. Skips
+// categories already tracked. Never throws - a failure here should never
+// break the product import itself, same posture as
+// persistCompetitorMatches() in product-matching.ts.
+export async function autoAssignDomainsForCategories(
+  seller: Pick<Seller, 'id' | 'planTier'>,
+  categoryIds: string[],
+): Promise<AutoAssignDomainsResult> {
+  const result: AutoAssignDomainsResult = { added: [], skippedNeedsPremium: [] };
+  const uniqueCategoryIds = [...new Set(categoryIds)];
+  if (uniqueCategoryIds.length === 0) return result;
+
+  try {
+    const supabase = await createClient();
+
+    const { data: existingDomains } = await supabase
+      .from('seller_domains')
+      .select('category_id')
+      .eq('seller_id', seller.id);
+    const alreadyTracked = new Set((existingDomains ?? []).map((d) => d.category_id));
+
+    const newCategoryIds = uniqueCategoryIds.filter((id) => !alreadyTracked.has(id));
+    if (newCategoryIds.length === 0) return result;
+
+    let hasAnyDomain = alreadyTracked.size > 0;
+    const rows: { seller_id: string; category_id: string; is_primary: boolean }[] = [];
+
+    for (const categoryId of newCategoryIds) {
+      if (!hasAnyDomain) {
+        // The very first domain a seller ever gets, free on every plan -
+        // same rule as the manual "Add domain" flow.
+        rows.push({ seller_id: seller.id, category_id: categoryId, is_primary: true });
+        hasAnyDomain = true;
+      } else if (hasFeature(seller.planTier, 'multi_domain')) {
+        rows.push({ seller_id: seller.id, category_id: categoryId, is_primary: false });
+      } else {
+        result.skippedNeedsPremium.push(categoryId);
+      }
+    }
+
+    if (rows.length === 0) return result;
+
+    const { error } = await supabase.from('seller_domains').upsert(rows, { onConflict: 'seller_id,category_id' });
+    if (!error) result.added.push(...rows.map((r) => r.category_id));
+  } catch {
+    // ignored - see function comment above
+  }
+
+  return result;
 }

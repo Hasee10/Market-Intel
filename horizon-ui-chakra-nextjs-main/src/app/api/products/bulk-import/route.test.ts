@@ -12,8 +12,14 @@ const suggestCategoriesBatchMock = vi.fn(async (...args: any[]) =>
   (args[0] as string[]).map(() => ({ categorySlug: 'mobiles-and-electronics', confidence: 'high' as const })),
 );
 
+const autoAssignDomainsMock = vi.fn(async (...args: any[]) => ({
+  added: [] as string[],
+  skippedNeedsPremium: [] as string[],
+}));
+
 vi.mock('@/lib/market-intel/seller', () => ({
   getCurrentSeller: async () => currentSeller,
+  autoAssignDomainsForCategories: (...args: any[]) => autoAssignDomainsMock(...args),
 }));
 
 vi.mock('@/lib/ai/suggest-category', () => ({
@@ -59,6 +65,7 @@ beforeEach(() => {
   categoriesAvailable = true;
   upsertedBatches.length = 0;
   suggestCategoriesBatchMock.mockClear();
+  autoAssignDomainsMock.mockClear();
   suggestCategoriesBatchMock.mockImplementation(async (titles: string[]) =>
     titles.map(() => ({ categorySlug: 'mobiles-and-electronics', confidence: 'high' as const })),
   );
@@ -121,5 +128,30 @@ describe('POST /api/products/bulk-import', () => {
     expect(upsertedBatches).toHaveLength(2);
     expect(upsertedBatches[0]).toHaveLength(1);
     expect(upsertedBatches[1]).toHaveLength(1);
+  });
+
+  it('auto-assigns a domain for every distinct category the imported rows landed in', async () => {
+    await POST(
+      makeRequest([
+        { sku: 'A1', title: 'Has a SKU', categoryId: 'cat-mobiles' },
+        { sku: 'A2', title: 'Second mobiles item', categoryId: 'cat-mobiles' },
+        { title: 'No SKU here', categoryId: 'cat-home' },
+      ]),
+    );
+
+    expect(autoAssignDomainsMock).toHaveBeenCalledTimes(1);
+    const [, categoryIds] = autoAssignDomainsMock.mock.calls[0];
+    expect(categoryIds).toHaveLength(3);
+    expect(new Set(categoryIds)).toEqual(new Set(['cat-mobiles', 'cat-home']));
+  });
+
+  it('surfaces domainsAdded/domainsNeedingPremium from the auto-assign result', async () => {
+    autoAssignDomainsMock.mockResolvedValueOnce({ added: ['cat-mobiles'], skippedNeedsPremium: ['cat-home'] });
+
+    const response = await POST(makeRequest([{ sku: 'A1', title: 'iPhone 15', categoryId: 'cat-mobiles' }]));
+    const data = await response.json();
+
+    expect(data.data.domainsAdded).toBe(1);
+    expect(data.data.domainsNeedingPremium).toBe(1);
   });
 });

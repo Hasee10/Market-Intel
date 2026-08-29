@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GroqNotConfiguredError, suggestCategoriesBatch } from '@/lib/ai/suggest-category';
 import { MAX_IMPORT_ROWS } from '@/lib/csv';
 import { getCountryProductConfig } from '@/lib/market-intel/countries';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { autoAssignDomainsForCategories, getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 
@@ -215,6 +215,17 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Auto-track any category these rows landed in that isn't already a
+  // domain - see autoAssignDomainsForCategories()'s own comment for why
+  // this matters (a category with no domain never surfaces on Market
+  // Definition/Competitors, even though the products themselves import
+  // fine). Runs after both product upserts succeed, using the categoryId
+  // each row actually ended up with (manually mapped or Groq-suggested).
+  const importedCategoryIds = [...withSku, ...withoutSku]
+    .map((r) => r.categoryId)
+    .filter((id): id is string => Boolean(id));
+  const domainResult = await autoAssignDomainsForCategories(seller, importedCategoryIds);
+
   return NextResponse.json({
     succeeded: true,
     data: {
@@ -222,6 +233,8 @@ export async function POST(request: NextRequest) {
       skipped,
       skippedReasons,
       leftUncategorized,
+      domainsAdded: domainResult.added.length,
+      domainsNeedingPremium: domainResult.skippedNeedsPremium.length,
     },
     errors: [],
     message: 'Products imported successfully',
