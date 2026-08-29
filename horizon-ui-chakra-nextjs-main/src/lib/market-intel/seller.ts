@@ -169,6 +169,29 @@ export async function listSellerDomains(sellerId: string): Promise<SellerDomainR
   });
 }
 
+// Just the slugs, for callers that need to resolve a market scope per
+// domain (e.g. getMarketScopeForAllDomains) rather than render a list -
+// listSellerDomains() above joins seller_categories(name) only, since
+// that's all the Settings page needs, so this is a separate small query
+// rather than widening that one's shape for every existing caller.
+export async function listSellerDomainSlugs(sellerId: string): Promise<string[]> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from('seller_domains')
+    .select('seller_categories(slug)')
+    .eq('seller_id', sellerId);
+
+  if (error || !data) return [];
+
+  return data
+    .map((row: any) => {
+      const category = Array.isArray(row.seller_categories) ? row.seller_categories[0] : row.seller_categories;
+      return category?.slug as string | undefined;
+    })
+    .filter((slug): slug is string => Boolean(slug));
+}
+
 export type AutoAssignDomainsResult = {
   added: string[];
   skippedNeedsPremium: string[];

@@ -64,3 +64,32 @@ export function csvToObjects(text: string): { headers: string[]; rows: string[][
   const [headers, ...rows] = parsed;
   return { headers: headers.map((h) => h.trim()), rows };
 }
+
+// Export-side counterpart to parseCsv/csvToObjects above. Generalizes the
+// quote-escaping/comma-joining logic that already existed once, ad hoc, in
+// RetentionPanel.tsx's downloadCsv() - extracted here so every CSV export in
+// the app (at-risk customers, competitor scorecards, matched listings, ...)
+// shares one implementation instead of re-deriving the same escaping rules.
+export function objectsToCsv<T extends Record<string, unknown>>(
+  rows: T[],
+  columns: { key: keyof T; label: string }[],
+): string {
+  const escape = (value: unknown): string => `"${String(value ?? '').replace(/"/g, '""')}"`;
+  const header = columns.map((c) => escape(c.label)).join(',');
+  const body = rows.map((row) => columns.map((c) => escape(row[c.key])).join(','));
+  return [header, ...body].join('\n');
+}
+
+// Browser-only (uses document/URL) - for client components triggering a
+// download in response to a click, same mechanics RetentionPanel.tsx already
+// used inline. Revokes the object URL after triggering the click, same as
+// the original - the download itself doesn't need the URL to stay alive.
+export function triggerCsvDownload(csv: string, filename: string): void {
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}

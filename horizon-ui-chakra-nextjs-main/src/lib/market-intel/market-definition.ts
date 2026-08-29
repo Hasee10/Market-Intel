@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller, listSellerDomainSlugs } from '@/lib/market-intel/seller';
 
 // ROADMAP.md A3. This replaces category-keywords.ts, which mapped a seller's
 // category to scraped rows with one regex per category and matched it against
@@ -228,6 +228,85 @@ export async function getMarketScope(sellerCategorySlug: string, sellerId?: stri
     matchesCategory,
     matchesRow,
   };
+}
+
+/**
+ * The seller's market across EVERY tracked domain at once, not just one
+ * category - for the Competitors page's "All My Products" view. Unions each
+ * domain's own `getMarketScope()` result (categorySlugs, activePlatformIds)
+ * rather than a new SQL path: `market_competitor_scorecards`/
+ * `market_scope_price_stats` already accept these as arrays, so a unioned
+ * array is a valid input to the exact same RPCs every per-domain call uses.
+ *
+ * `definition` is deliberately the plain default (no price band/brands/
+ * cities) - each domain's own custom filters don't compose meaningfully
+ * across categories (a price band tuned for "Mobiles & Electronics" is
+ * meaningless applied to "Grocery & Food" too), so the aggregate view always
+ * shows the full unfiltered picture across everything tracked. A seller who
+ * wants a narrowed view of one category still has that category's own
+ * Market Definition page for it.
+ */
+export async function getMarketScopeForAllDomains(sellerId: string): Promise<MarketScope> {
+  const slugs = await listSellerDomainSlugs(sellerId);
+
+  const empty: MarketScope = {
+    sellerCategorySlug: 'all',
+    definition: defaultDefinition('all'),
+    allSegments: [],
+    activeSegments: [],
+    categorySlugs: [],
+    activePlatformIds: [],
+    hasTaxonomy: false,
+    matchesCategory: () => false,
+    matchesRow: () => false,
+  };
+  if (slugs.length === 0) return empty;
+
+  const scopes = await Promise.all(slugs.map((slug) => getMarketScope(slug, sellerId)));
+
+  const categorySlugs = Array.from(new Set(scopes.flatMap((s) => s.categorySlugs)));
+  const activePlatformIds = Array.from(new Set(scopes.flatMap((s) => s.activePlatformIds)));
+  const allSegments = mergeSegments(scopes.flatMap((s) => s.allSegments));
+  const slugSet = new Set(categorySlugs);
+  const activePlatformSet = new Set(activePlatformIds);
+
+  const matchesCategory = (categorySlug: string | null | undefined): boolean =>
+    !!categorySlug && slugSet.has(categorySlug);
+
+  const matchesRow = (row: ScopeRow): boolean => {
+    if (!matchesCategory(row.categorySlug)) return false;
+    if (row.platformId && !activePlatformSet.has(row.platformId)) return false;
+    return true;
+  };
+
+  return {
+    sellerCategorySlug: 'all',
+    definition: defaultDefinition('all'),
+    allSegments,
+    activeSegments: allSegments,
+    categorySlugs,
+    activePlatformIds,
+    hasTaxonomy: scopes.some((s) => s.hasTaxonomy),
+    matchesCategory,
+    matchesRow,
+  };
+}
+
+// Segments of the same slug can appear in multiple domains' taxonomies
+// (e.g. two categories both have a "beauty" segment from different
+// platforms) - merge by slug so the union doesn't show duplicate rows.
+function mergeSegments(segments: MarketSegment[]): MarketSegment[] {
+  const bySlug = new Map<string, MarketSegment>();
+  for (const segment of segments) {
+    const existing = bySlug.get(segment.slug);
+    if (!existing) {
+      bySlug.set(segment.slug, { ...segment, platformNames: [...segment.platformNames] });
+      continue;
+    }
+    existing.platformNames = Array.from(new Set([...existing.platformNames, ...segment.platformNames])).sort();
+    existing.nodeCount += segment.nodeCount;
+  }
+  return Array.from(bySlug.values()).sort((a, b) => a.label.localeCompare(b.label));
 }
 
 export type TaxonomyPlatform = { id: string; name: string };

@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
-import { getMarketScope, type MarketScope } from '@/lib/market-intel/market-definition';
+import { getMarketScope, getMarketScopeForAllDomains, type MarketScope } from '@/lib/market-intel/market-definition';
 import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
@@ -107,6 +107,29 @@ export async function getCompetitorLandscape(
   fxRatesOverride?: FxRates,
 ): Promise<CompetitorLandscape> {
   const scope = await getMarketScope(sellerCategorySlug, sellerId);
+  return getCompetitorLandscapeFromScope(scope, targetCurrency, fxRatesOverride);
+}
+
+/**
+ * Same landscape, aggregated across every domain the seller tracks (see
+ * getMarketScopeForAllDomains's own comment for why the scope union is a
+ * valid input to the same RPCs a single-category scope uses) - the
+ * Competitors page's "All My Products" tab.
+ */
+export async function getCompetitorLandscapeAllDomains(
+  sellerId: string,
+  targetCurrency: string,
+  fxRatesOverride?: FxRates,
+): Promise<CompetitorLandscape> {
+  const scope = await getMarketScopeForAllDomains(sellerId);
+  return getCompetitorLandscapeFromScope(scope, targetCurrency, fxRatesOverride);
+}
+
+async function getCompetitorLandscapeFromScope(
+  scope: MarketScope,
+  targetCurrency: string,
+  fxRatesOverride?: FxRates,
+): Promise<CompetitorLandscape> {
   const empty: CompetitorLandscape = {
     scorecards: [],
     identifiedSkuCount: 0,
@@ -251,6 +274,23 @@ export async function getCompetitorOverlap(
   targetCurrency: string,
 ): Promise<Map<string, CompetitorOverlap>> {
   const scope = await getMarketScope(sellerCategorySlug, sellerId);
+  return getCompetitorOverlapFromScope(sellerId, scope, targetCurrency);
+}
+
+/** Same head-to-head overlap, aggregated across every tracked domain. */
+export async function getCompetitorOverlapAllDomains(
+  sellerId: string,
+  targetCurrency: string,
+): Promise<Map<string, CompetitorOverlap>> {
+  const scope = await getMarketScopeForAllDomains(sellerId);
+  return getCompetitorOverlapFromScope(sellerId, scope, targetCurrency);
+}
+
+async function getCompetitorOverlapFromScope(
+  sellerId: string,
+  scope: MarketScope,
+  targetCurrency: string,
+): Promise<Map<string, CompetitorOverlap>> {
   const result = new Map<string, CompetitorOverlap>();
   if (scope.categorySlugs.length === 0) return result;
 
@@ -365,11 +405,95 @@ type MatchRow = {
   } | null;
 };
 
+export type MatchedListing = {
+  sellerProductTitle: string;
+  matchedTitle: string;
+  matchedPlatformName: string | null;
+  matchedPrice: number | null;
+  matchedCurrency: string | null;
+  matchedUrl: string;
+  confidence: number;
+};
+
+type MatchedListingRow = {
+  confidence: number | string;
+  seller_products: { title: string } | { title: string }[] | null;
+  market_products: {
+    title: string;
+    price: number | string | null;
+    currency: string | null;
+    url: string;
+    market_platforms: { name: string } | { name: string }[] | null;
+  } | null;
+};
+
+/**
+ * One row per (seller product x matched competitor listing) pair, for CSV
+ * export - not used by any on-screen panel, so unlike the other functions
+ * here this reads straight from seller_product_competitor_matches without
+ * going through a *FromScope split; still scoped by category/platform so an
+ * export only ever contains listings the seller's own market actually
+ * includes.
+ */
+export async function getMatchedListingsForExport(sellerId: string, scope: MarketScope): Promise<MatchedListing[]> {
+  if (scope.categorySlugs.length === 0) return [];
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('seller_product_competitor_matches')
+    .select(
+      'confidence, seller_products(title), market_products!inner(title, price, currency, url, is_active, category_slug, platform_id, market_platforms(name))',
+    )
+    .eq('seller_id', sellerId)
+    .eq('market_products.is_active', true)
+    .in('market_products.category_slug', scope.categorySlugs)
+    .in('market_products.platform_id', scope.activePlatformIds)
+    .limit(MAX_MATCH_ROWS);
+
+  if (error || !data) return [];
+
+  return (data as unknown as MatchedListingRow[])
+    .map((row) => {
+      const sellerProduct = Array.isArray(row.seller_products) ? row.seller_products[0] : row.seller_products;
+      const marketProduct = row.market_products;
+      if (!sellerProduct || !marketProduct) return null;
+      const platform = Array.isArray(marketProduct.market_platforms)
+        ? marketProduct.market_platforms[0]
+        : marketProduct.market_platforms;
+
+      return {
+        sellerProductTitle: sellerProduct.title,
+        matchedTitle: marketProduct.title,
+        matchedPlatformName: platform?.name ?? null,
+        matchedPrice: marketProduct.price != null ? Number(marketProduct.price) : null,
+        matchedCurrency: marketProduct.currency,
+        matchedUrl: marketProduct.url,
+        confidence: Number(row.confidence),
+      };
+    })
+    .filter((row): row is MatchedListing => row !== null);
+}
+
 export async function getCompetitorMatchCounts(
   sellerId: string,
   sellerCategorySlug: string,
 ): Promise<Map<string, CompetitorMatchStats>> {
   const scope = await getMarketScope(sellerCategorySlug, sellerId);
+  return getCompetitorMatchCountsFromScope(sellerId, scope);
+}
+
+/** Same persisted-match counts, aggregated across every tracked domain. */
+export async function getCompetitorMatchCountsAllDomains(
+  sellerId: string,
+): Promise<Map<string, CompetitorMatchStats>> {
+  const scope = await getMarketScopeForAllDomains(sellerId);
+  return getCompetitorMatchCountsFromScope(sellerId, scope);
+}
+
+async function getCompetitorMatchCountsFromScope(
+  sellerId: string,
+  scope: MarketScope,
+): Promise<Map<string, CompetitorMatchStats>> {
   const result = new Map<string, CompetitorMatchStats>();
   if (scope.categorySlugs.length === 0) return result;
 
