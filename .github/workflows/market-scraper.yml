@@ -1,7 +1,8 @@
 name: Market Scraper
 
-# Runs every 2 days on GitHub's own cloud runners, scraping the 7 configured
-# Pakistani e-commerce sources (see scraper/src/sources/index.ts) and writing
+# Runs every 2 days on GitHub's own cloud runners, scraping the Pakistani
+# e-commerce sources configured below (see scraper/src/sources/index.ts for
+# the full active list) and writing
 # to market_* Supabase tables in the same project as the seller portal
 # (mantine-analytics-dashboard-dev) - fully separate namespace from sellers/
 # domain_benchmarks, see scraper/migrations/001_create_market_tables.sql.
@@ -24,7 +25,7 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: scraper

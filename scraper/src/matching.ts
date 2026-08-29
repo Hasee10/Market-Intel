@@ -1,13 +1,22 @@
-// Cross-platform product matching, mobiles only for v1 (see migrations/009).
+// Cross-platform product matching (see migrations/009), generalized 2026-08-29
+// to run across every canonical category, not just mobiles.
 //
-// Validated against live data before shipping (throwaway script, ~1,850
-// products): at confidence >= MATCH_THRESHOLD, mobile-category matches were
-// clean across every pair sampled (Redmi 15C<->Redmi 15C, Galaxy
-// A17<->Galaxy A17, etc). Laptop titles produced false positives even above
-// 0.7 - HP reuses the same CPU code (e.g. 125U) across different ProBook
-// model lines (440/460/660), so CPU-code overlap alone doesn't disambiguate
-// the model. Fixing that needs per-brand model-number extraction, which is
-// real added scope - laptops are deliberately excluded until that's built.
+// The original mobiles-only version was validated against live data before
+// shipping (throwaway script, ~1,850 products): at confidence >=
+// MATCH_THRESHOLD, mobile-category matches were clean across every pair
+// sampled (Redmi 15C<->Redmi 15C, Galaxy A17<->Galaxy A17, etc) - that result
+// depended on the hard brand-match gate below (see requireBrandMatch).
+// Laptop titles produced false positives even above 0.7 with the SAME gate -
+// HP reuses the same CPU code (e.g. 125U) across different ProBook model
+// lines (440/460/660), so CPU-code overlap alone doesn't disambiguate the
+// model; fixing that needs per-brand model-number extraction, real added
+// scope not built here.
+//
+// Every other category has no equivalent brand list, so requireBrandMatch is
+// only ever passed true for mobiles-and-electronics (see dedupe.ts) - other
+// categories rely on price-band (25%) + Jaccard >= MATCH_THRESHOLD alone,
+// a real precision tradeoff for categories with templated/generic titles,
+// deliberately not offset by lowering the threshold.
 
 export type MatchableProduct = {
   id: string;
@@ -18,16 +27,6 @@ export type MatchableProduct = {
 
 export const MATCH_THRESHOLD = 0.6;
 const PRICE_BAND = 0.25;
-
-// category_slug is platform-specific raw text, not comparable across
-// platforms directly (e.g. priceoye uses "mobiles", shophive uses
-// "apple/iphone") - map each platform's slugs to a canonical category first.
-export const MOBILE_CATEGORY_SLUGS: Record<string, string[]> = {
-  priceoye: ['mobiles'],
-  telemart: ['mobiles-tablets'],
-  shophive: ['apple/iphone'],
-  ishopping: ['mobiles'],
-};
 
 const BRANDS = [
   'apple', 'samsung', 'xiaomi', 'redmi', 'poco', 'infinix', 'tecno', 'itel', 'oppo', 'vivo',
@@ -59,10 +58,12 @@ function jaccard(a: string[], b: string[]): number {
   return union === 0 ? 0 : intersection / union;
 }
 
-function scorePair(a: MatchableProduct, b: MatchableProduct): number | null {
-  const brandA = extractBrand(a.title);
-  const brandB = extractBrand(b.title);
-  if (!brandA || !brandB || brandA !== brandB) return null;
+function scorePair(a: MatchableProduct, b: MatchableProduct, requireBrandMatch: boolean): number | null {
+  if (requireBrandMatch) {
+    const brandA = extractBrand(a.title);
+    const brandB = extractBrand(b.title);
+    if (!brandA || !brandB || brandA !== brandB) return null;
+  }
 
   const minPrice = Math.min(a.price, b.price);
   const maxPrice = Math.max(a.price, b.price);
@@ -73,7 +74,7 @@ function scorePair(a: MatchableProduct, b: MatchableProduct): number | null {
 
 export type MatchPair = { productAId: string; productBId: string; confidence: number };
 
-export function findMatches(products: MatchableProduct[]): MatchPair[] {
+export function findMatches(products: MatchableProduct[], requireBrandMatch = true): MatchPair[] {
   const pairs: MatchPair[] = [];
   for (let i = 0; i < products.length; i++) {
     for (let j = i + 1; j < products.length; j++) {
@@ -81,7 +82,7 @@ export function findMatches(products: MatchableProduct[]): MatchPair[] {
       const b = products[j];
       if (a.platformSlug === b.platformSlug) continue;
 
-      const score = scorePair(a, b);
+      const score = scorePair(a, b, requireBrandMatch);
       if (score === null || score < MATCH_THRESHOLD) continue;
 
       // Canonical ordering so (a, b) and (b, a) never both get stored.

@@ -1,4 +1,5 @@
 import { refreshCompetitors, saveClassifiedListings, saveProducts, saveScrapeRunSummary } from './db.js';
+import { dedupeProducts } from './dedupe.js';
 import { BROWSER_SOURCES, CLASSIFIED_SOURCES, HTTP_SOURCES } from './sources/index.js';
 import type { ClassifiedSourceFn, ClassifiedSourceResult, SourceFn, SourceResult } from './types.js';
 
@@ -64,6 +65,15 @@ export async function run(): Promise<void> {
   // After every source, not per source: a competitor is keyed on
   // (platform, seller) across all their categories (ROADMAP.md C1).
   await refreshCompetitors();
+
+  // Cross-source duplicate detection (see dedupe.ts) - a secondary analytics
+  // pass over already-saved data, not core data collection, so a failure
+  // here logs loudly but doesn't fail the whole scrape run's exit code.
+  try {
+    await dedupeProducts();
+  } catch (err) {
+    console.error('[pipeline] dedupeProducts failed:', (err as Error).message);
+  }
 
   const zeroResult = summaries.filter((s) => !s.error && s.productCount === 0);
   const errored = summaries.filter((s) => s.error);
