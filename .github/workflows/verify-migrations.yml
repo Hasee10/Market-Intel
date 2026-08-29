@@ -1,0 +1,144 @@
+name: Verify Migrations Applied
+
+# On-demand check of which migrations (001-044) are actually live on the
+# Supabase project - not whether the migration *files* exist in this repo,
+# whether the tables/functions they create actually exist in the database.
+# Uses SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY (already repo secrets, used
+# by market-intel-cron.yml) purely over PostgREST - no psql, no new secret,
+# nothing printed but table/function names and pass/fail.
+#
+# What this CAN check via PostgREST: table existence (a HEAD request with
+# limit=0), and RPC function existence + signature (a POST with specific
+# param names - PostgREST 404s with PGRST202 if no function matches that
+# exact name+params, which is how a new-signature migration like 040 is
+# distinguished from the old one it replaced).
+#
+# What this CANNOT check this way: whether RLS is actually *enabled* on a
+# table (migration 042) or whether a function's search_path is pinned
+# (044) - service-role bypasses RLS entirely, so its access pattern can't
+# reveal RLS state, and pg_proc/pg_class aren't PostgREST-exposed tables.
+# Those two need a real SQL connection - see the job summary for the exact
+# queries to run in the Supabase SQL Editor if you want them confirmed too.
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - name: Check required secrets are set
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is not set as a repo secret."
+            exit 1
+          fi
+
+      - name: Check tables
+        run: |
+          check_table() {
+            local table="$1"
+            code=$(curl -s -o /tmp/body.json -w "%{http_code}" \
+              "$SUPABASE_URL/rest/v1/$table?select=id&limit=0" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY")
+            if [ "$code" = "200" ]; then
+              echo "✅ EXISTS      $table"
+            else
+              reason=$(grep -oE '"message":"[^"]*"' /tmp/body.json | head -1)
+              echo "❌ MISSING/ERR $table (HTTP $code $reason)"
+            fi
+          }
+
+          echo "--- Baseline / 001-019 ---"
+          check_table market_products
+          check_table market_price_history
+          check_table market_platforms
+          check_table market_categories
+          check_table market_classified_listings
+          check_table scraper_runs
+          check_table sellers
+          check_table seller_categories
+
+          echo "--- 020-025 ---"
+          check_table market_category_map
+          check_table seller_market_definitions
+          check_table market_competitors
+          check_table seller_marketing_showcase
+          check_table report_snapshots
+          check_table report_reviews
+          check_table report_exports
+
+          echo "--- 030-039 ---"
+          check_table seller_product_price_history
+          check_table market_product_reviews
+          check_table market_classified_price_history
+
+      - name: Check RPC functions (existence + signature)
+        run: |
+          check_rpc() {
+            local fn="$1"
+            local body="$2"
+            code=$(curl -s -o /tmp/body.json -w "%{http_code}" \
+              -X POST "$SUPABASE_URL/rest/v1/rpc/$fn" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              -d "$body")
+            if [ "$code" = "200" ] || [ "$code" = "204" ]; then
+              echo "✅ CALLABLE    $fn"
+            else
+              reason=$(grep -oE '"message":"[^"]*"' /tmp/body.json | head -1)
+              echo "❌ MISSING/ERR $fn (HTTP $code $reason)"
+            fi
+          }
+
+          echo "--- Baseline aggregation (021) ---"
+          check_rpc market_scope_price_stats '{"p_category_slugs":[],"p_platform_ids":[],"p_target_currency":"PKR","p_rates":{}}'
+          check_rpc market_convert_currency '{"p_price":100,"p_from_currency":"PKR","p_to_currency":"PKR","p_rates":{}}'
+
+          echo "--- Marketing showcase (024) ---"
+          check_rpc top_market_brands '{"p_limit":1}'
+
+          echo "--- Competitor entity (022) - old 6-arg signature, should still resolve ---"
+          check_rpc market_competitor_scorecards '{"p_category_slugs":[],"p_platform_ids":[],"p_target_currency":"PKR","p_rates":{}}'
+
+          echo "--- 040: competitor scorecards band filters (NEW params - only succeeds if 040 is applied) ---"
+          check_rpc market_competitor_scorecards '{"p_category_slugs":[],"p_platform_ids":[],"p_target_currency":"PKR","p_rates":{},"p_band_currency":"PKR","p_brands":[]}'
+
+          echo "--- 041: market scope coverage (new function) ---"
+          check_rpc market_scope_coverage '{"p_category_slugs":[],"p_platform_ids":[],"p_band_currency":"PKR","p_rates":{}}'
+
+          echo "--- 043: price baseline (new function) ---"
+          check_rpc market_scope_price_baseline '{"p_category_slugs":[],"p_platform_ids":[],"p_cutoff":"2020-01-01T00:00:00Z"}'
+
+      - name: What this run could NOT check
+        run: |
+          cat <<'EOF'
+          Not checkable via PostgREST with the service-role key (it bypasses
+          RLS, so its own access pattern can't reveal RLS state; pg_proc/
+          pg_class aren't exposed as PostgREST resources). Run these two in
+          the Supabase SQL Editor if you want them confirmed:
+
+          -- 042: is RLS actually enabled on all 8 tables?
+          select relname, relrowsecurity
+          from pg_class
+          where relname in (
+            'market_products','market_price_history','market_platforms',
+            'market_categories','market_product_matches','market_product_reviews',
+            'market_classified_listings','market_classified_price_history'
+          );
+
+          -- 044: is search_path pinned on the trigger function?
+          select proconfig
+          from pg_proc
+          where proname = 'record_seller_product_price_history';
+          -- expect: {search_path=public}
+          EOF
