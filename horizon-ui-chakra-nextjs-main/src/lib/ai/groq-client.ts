@@ -2,6 +2,12 @@
 
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 
+// Groq retires chat models over time (the previous default,
+// llama-3.1-8b-instant, now 404s with "model_not_found" - confirmed
+// 2026-08-29 via a direct API call, not assumed). Check
+// https://console.groq.com/docs/models or GET /openai/v1/models for what's
+// currently active before assuming a model id still works.
+
 export class GroqNotConfiguredError extends Error {
   constructor() {
     super('GROQ_API_KEY is not set.');
@@ -19,7 +25,7 @@ type GroqJsonOptions = {
 // Shared low-level caller behind suggestCategory() and generateReportInsights()
 // - both need Groq's JSON mode and the same error-shape handling, no reason
 // for two copies of the fetch/parse boilerplate.
-export async function callGroqJson<T>({ model = 'llama-3.1-8b-instant', system, user, temperature = 0.4 }: GroqJsonOptions): Promise<T> {
+export async function callGroqJson<T>({ model = 'openai/gpt-oss-20b', system, user, temperature = 0.4 }: GroqJsonOptions): Promise<T> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new GroqNotConfiguredError();
 
@@ -65,7 +71,7 @@ type GroqChatOptions = {
 // two request bodies genuinely differ (response_format, multi-turn messages
 // vs single system+user) and forcing one signature over both would just add
 // branches to a single function.
-export async function callGroqChat({ model = 'llama-3.1-8b-instant', messages, temperature = 0.2 }: GroqChatOptions): Promise<string> {
+export async function callGroqChat({ model = 'openai/gpt-oss-20b', messages, temperature = 0.2 }: GroqChatOptions): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new GroqNotConfiguredError();
 
