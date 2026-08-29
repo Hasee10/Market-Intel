@@ -1,3 +1,4 @@
+import { config } from '../config.js';
 import type { ClassifiedSourceFn, SourceFn } from '../types.js';
 import { scrapeDaraz } from './daraz.js';
 import { scrapeGoto } from './goto.js';
@@ -10,6 +11,38 @@ import { scrapeShophive } from './shophive.js';
 import { scrapeShopperspk } from './shopperspk.js';
 import { scrapeTelemart } from './telemart.js';
 import { scrapeVmart } from './vmart.js';
+import { createShopifySource } from './shopify-source.js';
+
+// Added 2026-08-29 - all 5 verified live as Shopify storefronts before being
+// added (robots.txt allows /collections/*/products.json, and that endpoint
+// returns real product data on every one of them - see shopify-source.ts's
+// header). Khaadi was evaluated from the same target list and rejected:
+// robots.txt disallows /women/, which is essentially its whole catalog.
+export const scrapeBagallery = createShopifySource({
+  platformSlug: 'bagallery',
+  baseUrl: 'https://bagallery.com',
+  getCollections: () => config.bagalleryCollections,
+});
+export const scrapeJunaidjamshed = createShopifySource({
+  platformSlug: 'junaidjamshed',
+  baseUrl: 'https://www.junaidjamshed.com',
+  getCollections: () => config.junaidjamshedCollections,
+});
+export const scrapeGulahmed = createShopifySource({
+  platformSlug: 'gulahmed',
+  baseUrl: 'https://www.gulahmedshop.com',
+  getCollections: () => config.gulahmedCollections,
+});
+export const scrapeChasevalue = createShopifySource({
+  platformSlug: 'chasevalue',
+  baseUrl: 'https://chasevalue.pk',
+  getCollections: () => config.chasevalueCollections,
+});
+export const scrapeAlfatah = createShopifySource({
+  platformSlug: 'alfatah',
+  baseUrl: 'https://alfatah.pk',
+  getCollections: () => config.alfatahCollections,
+});
 
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
@@ -27,6 +60,11 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeNaheed,
   scrapeVmart,
   scrapeShopperspk,
+  scrapeBagallery,
+  scrapeJunaidjamshed,
+  scrapeGulahmed,
+  scrapeChasevalue,
+  scrapeAlfatah,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP

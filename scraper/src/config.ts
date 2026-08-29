@@ -31,6 +31,16 @@ export const config = {
   vmartCollections: splitList(process.env.VMART_COLLECTIONS) as string[],
   shopperspkCategories: splitList(process.env.SHOPPERSPK_CATEGORIES) as string[],
 
+  // Added 2026-08-29 - all 5 are Shopify storefronts (see sources/shopify-
+  // source.ts), verified live before being added. Khaadi was evaluated and
+  // rejected: its robots.txt disallows /women/, which covers essentially
+  // its whole catalog.
+  bagalleryCollections: splitList(process.env.BAGALLERY_COLLECTIONS) as string[],
+  junaidjamshedCollections: splitList(process.env.JUNAIDJAMSHED_COLLECTIONS) as string[],
+  gulahmedCollections: splitList(process.env.GULAHMED_COLLECTIONS) as string[],
+  chasevalueCollections: splitList(process.env.CHASEVALUE_COLLECTIONS) as string[],
+  alfatahCollections: splitList(process.env.ALFATAH_COLLECTIONS) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

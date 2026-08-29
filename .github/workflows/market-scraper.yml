@@ -122,4 +122,22 @@ jobs:
           NAHEED_CATEGORIES: phones-tablets,health-beauty,kids-babies,home-lifestyle,groceries-pets,tv-home-appliances,books,men-s-fashion
           VMART_COLLECTIONS: apple-phones,apple-macbooks-pakistan,audio-pakistan,gaming-mouse-pakistan,gaming-keyboards-pakistan,gaming-headsets-pakistan,accessories-pakistan
           SHOPPERSPK_CATEGORIES: home-decor,jars-containers,serving-dishes-in-pakistan,water-bottles-in-pakistan,wall-clocks-in-pakistan,mugs-in-pakistan,air-fryers,baby
+          #
+          # Added 2026-08-29: 5 new Shopify storefronts (see sources/shopify-
+          # source.ts), filling beauty/home/toys/fashion gaps. Every handle
+          # below was fetched live against each site's own /collections.json
+          # AND its actual products.json endpoint (not just the listing) to
+          # confirm the collection currently has published products - two of
+          # the first picks (gulahmed's 2-piece-khaddar, chasevalue's fryer)
+          # looked valid in /collections.json but returned zero live products
+          # (products_count: 0 - a real collection that's just currently
+          # empty), caught only by actually calling products.json before
+          # shipping. See migrations/032_add_new_retailer_sources.sql. Khaadi
+          # was evaluated from the same target list and rejected: its
+          # robots.txt disallows /women/, essentially its whole catalog.
+          BAGALLERY_COLLECTIONS: all-beauty,all-skincare,beauty-accessories-tools,baby-care-1
+          JUNAIDJAMSHED_COLLECTIONS: skin-care-body-care,womens-bags,fragrances-collection,3-piece
+          GULAHMED_COLLECTIONS: ideas-home-bed-sheets,ideas-home-bath-linen,women-ideas-pret,mens-clothes-eastern-shalwar-kameez
+          CHASEVALUE_COLLECTIONS: home-fragrances,home-lifestyle-heater,kids-action-figures,beauty-personal-care-shaving
+          ALFATAH_COLLECTIONS: air-fryer-price-in-pakistan,activity-toys,after-shave-price-in-pakistan,alarm-wall-clocks
         run: npm run start
