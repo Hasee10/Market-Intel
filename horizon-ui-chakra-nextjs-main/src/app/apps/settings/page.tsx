@@ -11,6 +11,7 @@ import {
   Grid,
   Input,
   Select,
+  Skeleton,
   Switch,
   Text,
   useToast,
@@ -121,6 +122,16 @@ export default function SettingsPage() {
     <>
       <PageHeader title="Settings" breadcrumbItems={breadcrumbItems} />
       <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="20px">
+        {/* profileLoading previously wasn't checked at all here - the form
+            rendered immediately with every field's empty default state
+            (businessName: '', reportingCurrency: 'PKR', ...) and then
+            snapped to the seller's real saved values a moment later. Every
+            other page with a fetch (Products, Customers, Categories,
+            Overview) already skeletons instead of flashing default/empty
+            content - this was the one page that didn't. isLoaded, not a
+            separate loading branch, so nothing about the form's structure
+            has to be duplicated. */}
+        <Skeleton isLoaded={!profileLoading} borderRadius="20px">
         <Card>
           <Flex justify="space-between" align="center" mb="16px">
             <Text fontSize="lg" fontWeight="600">
@@ -181,7 +192,9 @@ export default function SettingsPage() {
             </Select>
           </FormControl>
         </Card>
+        </Skeleton>
 
+        <Skeleton isLoaded={!profileLoading} borderRadius="20px">
         <Card>
           <Text fontSize="lg" fontWeight="600" mb="4px">
             Public profile
@@ -244,7 +257,9 @@ export default function SettingsPage() {
             />
           </Flex>
         </Card>
+        </Skeleton>
 
+        <Skeleton isLoaded={!profileLoading} borderRadius="20px">
         <Card>
           <Text fontSize="lg" fontWeight="600" mb="4px">
             Marketing site showcase
@@ -275,7 +290,11 @@ export default function SettingsPage() {
             />
           </Flex>
         </Card>
+        </Skeleton>
 
+        {/* DomainsManager/ReferralCard fetch their own data independently of
+            profile - not gated on profileLoading, they already handle their
+            own loading state. */}
         <DomainsManager />
         <ReferralCard />
       </Grid>
