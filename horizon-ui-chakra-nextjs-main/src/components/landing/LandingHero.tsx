@@ -5,6 +5,7 @@ import { MdCheckCircle } from 'react-icons/md';
 import NextLink from 'next/link';
 
 import { PATH_AUTH } from '@/lib/paths';
+import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 import { Reveal } from 'components/reactbits/Reveal';
 
 // Organic blurred blob shapes behind the illustration - the illustration
@@ -96,8 +97,8 @@ export function LandingHero() {
                 Not just your store.
               </Heading>
               <Text fontSize={{ base: 'md', md: 'lg' }} color={bodyColor} mb="32px" maxW="480px">
-                Ryvl tracks competitor pricing across 11 marketplaces, benchmarks you against
-                anonymized peers in your category, and tells you when to act — pricing
+                Ryvl tracks competitor pricing across {MARKETPLACE_COUNT} marketplaces, benchmarks you
+                against anonymized peers in your category, and tells you when to act — pricing
                 recommendations, stock-out signals, and price alerts included.
               </Text>
               <Stack direction={{ base: 'column', sm: 'row' }} spacing="16px" mb="20px">

@@ -17,8 +17,12 @@ const CONTENT_TYPES = {
 // docs/reports-v2-architecture.md §7 - there's no cross-tenant exposure risk
 // here (a seller can only ever see their own data), so this stays instant,
 // self-serve, and always mode: 'internal'. The approval gate applies when a
-// snapshot needs to leave the platform as a formal client_safe deliverable
-// (see /api/reports/[id]/export, not this route).
+// snapshot needs to leave the platform as a formal client_safe deliverable -
+// that flow is not built yet (code audit, 2026-08-29): persist.ts already
+// exports getSnapshot/listSnapshotsForSeller/transitionStatus/recordExport
+// for it, and report_reviews/report_exports (migration 025) already exist
+// with RLS, but nothing calls any of the four - no route, no UI. Don't cite
+// a specific route path here again until one actually exists to link to.
 export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {

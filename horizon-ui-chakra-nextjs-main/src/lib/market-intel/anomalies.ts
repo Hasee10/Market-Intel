@@ -129,22 +129,24 @@ export async function detectCompetitorPriceAnomalies(
   const matched = products;
   if (matched.length === 0) return [];
 
-  const { data: history, error: historyError } = await supabase
-    .from('market_price_history')
-    .select('product_id, price, recorded_at')
-    .in(
-      'product_id',
-      matched.map((p) => p.id),
-    )
-    .lte('recorded_at', cutoff)
-    .not('price', 'is', null)
-    .order('recorded_at', { ascending: false });
+  // market_scope_price_baseline() (migration 043) replaces what used to be
+  // an unbounded `.in('product_id', …)` over market_price_history with no
+  // limit - the exact pattern getPriceTrend()'s own comment (above, in
+  // market-insights.ts) describes as already fixed for that function, but
+  // never was here. Returns one row per product: its most recent
+  // observation at or before the cutoff, via an indexed `distinct on` scan
+  // instead of pulling every history row in the window into JS.
+  const { data: history, error: historyError } = await supabase.rpc('market_scope_price_baseline', {
+    p_category_slugs: scope.categorySlugs,
+    p_platform_ids: scope.activePlatformIds,
+    p_cutoff: cutoff,
+  });
 
   if (historyError || !history) return [];
 
   const oldestPriceByProduct = new Map<string, number>();
-  for (const row of history) {
-    if (!oldestPriceByProduct.has(row.product_id)) oldestPriceByProduct.set(row.product_id, Number(row.price));
+  for (const row of history as { product_id: string; baseline_price: number | string }[]) {
+    oldestPriceByProduct.set(row.product_id, Number(row.baseline_price));
   }
 
   const changes: { product: (typeof matched)[number]; oldPrice: number; newPrice: number; pctChange: number }[] = [];

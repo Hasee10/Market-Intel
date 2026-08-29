@@ -38,7 +38,7 @@ const TIERS = [
     tagline: 'Forecasting and scale',
     features: [
       'Everything in Paid',
-      'Price & demand forecasting',
+      'Price forecasting & revenue projection',
       'Anomaly detection',
       'Multiple domains',
       // Deliberately last and hedged: domain_benchmarks needs 3+ opted-in

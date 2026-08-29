@@ -16,7 +16,7 @@ export const MARKETPLACES = MARKETPLACE_ENTRIES.map((m) => m.name);
 export const FAQS: { q: string; a: string }[] = [
   {
     q: 'Which marketplaces do you actually track?',
-    a: `${MARKETPLACES.join(', ')} - ${MARKETPLACE_COUNT} sources covering mobiles/electronics, fashion/apparel, grocery, beauty, home, kitchen, kids, and books today, with more categories added as scraper coverage expands.`,
+    a: `${MARKETPLACE_COUNT} sources today, spanning mobiles & electronics, fashion & apparel, beauty, grocery, home & kitchen, furniture, books & stationery, toys & baby, sports & outdoors, automotive, health & wellness, and pet supplies - the full list scrolls by on the homepage.`,
   },
   {
     q: 'Can other sellers see my orders, customers, or revenue?',
@@ -44,7 +44,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'What is on the Premium plan?',
-    a: 'Everything in Paid, plus price & demand forecasting, anomaly detection, multiple domains, and peer benchmarking as your category fills up (benchmarks need enough opted-in sellers in a category before they compute anything).',
+    a: 'Everything in Paid, plus price forecasting, revenue projection, anomaly detection, multiple domains, and peer benchmarking as your category fills up (benchmarks need enough opted-in sellers in a category before they compute anything).',
   },
   {
     q: 'How much does Ryvl cost?',
@@ -52,7 +52,7 @@ export const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'How is this different from just checking competitor sites myself?',
-    a: 'Manually checking prices is one seller, one product, one site, one point in time. Ryvl tracks pricing and stock automatically across 11 marketplaces, benchmarks you against anonymized peers in your category, and turns that into pricing recommendations and price alerts - not just numbers to read.',
+    a: `Manually checking prices is one seller, one product, one site, one point in time. Ryvl tracks pricing and stock automatically across ${MARKETPLACE_COUNT} marketplaces, benchmarks you against anonymized peers in your category, and turns that into pricing recommendations and price alerts - not just numbers to read.`,
   },
 ];
 

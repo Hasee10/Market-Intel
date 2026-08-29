@@ -73,6 +73,7 @@ type ScorecardRow = {
   observed_sku_count: number | string | null;
   first_seen_at: string | null;
   last_seen_at: string | null;
+  total_identified_sku_count: number | string | null;
 };
 
 const num = (value: number | string | null | undefined): number | null =>
@@ -146,6 +147,13 @@ async function getCompetitorLandscapeFromScope(
   const fxRates = fxRatesOverride ?? (await getLatestFxRates());
 
   const [scorecardsRes, anonymousRes] = await Promise.all([
+    // Band/brand filters mirror getScopeMedianPrice below, exactly - both
+    // read from the same scope.definition, so the competitor numbers and the
+    // market median they're indexed against are always computed over the
+    // same population. (Migration 040: this call used to omit these
+    // entirely, so a seller who narrowed their market with a price band got
+    // a price_index dividing a filtered market median by an unfiltered
+    // competitor median.)
     supabase.rpc('market_competitor_scorecards', {
       p_category_slugs: scope.categorySlugs,
       p_platform_ids: scope.activePlatformIds,
@@ -153,6 +161,11 @@ async function getCompetitorLandscapeFromScope(
       p_rates: fxRates,
       p_lookback_days: REPRICING_LOOKBACK_DAYS,
       p_limit: MAX_COMPETITORS,
+      p_band_currency: scope.definition.priceCurrency,
+      p_price_min: scope.definition.priceMin,
+      p_price_max: scope.definition.priceMax,
+      p_brands: scope.definition.brands,
+      p_cities: scope.definition.cities,
     }),
     // Counted, not inferred from the scorecards: the difference between these
     // two numbers is the coverage caveat the page has to show. A seller
@@ -170,7 +183,13 @@ async function getCompetitorLandscapeFromScope(
   if (scorecardsRes.error || !scorecardsRes.data) return empty;
 
   const rows = scorecardsRes.data as ScorecardRow[];
-  const identifiedSkuCount = rows.reduce((sum, row) => sum + int(row.sku_count), 0);
+  // total_identified_sku_count (migration 040) is the true count over every
+  // identified competitor in scope, computed in SQL before the p_limit
+  // cutoff - summing only the returned rows' sku_count would undercount as
+  // soon as more than MAX_COMPETITORS sellers are identified (Daraz alone
+  // has 58 in some categories per mind.md), which also silently inflated
+  // every assortmentShare below.
+  const identifiedSkuCount = int(rows[0]?.total_identified_sku_count);
 
   // The market median every competitor is indexed against. Taken from the same
   // scope, so "8% below market" means below *this seller's* market, not below

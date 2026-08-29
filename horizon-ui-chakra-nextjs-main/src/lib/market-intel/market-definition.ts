@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentSeller, listSellerDomainSlugs } from '@/lib/market-intel/seller';
+import { getLatestFxRates } from '@/lib/market-intel/fx';
 
 // ROADMAP.md A3. This replaces category-keywords.ts, which mapped a seller's
 // category to scraped rows with one regex per category and matched it against
@@ -421,8 +422,16 @@ export type MarketScopeCoverage = {
 
 /**
  * What the scope actually resolves to, for the "N listings across M platforms
- * match your definition" line C2 requires on every analysis page. Counted with
- * `head: true`, so it costs a count and not the rows.
+ * match your definition" line C2 requires on every analysis page.
+ *
+ * Sourced from market_scope_coverage() (migration 041) rather than two plain
+ * PostgREST counts, so this always applies the seller's full definition
+ * (price band, brands, cities) - not just category/platform. Before 041 this
+ * counted category+platform only while getCategoryPricing()'s stats call
+ * applied the full definition, so the banner could claim thousands of
+ * listings while every figure on the page was computed over a filtered
+ * fraction of them - and a band matching zero rows never triggered the
+ * honest empty state, because the unfiltered count was still positive.
  */
 export async function getMarketScopeCoverage(scope: MarketScope): Promise<MarketScopeCoverage> {
   if (scope.categorySlugs.length === 0) {
@@ -430,25 +439,34 @@ export async function getMarketScopeCoverage(scope: MarketScope): Promise<Market
   }
 
   const supabase = await createClient();
-  const [products, listings, platforms] = await Promise.all([
-    supabase
-      .from('market_products')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_active', true)
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds),
-    supabase
-      .from('market_classified_listings')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active')
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds),
-    supabase.from('market_platforms').select('id, name').in('id', scope.activePlatformIds),
-  ]);
+  const fxRates = await getLatestFxRates();
+
+  const { data, error } = await supabase
+    .rpc('market_scope_coverage', {
+      p_category_slugs: scope.categorySlugs,
+      p_platform_ids: scope.activePlatformIds,
+      p_band_currency: scope.definition.priceCurrency,
+      p_rates: fxRates,
+      p_price_min: scope.definition.priceMin,
+      p_price_max: scope.definition.priceMax,
+      p_brands: scope.definition.brands,
+      p_cities: scope.definition.cities,
+    })
+    .maybeSingle<{ product_count: number | string | null; listing_count: number | string | null; platform_ids: string[] | null }>();
+
+  if (error || !data) return { productCount: 0, listingCount: 0, platformNames: [] };
+
+  const platformIds = data.platform_ids ?? [];
+  const platformNames =
+    platformIds.length === 0
+      ? []
+      : (
+          await supabase.from('market_platforms').select('name').in('id', platformIds)
+        ).data?.map((p: { name: string }) => p.name).sort() ?? [];
 
   return {
-    productCount: products.count ?? 0,
-    listingCount: listings.count ?? 0,
-    platformNames: (platforms.data ?? []).map((p: { name: string }) => p.name).sort(),
+    productCount: Number(data.product_count ?? 0),
+    listingCount: Number(data.listing_count ?? 0),
+    platformNames,
   };
 }

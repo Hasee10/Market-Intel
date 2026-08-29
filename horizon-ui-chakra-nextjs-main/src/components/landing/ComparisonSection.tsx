@@ -4,12 +4,13 @@ import { Box, Container, Flex, Heading, Icon, SimpleGrid, Text, useColorModeValu
 import { MdClose, MdCheck } from 'react-icons/md';
 
 import { Reveal } from 'components/reactbits/Reveal';
+import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 
 // Compares against the real alternative most sellers actually have today
 // (checking competitor sites by hand, spreadsheets) - not a fabricated
 // vs.-named-competitor table with claims that can't be backed up.
 const ROWS = [
-  { label: 'Checking competitor prices', without: 'Manually, site by site', with: 'Tracked automatically across 11 marketplaces' },
+  { label: 'Checking competitor prices', without: 'Manually, site by site', with: `Tracked automatically across ${MARKETPLACE_COUNT} marketplaces` },
   { label: 'Knowing your price position', without: 'Guesswork', with: 'Benchmarked against your category, live' },
   { label: 'Catching a competitor price drop', without: 'Only if you happen to check', with: 'Alerted the moment it changes' },
   { label: 'Setting your own prices', without: 'Gut feeling', with: 'A margin-safe recommendation' },

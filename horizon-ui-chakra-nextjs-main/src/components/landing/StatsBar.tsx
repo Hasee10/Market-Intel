@@ -4,13 +4,19 @@ import { Box, Container, Divider, Flex, Icon, SimpleGrid, Text } from '@chakra-u
 import { MdStorefront, MdCategory, MdSchedule, MdShield } from 'react-icons/md';
 import { CountUp } from 'components/reactbits/CountUp';
 import { Reveal } from 'components/reactbits/Reveal';
+import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 
 // Real, product-descriptive numbers (scraper coverage, refresh cadence) -
 // deliberately not fake customer/user counts, since this product has no
 // public user base to cite yet. Overstating traction here would be the
 // kind of thing that erodes trust the moment someone checks.
+//
+// Seller category count (12) is deliberately NOT seller_categories' row
+// count (13) - the 13th row, 'other', is a catch-all fallback with zero
+// rows in market_category_map anywhere, so it has no real scraped coverage
+// behind it. Counting it here would overclaim, not fix an undercount.
 const STATS = [
-  { icon: MdStorefront, value: '11', label: 'Marketplaces tracked live' },
+  { icon: MdStorefront, value: String(MARKETPLACE_COUNT), label: 'Marketplaces tracked live' },
   { icon: MdCategory, value: '12', label: 'Seller categories supported' },
   { icon: MdSchedule, value: '48hrs', label: 'Max data refresh cycle' },
   { icon: MdShield, value: '0', label: 'Raw competitor data ever shown to you' },

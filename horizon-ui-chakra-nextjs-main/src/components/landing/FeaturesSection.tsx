@@ -28,7 +28,7 @@ const FEATURES = [
   {
     icon: MdOutlineVisibility,
     title: 'Live competitor tracking',
-    description: `Pricing and stock data scraped from ${MARKETPLACE_COUNT} marketplaces, refreshed automatically - category-wide pricing bands, stock-outs, and demand signals.`,
+    description: `Pricing and stock data scraped from ${MARKETPLACE_COUNT} marketplaces, refreshed automatically - category-wide pricing bands, stock-outs, and platform-reported sold-count proxies where available.`,
     wide: true,
   },
   {

@@ -3,6 +3,7 @@
 import { Box, Container, Flex, Heading, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
 import { CountUp } from 'components/reactbits/CountUp';
 import { Reveal } from 'components/reactbits/Reveal';
+import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 
 // The actual seller journey through the product, not the privacy mechanics
 // (that's TrustSection) - a concrete 3-step process bridges "what is this"
@@ -18,7 +19,7 @@ const STEPS = [
     step: '02',
     title: 'We track the market for you',
     description:
-      "Competitor pricing and stock across 11 marketplaces refresh automatically, alongside your own store's orders, products, and customers - all in one dashboard.",
+      `Competitor pricing and stock across ${MARKETPLACE_COUNT} marketplaces refresh automatically, alongside your own store's orders, products, and customers - all in one dashboard.`,
   },
   {
     step: '03',
