@@ -41,6 +41,19 @@ export const config = {
   chasevalueCollections: splitList(process.env.CHASEVALUE_COLLECTIONS) as string[],
   alfatahCollections: splitList(process.env.ALFATAH_COLLECTIONS) as string[],
 
+  // Added 2026-08-29, second batch. Springs/Outfitters/SEW Markaz are
+  // Shopify (reuse the same factory as the batch above). Petshub is
+  // WooCommerce Store API, mirroring shopperspk.ts. Fills grocery/pantry,
+  // household, kids fashion and pet-supplies gaps. Symbios.pk (dead/
+  // misconfigured host) and METRO Pakistan (hard 403 bot block) were
+  // evaluated and rejected; Homeshopping.pk (VTEX headless) and Idealancy.pk
+  // (custom platform, JSON-LD only) are real stores but need dedicated
+  // integration work, deferred rather than rushed.
+  springsCollections: splitList(process.env.SPRINGS_COLLECTIONS) as string[],
+  outfittersCollections: splitList(process.env.OUTFITTERS_COLLECTIONS) as string[],
+  sewmarkazCollections: splitList(process.env.SEWMARKAZ_COLLECTIONS) as string[],
+  petshubCategories: splitList(process.env.PETSHUB_CATEGORIES) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

@@ -11,6 +11,7 @@ import { scrapeShophive } from './shophive.js';
 import { scrapeShopperspk } from './shopperspk.js';
 import { scrapeTelemart } from './telemart.js';
 import { scrapeVmart } from './vmart.js';
+import { scrapePetshub } from './petshub.js';
 import { createShopifySource } from './shopify-source.js';
 
 // Added 2026-08-29 - all 5 verified live as Shopify storefronts before being
@@ -44,6 +45,28 @@ export const scrapeAlfatah = createShopifySource({
   getCollections: () => config.alfatahCollections,
 });
 
+// Added 2026-08-29, second batch - Springs, Outfitters, SEW Markaz are
+// Shopify (same factory); Petshub.pk is WooCommerce Store API (see
+// petshub.ts). Fills grocery/pantry, kids fashion, home-decor and
+// pet-supplies gaps. See config.ts for what was evaluated and rejected
+// from the same candidate list (Symbios.pk, METRO) or deferred
+// (Homeshopping.pk, Idealancy.pk).
+export const scrapeSprings = createShopifySource({
+  platformSlug: 'springs',
+  baseUrl: 'https://springs.com.pk',
+  getCollections: () => config.springsCollections,
+});
+export const scrapeOutfitters = createShopifySource({
+  platformSlug: 'outfitters',
+  baseUrl: 'https://outfitters.com.pk',
+  getCollections: () => config.outfittersCollections,
+});
+export const scrapeSewmarkaz = createShopifySource({
+  platformSlug: 'sewmarkaz',
+  baseUrl: 'https://www.sewmarkaz.com',
+  getCollections: () => config.sewmarkazCollections,
+});
+
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
@@ -65,6 +88,10 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeGulahmed,
   scrapeChasevalue,
   scrapeAlfatah,
+  scrapeSprings,
+  scrapeOutfitters,
+  scrapeSewmarkaz,
+  scrapePetshub,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP

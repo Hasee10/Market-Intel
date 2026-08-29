@@ -140,4 +140,20 @@ jobs:
           GULAHMED_COLLECTIONS: ideas-home-bed-sheets,ideas-home-bath-linen,women-ideas-pret,mens-clothes-eastern-shalwar-kameez
           CHASEVALUE_COLLECTIONS: home-fragrances,home-lifestyle-heater,kids-action-figures,beauty-personal-care-shaving
           ALFATAH_COLLECTIONS: air-fryer-price-in-pakistan,activity-toys,after-shave-price-in-pakistan,alarm-wall-clocks
+          #
+          # Added 2026-08-29, second batch: Springs/Outfitters/SEW Markaz
+          # (Shopify) + Petshub.pk (WooCommerce Store API). Every handle below
+          # was fetched live against its actual products.json/Store API
+          # endpoint (not just the collection/category listing) and confirmed
+          # to return real product rows before being added - see
+          # migrations/033_add_second_retailer_batch.sql. Symbios.pk (dead
+          # host, serves a hosting-panel splash page) and METRO Pakistan (hard
+          # 403 bot block) were evaluated and rejected from the same candidate
+          # list; Homeshopping.pk (VTEX headless commerce) and Idealancy.pk
+          # (custom platform, JSON-LD only) are real stores but need dedicated
+          # integration work and are deferred, not added here.
+          SPRINGS_COLLECTIONS: chips-snacks-popcorn,cleaning,baby-products,beauty-accessories-tools
+          OUTFITTERS_COLLECTIONS: boys-most-popular-products,girls-most-popular-products,accessories-women,junior-boy-shoes
+          SEWMARKAZ_COLLECTIONS: home-decor,kitchen-dining,household-essentials,baskets-organizers
+          PETSHUB_CATEGORIES: cat-foods-in-pakistan,dog-foods-in-pakistan,cat-accessories-in-pakistan,dog-accessories-in-pakistan
         run: npm run start
