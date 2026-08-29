@@ -25,7 +25,9 @@ permissions:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 360 is GitHub Actions' hard maximum for a job's timeout-minutes - there
+    # is no "unlimited" option, this is as close as it gets.
+    timeout-minutes: 360
     defaults:
       run:
         working-directory: scraper
