@@ -1920,3 +1920,89 @@ every category flagged as weak/critical-gap at the start of this thread
 (Sports & Outdoors, Books & Stationery, Automotive, Coffee & Beverages,
 Health & Wellness, Pet Supplies) now has real, live-verified source
 coverage. Total scraper sources after this batch: 56.
+
+## 2026-08-29: Cross-source product-duplicate detection + scraper CI
+timeout fix - `ea1e569`, `5be6840`
+
+User asked whether cross-source duplicate detection exists (same
+physical product listed by multiple retailer sources, e.g. the Zellbury
+example showing up on both Daraz and PriceOye as separate rows).
+Confirmed it didn't - `market_products` only dedupes *within* one source
+(unique platform_id+external_id). There WAS a narrower prior version -
+`matching.ts`/`match-products.ts` populated `market_product_matches`
+(migrations/009) but mobiles-only (hardcoded brand list + a 4-platform
+category dict) via a standalone script nothing ever scheduled, and
+nothing in the seller app reads that table.
+
+User's explicit direction: generalize the existing table/script rather
+than build a parallel one, run it as part of the scraper itself (not a
+separate cron - "obviously in the scrapper"), backend-only for now (no
+UI, mirrors the `is_active` dead-product signal - a DB fact, not a
+page). Went through Plan Mode given the architectural surface.
+
+**What shipped:** `matching.ts` generalized - dropped the hardcoded
+mobile-platform dict in favor of bucketing by canonical
+`seller_category_slug` via `market_category_map` (covers every current
+and future platform automatically); `requireBrandMatch` became an
+option, still `true` only for mobiles-and-electronics (the only category
+with a usable brand list - keeps the already-validated mobile behavior
+byte-for-byte), `false` elsewhere (price-band 0.25 + Jaccard >= 0.6
+only - a real precision tradeoff for categories with generic/templated
+titles, deliberately not offset by loosening the threshold). New
+`dedupe.ts` does the orchestration (fetch active products + category
+map, bucket, score, replace `market_product_matches` wholesale each
+run) and is called from `pipeline.ts` right after `refreshCompetitors()`,
+wrapped in try/catch so a dedup failure can't fail the whole scrape run.
+Deleted the now-dead standalone `match-products.ts` script + its npm
+entry - fully superseded, nothing was scheduling it anyway.
+
+**Safety cap, and it's already binding:** buckets over 5,000 products
+skip the pairwise O(n^2) pass (logged, not silent) rather than risk
+unbounded runtime as the catalog keeps growing. First real run hit it
+immediately - `home-and-kitchen` (11,216), `automotive` (5,105), and
+`fashion-and-apparel` (11,645) all got skipped. So the 3 biggest,
+fastest-growing categories currently get **zero** dedup coverage. Flagged
+to the user as a live tradeoff, not resolved yet - the honest fix is
+switching those to the pg_trgm-backed candidate-narrowing approach
+already proven for the seller-competitor-matching truncation bug
+(migration 036/`market_top_similar_candidates`) instead of brute-force
+pairwise, deferred pending user go-ahead.
+
+**Real, unrelated bug hit along the way:** triggering the scraper to
+verify this feature exposed that `.github/workflows/market-scraper.yml`'s
+`timeout-minutes: 40` was now too low - the run count has grown to 54
+active sources since that value was set, and two consecutive runs
+(33254732374, then 33256559496 even after raising to 60) got killed
+mid-scrape by the job timeout, not by any code issue. Per explicit user
+instruction ("like as much time it takes no cap"), raised to 360 -
+GitHub Actions' actual hard ceiling; there is no true "unlimited"
+option, omitting the field defaults to the same 360-minute cap anyway.
+Third run (33259212504) completed clean at 60,976 active products/54,882
+new-and-updated rows this run/2,969 dedup pairs found across the 9
+un-capped categories, 0 sources errored.
+
+**Live per-source result, this run** (54,882 total products across 54
+sources - see the run's own JSON summary, not estimated): habitt 9796,
+shopperspk 6515, autostorepk 3459, snapcart 3887, zellbury 3674,
+bagallery 3199, naheed 2584, gulahmed 2394, outfitters 2228, blingspot
+2169, daraz 1916, springs 1685, vmart 1620, alfatah 1516, nishatlinen
+1489, telemart 1417, petfit 1150, asadautos 961, bonanzasatrangi 953,
+alisports 926, shophive 999, hustlersonlypk 833, petshub 812, petspark
+790, sapphireonline 720, assany 686, myvitaminstore 660, pakistanmotors
+659, epetstorepk 601, sehgalmotors 602, katib 554, interwood 522,
+petmaster 448, luminaria 420, ishopping 382, chenone 343, goto 205,
+premiumexo 251, poshish 201, zeesol 163, woods 167, mercurystationery
+103, coffeecrest 72, bodybrics 71, activitysphere 100, scafe 61,
+wellpakistan 38, junaidjamshed 23, redberryroasters 28,
+ginnasticnutrition 28, sewmarkaz 81, chasevalue 55, **stationarypk 0**.
+
+**stationarypk (Stationary.pk) returned 0 rows two runs in a row** -
+timed out (30s, 4 retries) on 3 different categories before the CI
+timeout fix, still 0 after. Checked live from outside CI right after:
+homepage AND the exact `/wp-json/wc/store/v1/products?category=
+writing-essentials` endpoint the scraper hits both respond 200 OK in
+~4s with real product data - the site is not down. Points at something
+intermittent specific to GitHub Actions runner IPs/timing (rate-limiting
+or transient server load), not a dead source - flagged to watch across
+the next couple of scheduled runs before concluding anything needs
+changing (longer per-request timeout, more retries, etc).
