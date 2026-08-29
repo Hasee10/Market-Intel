@@ -1805,3 +1805,52 @@ formalizing Coffee & Beverages (currently 0 active sources). User's own
 framing was "when [Sports & Outdoors] is done... we can proceed with a
 full-fledged scraper" - a checkpoint, not a green light to keep going
 unprompted on the remaining categories.
+
+**Update:** user applied migration 037, then asked to finish the
+remaining 3 categories before running the full-scale scrape.
+
+## 2026-08-29: Books & Stationery + Automotive + Coffee & Beverages batch
+(sixth retailer batch overall) + assistant line-break rendering fix -
+`a6130eb`
+
+Closed out the brief from the Sports & Outdoors batch. 12 of 13
+candidates confirmed and shipped - unusually high hit rate this round,
+only 1 deferred (Waqarmart.pk - real site, but a custom Laravel platform,
+not WordPress despite having a `/wp-json/` path that just redirects to
+itself; no standard product feed). Coffee & Beverages went from 0 active
+sources to a real, formalized category for the first time.
+
+Snapcart.pk worth remembering: it's a huge general marketplace (100k+
+products across pharmacy/beauty/groceries), not a coffee specialist -
+only scraped for its genuine ~916-product Tea & Coffee segment, verified
+live before including it, not the whole catalog.
+
+**Verified:** live through the actual scraper code, zero bad rows across
+all 12 - blingspot 2171, katib 554, mercurystationery 103, sehgalmotors
+602, asadautos 960, pakistanmotors 659, premiumexo 251, coffeecrest 72,
+snapcart 3887, stationarypk 888, assany 686, autostorepk 3459 (~14,292
+total). Migration 038 not yet applied to the live DB.
+
+**Confirmed, not assumed:** no new `seller_categories` rows have been
+added by any migration today (032-038) - checked directly
+(`grep -c "insert into seller_categories"` across every migration file
+returns a hit only on the original 011). Every batch this whole session
+only ever mapped new platforms into the existing 12 categories.
+
+**Separate real bug found and fixed the same session:** the seller
+assistant and public marketing assistant chat widgets were rendering
+every reply as one run-on paragraph, even after the earlier "no
+markdown" prompt fix. Root cause was CSS, not the model - the message
+`Box` in both `SellerAssistantWidget.tsx`/`AssistantWidget.tsx` had no
+`whiteSpace` set, so the browser's `white-space: normal` default
+collapsed every line break the model wrote. Added
+`whiteSpace="pre-wrap"` to both, plus tightened `seller-assistant.ts`'s
+prompt to explicitly require real newlines between list items and a
+one-line summary before long lists. Worth remembering for any future
+chat-bubble UI: a "write structured text" prompt instruction is
+worthless if the rendering component silently collapses whitespace -
+check the CSS first, not just the prompt.
+
+**Total active scraper sources as of this batch: 48** (45 plain HTTP + 3
+browser-automation via CloakBrowser) - confirmed by counting
+HTTP_SOURCES/BROWSER_SOURCES directly in index.ts, not estimated.
