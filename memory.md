@@ -1854,3 +1854,69 @@ check the CSS first, not just the prompt.
 **Total active scraper sources as of this batch: 48** (45 plain HTTP + 3
 browser-automation via CloakBrowser) - confirmed by counting
 HTTP_SOURCES/BROWSER_SOURCES directly in index.ts, not estimated.
+
+**Update:** user applied migration 038, then pasted a follow-up Grok
+prompt that overlapped heavily with what was already shipped (same
+Sports & Outdoors/Books & Stationery/Automotive/Coffee & Beverages
+sites) - the only genuinely new asks were Health & Wellness sources (no
+specific sites named), 1-2 more coffee stores, 2-3 more pure pet stores,
+and formalizing "Pet Supplies" as its own category. Clarified the overlap
+before doing anything, to avoid duplicate work.
+
+## 2026-08-29: Health & Wellness + 2 more pet/coffee sources + Pet
+Supplies formalized - `bae6fb9`
+
+Closed out the very last part of the multi-batch category-expansion
+brief. Unlike every prior batch, no specific sites were named for these
+three gaps ("research and propose") - used WebSearch (loaded via
+ToolSearch, wasn't available by default) to find real candidates, then
+verified each live the same way as every named candidate before them.
+Found: Well Pakistan, My Vitamin Store, Ginnastic Nutrition (health),
+Pet Master, PetsPark.pk, ePetStore.pk (2 more pets, on top of Petfit.pk/
+Petshub.pk), SCAFE Coffee Roaster, Red Berry Roasters (2 more coffee).
+All 8 confirmed and shipped - no rejections this round.
+
+**Pet Supplies formalized as its own seller_categories row** (migration
+039), not the catch-all 'other' it used since 033/034 - that was
+explicitly deferred back then as a bigger decision than one migration
+should make (touches Settings > Domains' category dropdown, sourced live
+from seller_categories - see listCategories() in seller.ts). This round's
+brief explicitly asked for it, so it went ahead. Re-mapped the *existing*
+Petfit.pk/Petshub.pk rows from 'other' to 'pet-supplies' via UPDATE, not
+a fresh insert - the unique key on market_category_map includes
+seller_category_slug, so inserting instead of updating would have
+double-mapped the same sources into two categories at once. Also added a
+matching `MdPets` icon entry to the seller app's `categoryVisuals.ts`
+(the Categories page's per-category icon/color map, a real hardcoded
+list separate from the DB) so the new category isn't stuck with the
+generic fallback icon - checked for other hardcoded category lists first
+(grepped the whole app for existing category slugs) rather than assuming
+this was the only one.
+
+**Real, unrelated bug hit and fixed along the way:** adding the `MdPets`
+import made `next build` segfault (exit 3221225477) - reproducibly, not
+flaky (retried once, same crash). Root cause, confirmed by isolating
+(stashed the one-file change, build succeeded; restored it, build
+crashed again): `node_modules/react-icons/md/index.esm.js` was somehow
+holding an entirely different package's source code (a source-map
+library, Mozilla-licensed, unrelated to icons) despite `package.json`
+and `index.d.ts` both being the correct react-icons files. Fixed with a
+targeted `rm -rf node_modules/react-icons && npm install react-icons@4.12.0
+--no-save`, confirmed by checking the reinstalled file actually contains
+real `GenIcon`-based icon exports before rebuilding. **This is the third
+real filesystem/install anomaly on this machine today** (after the two
+disk/git corruption incidents earlier) - worth taking seriously as a
+pattern, same `chkdsk E: /f /r` recommendation as before, still not run
+by the user as of this entry.
+
+**Verified:** live through the actual scraper code, zero bad rows across
+all 8 - wellpakistan 38, myvitaminstore 660, ginnasticnutrition 28,
+petmaster 448, petspark 790, scafe 61, redberryroasters 28, epetstorepk
+601. tsc/lint/147-test-suite/build all clean (build only after the
+react-icons fix). Migration 039 not yet applied to the live DB.
+
+**This closes out the entire multi-batch category-expansion brief** -
+every category flagged as weak/critical-gap at the start of this thread
+(Sports & Outdoors, Books & Stationery, Automotive, Coffee & Beverages,
+Health & Wellness, Pet Supplies) now has real, live-verified source
+coverage. Total scraper sources after this batch: 56.
