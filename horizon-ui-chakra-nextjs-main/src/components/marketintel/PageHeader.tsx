@@ -50,7 +50,13 @@ export function PageHeader({
             ))}
           </Breadcrumb>
         )}
-        <Heading size="lg" color={textColor}>
+        {/* Merriweather was already loaded app-wide (app/layout.tsx) but
+            scoped to marketing headlines only - every dashboard page title
+            rendered in Inter, the same face as body text, so nothing on the
+            authenticated side ever got the serif weight the landing pages
+            use for "this is a real, considered product." One page header
+            component, thirteen pages, one change. */}
+        <Heading size="lg" color={textColor} fontFamily="var(--font-merriweather), serif">
           {title}
         </Heading>
       </Flex>
