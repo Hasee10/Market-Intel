@@ -20,10 +20,17 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import Link from 'next/link';
+import {
+  MdOutlineRemoveShoppingCart,
+  MdOutlineTrendingDown,
+  MdOutlineTrendingUp,
+  MdOutlineCheckCircle,
+} from 'react-icons/md';
 
 import Card from 'components/card/Card';
 import LineChart from '@/components/charts/LineChart';
 
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
@@ -109,11 +116,55 @@ export default function MarketView({
   const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
 
   const domainStats = [
-    { title: 'Your domain', value: domain?.categoryName ?? 'Not set' },
-    { title: 'Sellers in domain', value: sellersInDomain != null ? String(sellersInDomain) : '—' },
-    { title: 'Peers visible to you', value: String(peers.length) },
-    { title: 'Benchmarks tracked', value: String(benchmarks.length) },
+    { title: 'Your domain', value: domain?.categoryName ?? 'Not set', icon: 'chart-line', color: 'blue' },
+    { title: 'Sellers in domain', value: sellersInDomain != null ? String(sellersInDomain) : '—', icon: 'users', color: 'teal' },
+    { title: 'Peers visible to you', value: String(peers.length), icon: 'users', color: 'violet' },
+    { title: 'Benchmarks tracked', value: String(benchmarks.length), icon: 'chart-line', color: 'pink' },
   ];
+
+  // Instant-insight strip (same pattern as Overview's InsightBanner, see
+  // InsightStrip.tsx) - drawn only from data that isn't behind an
+  // UpgradeGate on this page (stockOuts, priceTrend), so a free-tier seller
+  // never sees a headline built from a premium finding they can't actually
+  // open below. Priority: stock-outs (operational, time-sensitive - a
+  // competitor stock-out is demand nobody's filling right now) > a real
+  // market price swing (>=3%, avoids calling a rounding blip a trend) >
+  // calm fallback. No strip at all when there's no domain set - the
+  // dedicated "choose domain" warning below already owns that message,
+  // and duplicating it as a neutral insight would just be noise.
+  const marketInsight: Insight | null = !domain
+    ? null
+    : stockOuts.length > 0
+      ? {
+          tone: 'good',
+          icon: MdOutlineRemoveShoppingCart,
+          headline: `${stockOuts.length} competitor product${stockOuts.length === 1 ? ' is' : 's are'} out of stock`,
+          detail: "That's demand nobody can fill right now - worth checking if you carry it.",
+        }
+      : (() => {
+          if (priceTrend.length < 2) return null;
+          const first = priceTrend[0].medianPrice;
+          const last = priceTrend[priceTrend.length - 1].medianPrice;
+          if (!(first > 0)) return null;
+          const pct = ((last - first) / first) * 100;
+          if (Math.abs(pct) < 3) return null;
+          const up = pct > 0;
+          // Rising competitor prices are room for a seller to follow, not a
+          // threat - falling prices are the actual margin squeeze.
+          return {
+            tone: up ? 'good' : 'warning',
+            icon: up ? MdOutlineTrendingUp : MdOutlineTrendingDown,
+            headline: `Category prices are ${up ? 'up' : 'down'} ${Math.abs(pct).toFixed(1)}% over the last 30 days`,
+            detail: up
+              ? 'The market has room to follow - check your own pricing recommendations below.'
+              : 'Competitors are cutting prices - worth reviewing your own margin floor.',
+          } satisfies Insight;
+        })() ?? {
+          tone: 'neutral',
+          icon: MdOutlineCheckCircle,
+          headline: 'No unusual market movement to flag right now',
+          detail: 'Category pricing and competitor stock are tracking normally.',
+        };
 
   return (
     <Box>
@@ -135,6 +186,8 @@ export default function MarketView({
           scope this strip describes, so it goes first - a median with no
           stated definition is a number the seller has to take on trust. */}
       {scopeSummary && <MarketScopeBanner summary={scopeSummary} />}
+
+      {marketInsight && <InsightStrip insight={marketInsight} />}
 
       {freshness.length > 0 && (
         <Flex wrap="wrap" gap="8px" mb="16px">
