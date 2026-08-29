@@ -98,6 +98,18 @@ export default function OverviewPage() {
   const tableRowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
   const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
   const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
+  // Chart tooltips previously hardcoded `theme: 'dark'` unconditionally -
+  // even in light mode - and ApexCharts' generic dark preset (a flat grey,
+  // not this app's specific navy) sat close enough in luminance to Ryvl's
+  // actual dark surface that the tooltip box read as barely-there against
+  // the page behind it. These match cardBg/cardBorder/textColor exactly
+  // (navy.700 = #1B254B, from theme/styles.ts), as raw hex because
+  // ApexCharts' tooltip.custom returns an HTML string, not JSX - Chakra
+  // tokens like "navy.700" aren't resolvable CSS outside a styled component.
+  const tooltipBg = useColorModeValue('#FFFFFF', '#1B254B');
+  const tooltipBorder = useColorModeValue('#E2E8F0', 'rgba(255,255,255,0.14)');
+  const tooltipText = useColorModeValue('#1B2559', '#FFFFFF');
+  const tooltipMuted = useColorModeValue('#707EAE', '#A3AED0');
 
   const { data: statsData, loading: statsLoading } = useFetch<IApiResponse<StatItem[]>>(
     '/api/ecommerce/stats',
@@ -182,7 +194,16 @@ export default function OverviewPage() {
     yaxis: { show: false },
     grid: { show: false },
     colors: ['#4318FF'],
-    tooltip: { theme: 'dark' },
+    tooltip: {
+      custom: ({ series, seriesIndex, dataPointIndex }: { series: number[][]; seriesIndex: number; dataPointIndex: number }) => {
+        const point = revenueTrend[dataPointIndex];
+        const value = series[seriesIndex]?.[dataPointIndex] ?? 0;
+        return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
+          <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${point?.date ?? ''}</div>
+          <div style="color:${tooltipText};font-size:13px;font-weight:700;">${formatCurrency(value, reportingCurrency)}</div>
+        </div>`;
+      },
+    },
   };
 
   const orderPieData = orders.map((o) => o.count);
@@ -190,7 +211,7 @@ export default function OverviewPage() {
   const orderPieOptions = {
     labels: orders.map((o) => o.status),
     colors: PALETTE.slice(0, orders.length || 1),
-    legend: { show: true, position: 'bottom' as const },
+    legend: { show: true, position: 'bottom' as const, labels: { colors: tooltipText } },
     dataLabels: { enabled: false },
     stroke: { width: 0 },
     plotOptions: {
@@ -233,7 +254,7 @@ export default function OverviewPage() {
   const categoryPieOptions = {
     labels: chartCategories.map((c) => c.category),
     colors: PALETTE.slice(0, chartCategories.length || 1),
-    legend: { show: true, position: 'bottom' as const },
+    legend: { show: true, position: 'bottom' as const, labels: { colors: tooltipText } },
     dataLabels: { enabled: false },
     stroke: { width: 0 },
     plotOptions: {
@@ -285,7 +306,7 @@ export default function OverviewPage() {
 
       <Flex align="center" gap="10px" mb="14px" mt="12px">
         <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
-        <Heading size="md" color={textColor}>
+        <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
           Revenue & fulfillment
         </Heading>
       </Flex>
@@ -345,7 +366,21 @@ export default function OverviewPage() {
                   yaxis: { show: false },
                   grid: { show: false },
                   colors: ['#4318FF', '#A3AED0'],
-                  tooltip: { theme: 'dark' },
+                  tooltip: {
+                    custom: ({ series, dataPointIndex }: { series: number[][]; dataPointIndex: number }) => {
+                      const point = forecast.points[dataPointIndex];
+                      // At the actual->projected transition point both
+                      // series carry the same value (see the chartData
+                      // above) so the dashed line connects seamlessly -
+                      // show it once, labelled by which it really is.
+                      const isProjected = point?.isProjected;
+                      const value = isProjected ? series[1]?.[dataPointIndex] : series[0]?.[dataPointIndex];
+                      return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
+                        <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${point?.date ?? ''}${isProjected ? ' (projected)' : ''}</div>
+                        <div style="color:${tooltipText};font-size:13px;font-weight:700;">${formatCurrency(value ?? 0, reportingCurrency)}</div>
+                      </div>`;
+                    },
+                  },
                 }}
               />
             </Box>
@@ -384,7 +419,7 @@ export default function OverviewPage() {
       <Flex align="center" justify="space-between" wrap="wrap" gap="12px" mb="14px" mt="12px">
         <Flex align="center" gap="10px">
           <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
-          <Heading size="md" color={textColor}>
+          <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
             Products & inventory
           </Heading>
         </Flex>
