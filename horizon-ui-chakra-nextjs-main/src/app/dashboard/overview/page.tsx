@@ -176,6 +176,17 @@ export default function OverviewPage() {
       data: revenueTrend.map((p) => Number(p.revenue.toFixed(2))),
     },
   ];
+  // Phase 4 (enterprise-look pass): a raw sparkline asks the seller to read
+  // and interpret it themselves. Labelling the peak directly on the chart -
+  // "Best day: PKR X on Aug 15" - gives the one-line takeaway without
+  // requiring that. Skipped when every point is equal (a flat empty-history
+  // line has no "peak" worth calling out) or there's only one point (a peak
+  // among one value isn't a finding).
+  const revenuePeak =
+    revenueTrend.length > 1 && new Set(revenueTrend.map((p) => p.revenue)).size > 1
+      ? revenueTrend.reduce((best, p) => (p.revenue > best.revenue ? p : best), revenueTrend[0])
+      : null;
+
   const lineChartOptions = {
     chart: { toolbar: { show: false } },
     dataLabels: { enabled: false },
@@ -194,6 +205,24 @@ export default function OverviewPage() {
     yaxis: { show: false },
     grid: { show: false },
     colors: ['#4318FF'],
+    annotations: revenuePeak
+      ? {
+          points: [
+            {
+              x: revenuePeak.date.slice(5),
+              y: Number(revenuePeak.revenue.toFixed(2)),
+              marker: { size: 5, fillColor: tooltipBg, strokeColor: '#4318FF', strokeWidth: 2 },
+              label: {
+                borderColor: '#4318FF',
+                borderWidth: 0,
+                offsetY: -6,
+                style: { color: '#FFFFFF', background: '#4318FF', fontSize: '10px', fontWeight: 700, padding: { left: 8, right: 8, top: 4, bottom: 4 } },
+                text: `Best day: ${formatCurrency(revenuePeak.revenue, reportingCurrency)}`,
+              },
+            },
+          ],
+        }
+      : undefined,
     tooltip: {
       custom: ({ series, seriesIndex, dataPointIndex }: { series: number[][]; seriesIndex: number; dataPointIndex: number }) => {
         const point = revenueTrend[dataPointIndex];
