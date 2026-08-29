@@ -3,7 +3,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 import { getMarketScope, getMarketScopeForAllDomains, type MarketScope } from '@/lib/market-intel/market-definition';
-import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/similarity';
+import { findTopSimilarCandidates } from '@/lib/market-intel/candidate-search';
+import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
 //
@@ -245,7 +246,6 @@ async function getScopeMedianPrice(
 // ---------------------------------------------------------------------------
 
 const MAX_SELLER_PRODUCTS = 60;
-const MAX_MARKET_CANDIDATES = 1500;
 
 export type CompetitorOverlap = {
   externalId: string;
@@ -262,7 +262,8 @@ export type CompetitorOverlap = {
  * Head-to-head, per competitor: how much of the seller's catalog they also
  * carry, and who is cheaper on it.
  *
- * Bounded on purpose (60 seller SKUs x 1,500 candidates), like
+ * Bounded on purpose (60 seller SKUs, each scored against its own
+ * findTopSimilarCandidates() result - see candidate-search.ts), like
  * product-matching.ts, because this is recomputed per request with no
  * persisted match table. It is a directional read on a real question, not a
  * catalog reconciliation - a seller with 5,000 SKUs gets their 60 most
@@ -295,7 +296,7 @@ async function getCompetitorOverlapFromScope(
   if (scope.categorySlugs.length === 0) return result;
 
   const supabase = await createClient();
-  const [sellerRes, marketRes, fxRates] = await Promise.all([
+  const [sellerRes, fxRates] = await Promise.all([
     supabase
       .from('seller_products')
       .select('id, title, sell_price, currency')
@@ -304,30 +305,28 @@ async function getCompetitorOverlapFromScope(
       .not('sell_price', 'is', null)
       .order('updated_at', { ascending: false })
       .limit(MAX_SELLER_PRODUCTS),
-    supabase
-      .from('market_products')
-      .select('title, price, currency, seller_external_id')
-      .eq('is_active', true)
-      .not('seller_external_id', 'is', null)
-      .not('price', 'is', null)
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds)
-      .limit(MAX_MARKET_CANDIDATES),
     getLatestFxRates(),
   ]);
 
-  if (sellerRes.error || !sellerRes.data || marketRes.error || !marketRes.data) return result;
+  if (sellerRes.error || !sellerRes.data) return result;
+  if (sellerRes.data.length === 0) return result;
+
+  // One candidate-search RPC call per seller product, in parallel - each
+  // returns that product's own best textual candidates. Only rows with a
+  // named seller (seller_external_id) count here, unlike the other
+  // *FromScope functions - this specifically answers "who am I up against
+  // by name," so an anonymous single-retailer listing (the platform itself
+  // is the seller) can't count as a head-to-head competitor.
+  const perProductCandidates = await Promise.all(
+    sellerRes.data.map(async (product) => {
+      const candidates = await findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, product.title);
+      return candidates.filter((c) => c.sellerExternalId != null && c.price != null);
+    }),
+  );
 
   const sellerProducts = sellerRes.data.map((row) => ({
     tokens: tokenize(row.title),
     price: convertCurrency(Number(row.sell_price), row.currency ?? 'PKR', targetCurrency, fxRates),
-  }));
-  if (sellerProducts.length === 0) return result;
-
-  const candidates = marketRes.data.map((row) => ({
-    externalId: row.seller_external_id as string,
-    tokens: tokenize(row.title),
-    price: convertCurrency(Number(row.price), row.currency ?? 'PKR', targetCurrency, fxRates),
   }));
 
   // Per competitor, only the *best* match for each seller SKU counts. Without
@@ -335,7 +334,12 @@ async function getCompetitorOverlapFromScope(
   // as six overlaps and swamp the win/loss ratio.
   const gaps = new Map<string, number[]>();
 
-  for (const sellerProduct of sellerProducts) {
+  sellerProducts.forEach((sellerProduct, index) => {
+    const candidates = perProductCandidates[index].map((c) => ({
+      externalId: c.sellerExternalId as string,
+      tokens: tokenize(c.title),
+      price: convertCurrency(c.price as number, c.currency ?? 'PKR', targetCurrency, fxRates),
+    }));
     const bestPerCompetitor = new Map<string, { score: number; price: number }>();
 
     for (const candidate of candidates) {
@@ -362,7 +366,7 @@ async function getCompetitorOverlapFromScope(
         gaps.set(externalId, list);
       }
     }
-  }
+  });
 
   for (const [externalId, list] of gaps) {
     const entry = result.get(externalId);
@@ -434,6 +438,19 @@ type MatchedListingRow = {
  * going through a *FromScope split; still scoped by category/platform so an
  * export only ever contains listings the seller's own market actually
  * includes.
+ *
+ * Filtered by confidence >= MIN_COMPETITOR_CONFIDENCE (2026-08-29 fix): a
+ * persisted row's confidence is a snapshot from whenever a seller last
+ * opened that product's Competitors drawer, not live. Scraped
+ * market_products rows get overwritten in place on every re-scrape (same
+ * row/id, title can change if the retailer edits their listing), so an old
+ * high-confidence match can go stale and drift toward nonsense once the
+ * matched title changes - caught live in an exported CSV showing "Avalanche
+ * Fruity" matched against Gillette razors and hair serum at confidence 0.
+ * This can't fix an already-stale row's stored number (that only refreshes
+ * when the seller reopens that specific product's drawer), but it stops an
+ * export from surfacing a match that's clearly no longer valid, matching
+ * the same gate every live-computed match already has to pass.
  */
 export async function getMatchedListingsForExport(sellerId: string, scope: MarketScope): Promise<MatchedListing[]> {
   if (scope.categorySlugs.length === 0) return [];
@@ -445,6 +462,7 @@ export async function getMatchedListingsForExport(sellerId: string, scope: Marke
       'confidence, seller_products(title), market_products!inner(title, price, currency, url, is_active, category_slug, platform_id, market_platforms(name))',
     )
     .eq('seller_id', sellerId)
+    .gte('confidence', MIN_COMPETITOR_CONFIDENCE)
     .eq('market_products.is_active', true)
     .in('market_products.category_slug', scope.categorySlugs)
     .in('market_products.platform_id', scope.activePlatformIds)

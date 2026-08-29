@@ -4,6 +4,7 @@ import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
+import { findTopSimilarCandidates } from '@/lib/market-intel/candidate-search';
 import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
@@ -15,6 +16,18 @@ import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/
 // picking an embedding provider/infra without a decision. This gives sellers
 // a directional "closest competitor listing" signal today using only
 // string comparison, no new infra, while that decision is made.
+//
+// Candidate SELECTION (which rows even get Jaccard-scored) is a separate
+// concern from confidence scoring, and used to be the real bug: both
+// functions below used to fetch the whole category with no ORDER BY and a
+// hard cap, which silently missed the right rows once a category grew past
+// it (migrations/036_trigram_candidate_search.sql has the live example -
+// "Zellbury Plain Shalwar Kameez" scored a fine 0.4 Jaccard by hand, but
+// never got the chance because an unordered slice of a 9,000+ row category
+// excluded every Zellbury product). candidate-search.ts's
+// findTopSimilarCandidates() now does that selection in SQL via pg_trgm,
+// index-backed and actually ranked - Jaccard below is unchanged, it just
+// finally sees the right ~100 candidates instead of an arbitrary slice.
 
 export type ProductMatch = {
   sellerProductId: string;
@@ -29,24 +42,11 @@ export type ProductMatch = {
 
 const MAX_SELLER_PRODUCTS = 20;
 
-// Raised from 300 (2026-08-28): the market_products query below has no
-// ORDER BY, so a small cap on a category with thousands of active rows
-// spanning several segments (e.g. "Mobiles & Electronics" - Audio, Laptops
-// & Computing, Phones, Tablets - 3,556 rows across 9 platforms) could
-// sample an arbitrary 300 rows that happen to miss the segment a given
-// seller product actually belongs to entirely. Found live: this function's
-// "Closest competitor match per product" panel showed "no confident
-// matches" for the whole category despite real matching data existing -
-// same root cause as the identical bug in findCompetitorsForProduct below,
-// which shares this constant. Cost of raising this is
-// negligible: even at MAX_SELLER_PRODUCTS (20) x 3000 candidates, jaccard
-// on small token sets is still sub-second in JS.
-const MAX_MARKET_CANDIDATES = 3000;
-
 // Bounded on purpose: this recomputes similarity in-process on every call
 // (no persisted match table yet), so it's capped to the seller's most
-// recently updated active products against a capped candidate pool from
-// market_products, not run over the whole catalog.
+// recently updated active products, each scored against its own
+// findTopSimilarCandidates() result (see candidate-search.ts) rather than
+// one shared candidate pool - not run over the whole catalog.
 export async function findTopProductMatches(
   sellerId: string,
   categorySlug: string,
@@ -57,7 +57,7 @@ export async function findTopProductMatches(
 
   const supabase = await createClient();
 
-  const [sellerProductsRes, marketProductsRes, fxRates] = await Promise.all([
+  const [sellerProductsRes, fxRates] = await Promise.all([
     supabase
       .from('seller_products')
       .select('id, title, sell_price, currency')
@@ -65,43 +65,31 @@ export async function findTopProductMatches(
       .eq('is_active', true)
       .order('updated_at', { ascending: false })
       .limit(MAX_SELLER_PRODUCTS),
-    supabase
-      .from('market_products')
-      .select('title, price, currency, url, category_slug, market_platforms(name)')
-      .eq('is_active', true)
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds)
-      .limit(MAX_MARKET_CANDIDATES),
     getLatestFxRates(),
   ]);
 
   if (sellerProductsRes.error || !sellerProductsRes.data) return [];
-  if (marketProductsRes.error || !marketProductsRes.data) return [];
+  if (sellerProductsRes.data.length === 0) return [];
 
-  const candidates = marketProductsRes.data
-    .map((row) => {
-      const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
-      return {
-        title: row.title,
-        price:
-          row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null,
-        url: row.url,
-        platformName: platform?.name ?? null,
-        tokens: tokenize(row.title),
-      };
-    });
-
-  if (candidates.length === 0) return [];
+  // One candidate-search RPC call per seller product, in parallel - each
+  // returns that product's own best textual candidates (index-backed,
+  // ranked), replacing the single shared bulk fetch this used to do.
+  const perProductCandidates = await Promise.all(
+    sellerProductsRes.data.map((product) =>
+      findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, product.title),
+    ),
+  );
 
   const matches: ProductMatch[] = [];
 
-  for (const sellerProduct of sellerProductsRes.data) {
+  sellerProductsRes.data.forEach((sellerProduct, index) => {
     const sellerTokens = tokenize(sellerProduct.title);
+    const candidates = perProductCandidates[index];
     let best: (typeof candidates)[number] | null = null;
     let bestScore = 0;
 
     for (const candidate of candidates) {
-      const score = jaccard(sellerTokens, candidate.tokens);
+      const score = jaccard(sellerTokens, tokenize(candidate.title));
       if (score > bestScore) {
         bestScore = score;
         best = candidate;
@@ -118,12 +106,13 @@ export async function findTopProductMatches(
             : null,
         matchedTitle: best.title,
         matchedPlatformName: best.platformName,
-        matchedPrice: best.price,
+        matchedPrice:
+          best.price != null ? convertCurrency(best.price, best.currency ?? 'PKR', reportingCurrency, fxRates) : null,
         matchedUrl: best.url,
         confidence: Number(bestScore.toFixed(2)),
       });
     }
-  }
+  });
 
   return matches.sort((a, b) => b.confidence - a.confidence);
 }
@@ -211,25 +200,25 @@ export async function findCompetitorsForProduct(
 
   const supabase = await createClient();
 
-  const [sellerProductRes, marketProductsRes, fxRates] = await Promise.all([
+  const [sellerProductRes, fxRates] = await Promise.all([
     supabase
       .from('seller_products')
       .select('id, title, sell_price, currency')
       .eq('id', sellerProductId)
       .eq('seller_id', sellerId)
       .maybeSingle(),
-    supabase
-      .from('market_products')
-      .select('id, title, price, currency, url, rating, rating_count, sold_count, category_slug, market_platforms(name)')
-      .eq('is_active', true)
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds)
-      .limit(MAX_MARKET_CANDIDATES),
     getLatestFxRates(),
   ]);
 
   if (sellerProductRes.error || !sellerProductRes.data) return [];
-  if (marketProductsRes.error || !marketProductsRes.data) return [];
+
+  const candidates = await findTopSimilarCandidates(
+    supabase,
+    scope.categorySlugs,
+    scope.activePlatformIds,
+    sellerProductRes.data.title,
+  );
+  if (candidates.length === 0) return [];
 
   const sellerTokens = tokenize(sellerProductRes.data.title);
   const sellerPrice =
@@ -237,20 +226,19 @@ export async function findCompetitorsForProduct(
       ? convertCurrency(Number(sellerProductRes.data.sell_price), sellerProductRes.data.currency ?? 'PKR', reportingCurrency, fxRates)
       : null;
 
-  const scored = marketProductsRes.data
+  const scored = candidates
     .map((row) => {
-      const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
       const matchedPrice =
-        row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null;
+        row.price != null ? convertCurrency(row.price, row.currency ?? 'PKR', reportingCurrency, fxRates) : null;
       return {
         marketProductId: row.id,
         matchedTitle: row.title,
-        matchedPlatformName: platform?.name ?? null,
+        matchedPlatformName: row.platformName,
         matchedPrice,
         matchedUrl: row.url,
-        rating: row.rating != null ? Number(row.rating) : null,
-        ratingCount: row.rating_count != null ? Number(row.rating_count) : null,
-        soldCount: row.sold_count != null ? Number(row.sold_count) : null,
+        rating: row.rating,
+        ratingCount: row.ratingCount,
+        soldCount: row.soldCount,
         confidence: Number(jaccard(sellerTokens, tokenize(row.title)).toFixed(2)),
         priceDiff: sellerPrice != null && matchedPrice != null ? Math.abs(matchedPrice - sellerPrice) : null,
       };

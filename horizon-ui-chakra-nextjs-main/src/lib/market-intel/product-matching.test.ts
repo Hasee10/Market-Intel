@@ -13,6 +13,10 @@ let sellerProductRow: any = { id: 'sp1', title: 'RTX 4070 GPU', sell_price: 1000
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
+    rpc: async (fn: string): Promise<{ data: any[]; error: null }> => {
+      if (fn === 'market_top_similar_candidates') return { data: marketRows, error: null };
+      throw new Error(`unexpected rpc ${fn}`);
+    },
     from: (table: string) => {
       if (table === 'seller_products') {
         return {
@@ -20,19 +24,6 @@ vi.mock('@/lib/supabase/server', () => ({
             eq: () => ({
               eq: () => ({
                 maybeSingle: async (): Promise<{ data: any; error: null }> => ({ data: sellerProductRow, error: null }),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'market_products') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: () => ({
-                in: () => ({
-                  limit: async (): Promise<{ data: any[]; error: null }> => ({ data: marketRows, error: null }),
-                }),
               }),
             }),
           }),
@@ -82,6 +73,10 @@ vi.mock('next/server', () => ({
 
 import { findCompetitorsForProduct } from './product-matching';
 
+// Shape returned by the market_top_similar_candidates RPC (see
+// candidate-search.ts) - flat, platform_name instead of a
+// market_platforms(...) join, since a Postgres function returns a plain
+// table, not a Supabase relational select.
 type MarketRow = {
   id: string;
   title: string;
@@ -92,10 +87,14 @@ type MarketRow = {
   rating_count: number | null;
   sold_count: number | null;
   category_slug: string;
-  market_platforms: { name: string };
+  platform_id: string;
+  platform_name: string;
+  seller_external_id: string | null;
+  similarity_score: number;
 };
 
-function marketRow(overrides: Partial<MarketRow>): MarketRow {
+function marketRow(overrides: Partial<MarketRow> & { market_platforms?: { name: string } }): MarketRow {
+  const { market_platforms, ...rest } = overrides;
   return {
     id: 'mp1',
     title: 'GPU',
@@ -106,8 +105,11 @@ function marketRow(overrides: Partial<MarketRow>): MarketRow {
     rating_count: null,
     sold_count: null,
     category_slug: 'gpus',
-    market_platforms: { name: 'Daraz' },
-    ...overrides,
+    platform_id: 'p1',
+    platform_name: market_platforms?.name ?? 'Daraz',
+    seller_external_id: null,
+    similarity_score: 0.5,
+    ...rest,
   };
 }
 
