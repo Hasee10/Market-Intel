@@ -1380,10 +1380,15 @@ page since `getMarketScope()` reads `market_category_map`, not
 configured collection, not just one per site, run through the actual
 scraper code): bagallery 3198 products, junaidjamshed 22, gulahmed 2358,
 chasevalue 53, alfatah 1516 - all real rows, zero empty collections
-remaining. **Migration 032 not applied to the live DB** - same
-"Unknown platform slug" failure precedent as Daraz's migration 019 - must
-be applied manually via the Supabase SQL Editor before the next scrape
-run picks these up. Not triggering `workflow_dispatch` myself this pass
-(5 new sources landing in one production run alongside the existing 10) -
-recommend the user trigger it once the migration is applied, to confirm
-end-to-end before it's live on the daily schedule.
+remaining.
+
+**Migration 032 applied and workflow triggered - fully confirmed
+end-to-end in production.** User applied migration 032 manually via the
+Supabase SQL Editor, then I triggered `workflow_dispatch`
+(run 33235609387, completed 2026-08-29, 28m46s, success). Its JSON
+summary shows the exact same product counts as local verification -
+bagallery 3198, junaidjamshed 22, gulahmed 2358, chasevalue 53,
+alfatah 1516 (~7147 total) - written to `market_products` with zero
+"Unknown platform slug" errors, confirming both halves of migration 032
+(platform registration + category mapping) landed correctly. This
+feature is fully shipped, not just locally verified.
