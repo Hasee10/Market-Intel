@@ -1,12 +1,22 @@
 'use client';
 
-import { Badge, Box, Button, Flex, Grid, HStack, Progress, Table, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useColorModeValue } from '@chakra-ui/react';
+import { Badge, Box, Button, Flex, Grid, HStack, Icon, Progress, Table, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useColorModeValue } from '@chakra-ui/react';
 import { useMemo } from 'react';
+import {
+  MdOutlineStorefront,
+  MdOutlineListAlt,
+  MdOutlineAttachMoney,
+  MdOutlineTrendingDown,
+  MdOutlineNewReleases,
+  MdOutlineCheckCircle,
+} from 'react-icons/md';
 
 import Card from 'components/card/Card';
 import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import type {
   CompetitorLandscape,
+  CompetitorScorecard,
   CompetitorMatchStats,
   CompetitorOverlap,
   MatchedListing,
@@ -68,6 +78,64 @@ const COLUMN_HELP = {
 
 const dateStamp = () => new Date().toISOString().slice(0, 10);
 
+// Same instant-insight pattern as Overview/Market/Watchlist (InsightStrip.tsx)
+// - one plain-English headline about this tab's own competitor landscape,
+// picked from the same figures the table below already computes (never a
+// separate calculation, so the headline can't disagree with the row it's
+// summarising). Priority: the steepest undercutter (>=5% below market -
+// direct price pressure, the thing a seller most needs to know first) >
+// a competitor new to this market in the last 2 months (same "new to this
+// market" signal already shown as a table badge) > the dominant seller by
+// assortment (>=30% of named supply - a market with one dominant player
+// reads very differently from one that's evenly split) > a calm fallback
+// that still states the real tracked count.
+function computeCompetitorInsight(landscape: CompetitorLandscape, scopeLabel: string): Insight {
+  const scorecards = landscape.scorecards;
+
+  const undercutters = scorecards.filter(
+    (c): c is CompetitorScorecard & { priceIndex: number } => c.priceIndex != null && c.priceIndex <= -0.05,
+  );
+  if (undercutters.length > 0) {
+    const worst = undercutters.reduce((a, b) => (b.priceIndex < a.priceIndex ? b : a));
+    return {
+      tone: 'warning',
+      icon: MdOutlineTrendingDown,
+      headline: `${worst.name} prices ${formatSignedPercent(worst.priceIndex)} vs your market`,
+      detail: 'Your steepest undercutter by price index right now.',
+    };
+  }
+
+  const newEntrant = scorecards.find((c) => {
+    const tenure = monthsSince(c.firstSeenAt);
+    return tenure != null && tenure < 2;
+  });
+  if (newEntrant) {
+    return {
+      tone: 'neutral',
+      icon: MdOutlineNewReleases,
+      headline: `${newEntrant.name} entered your market recently`,
+      detail: 'New in this market within the last 2 months - worth a look.',
+    };
+  }
+
+  const dominant = scorecards.reduce((a, b) => (b.assortmentShare > a.assortmentShare ? b : a));
+  if (dominant.assortmentShare >= 0.3) {
+    return {
+      tone: 'neutral',
+      icon: MdOutlineStorefront,
+      headline: `${dominant.name} carries ${formatPercent(dominant.assortmentShare, 0)} of named supply`,
+      detail: 'Your biggest competitor by assortment in this market.',
+    };
+  }
+
+  return {
+    tone: 'good',
+    icon: MdOutlineCheckCircle,
+    headline: `Tracking ${scorecards.length} named competitor${scorecards.length === 1 ? '' : 's'} in ${scopeLabel}`,
+    detail: 'No single seller dominates this market right now.',
+  };
+}
+
 export default function CompetitorScorecardsPanel({
   scopeLabel,
   reportingCurrency,
@@ -81,6 +149,21 @@ export default function CompetitorScorecardsPanel({
   const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
   const formatCurrency = (value: number | null) =>
     value == null ? '—' : formatCurrencyAs(value, reportingCurrency);
+
+  // Small icon chips on the three headline stats, same "scan by colour"
+  // goal as StatsGrid's per-KPI icon/colour on Overview/Market - three
+  // fixed, always-called useColorModeValue pairs, not per-row (unlike
+  // StatsGrid, this isn't inside a .map() over variable-length data).
+  const statIconBg = {
+    blue: useColorModeValue('#EBF3FF', 'rgba(66, 133, 244, 0.12)'),
+    teal: useColorModeValue('#E6FBF6', 'rgba(5, 205, 153, 0.12)'),
+    violet: useColorModeValue('#F1EEFF', 'rgba(139, 92, 246, 0.14)'),
+  };
+  const statIconColor = {
+    blue: useColorModeValue('#2563EB', '#7DA9FF'),
+    teal: useColorModeValue('#05966B', '#3DDC97'),
+    violet: useColorModeValue('#6D28D9', '#B79CFF'),
+  };
 
   const overlapByCompetitor = useMemo(() => new Map(overlap.map((row) => [row.externalId, row])), [overlap]);
 
@@ -163,11 +246,18 @@ export default function CompetitorScorecardsPanel({
 
   return (
     <>
+      <InsightStrip insight={computeCompetitorInsight(landscape!, scopeLabel)} />
+
       <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="20px" mb="20px">
         <Card p="20px">
-          <Text fontSize="sm" color={mutedColor}>
-            Named competitors
-          </Text>
+          <Flex align="center" gap="10px" mb="4px">
+            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.blue}>
+              <Icon as={MdOutlineStorefront} w="16px" h="16px" color={statIconColor.blue} />
+            </Flex>
+            <Text fontSize="sm" color={mutedColor}>
+              Named competitors
+            </Text>
+          </Flex>
           <Text fontSize="28px" fontWeight="700" color={textColor}>
             {scorecards.length}
           </Text>
@@ -176,9 +266,14 @@ export default function CompetitorScorecardsPanel({
           </Text>
         </Card>
         <Card p="20px">
-          <Text fontSize="sm" color={mutedColor}>
-            Listings with a named seller
-          </Text>
+          <Flex align="center" gap="10px" mb="4px">
+            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.teal}>
+              <Icon as={MdOutlineListAlt} w="16px" h="16px" color={statIconColor.teal} />
+            </Flex>
+            <Text fontSize="sm" color={mutedColor}>
+              Listings with a named seller
+            </Text>
+          </Flex>
           <Text fontSize="28px" fontWeight="700" color={textColor}>
             {(landscape?.identifiedSkuCount ?? 0).toLocaleString()}
           </Text>
@@ -187,9 +282,14 @@ export default function CompetitorScorecardsPanel({
           </Text>
         </Card>
         <Card p="20px">
-          <Text fontSize="sm" color={mutedColor}>
-            Your market median
-          </Text>
+          <Flex align="center" gap="10px" mb="4px">
+            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.violet}>
+              <Icon as={MdOutlineAttachMoney} w="16px" h="16px" color={statIconColor.violet} />
+            </Flex>
+            <Text fontSize="sm" color={mutedColor}>
+              Your market median
+            </Text>
+          </Flex>
           <Text fontSize="28px" fontWeight="700" color={textColor}>
             {formatCurrency(landscape?.marketMedianPrice ?? null)}
           </Text>
