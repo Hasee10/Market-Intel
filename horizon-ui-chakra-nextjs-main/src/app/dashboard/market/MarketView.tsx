@@ -114,6 +114,16 @@ export default function MarketView({
   const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
   const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
+  // Same custom-tooltip fix as Overview (app/dashboard/overview/page.tsx) -
+  // these two charts had no tooltip styling at all, so they fell through to
+  // ApexCharts' unstyled default (a stark white box), inconsistent with the
+  // rest of this dark-mode-aware page rather than illegible, but still not
+  // "everything visible and consistent." Raw hex because tooltip.custom
+  // returns an HTML string, not JSX.
+  const tooltipBg = useColorModeValue('#FFFFFF', '#1B254B');
+  const tooltipBorder = useColorModeValue('#E2E8F0', 'rgba(255,255,255,0.14)');
+  const tooltipTextColor = useColorModeValue('#1B2559', '#FFFFFF');
+  const tooltipMuted = useColorModeValue('#707EAE', '#A3AED0');
 
   const domainStats = [
     { title: 'Your domain', value: domain?.categoryName ?? 'Not set', icon: 'chart-line', color: 'blue' },
@@ -369,10 +379,24 @@ export default function MarketView({
                 ]}
                 chartOptions={{
                   chart: { toolbar: { show: false } },
-                  xaxis: { categories: priceForecast.points.map((p) => p.date.slice(5)) },
+                  xaxis: {
+                    categories: priceForecast.points.map((p) => p.date.slice(5)),
+                    labels: { style: { colors: tooltipMuted, fontSize: '10px' } },
+                  },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
                   colors: ['#4318FF', '#A3AED0'],
+                  tooltip: {
+                    custom: ({ series, dataPointIndex }: { series: number[][]; dataPointIndex: number }) => {
+                      const point = priceForecast.points[dataPointIndex];
+                      const isProjected = point?.isProjected;
+                      const value = isProjected ? series[1]?.[dataPointIndex] : series[0]?.[dataPointIndex];
+                      return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
+                        <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${point?.date ?? ''}${isProjected ? ' (projected)' : ''}</div>
+                        <div style="color:${tooltipTextColor};font-size:13px;font-weight:700;">${formatCurrency(value ?? 0)}</div>
+                      </div>`;
+                    },
+                  },
                 }}
               />
             </Box>
@@ -387,10 +411,23 @@ export default function MarketView({
                 ]}
                 chartOptions={{
                   chart: { toolbar: { show: false } },
-                  xaxis: { categories: priceTrend.map((p) => p.date.slice(5)) },
+                  xaxis: {
+                    categories: priceTrend.map((p) => p.date.slice(5)),
+                    labels: { style: { colors: tooltipMuted, fontSize: '10px' } },
+                  },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: 3 },
                   colors: ['#4318FF'],
+                  tooltip: {
+                    custom: ({ series, seriesIndex, dataPointIndex }: { series: number[][]; seriesIndex: number; dataPointIndex: number }) => {
+                      const point = priceTrend[dataPointIndex];
+                      const value = series[seriesIndex]?.[dataPointIndex] ?? 0;
+                      return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
+                        <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${point?.date ?? ''}</div>
+                        <div style="color:${tooltipTextColor};font-size:13px;font-weight:700;">${formatCurrency(value)}</div>
+                      </div>`;
+                    },
+                  },
                 }}
               />
             </Box>
