@@ -152,6 +152,12 @@ export default function OverviewPage() {
   // happens to have loaded first, since they all agree on the same value.
   const reportingCurrency = topProducts[0]?.currency ?? 'PKR';
 
+  const allStats = statsData?.data || [];
+  const SECONDARY_STAT_TITLES = new Set(['Active Products', 'Low Stock Products']);
+  const primaryStats = allStats.filter((s) => !SECONDARY_STAT_TITLES.has(s.title));
+  const activeProductsStat = allStats.find((s) => s.title === 'Active Products');
+  const lowStockStat = allStats.find((s) => s.title === 'Low Stock Products');
+
   const lineChartData = [
     {
       name: 'Revenue',
@@ -250,7 +256,17 @@ export default function OverviewPage() {
         />
       )}
 
-      <StatsGrid data={statsData?.data || []} loading={statsLoading} columns={3} />
+      {/* Phase 2 (enterprise-look pass): the primary KPI row is now the 4
+          stats that actually have a month-over-month story to tell
+          (Revenue/Orders/AOV/New customers all carry a diff%) - Active
+          Products and Low Stock are inventory *state*, not trend, and sit
+          as a compact strip beside the Products & Inventory heading
+          instead, where they're contextually relevant. Six same-weight
+          cards buried the two that matter most for "is my store doing
+          well" behind two that don't move month to month. Named lookups,
+          not positional slicing, so a reordered API response can't
+          silently split the wrong stats. */}
+      <StatsGrid data={primaryStats} loading={statsLoading} columns={4} />
 
       <Flex align="center" gap="10px" mb="14px" mt="12px">
         <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
@@ -350,11 +366,44 @@ export default function OverviewPage() {
         </Card>
       </Grid>
 
-      <Flex align="center" gap="10px" mb="14px" mt="12px">
-        <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
-        <Heading size="md" color={textColor}>
-          Products & inventory
-        </Heading>
+      <Flex align="center" justify="space-between" wrap="wrap" gap="12px" mb="14px" mt="12px">
+        <Flex align="center" gap="10px">
+          <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
+          <Heading size="md" color={textColor}>
+            Products & inventory
+          </Heading>
+        </Flex>
+        {!statsLoading && (activeProductsStat || lowStockStat) && (
+          <Flex gap="20px">
+            {activeProductsStat && (
+              <Flex align="baseline" gap="6px">
+                <Text fontSize="lg" fontWeight="700" color={textColor}>
+                  {activeProductsStat.value}
+                </Text>
+                <Text fontSize="xs" color="secondaryGray.600">
+                  active{activeProductsStat.period ? ` (${activeProductsStat.period})` : ''}
+                </Text>
+              </Flex>
+            )}
+            {lowStockStat && (
+              <Flex align="baseline" gap="6px">
+                <Text
+                  fontSize="lg"
+                  fontWeight="700"
+                  // Low stock is the one inventory figure that's a warning
+                  // above zero - everywhere else on this page, colour means
+                  // trend direction; here it means "needs attention".
+                  color={Number(lowStockStat.value.replace(/,/g, '')) > 0 ? 'orange.500' : textColor}
+                >
+                  {lowStockStat.value}
+                </Text>
+                <Text fontSize="xs" color="secondaryGray.600">
+                  low stock{lowStockStat.period ? ` (${lowStockStat.period})` : ''}
+                </Text>
+              </Flex>
+            )}
+          </Flex>
+        )}
       </Flex>
       <Grid templateColumns={{ base: '1fr', lg: '5fr 7fr' }} gap="20px">
         <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
