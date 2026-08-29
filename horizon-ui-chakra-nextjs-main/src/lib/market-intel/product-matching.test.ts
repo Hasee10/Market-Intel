@@ -69,6 +69,17 @@ vi.mock('@/lib/market-intel/fx', () => ({
   convertCurrency: (amount: number) => amount,
 }));
 
+// next/server's after() only works inside a real Next.js request scope -
+// outside one (like this test file calling the function directly) it throws
+// "after() was called outside a request scope". Mocked to invoke its
+// callback immediately: findCompetitorsForProduct's own persist call has no
+// internal await before its synchronous mocked upsert below runs, so this
+// preserves the exact same observable timing (upsertedMatchRows populated by
+// the time the function resolves) the tests below already rely on.
+vi.mock('next/server', () => ({
+  after: (callback: () => void) => callback(),
+}));
+
 import { findCompetitorsForProduct } from './product-matching';
 
 type MarketRow = {

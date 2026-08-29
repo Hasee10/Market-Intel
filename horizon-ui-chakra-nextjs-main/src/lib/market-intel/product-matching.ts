@@ -1,5 +1,6 @@
 'server-only';
 
+import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
@@ -267,7 +268,15 @@ export async function findCompetitorsForProduct(
 
   const top = selectDiverseTopN(scored, limit);
 
-  await persistCompetitorMatches(supabase, sellerId, sellerProductId, top);
+  // Deferred via after() rather than awaited: this only feeds a price/
+  // decommission history feature (see the function's own comment below),
+  // and its errors are already swallowed internally - awaiting it here just
+  // added a DB round-trip's worth of latency to every single
+  // Competitors-drawer response for no benefit the seller could see. A bare
+  // un-awaited promise isn't safe here - Vercel's serverless runtime can
+  // freeze the function once the response is sent and silently drop it;
+  // after() is what guarantees this still runs to completion.
+  after(() => persistCompetitorMatches(supabase, sellerId, sellerProductId, top));
 
   const reviewsByProduct = await fetchReviewSnippets(
     supabase,
