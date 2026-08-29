@@ -3,7 +3,16 @@
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
 import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text, useColorModeValue } from '@chakra-ui/react';
-import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
+import {
+  MdAddCircleOutline,
+  MdGridView,
+  MdOutlineSearchOff,
+  MdUploadFile,
+  MdViewList,
+  MdOutlineInventory2,
+  MdOutlinePriceCheck,
+  MdOutlineCheckCircle,
+} from 'react-icons/md';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 import Card from 'components/card/Card';
@@ -11,6 +20,7 @@ import { Reveal } from 'components/reactbits/Reveal';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { ProductsTable } from '@/components/marketintel/ProductsTable';
 import { useFetch, useProfile } from '@/lib/hooks/useApi';
@@ -56,6 +66,44 @@ function buildImportFields(skuRequired: boolean, reportingCurrency: string): Imp
     { key: 'stockQty', label: 'Stock quantity', type: 'number' },
     { key: 'isActive', label: 'Active (yes/no)', type: 'boolean' },
   ];
+}
+
+// Same instant-insight pattern used across the app (InsightStrip.tsx).
+// Priority: low stock (operational, time-sensitive - same <10-units floor
+// Overview's own low-stock stat uses) > missing a cost price (a data-
+// completeness gap that quietly disables pricing recommendations for that
+// product, not obvious from the table alone) > calm fallback stating the
+// real active count. Scoped to active products only - an inactive
+// product's stock/pricing isn't something to act on right now.
+function computeProductsInsight(products: IProduct[]): Insight {
+  const active = products.filter((p) => p.isActive);
+
+  const lowStock = active.filter((p) => p.stockQty != null && p.stockQty < 10);
+  if (lowStock.length > 0) {
+    return {
+      tone: 'warning',
+      icon: MdOutlineInventory2,
+      headline: `${lowStock.length} product${lowStock.length === 1 ? '' : 's'} running low on stock`,
+      detail: 'Under 10 units - restock soon or a sale could go to a competitor.',
+    };
+  }
+
+  const missingCost = active.filter((p) => p.costPrice == null && p.sellPrice != null);
+  if (missingCost.length > 0) {
+    return {
+      tone: 'neutral',
+      icon: MdOutlinePriceCheck,
+      headline: `${missingCost.length} product${missingCost.length === 1 ? '' : 's'} missing a cost price`,
+      detail: "Pricing recommendations can't run for these until you set one.",
+    };
+  }
+
+  return {
+    tone: 'good',
+    icon: MdOutlineCheckCircle,
+    headline: `${active.length} active product${active.length === 1 ? '' : 's'}, all priced and stocked`,
+    detail: 'Nothing needs attention right now.',
+  };
 }
 
 // useSearchParams() (for ?categoryId=&categoryName=, arriving via a click
@@ -235,6 +283,10 @@ function ProductsPageContent() {
           </Flex>
         }
       />
+
+      {!productsLoading && productsData?.succeeded && productsData.data && productsData.data.length > 0 && (
+        <InsightStrip insight={computeProductsInsight(productsData.data)} />
+      )}
 
       {categoryFilterName && (
         <Flex mb="16px">

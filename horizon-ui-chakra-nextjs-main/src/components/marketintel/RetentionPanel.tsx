@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Icon,
-  SimpleGrid,
   Skeleton,
   Table,
   Tbody,
@@ -15,10 +14,11 @@ import {
   Tr,
   useColorModeValue,
 } from '@chakra-ui/react';
-import { MdDownload } from 'react-icons/md';
+import { MdDownload, MdOutlinePersonOff, MdOutlineHourglassEmpty, MdOutlineCheckCircle } from 'react-icons/md';
 
 import Card from 'components/card/Card';
-import MiniStatistics from 'components/card/MiniStatistics';
+import { StatsGrid } from '@/components/marketintel/StatsGrid';
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 
 import { useFetch } from '@/lib/hooks/useApi';
 import { IApiResponse } from '@/types/api-response';
@@ -37,6 +37,40 @@ function formatPct(value: number | null) {
 function formatCurrency(value: number | null, currency: string) {
   if (value == null) return '—';
   return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(value);
+}
+
+// Same instant-insight pattern used across the app (InsightStrip.tsx).
+// Priority: at-risk customers (the reason this panel exists) > not enough
+// order history yet to compute retention at all (a real data-coverage gap,
+// not a calm state - the empty-state text below already says this, the
+// strip just makes it the headline instead of something read only after
+// scrolling past an empty table) > calm fallback stating the real
+// retention rate, not just "looks fine".
+function computeRetentionInsight(snapshot: ChurnSnapshot | null, atRiskCustomers: AtRiskCustomer[]): Insight {
+  if (atRiskCustomers.length > 0) {
+    return {
+      tone: 'warning',
+      icon: MdOutlinePersonOff,
+      headline: `${atRiskCustomers.length} customer${atRiskCustomers.length === 1 ? '' : 's'} at risk of churning`,
+      detail: "Above-average engagement, gone quiet recently - worth a win-back outreach.",
+    };
+  }
+
+  if (snapshot === null) {
+    return {
+      tone: 'neutral',
+      icon: MdOutlineHourglassEmpty,
+      headline: 'Not enough order history yet to compute retention',
+      detail: 'Retention metrics need repeat orders to calculate - check back once you have more history.',
+    };
+  }
+
+  return {
+    tone: 'good',
+    icon: MdOutlineCheckCircle,
+    headline: 'Retention looks healthy',
+    detail: `${formatPct(snapshot.retentionRate)} retention rate - no customers currently flagged at risk.`,
+  };
 }
 
 function downloadCsv(customers: AtRiskCustomer[]) {
@@ -67,19 +101,17 @@ export function RetentionPanel() {
   }
 
   const stats = [
-    { title: 'Retention rate (30d)', value: formatPct(snapshot?.retentionRate ?? null) },
-    { title: 'Churn rate (30d)', value: formatPct(snapshot?.churnRate ?? null) },
-    { title: 'Repeat purchase rate', value: formatPct(snapshot?.repeatPurchaseRate ?? null) },
-    { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null, reportingCurrency) },
+    { title: 'Retention rate (30d)', value: formatPct(snapshot?.retentionRate ?? null), icon: 'chart-line', color: 'teal' },
+    { title: 'Churn rate (30d)', value: formatPct(snapshot?.churnRate ?? null), icon: 'shopping-cart-off', color: 'red' },
+    { title: 'Repeat purchase rate', value: formatPct(snapshot?.repeatPurchaseRate ?? null), icon: 'shopping-cart', color: 'blue' },
+    { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null, reportingCurrency), icon: 'currency-dollar', color: 'violet' },
   ];
 
   return (
     <>
-      <SimpleGrid columns={{ base: 1, sm: 2, xl: 4 }} gap="20px" mb="20px">
-        {stats.map((s) => (
-          <MiniStatistics key={s.title} name={s.title} value={s.value} />
-        ))}
-      </SimpleGrid>
+      <InsightStrip insight={computeRetentionInsight(snapshot, atRiskCustomers)} />
+
+      <StatsGrid data={stats} columns={4} />
 
       <Card mb="20px">
         <Icon as={MdDownload} display="none" />
