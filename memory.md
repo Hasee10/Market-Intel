@@ -1482,3 +1482,49 @@ the process starts.
 **Migration 033 not applied to the live DB** - same manual-via-Supabase-
 SQL-Editor requirement as every prior migration, must run before these 4
 sources' next scrape.
+
+**Update:** user applied migration 033. Confirmed via screenshot of the
+Supabase SQL Editor ("Success. No rows returned").
+
+## 2026-08-29: 11 more retailer sources (third batch) + two live data bugs
+fixed - `c1bc1cd`
+
+Third Grok-researched batch: fashion (Zellbury, Bonanza Satrangi,
+Beechtree, Nishat Linen), furniture/home (Interwood, Habitt, Poshish,
+Woods), ChenOne (apparel + home textile), pets/decor (Petfit.pk,
+Luminaria.pk). All Shopify except Petfit/Luminaria (WooCommerce Store
+API, new shared `woocommerce-source.ts` factory - two near-identical
+files being added at once justified it, same reasoning as
+`shopify-source.ts`).
+
+**Rejected:** Ethnic/Ethnc, Highfy (.pk/.com), Malabis (.com/.pk) - every
+domain variant resolved to a parked or unrelated page (Highfy.pk serves
+an "American Express" title, Malabis.com's own `<title>` is literally
+"malabis.com"). **Deferred:** Nested.pk - real store, but a
+client-rendered SPA (Vue "Materio" template), no server-rendered product
+data, needs its backend API reverse-engineered separately.
+
+**Two real, live data-quality bugs caught by verification and fixed
+project-wide** (not just the new sources):
+1. $0 "contact for quote" B2B items (Habitt/Woods furniture, a couple of
+   Petfit listings) were being written as real prices - would show
+   sellers a fake "cheapest competitor: Rs 0". Fixed in both
+   `shopify-source.ts` and `woocommerce-source.ts` (skip if price is 0).
+2. WooCommerce Store API titles come HTML-entity-encoded
+   ("Tamy&#8217;s Cat Wet Food") from WordPress's `wptexturize()` - **this
+   was already live in shipped `shopperspk.ts` for weeks** and affected
+   27% of Petshub's titles. Fixed with a shared `decodeHtmlEntities()` in
+   `polite.ts`, applied to `shopperspk.ts` and `petshub.ts` too, not just
+   the two new WooCommerce sources.
+
+**Verified:** all 11 sources live-verified through the actual scraper
+code with zero bad rows after both fixes - zellbury 3680, bonanzasatrangi
+932, beechtree 214, nishatlinen 1532, interwood 522, habitt 9796 (hit the
+page cap - real inventory is deeper than currently captured), poshish
+201, woods 167, chenone 345, petfit 1152, luminaria 416.
+
+**Migration 034 not applied to the live DB yet** - same manual step as
+every prior migration.
+
+**Total active scraper sources as of this batch: 31** (28 plain HTTP + 3
+browser-automation via CloakBrowser: iShopping, Goto, Daraz).
