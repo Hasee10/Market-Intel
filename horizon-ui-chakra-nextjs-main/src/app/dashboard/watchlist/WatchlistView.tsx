@@ -26,12 +26,68 @@ import {
   useColorModeValue,
   useToast,
 } from '@chakra-ui/react';
-import { MdDelete, MdAdd, MdSearch } from 'react-icons/md';
+import {
+  MdDelete,
+  MdAdd,
+  MdSearch,
+  MdOutlinePriceCheck,
+  MdOutlineNotificationsActive,
+  MdOutlineVisibility,
+  MdOutlineCheckCircle,
+} from 'react-icons/md';
 import Card from 'components/card/Card';
 
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import type { Watchlist, WatchlistItem, ProductSearchResult } from '@/lib/market-intel/watchlists';
 import type { Notification } from '@/lib/notifications/list';
+
+// Same instant-insight pattern as Overview/Market (InsightStrip.tsx) - one
+// plain-English headline instead of asking the seller to read a list.
+// Priority: unread competitor price alerts (the thing this whole page
+// exists to surface) > any other unread alert (e.g. low-stock, which also
+// lands in this same feed) > "nothing tracked yet" (a real onboarding gap,
+// not a calm state) > calm fallback with the actual tracked count, so
+// "caught up" still says something concrete rather than just "all good".
+function computeWatchlistInsight(notifications: Notification[], watchlists: Watchlist[]): Insight {
+  const unread = notifications.filter((n) => !n.isRead);
+  const unreadPriceAlerts = unread.filter((n) => n.type === 'price_alert');
+
+  if (unreadPriceAlerts.length > 0) {
+    return {
+      tone: 'warning',
+      icon: MdOutlinePriceCheck,
+      headline: `${unreadPriceAlerts.length} competitor price change${unreadPriceAlerts.length === 1 ? '' : 's'} to review`,
+      detail: 'A tracked product just moved - see Recent alerts below.',
+    };
+  }
+
+  if (unread.length > 0) {
+    return {
+      tone: 'warning',
+      icon: MdOutlineNotificationsActive,
+      headline: `${unread.length} unread alert${unread.length === 1 ? '' : 's'}`,
+      detail: 'See Recent alerts below for what changed.',
+    };
+  }
+
+  const trackedCount = watchlists.reduce((sum, w) => sum + w.items.length, 0);
+  if (trackedCount === 0) {
+    return {
+      tone: 'neutral',
+      icon: MdOutlineVisibility,
+      headline: "You're not tracking any competitors yet",
+      detail: 'Search for a product below and add it to a watchlist to get price and stock alerts.',
+    };
+  }
+
+  return {
+    tone: 'good',
+    icon: MdOutlineCheckCircle,
+    headline: 'No new alerts',
+    detail: `Tracking ${trackedCount} product${trackedCount === 1 ? '' : 's'} across ${watchlists.length} watchlist${watchlists.length === 1 ? '' : 's'} - nothing has changed.`,
+  };
+}
 
 // Currency comes from the seller's own reporting setting - it used to be
 // hardcoded to PKR here, which mislabelled every price for a seller reporting
@@ -119,6 +175,11 @@ export default function WatchlistView({
   return (
     <Box>
       <PageHeader title="Watchlist" />
+
+      {/* Computed from live state, not the initial props, so marking an
+          alert read or adding a tracked product updates the headline
+          without a page reload. */}
+      <InsightStrip insight={computeWatchlistInsight(notifications, watchlists)} />
 
       <Card mb="20px">
         <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
