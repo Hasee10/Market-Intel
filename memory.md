@@ -1706,3 +1706,69 @@ day-two addition if wanted.
 **Verified:** tsc/lint/133-test-suite/build all clean (up from 124 -
 new tests for `getMarketScopeForAllDomains` and the three
 `*AllDomains` competitor functions + `getMatchedListingsForExport`).
+
+## 2026-08-29: pg_trgm candidate-selection fix + stale-export bug -
+`33602af`
+
+User hit the exact failure predicted earlier this session: "Zellbury
+Plain Shalwar Kameez" showed "No comparable listings found" despite
+~3,665 real Zellbury products existing. Full Plan Mode cycle again
+(Explore agent research, 2 AskUserQuestion rounds - one resolved "fix the
+query vs. raise the number," a second one mid-conversation when the user
+asked to also bring in embeddings and was talked back to sequencing it as
+a separate follow-up plan instead of scope-creeping this one).
+
+**Root cause, confirmed not guessed:** `findCompetitorsForProduct`,
+`findTopProductMatches` (`product-matching.ts`) and `getCompetitorOverlap`
+(`competitors.ts`) all fetched category candidates with no `ORDER BY` and
+a hard cap (3000, or just 1500 - undocumented, on the Competitors page).
+Fashion-and-apparel alone is now an estimated 9,000-12,000+ active rows
+across 13 sources (summed from today's actual per-source scrape counts) -
+Postgres was returning an arbitrary unordered slice that could miss the
+real match entirely. Confirmed by hand: "Zellbury Plain Shalwar Kameez"
+vs a real scraped "Plain Shalwar - 0002" scores 0.4 Jaccard, well above
+the 0.2 threshold - the matching *algorithm* was never the problem, the
+candidates just never got looked at.
+
+**Fix: `pg_trgm` (migration 036), not a bigger hardcoded number.** New
+`market_top_similar_candidates` RPC does candidate selection in SQL via
+trigram similarity, GIN-index-backed on `market_products.title`. Jaccard
+confidence scoring in `similarity.ts` is completely unchanged - still the
+accept/reject gate, just now sees the right ~100 candidates per seller
+product instead of an arbitrary slice of a 10,000+ row category. New
+shared `candidate-search.ts` wraps the RPC; all three call sites now do
+one RPC call per seller product (parallel `Promise.all`) instead of one
+shared bulk fetch. Also researched and explicitly rejected reusing
+`scraper/src/matching.ts` (the "mobiles matcher" `product-matching.ts`'s
+own header references) - it's a hardcoded 16-brand allowlist + price-band
+gate, not an embeddings model, and doesn't generalize to fashion titles
+at all.
+
+**Second, separate bug found by the user reviewing their own export:**
+downloaded the new "matched listings" CSV (from the Competitors-tabs
+feature shipped a few hours earlier) and found real nonsense - "Avalanche
+Fruity" matched against a Gillette razor at confidence 0.
+`getMatchedListingsForExport` read persisted
+`seller_product_competitor_matches` rows without a confidence filter,
+unlike every live-computed match path. Mechanism: a persisted row is a
+snapshot from whenever the seller last opened that product's drawer;
+scraped `market_products` rows get overwritten in place on re-scrape
+(same row/id, title can change), so an old match can drift stale as the
+matched listing's title changes underneath it. Fixed by adding the same
+`MIN_COMPETITOR_CONFIDENCE` gate every other consumer already has -
+doesn't retroactively fix already-stale persisted rows (those only
+refresh when the seller reopens that specific drawer), but stops them
+from surfacing in new exports.
+
+**Explicitly deferred, not built:** AI/embeddings-based semantic
+matching - the user's original ask this thread started from. Confirmed
+twice via question to sequence as its own follow-up plan (new pgvector
+column, a real embedding-provider decision - Groq has no embeddings
+model, Mistral does - plus a backfill job for the whole catalog) rather
+than bundling into this query fix.
+
+**Verified:** tsc/lint/147-test-suite/build all clean. New tests for
+`candidate-search.ts` (previously didn't exist) and `getCompetitorOverlap`
+(previously had zero test coverage despite being production code).
+Migration 036 not yet applied to the live DB - same manual step as every
+prior migration.
