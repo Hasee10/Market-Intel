@@ -84,12 +84,21 @@ export function BulkImportDrawer({ isOpen, onClose, title, fields, apiEndpoint, 
     setRows(parsed.rows);
     setResult(null);
 
-    // Best-effort auto-map by exact/loose header name match.
+    // Best-effort auto-map by exact/loose header name match - against the
+    // field's label (what the seller actually sees, e.g. "Stock quantity"),
+    // not just its internal key ("stockQty"). Matching only the key meant a
+    // header spelled out the way the UI itself displays the field (exactly
+    // "Stock Quantity", the natural thing to write) silently failed to map
+    // and defaulted to 0/unmapped instead of the real CSV values - keys like
+    // costPrice/sellPrice happened to normalize the same as their labels, so
+    // this only showed up on fields where key and label diverge more.
+    const normalize = (s: string) => s.toLowerCase().replace(/[\s_/()-]/g, '');
     const autoMapping: Record<string, string> = {};
     for (const field of fields) {
-      const match = parsed.headers.find(
-        (h) => h.toLowerCase().replace(/[\s_-]/g, '') === field.key.toLowerCase().replace(/[\s_-]/g, ''),
-      );
+      const match = parsed.headers.find((h) => {
+        const normalizedHeader = normalize(h);
+        return normalizedHeader === normalize(field.key) || normalizedHeader === normalize(field.label);
+      });
       if (match) autoMapping[field.key] = match;
     }
     setMapping(autoMapping);
