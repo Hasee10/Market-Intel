@@ -3,12 +3,19 @@
 import { useCallback, useState } from 'react';
 
 import { Button, Flex, Icon, Stack, Text } from '@chakra-ui/react';
-import { MdAddCircleOutline, MdOutlineSearchOff, MdUploadFile } from 'react-icons/md';
+import {
+  MdAddCircleOutline,
+  MdOutlineSearchOff,
+  MdUploadFile,
+  MdOutlinePendingActions,
+  MdOutlineCheckCircle,
+} from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
+import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { OrdersTable } from '@/components/marketintel/OrdersTable';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { useFetch } from '@/lib/hooks/useApi';
@@ -23,6 +30,32 @@ const breadcrumbItems = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },
   { title: 'Orders', href: '#' },
 ];
+
+// Same instant-insight pattern used across the app (InsightStrip.tsx).
+// Deliberately narrow to fulfillment status - not revenue, which is
+// already Overview's headline - since that's the one thing unique to
+// looking at the raw order list rather than a trend chart: which orders
+// still need your attention. Priority: pending orders (the actionable
+// state - update status once fulfilled/shipped) > calm fallback stating
+// the real resolved count.
+function computeOrdersInsight(orders: OrderDto[]): Insight {
+  const pending = orders.filter((o) => o.status === 'pending');
+  if (pending.length > 0) {
+    return {
+      tone: 'warning',
+      icon: MdOutlinePendingActions,
+      headline: `${pending.length} order${pending.length === 1 ? '' : 's'} still pending`,
+      detail: 'Update their status once fulfilled, shipped, or cancelled.',
+    };
+  }
+
+  return {
+    tone: 'good',
+    icon: MdOutlineCheckCircle,
+    headline: `${orders.length} order${orders.length === 1 ? '' : 's'} on record, none pending`,
+    detail: 'Every order is completed, cancelled, or refunded.',
+  };
+}
 
 const IMPORT_FIELDS: ImportField[] = [
   { key: 'externalOrderId', label: 'Order ID', required: true },
@@ -105,6 +138,10 @@ export default function OrdersPage() {
           </Flex>
         }
       />
+
+      {!ordersLoading && ordersData?.succeeded && ordersData.data && ordersData.data.length > 0 && (
+        <InsightStrip insight={computeOrdersInsight(ordersData.data)} />
+      )}
 
       {renderContent()}
 
