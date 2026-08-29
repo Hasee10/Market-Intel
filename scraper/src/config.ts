@@ -78,6 +78,26 @@ export const config = {
   petfitCategories: splitList(process.env.PETFIT_CATEGORIES) as string[],
   luminariaCategories: splitList(process.env.LUMINARIA_CATEGORIES) as string[],
 
+  // Added 2026-08-29, fourth batch - targeting Sports & Outdoors, the
+  // weakest-covered category (2 sources before this). Alisports/Bodybrics/
+  // HustlersOnlyPK/ActivitySphere are Shopify (same factory). Zeesol Store
+  // is WooCommerce Store API (same factory as petfit/luminaria) - BUT its
+  // Store API only accepts numeric category IDs, not slugs, unlike every
+  // other WooCommerce source added so far (confirmed live: the slug filter
+  // returns an empty array despite the category genuinely having 124
+  // products; the numeric ID works). Config values below are IDs for
+  // zeesol, slugs for everything else - the factory doesn't care which,
+  // it just passes the string through. TheSportStore.pk was evaluated and
+  // deferred: it's a real, live site, but runs OpenCart with no standard
+  // product-feed endpoint (no /collections.json, no WooCommerce Store
+  // API) - needs a bespoke HTML/JSON-LD source file, same bucket as
+  // Idealancy.pk/Homeshopping.pk above.
+  alisportsCollections: splitList(process.env.ALISPORTS_COLLECTIONS) as string[],
+  bodybricsCollections: splitList(process.env.BODYBRICS_COLLECTIONS) as string[],
+  hustlersonlypkCollections: splitList(process.env.HUSTLERSONLYPK_COLLECTIONS) as string[],
+  activitysphereCollections: splitList(process.env.ACTIVITYSPHERE_COLLECTIONS) as string[],
+  zeesolCategories: splitList(process.env.ZEESOL_CATEGORIES) as string[],
+
   logLevel: process.env.LOG_LEVEL ?? 'info',
 
   // Review scraper (scraper/src/reviews/) - a separate job/workflow from the

@@ -131,6 +131,37 @@ export const scrapeLuminaria = createWooCommerceSource({
   getCategories: () => config.luminariaCategories,
 });
 
+// Added 2026-08-29, fourth batch - targeting Sports & Outdoors, the
+// weakest-covered category before this (2 sources). Alisports/Bodybrics/
+// HustlersOnlyPK/ActivitySphere are Shopify (same factory). Zeesol Store is
+// WooCommerce Store API - see config.ts for why its config values are
+// numeric category IDs, not slugs like every other WooCommerce source here.
+export const scrapeAlisports = createShopifySource({
+  platformSlug: 'alisports',
+  baseUrl: 'https://www.alisports.pk',
+  getCollections: () => config.alisportsCollections,
+});
+export const scrapeBodybrics = createShopifySource({
+  platformSlug: 'bodybrics',
+  baseUrl: 'https://bodybrics.com',
+  getCollections: () => config.bodybricsCollections,
+});
+export const scrapeHustlersonlypk = createShopifySource({
+  platformSlug: 'hustlersonlypk',
+  baseUrl: 'https://hustlersonlypk.com',
+  getCollections: () => config.hustlersonlypkCollections,
+});
+export const scrapeActivitysphere = createShopifySource({
+  platformSlug: 'activitysphere',
+  baseUrl: 'https://activitysphere.pk',
+  getCollections: () => config.activitysphereCollections,
+});
+export const scrapeZeesol = createWooCommerceSource({
+  platformSlug: 'zeesol',
+  baseUrl: 'https://www.zeesol.net',
+  getCategories: () => config.zeesolCategories,
+});
+
 // Plain HTTP sources - no browser automation needed. Sapphireonline.pk is
 // Salesforce Commerce Cloud with no bot protection on plain fetch, and is a
 // brand-monitoring source (single brand's own store, not a marketplace).
@@ -167,6 +198,11 @@ export const HTTP_SOURCES: SourceFn[] = [
   scrapeChenone,
   scrapePetfit,
   scrapeLuminaria,
+  scrapeAlisports,
+  scrapeBodybrics,
+  scrapeHustlersonlypk,
+  scrapeActivitysphere,
+  scrapeZeesol,
 ];
 
 // Browser-automation sources (CloakBrowser) - for sites that block plain HTTP
