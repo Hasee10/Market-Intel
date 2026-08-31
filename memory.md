@@ -2343,3 +2343,60 @@ are the place to get it.
   means a batched Postgres function taking many titles at once — its own
   design pass, worth re-measuring after the above before assuming it's
   still the bottleneck.
+
+### Measured, after the fact — the numbers the entry above was missing
+
+The entry above shipped honestly labelled "structural and reasoned, not
+measured." It has since been measured, and the method is worth reusing.
+
+**Real round-trip cost to this Supabase project** (7 samples each, from a
+dev machine — production on Vercel would be lower if co-located, but the
+*shape* is what matters): `auth.getUser()` **269ms median**, plain
+PostgREST select **459ms**, the `fx_rates` query **308ms**. This
+**confirms the load-bearing claim that `supabase.auth.getUser()` is a
+network round-trip to Supabase's auth service, not a local JWT decode** —
+which is exactly why `getCurrentSeller()` being called 9x per render
+mattered so much.
+
+**Before/after, measured by running the real page components against a
+counting Supabase stub** (`src/bench-roundtrips.test.ts`, temporary, not
+committed — recreate it if this needs redoing):
+
+| page | round-trips | wall-clock @250ms/RTT |
+|---|---|---|
+| Market before | 108 | 12,819ms |
+| Market after | **63** | **1,553ms** |
+| Competitors before | 85 | 8,715ms |
+| Competitors after | **61** | **2,330ms** |
+
+Market ~8.3x faster, Competitors ~3.7x. The repeated calls that vanished
+entirely: `market_category_map` x11→1, `seller_market_definitions` x11→1,
+`fx_rates` x10→1, `auth.getUser` x9→1, `sellers` x9→1.
+
+**Harness caveats, so nobody over-trusts these:** the 250ms/round-trip is
+a flat constant (real latency varies 215-460ms); and **React's `cache()`
+does not memoize outside a request scope, confirmed empirically — 4 calls
+stayed 4 calls in plain Node** — so the harness models it with a Map using
+React's documented contract (memoize per request, keyed on args) rather
+than exercising the real implementation. The parallelization half needs no
+such modelling and is measured directly.
+
+**`rpc:market_top_similar_candidates` is still called 40x on both pages**
+after all of this — the deduping cannot touch it, because those are 40
+genuinely distinct calls (one per seller product), not repeats. That is
+Phase D, and this measurement confirms it is now clearly the dominant
+remaining cost on both pages. **If more performance work is wanted, that
+is the next thing and there is no longer any guesswork about it.**
+
+**Unrelated flake found and fixed while doing this (`0c09cd9`):**
+`buildReportPdf`'s data-rich test was failing roughly one run in three
+with "Test timed out in 5000ms" — it renders a real PDF via pdfkit and
+was measured between 1.1s and over 5s depending on machine load, against
+vitest's 5s default. Not caused by the performance work (the report path
+was untouched, and that test imports none of the changed modules); it was
+latent and surfaced because benchmarking kept the machine busy. Raised to
+30s per file via `vi.setConfig` in the three renderer test files, rather
+than globally, so fast unit tests keep a tight ceiling. Verified with six
+consecutive clean full-suite runs. **Worth knowing: a "2 tests failed"
+that does not reproduce on a second run is not necessarily noise here —
+this one was real, and only showed up 1-in-3.**
