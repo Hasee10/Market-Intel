@@ -139,9 +139,22 @@ jobs:
           # was evaluated from the same target list and rejected: its
           # robots.txt disallows /women/, essentially its whole catalog.
           BAGALLERY_COLLECTIONS: all-beauty,all-skincare,beauty-accessories-tools,baby-care-1
-          JUNAIDJAMSHED_COLLECTIONS: skin-care-body-care,womens-bags,fragrances-collection,3-piece
+          # men-collections/women-collections added 2026-08-30. The four
+          # original picks were all narrow sub-collections and between them
+          # returned just 23 products in the 2026-08-29 run, from a store
+          # whose /collections.json lists 228 non-empty collections - these
+          # two are its actual top-level catalogue (1,471 and 2,618 products
+          # per that listing, both confirmed against products.json).
+          # Deliberately listed FIRST: saveProducts() dedupes by externalId
+          # with last-one-wins, so a broad collection scraped after a narrow
+          # one would overwrite the narrow one's category_slug - womens-bags
+          # maps to Accessories and would silently become Womenswear. Broad
+          # first, specific last keeps the more precise mapping.
+          JUNAIDJAMSHED_COLLECTIONS: men-collections,women-collections,skin-care-body-care,fragrances-collection,womens-bags,3-piece
           GULAHMED_COLLECTIONS: ideas-home-bed-sheets,ideas-home-bath-linen,women-ideas-pret,mens-clothes-eastern-shalwar-kameez
-          CHASEVALUE_COLLECTIONS: home-fragrances,home-lifestyle-heater,kids-action-figures,beauty-personal-care-shaving
+          # Same 2026-08-30 widening as junaidjamshed above (55 products from
+          # 203 non-empty collections), and the same broad-first ordering.
+          CHASEVALUE_COLLECTIONS: beauty-personal-care,kids-boys-clothes,home-lifestyle-bedding,home-fragrances,home-lifestyle-heater,kids-action-figures,beauty-personal-care-shaving
           ALFATAH_COLLECTIONS: air-fryer-price-in-pakistan,activity-toys,after-shave-price-in-pakistan,alarm-wall-clocks
           #
           # Added 2026-08-29, second batch: Springs/Outfitters/SEW Markaz
