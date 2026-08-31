@@ -57,9 +57,14 @@ the platform, each prioritized.
    none). This is the right call already made; a nonce-based CSP is a real
    but separate project if wanted later.
 
-9. **Verify the watchlist price-alert cron is actually scheduled** in the
-   Vercel dashboard - no `vercel.json` or in-repo cron config was found, so
-   this can't be confirmed from the repo alone.
+9. ~~Verify the watchlist price-alert cron is actually scheduled.~~
+   **Resolved 2026-08-30 - this was a false alarm on my part.** The cron is
+   scheduled, just not where I first looked: `.github/workflows/market-intel-cron.yml`
+   POSTs to `/api/cron/price-alerts` every 6 hours, alongside daily
+   benchmarks, low-stock, churn/RFM and FX-rate jobs. I had searched for a
+   `vercel.json` and concluded absence rather than checking every workflow.
+   Reviews are likewise scheduled, via `.github/workflows/review-scraper.yml`
+   (daily, PriceOye).
 
 ## Part 2 — Features worth building
 
