@@ -1,6 +1,7 @@
 'use client';
 
 import { Box, Center, Flex, Heading, Text, useColorModeValue } from '@chakra-ui/react';
+import Image from 'next/image';
 import NextLink from 'next/link';
 import { ReactNode } from 'react';
 
@@ -99,12 +100,19 @@ export function AuthCard({ title, subtitle, children, illustrationSrc, illustrat
             Ryvl
           </Text>
         </Flex>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+        {/* next/image rather than a raw <img>: these signin/signup PNGs are
+            ~600KB each at source and this is the first screen an unsigned-in
+            visitor sees. With image optimization now enabled (next.config.js)
+            this serves a resized AVIF/WebP instead. priority because it's
+            above the fold - lazy-loading the hero art just moves the blank
+            frame later. */}
+        <Image
           src={illustrationSrc}
           alt={illustrationAlt ?? ''}
           width={1200}
           height={800}
+          priority
+          sizes="(max-width: 992px) 0px, 480px"
           style={{ width: '100%', maxWidth: '480px', height: 'auto', position: 'relative' }}
         />
       </Flex>

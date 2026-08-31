@@ -22,14 +22,23 @@ const nextConfig = {
       './src/lib/reports/assets/**/*',
     ],
   },
+  // No `experimental.optimizePackageImports` block here on purpose. It was
+  // tried for @chakra-ui/react and react-icons and produced a byte-identical
+  // build - same chunk hashes, same 103 kB shared JS - because Next 15
+  // already applies it to both by default. Listing them again is dead config
+  // that reads like a win without being one.
   images: {
     domains: [
       'images.unsplash.com',
       'i.ibb.co',
       'scontent.fotp8-1.fna.fbcdn.net',
     ],
-    // Make ENV
-    unoptimized: true,
+    // Was `unoptimized: true`, which meant next/image served every asset at
+    // full original size in its original format. The landing page's four
+    // illustrations alone are ~1.9MB of raw PNG that way; with optimization
+    // on they're re-encoded to AVIF/WebP and sized to the actual layout
+    // slot, which is most of that weight gone off the first paint.
+    formats: ['image/avif', 'image/webp'],
   },
   // leaks.md finding #4 - none of these were set. Applied to every route
   // rather than a subset: there's no page here that benefits from being

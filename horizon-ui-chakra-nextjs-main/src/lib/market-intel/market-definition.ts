@@ -1,5 +1,7 @@
 'server-only';
 
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 import { getCurrentSeller, listSellerDomainSlugs } from '@/lib/market-intel/seller';
 import { getLatestFxRates } from '@/lib/market-intel/fx';
@@ -95,7 +97,12 @@ function defaultDefinition(sellerCategorySlug: string): MarketDefinition {
   };
 }
 
-async function loadTaxonomy(sellerCategorySlug: string): Promise<MarketTaxonomyNode[]> {
+// cache()d because listTaxonomyPlatforms() and saveMarketDefinition() reach
+// it independently of getMarketScope(), so the Market Definition page loaded
+// the same taxonomy twice even before getMarketScope was itself deduped.
+const loadTaxonomy = cache(async function loadTaxonomy(
+  sellerCategorySlug: string,
+): Promise<MarketTaxonomyNode[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('market_category_map')
@@ -114,9 +121,12 @@ async function loadTaxonomy(sellerCategorySlug: string): Promise<MarketTaxonomyN
       segmentLabel: row.segment_label,
     };
   });
-}
+});
 
-async function loadDefinition(sellerId: string, sellerCategorySlug: string): Promise<MarketDefinition> {
+const loadDefinition = cache(async function loadDefinition(
+  sellerId: string,
+  sellerCategorySlug: string,
+): Promise<MarketDefinition> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from('seller_market_definitions')
@@ -138,7 +148,7 @@ async function loadDefinition(sellerId: string, sellerCategorySlug: string): Pro
     cities: data.cities ?? [],
     isDefault: false,
   };
-}
+});
 
 function summariseSegments(nodes: MarketTaxonomyNode[]): MarketSegment[] {
   const bySlug = new Map<string, { label: string; platforms: Set<string>; count: number }>();
@@ -166,8 +176,17 @@ function summariseSegments(nodes: MarketTaxonomyNode[]): MarketSegment[] {
  * five layers. When omitted it resolves the signed-in seller; when there is no
  * session it falls back to the default (unnarrowed) scope, which is the right
  * answer for the report generator and cron jobs.
+ *
+ * cache()d per request. The Competitors page reached this 3-9 times per
+ * render - getCompetitorLandscape/getCompetitorOverlap/getCompetitorMatchCounts
+ * each resolve the scope themselves rather than accepting one, and the
+ * all-domains variants of those three do it again for every tracked domain.
+ * Deduping here fixes all of them without changing a single call site.
  */
-export async function getMarketScope(sellerCategorySlug: string, sellerId?: string): Promise<MarketScope> {
+export const getMarketScope = cache(async function getMarketScope(
+  sellerCategorySlug: string,
+  sellerId?: string,
+): Promise<MarketScope> {
   const resolvedSellerId = sellerId ?? (await getCurrentSeller())?.id;
 
   const [nodes, definition] = await Promise.all([
@@ -229,7 +248,7 @@ export async function getMarketScope(sellerCategorySlug: string, sellerId?: stri
     matchesCategory,
     matchesRow,
   };
-}
+});
 
 /**
  * The seller's market across EVERY tracked domain at once, not just one
@@ -247,7 +266,9 @@ export async function getMarketScope(sellerCategorySlug: string, sellerId?: stri
  * wants a narrowed view of one category still has that category's own
  * Market Definition page for it.
  */
-export async function getMarketScopeForAllDomains(sellerId: string): Promise<MarketScope> {
+export const getMarketScopeForAllDomains = cache(async function getMarketScopeForAllDomains(
+  sellerId: string,
+): Promise<MarketScope> {
   const slugs = await listSellerDomainSlugs(sellerId);
 
   const empty: MarketScope = {
@@ -291,7 +312,7 @@ export async function getMarketScopeForAllDomains(sellerId: string): Promise<Mar
     matchesCategory,
     matchesRow,
   };
-}
+});
 
 // Segments of the same slug can appear in multiple domains' taxonomies
 // (e.g. two categories both have a "beauty" segment from different
@@ -433,13 +454,18 @@ export type MarketScopeCoverage = {
  * fraction of them - and a band matching zero rows never triggered the
  * honest empty state, because the unfiltered count was still positive.
  */
-export async function getMarketScopeCoverage(scope: MarketScope): Promise<MarketScopeCoverage> {
+// cache()d on the scope object itself: now that getMarketScope() is deduped
+// per request, the same MarketScope reference reaches this from both the C2
+// banner and getMarketScopeSummary(), so reference-equality keying is enough
+// to collapse them into one RPC.
+export const getMarketScopeCoverage = cache(async function getMarketScopeCoverage(
+  scope: MarketScope,
+): Promise<MarketScopeCoverage> {
   if (scope.categorySlugs.length === 0) {
     return { productCount: 0, listingCount: 0, platformNames: [] };
   }
 
-  const supabase = await createClient();
-  const fxRates = await getLatestFxRates();
+  const [supabase, fxRates] = await Promise.all([createClient(), getLatestFxRates()]);
 
   const { data, error } = await supabase
     .rpc('market_scope_coverage', {
@@ -469,4 +495,4 @@ export async function getMarketScopeCoverage(scope: MarketScope): Promise<Market
     listingCount: Number(data.listing_count ?? 0),
     platformNames,
   };
-}
+});

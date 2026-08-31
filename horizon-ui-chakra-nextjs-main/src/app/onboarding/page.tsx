@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
@@ -33,11 +34,16 @@ export default async function OnboardingPage() {
           <CategoryPicker categories={categories} />
         </div>
         <div style={{ flex: '1 1 320px', maxWidth: '420px', display: 'flex', justifyContent: 'center' }}>
-          <img
+          {/* next/image works fine in a Server Component (unlike Chakra, per
+              the comment above), and this 585KB PNG is the single largest
+              asset in the app - now resized and re-encoded rather than
+              shipped whole. */}
+          <Image
             src="/assets/ryvl-dashboard-illustration.png"
             alt="Preview of the Ryvl seller dashboard"
             width={1200}
             height={800}
+            sizes="(max-width: 768px) 100vw, 420px"
             style={{ width: '100%', height: 'auto' }}
           />
         </div>

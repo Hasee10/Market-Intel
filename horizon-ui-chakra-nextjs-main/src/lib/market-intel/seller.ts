@@ -1,5 +1,7 @@
 'server-only';
 
+import { cache } from 'react';
+
 import { redirect } from 'next/navigation';
 
 import { hasFeature } from '@/lib/market-intel/entitlements';
@@ -32,7 +34,16 @@ export type SellerDomain = {
 // of the current user was whoever signed up last - fine with one seller,
 // cross-tenant data exposure with two (leaks.md finding #2). To work on the
 // dashboard locally, sign up a real account; the flow works end to end.
-export async function getCurrentSeller(): Promise<Seller | null> {
+//
+// Wrapped in React's cache() so the whole thing runs at most once per
+// request. This is the hottest function in the app - every page, every
+// /api/ecommerce/* route and most lib functions call it - and each call
+// used to cost two round-trips: supabase.auth.getUser() goes over the
+// network to Supabase's auth service (it is not a local JWT decode), then
+// a `sellers` row lookup. The Market page alone reached it a dozen times
+// via different lib modules. cache() is per-request and per-argument, so
+// this changes nothing about isolation between users or between requests.
+export const getCurrentSeller = cache(async function getCurrentSeller(): Promise<Seller | null> {
   const supabase = await createClient();
 
   const {
@@ -59,7 +70,7 @@ export async function getCurrentSeller(): Promise<Seller | null> {
     reportingCurrency: data.reporting_currency,
     country: data.country,
   };
-}
+});
 
 // Real server-side auth guard for the protected layouts (dashboard/apps/
 // onboarding). middleware.ts's redirect only checks whether a
@@ -98,7 +109,12 @@ export async function requireOnboardedSeller(): Promise<Seller> {
 
 // A seller's primary domain, if they've completed onboarding
 // (see app/onboarding). Null until seller_domains has an is_primary row.
-export async function getPrimaryDomain(sellerId: string): Promise<SellerDomain | null> {
+// cache()d for the same reason as getCurrentSeller above - every dashboard
+// page resolves it, and requireOnboardedSeller() resolves it again in the
+// layout that wraps those same pages.
+export const getPrimaryDomain = cache(async function getPrimaryDomain(
+  sellerId: string,
+): Promise<SellerDomain | null> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -121,7 +137,7 @@ export async function getPrimaryDomain(sellerId: string): Promise<SellerDomain |
     categorySlug: category.slug,
     categoryName: category.name,
   };
-}
+});
 
 export async function listCategories() {
   const supabase = await createClient();
@@ -174,7 +190,9 @@ export async function listSellerDomains(sellerId: string): Promise<SellerDomainR
 // listSellerDomains() above joins seller_categories(name) only, since
 // that's all the Settings page needs, so this is a separate small query
 // rather than widening that one's shape for every existing caller.
-export async function listSellerDomainSlugs(sellerId: string): Promise<string[]> {
+export const listSellerDomainSlugs = cache(async function listSellerDomainSlugs(
+  sellerId: string,
+): Promise<string[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -190,7 +208,7 @@ export async function listSellerDomainSlugs(sellerId: string): Promise<string[]>
       return category?.slug as string | undefined;
     })
     .filter((slug): slug is string => Boolean(slug));
-}
+});
 
 export type AutoAssignDomainsResult = {
   added: string[];

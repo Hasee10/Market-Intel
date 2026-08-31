@@ -1,5 +1,7 @@
 'server-only';
 
+import { cache } from 'react';
+
 import { createClient } from '@/lib/supabase/server';
 
 const BASE_CURRENCY = 'USD';
@@ -10,7 +12,13 @@ export type FxRates = Record<string, number>;
 // fx_rates, keyed by currency code -> rate relative to USD. Falls back to
 // the most recent prior date if today's hasn't been fetched yet (cron runs
 // once daily - there's always a gap between midnight and whenever it fires).
-export async function getLatestFxRates(): Promise<FxRates> {
+//
+// cache()d per request: the rates are a daily snapshot, identical for every
+// caller within a single render, but five unrelated modules
+// (competitors, market-definition, product-matching, anomalies,
+// category-pricing) each called this independently, so one Market page
+// render fetched the same 50 rows five times over.
+export const getLatestFxRates = cache(async function getLatestFxRates(): Promise<FxRates> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -28,7 +36,7 @@ export async function getLatestFxRates(): Promise<FxRates> {
     if (row.rate_date === latestDate) rates[row.quote_currency] = Number(row.rate);
   }
   return rates;
-}
+});
 
 // Converts an amount from one currency to another via USD as a pivot
 // (avoids needing every currency-pair combination stored directly - just

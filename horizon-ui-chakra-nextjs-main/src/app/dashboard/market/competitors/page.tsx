@@ -25,51 +25,52 @@ export default async function CompetitorsPage() {
   const planTier = seller?.planTier ?? 'free';
   const hasAccess = hasFeature(planTier, 'competitor_intel');
   const reportingCurrency = seller?.reportingCurrency ?? 'PKR';
-  const trackedDomainCount = seller ? (await listSellerDomainSlugs(seller.id)).length : 0;
-
-  const landscape =
-    domain && seller && hasAccess
-      ? await getCompetitorLandscape(domain.categorySlug, reportingCurrency, seller.id)
-      : null;
-
-  // Overlap is the expensive half (in-process title matching), so it is only
-  // computed once the landscape has found someone to compare against.
-  const overlap =
-    domain && seller && hasAccess && landscape && landscape.scorecards.length > 0
-      ? Array.from((await getCompetitorOverlap(seller.id, domain.categorySlug, reportingCurrency)).values())
-      : [];
-
-  // Cheap indexed count, gated the same as overlap - no point running it on
-  // an empty scorecard page.
-  const matchCounts =
-    domain && seller && hasAccess && landscape && landscape.scorecards.length > 0
-      ? Array.from((await getCompetitorMatchCounts(seller.id, domain.categorySlug)).values())
-      : [];
-
-  const scopeSummary =
-    domain && seller ? await getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null;
-
-  const allLandscape =
-    seller && hasAccess ? await getCompetitorLandscapeAllDomains(seller.id, reportingCurrency) : null;
-
-  const allOverlap =
-    seller && hasAccess && allLandscape && allLandscape.scorecards.length > 0
-      ? Array.from((await getCompetitorOverlapAllDomains(seller.id, reportingCurrency)).values())
-      : [];
-
-  const allMatchCounts =
-    seller && hasAccess && allLandscape && allLandscape.scorecards.length > 0
-      ? Array.from((await getCompetitorMatchCountsAllDomains(seller.id)).values())
-      : [];
-
-  // CSV export payloads - computed here (not client-side) since they need
+  // The two landscapes gate everything downstream (overlap/match counts are
+  // skipped when there's nobody to compare against), so they resolve first -
+  // but as a pair, not one after the other. Everything that doesn't depend
+  // on them rides along in the same round.
+  //
+  // CSV export payloads are computed here (not client-side) since they need
   // the same server-only Supabase access every other fetch on this page
   // uses. Both are small enough to hand to the client whole rather than
   // wiring a dedicated export API route.
-  const primaryMatchedListings =
-    domain && seller && hasAccess ? await getMatchedListingsForExport(seller.id, await getMarketScope(domain.categorySlug, seller.id)) : [];
-  const allMatchedListings =
-    seller && hasAccess ? await getMatchedListingsForExport(seller.id, await getMarketScopeForAllDomains(seller.id)) : [];
+  const [trackedDomainCount, landscape, allLandscape, scopeSummary, primaryMatchedListings, allMatchedListings] =
+    await Promise.all([
+      seller ? listSellerDomainSlugs(seller.id).then((slugs) => slugs.length) : 0,
+      domain && seller && hasAccess
+        ? getCompetitorLandscape(domain.categorySlug, reportingCurrency, seller.id)
+        : null,
+      seller && hasAccess ? getCompetitorLandscapeAllDomains(seller.id, reportingCurrency) : null,
+      domain && seller ? getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null,
+      domain && seller && hasAccess
+        ? getMarketScope(domain.categorySlug, seller.id).then((scope) =>
+            getMatchedListingsForExport(seller.id, scope),
+          )
+        : [],
+      seller && hasAccess
+        ? getMarketScopeForAllDomains(seller.id).then((scope) => getMatchedListingsForExport(seller.id, scope))
+        : [],
+    ]);
+
+  // Overlap is the expensive half (in-process title matching), so it is only
+  // computed once the landscape has found someone to compare against. Match
+  // counts are a cheap indexed count gated the same way - no point running
+  // either on an empty scorecard page. Primary and all-domains variants of
+  // both run together rather than in four separate awaits.
+  const [overlap, matchCounts, allOverlap, allMatchCounts] = await Promise.all([
+    domain && seller && hasAccess && landscape && landscape.scorecards.length > 0
+      ? getCompetitorOverlap(seller.id, domain.categorySlug, reportingCurrency).then((m) => Array.from(m.values()))
+      : [],
+    domain && seller && hasAccess && landscape && landscape.scorecards.length > 0
+      ? getCompetitorMatchCounts(seller.id, domain.categorySlug).then((m) => Array.from(m.values()))
+      : [],
+    seller && hasAccess && allLandscape && allLandscape.scorecards.length > 0
+      ? getCompetitorOverlapAllDomains(seller.id, reportingCurrency).then((m) => Array.from(m.values()))
+      : [],
+    seller && hasAccess && allLandscape && allLandscape.scorecards.length > 0
+      ? getCompetitorMatchCountsAllDomains(seller.id).then((m) => Array.from(m.values()))
+      : [],
+  ]);
 
   return (
     <CompetitorsView

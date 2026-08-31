@@ -35,31 +35,47 @@ export default async function MarketPage() {
 
   const reportingCurrency = seller?.reportingCurrency ?? 'PKR';
 
-  const benchmarks = domain && entitlements.peerBenchmarks ? await getDomainBenchmarks(domain.categoryId) : [];
-  const peers = domain && seller && entitlements.peerBenchmarks ? await getDomainPeers(domain.categoryId, seller.id) : [];
-  // ROADMAP.md C2: the scope every figure below is computed against, echoed
-  // back at the top of the page instead of being implicit.
-  const scopeSummary =
-    domain && seller ? await getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null;
-  const categoryPricing = domain ? await getCategoryPricing(domain.categorySlug, reportingCurrency) : null;
-  const priceTrend = domain ? await getPriceTrend(domain.categorySlug, reportingCurrency) : [];
-  const stockOuts = domain ? await getStockOuts(domain.categorySlug, 10, reportingCurrency) : [];
-  const freshness = domain ? await getDataFreshness(domain.categorySlug) : [];
-  const demandSignal = domain ? await getDemandSignal(domain.categorySlug) : null;
-  const productMatches =
+  // Every fetch below depends only on `seller`/`domain`/`reportingCurrency`,
+  // all of which are resolved above - none of them consume each other's
+  // results. Awaiting them on twelve consecutive lines made the page's
+  // time-to-first-byte the *sum* of twelve round-trips; running them
+  // concurrently makes it the slowest single one. Same data, same order on
+  // the page, one Promise.all.
+  const [
+    benchmarks,
+    peers,
+    // ROADMAP.md C2: the scope every figure below is computed against, echoed
+    // back at the top of the page instead of being implicit.
+    scopeSummary,
+    categoryPricing,
+    priceTrend,
+    stockOuts,
+    freshness,
+    demandSignal,
+    productMatches,
+    pricingRecommendations,
+    priceForecast,
+    priceAnomalies,
+  ] = await Promise.all([
+    domain && entitlements.peerBenchmarks ? getDomainBenchmarks(domain.categoryId) : [],
+    domain && seller && entitlements.peerBenchmarks ? getDomainPeers(domain.categoryId, seller.id) : [],
+    domain && seller ? getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null,
+    domain ? getCategoryPricing(domain.categorySlug, reportingCurrency) : null,
+    domain ? getPriceTrend(domain.categorySlug, reportingCurrency) : [],
+    domain ? getStockOuts(domain.categorySlug, 10, reportingCurrency) : [],
+    domain ? getDataFreshness(domain.categorySlug) : [],
+    domain ? getDemandSignal(domain.categorySlug) : null,
     domain && seller && entitlements.productMatching
-      ? await findTopProductMatches(seller.id, domain.categorySlug, reportingCurrency)
-      : [];
-  const pricingRecommendations =
+      ? findTopProductMatches(seller.id, domain.categorySlug, reportingCurrency)
+      : [],
     domain && seller && entitlements.pricingRecommendations
-      ? await getPricingRecommendations(seller.id, domain.categorySlug, reportingCurrency)
-      : [];
-  const priceForecast =
-    domain && entitlements.forecasting ? await getCategoryPriceForecast(domain.categorySlug, reportingCurrency) : null;
-  const priceAnomalies =
+      ? getPricingRecommendations(seller.id, domain.categorySlug, reportingCurrency)
+      : [],
+    domain && entitlements.forecasting ? getCategoryPriceForecast(domain.categorySlug, reportingCurrency) : null,
     domain && entitlements.anomalyDetection
-      ? await detectCompetitorPriceAnomalies(domain.categorySlug, reportingCurrency)
-      : [];
+      ? detectCompetitorPriceAnomalies(domain.categorySlug, reportingCurrency)
+      : [],
+  ]);
 
   return (
     <MarketView
