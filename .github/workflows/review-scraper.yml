@@ -17,9 +17,22 @@ name: Review Scraper
 # market-scraper.yml's history). Overridable per manual run via
 # workflow_dispatch for a smaller first real-world test before trusting the
 # steady-state default.
+#
+# Was a fixed "15 4 * * *" cron (45 minutes after Market Scraper's own
+# 03:30 tick), betting that 45 minutes was always enough headroom. Real run
+# data (2026-08-30) showed Market Scraper actually takes 24-64 minutes, so
+# that bet was closer than it looked and would only get tighter as more
+# sources are added. Switched 2026-08-31 to `workflow_run`, which fires
+# once Market Scraper's run actually finishes instead of guessing a clock
+# offset - still runs once a day (Market Scraper's own cadence gate only
+# skips its *steps* on off days, not the job itself, so the workflow still
+# completes with conclusion "success" daily - see its own "Determine
+# cadence" step), just sequenced by real completion instead of a fixed
+# minute. The job's own `if:` below still requires that conclusion.
 on:
-  schedule:
-    - cron: "15 4 * * *"
+  workflow_run:
+    workflows: ["Market Scraper"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       batch_size:
@@ -32,6 +45,7 @@ permissions:
 
 jobs:
   scrape-reviews:
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     defaults:

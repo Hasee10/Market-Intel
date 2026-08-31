@@ -21,8 +21,42 @@ permissions:
   contents: read
 
 jobs:
+  # Runs before benchmarks/churn (needs: below) whenever either of their
+  # schedules fires, in addition to its own 02:00 tick - previously "before
+  # benchmarks/churn use it" (see the fx-rates cron comment above) was true
+  # only because 02:00 sorts earlier than 03:00/05:00, not because anything
+  # actually enforced it. Refreshing fx-rates twice on a benchmarks/churn
+  # day is harmless (it's a snapshot write, safe to repeat).
+  fx-rates:
+    if: >
+      github.event.schedule == '0 2 * * *' ||
+      github.event.schedule == '0 3 * * *' ||
+      github.event.schedule == '0 5 * * *' ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger FX rate snapshot refresh
+        run: |
+          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
+            -X POST "${{ secrets.APP_URL }}/api/cron/fx-rates" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat response.json
+          echo "HTTP status: $status"
+          [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
+
   benchmarks:
-    if: github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch'
+    needs: fx-rates
+    # always() so this doesn't get skipped just because fx-rates' own `if`
+    # above didn't match on some other schedule tick (needs: otherwise
+    # treats an upstream skip the same as a failure) - the real gate is the
+    # second line, unchanged from before. Bracket syntax (not needs.fx-rates)
+    # because GitHub Actions expressions parse a hyphen in dot notation as
+    # subtraction, not a property access - needs['fx-rates'] is required.
+    if: >
+      always() &&
+      (needs['fx-rates'].result == 'success' || needs['fx-rates'].result == 'skipped') &&
+      (github.event.schedule == '0 3 * * *' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -68,7 +102,11 @@ jobs:
           [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
 
   churn:
-    if: github.event.schedule == '0 5 * * *' || github.event_name == 'workflow_dispatch'
+    needs: fx-rates
+    if: >
+      always() &&
+      (needs['fx-rates'].result == 'success' || needs['fx-rates'].result == 'skipped') &&
+      (github.event.schedule == '0 5 * * *' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -76,20 +114,6 @@ jobs:
         run: |
           status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
             -X POST "${{ secrets.APP_URL }}/api/cron/churn" \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
-          cat response.json
-          echo "HTTP status: $status"
-          [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
-
-  fx-rates:
-    if: github.event.schedule == '0 2 * * *' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - name: Trigger FX rate snapshot refresh
-        run: |
-          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
-            -X POST "${{ secrets.APP_URL }}/api/cron/fx-rates" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
           cat response.json
           echo "HTTP status: $status"
