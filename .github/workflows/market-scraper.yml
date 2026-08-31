@@ -210,9 +210,15 @@ jobs:
           # TheSportStore.pk was evaluated and deferred: real site, but runs
           # OpenCart with no standard product-feed endpoint.
           ALISPORTS_COLLECTIONS: badminton,cricket,badminton-rackets,exercise-fitness
-          BODYBRICS_COLLECTIONS: accessories,t-shirts-tops,mens-pants-trousers-joggers,all-women
+          # all-men added 2026-08-30 (43 products, confirmed live) - the
+          # existing men's-specific picks (mens-pants-trousers-joggers) stay
+          # after it so their narrower segment label still wins on overlap,
+          # same broad-first rule as junaidjamshed/chasevalue above.
+          BODYBRICS_COLLECTIONS: all-men,accessories,t-shirts-tops,mens-pants-trousers-joggers,all-women
           HUSTLERSONLYPK_COLLECTIONS: fitness-apparel,apparel-men,women-apparel,tops
-          ACTIVITYSPHERE_COLLECTIONS: women-gym-wear,men-gym-wear,women-sports-bra,men-gym-shirts
+          # women-leggings added 2026-08-30 (27 products, confirmed live) -
+          # the store's second-largest collection, not covered before.
+          ACTIVITYSPHERE_COLLECTIONS: women-gym-wear,women-leggings,men-gym-wear,women-sports-bra,men-gym-shirts
           ZEESOL_CATEGORIES: 3962,3961,3966,3963
           #
           # Added 2026-08-29, fifth batch: Books & Stationery, Automotive,
@@ -228,7 +234,11 @@ jobs:
           # endpoint.
           BLINGSPOT_COLLECTIONS: school-supplies,kids-stationery,journals-notebooks,notepads
           KATIB_COLLECTIONS: art-and-craft,copy-and-printer-paper,account-books,data-storage
-          MERCURYSTATIONERY_COLLECTIONS: all-pencils,all-pens,lead-pencils,brito
+          # all-markers added 2026-08-30 (149 products, confirmed live) -
+          # its largest real category, missing from the original 4 despite
+          # the store having 46 non-empty collections. Listed first so
+          # lead-pencils/brito keep their narrower segment on overlap.
+          MERCURYSTATIONERY_COLLECTIONS: all-markers,all-pencils,all-pens,lead-pencils,brito
           STATIONARYPK_CATEGORIES: writing-essentials,office-supplies,school-supplies-pakistan,lead-pencil-pakistan
           ASSANY_CATEGORIES: stationery,arts-crafts,packaging-material,wall-racks-organizers
           SEHGALMOTORS_COLLECTIONS: auto-spare-parts,body-kits-extensions,bike-accessories,air-press-sunvisors
@@ -236,7 +246,10 @@ jobs:
           PAKISTANMOTORS_COLLECTIONS: interior-accessories,led-lightening-accessories,car-top-covers,exterior-accessories
           PREMIUMEXO_COLLECTIONS: car-window-sunshades-pakistan,toyota-sunshades-pakistan,honda-sunshades-pakistan,back-rear
           AUTOSTOREPK_CATEGORIES: car-accessories,body-kits,car-care,car-parts
-          COFFEECREST_COLLECTIONS: beverages-drinks,syrups,single-origin,blends
+          # coffee-beans added 2026-08-30 (11 products, confirmed live) -
+          # this is a genuinely small store (13 non-empty collections
+          # total), so this is the only real gap worth adding.
+          COFFEECREST_COLLECTIONS: beverages-drinks,syrups,single-origin,blends,coffee-beans
           SNAPCART_COLLECTIONS: tea-coffee,drinks,juices-malts-smoothies,soft-drinks-soda
           #
           # Added 2026-08-29, sixth batch: Health & Wellness (previously
@@ -247,12 +260,26 @@ jobs:
           # endpoint before being added - see migrations/039, which also
           # formalizes "Pet Supplies" as its own seller category (was
           # mapped to the catch-all 'other' before).
-          WELLPAKISTAN_COLLECTIONS: health-wellness,health-care-supplements,multivitamins,nutritional-supplements
+          # male-sexual-wellness added 2026-08-30 (65 products, confirmed
+          # live) - the store's single largest collection by a wide margin
+          # (205 non-empty collections total; the original 4 picks were all
+          # small, which is why the 2026-08-29 run only returned 38
+          # products). A standard pharmacy/wellness-retail category, mapped
+          # into migration 046 as its own segment rather than folded into
+          # "Vitamins & Supplements", which it isn't.
+          WELLPAKISTAN_COLLECTIONS: male-sexual-wellness,health-wellness,health-care-supplements,multivitamins,nutritional-supplements
           MYVITAMINSTORE_COLLECTIONS: bone-muscle-joint-health-supplements,energy-vitality-supplements,brain-health,calcium-magnesium
           GINNASTICNUTRITION_COLLECTIONS: post-workout,diabetes,brain-health,pre-workout
           PETMASTER_COLLECTIONS: cats,dog,cat-treats,dog-dry-food-1
           PETSPARK_COLLECTIONS: cat-accessories,dogs,dog-accessories,cat-dry-food
           EPETSTOREPK_CATEGORIES: cat-food-in-pakistan,pet-accessories-in-pakistan,dog-accessories-in-pakistan,dog-food-in-pakistan
-          SCAFE_COLLECTIONS: coffee,single-origin,flavoured-syrups,matcha
-          REDBERRYROASTERS_COLLECTIONS: all-coffee,single-origin-coffee,espresso-coffee,medium-coffee
+          # brewing-equipment/coffee-brewing-tools added 2026-08-30 (71 and
+          # 37 products, confirmed live) - the store's two largest
+          # collections, both equipment/gear rather than beans, mapped into
+          # migration 046 under their own "Brewing Equipment" segment.
+          SCAFE_COLLECTIONS: coffee,single-origin,flavoured-syrups,matcha,brewing-equipment,coffee-brewing-tools
+          # all-gear/all-accessories added 2026-08-30 (78 and 19 products,
+          # confirmed live) - same gap as scafe, equipment rather than
+          # beans, mapped into migration 046 under "Brewing Equipment".
+          REDBERRYROASTERS_COLLECTIONS: all-coffee,single-origin-coffee,espresso-coffee,medium-coffee,all-gear,all-accessories
         run: npm run start
