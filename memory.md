@@ -2400,3 +2400,83 @@ than globally, so fast unit tests keep a tight ceiling. Verified with six
 consecutive clean full-suite runs. **Worth knowing: a "2 tests failed"
 that does not reproduce on a second run is not necessarily noise here —
 this one was real, and only showed up 1-in-3.**
+
+## 2026-08-31: Phase D — candidate search. The plan was wrong; measuring
+caught it. `da4ef12`
+
+Phase D was scoped as "batch the per-product RPC fan-out," on the strength
+of a round-trip COUNT: `market_top_similar_candidates` was 40 of the ~63
+round-trips left on Market after the dedup pass. **That count was the wrong
+thing to optimise, and the obvious implementation made pages slower.** The
+batch was written, tested, and about to ship before benchmarking killed it.
+Worth reading before anyone "optimises" this again.
+
+**Method that caught it, reusable:** `psql`/`initdb` are installed locally
+(`/d/PostgreSQL/18/bin`, PostgreSQL 18). Spun up a throwaway cluster on port
+55432, built a minimal `market_products`/`market_platforms` schema with 60,000
+rows across 12 categories, applied the real migration files verbatim, and used
+`pgbench` for concurrency. **No production contact at all** — the Supabase MCP
+`execute_sql` path was blocked by the permission classifier, and a local
+cluster turned out to be the better answer anyway. Cluster deleted afterwards.
+
+**The numbers (time to resolve 20 seller-product titles):**
+
+| config | time | connections |
+|---|---|---|
+| 20 single calls, 20 concurrent (old design) | 590ms | 20 |
+| one 20-title batch, 1 connection | **952ms** | 1 |
+| 4 calls of 5 titles, 4 concurrent | 703ms | 4 |
+| 20 concurrent singles + composite index | 380ms | 20 |
+| **4 concurrent 5-title batches + index** | **341ms** | **4** |
+
+**Why batching alone loses:** candidate search costs a flat ~50-60ms per
+title, linear, and `unnest` + `LATERAL` runs the same per-title index scan
+*sequentially in one backend*. Batching removes no work whatsoever — it only
+trades away the concurrency the 20 separate calls already had. Measured cost
+curve: 1 title 81ms, 5 titles 278ms, 10 titles 642ms, 20 titles 1196ms.
+
+**What actually helped was the index (migration 048).** 036's
+`market_products_title_trgm_idx` covers `title` alone, so every search pulled
+rows matching the title across the *whole* table then discarded those outside
+the seller's scope — the plan showed **16,103 rows from the index, 13,959
+thrown away**. Adding `category_slug` and `platform_id` via `btree_gin` lets
+the scope filter apply during the scan. Confirmed the planner switches: after
+a stats reset, the composite index took 120 scans and the old one 0.
+
+**Shipped: 4 concurrent calls of 5 titles (`CANDIDATE_BATCH_SIZE = 5`) plus
+the composite index — 590ms → 341ms (1.7x), 4 pooler connections per render
+instead of 20. 047 and 048 are a pair; neither is worth applying alone**
+(chunking without the index is 703ms, *worse* than doing nothing). Both
+migration headers carry the table above so this can't be "simplified" back
+into a single 20-title call by someone reasoning that fewer round-trips must
+be faster.
+
+**Correctness, since getting it wrong changes which competitors sellers
+see:** proved the batch returns exactly what N single calls return — same
+rows, both `EXCEPT ALL` directions empty — including a title matching nothing
+and two seller products sharing a title. Re-proved after adding the index,
+and again for chunks-of-5 reassembled (1,200 rows, zero difference).
+`query_index` is **chunk-relative**, so the app maps it back through an
+explicit index table; there's a test for a second chunk's index 0 landing on
+the 6th product rather than the 1st, which is the one bug that would silently
+score seller products against each other's competitors.
+
+**Still true and still unapplied:** migrations here are applied by hand, so
+047/048 need running in the Supabase SQL Editor. Until then
+`candidate-search.ts` detects a missing function (PGRST202/42883 only, not a
+permissions or query error) and falls back to the old per-title path with a
+`console.warn`. So the app is safe to deploy first, it just won't be faster.
+
+**Caveat on all of the above:** synthetic rows on a laptop with 8 cores.
+Supabase's smaller compute tiers have far fewer, which would make the
+serialized 20-title batch look *even worse* relative to concurrent calls, so
+the direction of the conclusion is safe. Treat the ratios as real and the
+absolute milliseconds as indicative.
+
+**Round-trip counts after this** (same harness as the previous entry): Market
+63 → 31, Competitors 61 → 29. Note the harness's modelled wall-clock barely
+moved (1553→1566ms, 2330→2313ms) because it treats concurrent calls as free —
+**which is exactly the blind spot that made the original Phase D plan look
+attractive.** The real win here is DB work and connection count, and only the
+Postgres benchmark could see it. If that harness is rebuilt, don't trust its
+wall-clock for anything involving concurrency.
