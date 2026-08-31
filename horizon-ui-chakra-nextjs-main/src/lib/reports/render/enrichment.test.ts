@@ -1,10 +1,22 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import JSZip from 'jszip';
 import { buildReportDeck } from './pptx/build-deck';
 import { buildReportPdf } from './pdf/build-pdf';
 import { MIN_SPARKLINE_POINTS, signalBadge } from './pptx/components';
 import { baseSnapshot } from '../test-fixtures';
 import type { ReportSnapshot } from '../schema';
+
+// These renderers do real document generation - pdfkit lays out every page
+// and embeds .afm font metrics read from disk, pptxgenjs zips a full OOXML
+// container - and they are genuinely slow. The data-rich cases have been
+// measured anywhere from 1.1s to over 5s on the same machine depending on
+// what else is running, which put them right on vitest's 5s default: the
+// data-rich PDF case failed intermittently with "Test timed out in 5000ms"
+// while testing nothing about whatever change was in flight. None of these
+// are performance assertions - they only check the renderers produce a
+// valid container without throwing - so the ceiling is set high enough that
+// only a real hang trips it.
+vi.setConfig({ testTimeout: 30_000 });
 
 // Everything this file checks is a real, data-driven component added to
 // match the density of the reference deck (New-Slides.pptx): sparklines,
