@@ -2187,8 +2187,55 @@ independent** - no `workflow_run`, no `needs:` linking any of them, each
 fires on its own cron clock in UTC. The one place real ordering is
 *intended* (fx-rates before benchmarks/churn use it, per
 `market-intel-cron.yml`'s own comment) is currently achieved only by
-picking earlier clock times, not enforced. Answered but not
-implemented: `on: workflow_run` in one workflow's trigger, keyed to
-another workflow's name, would make this a real dependency instead of a
-clock-time hope - offered to wire this up, not yet actioned as of this
-entry.
+picking earlier clock times, not enforced. Answered, then wired up same
+session on request - see the next entry.
+
+## 2026-08-31: Wired real workflow chaining (`16fbfd5`)
+
+Two independent fixes, since the two "orderings" involved are structurally
+different (cross-workflow vs. same-workflow):
+
+- **Review Scraper -> Market Scraper**: was a fixed `"15 4 * * *"` cron,
+  betting 45 minutes (03:30 + 45m) was always enough headroom after Market
+  Scraper's own 03:30 tick. Real run data from earlier this session (24-64
+  min) made that bet look closer than intended, and only gets tighter as
+  more sources are added (see the Phase-1 entry above). Switched to
+  `on: workflow_run: workflows: ["Market Scraper"], types: [completed]`,
+  gated by `if: github.event.workflow_run.conclusion == 'success'`. Confirmed
+  this still fires daily before switching: Market Scraper's every-other-day
+  cadence gate (`Determine cadence` step) skips its own *steps* on off
+  days, not the job itself, so the workflow still completes with
+  conclusion `success` every day regardless - matches Review Scraper's own
+  stated "runs daily" intent, just sequenced by real completion now
+  instead of a guessed clock offset.
+- **fx-rates -> benchmarks/churn**: these are 3 jobs *inside one workflow*
+  (`market-intel-cron.yml`), so this needed `needs:`, not `workflow_run`
+  (which only applies across separate workflows). The naive version
+  (`needs: fx-rates` added to benchmarks/churn with no other change) would
+  have broken their daily schedule - fx-rates' own `if` only matched its
+  own 02:00 tick, so on benchmarks' 03:00 tick fx-rates would evaluate
+  `if: false` and be skipped, and `needs:` treats a skipped upstream job
+  the same as failed by default, silently killing benchmarks' entire daily
+  run. Fixed by widening fx-rates' `if` to also match benchmarks' and
+  churn's schedules (so it actually runs, not skips, right before them -
+  redundant fx-rate refreshes on those days are harmless, it's an
+  idempotent snapshot write), and adding `if: always() && (needs['fx-rates'].result
+  == 'success' || needs['fx-rates'].result == 'skipped') && (<original
+  schedule check>)` to both dependents so `always()` stops the skip from
+  cascading while the original per-job schedule gate is preserved
+  unchanged. price-alerts and low-stock untouched - nothing was ever
+  claimed to depend on them.
+- **Caught before pushing, not after**: `needs.fx-rates.result` is invalid
+  GitHub Actions expression syntax - a hyphen in dot notation parses as
+  subtraction, not a property access. No local linter available
+  (`actionlint` isn't installed on this machine) to catch this
+  automatically; caught by manually re-reading the expression syntax
+  before commit, not by any tool. Fixed to bracket notation
+  (`needs['fx-rates'].result`). **Worth remembering for any future
+  multi-word/hyphenated job id referenced in an `if:` expression - dot
+  notation will silently produce nonsense rather than erroring loudly, so
+  it's easy to miss without a linter.**
+- Real proof this actually chains correctly is still pending - like the
+  Phase-1 collection widening above, nothing has been triggered on
+  purpose since this pushed. The next natural `market-scraper.yml` run
+  (and the `market-intel-cron.yml` ticks after it) is the real test.
