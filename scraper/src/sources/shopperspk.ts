@@ -56,7 +56,11 @@ interface WooProduct {
 }
 
 const PER_PAGE = 100;
-const MAX_PAGES = 10;
+// Raised 10 -> 30 (2026-08-30), same reasoning as woocommerce-source.ts:
+// 6,515 products across 8 categories in the 2026-08-29 run (~814/category)
+// against a 1,000/category ceiling, so the busier categories were being cut
+// short. The `data.length < PER_PAGE` break below still ends smaller ones.
+const MAX_PAGES = 30;
 
 // WooCommerce reports money in minor units: "17500" with minor_unit 0 is
 // Rs 17,500, but the same string with minor_unit 2 would be Rs 175.00.

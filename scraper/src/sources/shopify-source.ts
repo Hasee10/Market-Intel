@@ -37,7 +37,15 @@ interface ShopifyProductsResponse {
 const PAGE_LIMIT = 250;
 // Shopify keeps serving pages forever rather than erroring past the end, so
 // a hard cap backs up the "short page means last page" check below.
-const MAX_PAGES = 10;
+//
+// Raised 10 -> 30 (2026-08-30). At 10 the ceiling was 2,500 per collection,
+// and the 2026-08-29 run returned 9,796 products for Habitt across its 4
+// configured collections - 98% of the 10,000 that cap allowed, so it was
+// being truncated mid-catalogue rather than running out of products. The
+// short-page break below still ends every smaller collection on its own,
+// so a higher cap costs extra requests only where there is genuinely more
+// to fetch.
+const MAX_PAGES = 30;
 
 export function createShopifySource(opts: {
   platformSlug: string;

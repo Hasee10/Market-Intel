@@ -31,7 +31,12 @@ interface WooProduct {
 }
 
 const PER_PAGE = 100;
-const MAX_PAGES = 10;
+// Raised 10 -> 30 (2026-08-30), same reasoning as shopify-source.ts: at 10
+// the ceiling was 1,000 per category, and autostore.pk returned 3,459
+// products across 4 categories in the 2026-08-29 run (~865/category), close
+// enough to that ceiling that at least one category was being cut short.
+// The `data.length < PER_PAGE` break below still ends smaller categories.
+const MAX_PAGES = 30;
 
 // WooCommerce reports money in minor units - see shopperspk.ts for why this
 // conversion is done properly rather than assumed.
