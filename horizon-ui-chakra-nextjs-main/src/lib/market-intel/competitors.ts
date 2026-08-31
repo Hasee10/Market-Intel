@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
 import { getMarketScope, getMarketScopeForAllDomains, type MarketScope } from '@/lib/market-intel/market-definition';
-import { findTopSimilarCandidates } from '@/lib/market-intel/candidate-search';
+import { findTopSimilarCandidatesBatch } from '@/lib/market-intel/candidate-search';
 import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
@@ -330,18 +330,22 @@ async function getCompetitorOverlapFromScope(
   if (sellerRes.error || !sellerRes.data) return result;
   if (sellerRes.data.length === 0) return result;
 
-  // One candidate-search RPC call per seller product, in parallel - each
-  // returns that product's own best textual candidates. Only rows with a
-  // named seller (seller_external_id) count here, unlike the other
-  // *FromScope functions - this specifically answers "who am I up against
-  // by name," so an anonymous single-retailer listing (the platform itself
-  // is the seller) can't count as a head-to-head competitor.
-  const perProductCandidates = await Promise.all(
-    sellerRes.data.map(async (product) => {
-      const candidates = await findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, product.title);
-      return candidates.filter((c) => c.sellerExternalId != null && c.price != null);
-    }),
-  );
+  // One RPC for every seller product at once (migration 047), index-aligned
+  // with sellerRes.data. Only rows with a named seller (seller_external_id)
+  // count here, unlike the other *FromScope functions - this specifically
+  // answers "who am I up against by name," so an anonymous single-retailer
+  // listing (the platform itself is the seller) can't count as a head-to-head
+  // competitor. That filter stays app-side: the batch RPC returns exactly what
+  // the single-title one does so both callers share a candidate set, and only
+  // this caller wants it narrowed.
+  const perProductCandidates = (
+    await findTopSimilarCandidatesBatch(
+      supabase,
+      scope.categorySlugs,
+      scope.activePlatformIds,
+      sellerRes.data.map((product) => product.title),
+    )
+  ).map((candidates) => candidates.filter((c) => c.sellerExternalId != null && c.price != null));
 
   const sellerProducts = sellerRes.data.map((row) => ({
     tokens: tokenize(row.title),

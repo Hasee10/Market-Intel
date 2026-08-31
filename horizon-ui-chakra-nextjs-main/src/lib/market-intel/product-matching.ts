@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
-import { findTopSimilarCandidates } from '@/lib/market-intel/candidate-search';
+import { findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/candidate-search';
 import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
@@ -71,13 +71,15 @@ export async function findTopProductMatches(
   if (sellerProductsRes.error || !sellerProductsRes.data) return [];
   if (sellerProductsRes.data.length === 0) return [];
 
-  // One candidate-search RPC call per seller product, in parallel - each
-  // returns that product's own best textual candidates (index-backed,
-  // ranked), replacing the single shared bulk fetch this used to do.
-  const perProductCandidates = await Promise.all(
-    sellerProductsRes.data.map((product) =>
-      findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, product.title),
-    ),
+  // One RPC for all of them (migration 047), index-aligned with the seller
+  // products above. Each product still gets its own ranked candidate list -
+  // this changed how they're fetched, not what comes back - but as a single
+  // round-trip instead of one per product.
+  const perProductCandidates = await findTopSimilarCandidatesBatch(
+    supabase,
+    scope.categorySlugs,
+    scope.activePlatformIds,
+    sellerProductsRes.data.map((product) => product.title),
   );
 
   const matches: ProductMatch[] = [];

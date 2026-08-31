@@ -10,12 +10,27 @@ let matchRows: any[] = [];
 let matchedListingRows: any[] = [];
 let sellerProductRows: any[] = [];
 let overlapRpcRowsByTitle: Record<string, any[]> = {};
+/** Titles passed to the batch candidate RPC, one entry per call. */
+let batchCandidateCalls: string[][] = [];
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
     rpc: async (fn: string, params: any): Promise<{ data: any[]; error: null }> => {
-      if (fn !== 'market_top_similar_candidates') throw new Error(`unexpected rpc ${fn}`);
-      return { data: overlapRpcRowsByTitle[params.p_query_title] ?? [], error: null };
+      // getCompetitorOverlap batches every seller product's title into one
+      // call (migration 047). Still keyed by title here, so each product's
+      // candidate set stays independent exactly as it was per-call before -
+      // query_index is what carries the title->rows association now.
+      if (fn === 'market_top_similar_candidates_batch') {
+        batchCandidateCalls.push(params.p_query_titles);
+        const rows = (params.p_query_titles as string[]).flatMap((title, i) =>
+          (overlapRpcRowsByTitle[title] ?? []).map((r) => ({ ...r, query_index: i })),
+        );
+        return { data: rows, error: null };
+      }
+      if (fn === 'market_top_similar_candidates') {
+        return { data: overlapRpcRowsByTitle[params.p_query_title] ?? [], error: null };
+      }
+      throw new Error(`unexpected rpc ${fn}`);
     },
     from: (table: string) => {
       if (table === 'seller_products') {
@@ -253,7 +268,12 @@ describe('getCompetitorOverlap', () => {
     expect(result.get('daraz-seller-a')?.overlapCount).toBe(1);
   });
 
-  it('calls the candidate RPC once per seller product with that product\'s own title', async () => {
+  // Was "calls the candidate RPC once per seller product". Since migration 047
+  // that is exactly what it must NOT do - but the property that mattered is
+  // unchanged and still asserted: every seller product gets matched against
+  // its own title's candidates, not a shared pool.
+  it('fetches every seller product\'s candidates in one batched call, keeping them per-title', async () => {
+    batchCandidateCalls = [];
     sellerProductRows = [
       { id: 'sp1', title: 'RTX 4070 GPU', sell_price: 90000, currency: 'PKR' },
       { id: 'sp2', title: 'RTX 4080 GPU', sell_price: 150000, currency: 'PKR' },
@@ -265,8 +285,31 @@ describe('getCompetitorOverlap', () => {
 
     const result = await getCompetitorOverlap('seller1', 'gpus', 'PKR');
 
+    expect(batchCandidateCalls).toEqual([['RTX 4070 GPU', 'RTX 4080 GPU']]);
     expect(result.get('a')?.overlapCount).toBe(1);
     expect(result.get('b')?.overlapCount).toBe(1);
+  });
+
+  // Guards the failure this refactor could plausibly introduce: if query_index
+  // were mismapped, sp1 would be scored against sp2's candidates. Here the two
+  // products' candidates belong to different competitors AND only one of them
+  // undercuts, so a swap changes the win/loss result rather than just the ids.
+  it('does not cross-contaminate candidates between seller products', async () => {
+    sellerProductRows = [
+      { id: 'sp1', title: 'RTX 4070 GPU', sell_price: 90000, currency: 'PKR' },
+      { id: 'sp2', title: 'RTX 4080 GPU', sell_price: 150000, currency: 'PKR' },
+    ];
+    overlapRpcRowsByTitle = {
+      // seller is cheaper than this one -> a win
+      'RTX 4070 GPU': [{ title: 'RTX 4070 GPU', price: 100000, currency: 'PKR', seller_external_id: 'a' }],
+      // seller is dearer than this one -> a loss
+      'RTX 4080 GPU': [{ title: 'RTX 4080 GPU', price: 140000, currency: 'PKR', seller_external_id: 'b' }],
+    };
+
+    const result = await getCompetitorOverlap('seller1', 'gpus', 'PKR');
+
+    expect(result.get('a')).toMatchObject({ overlapCount: 1, winCount: 1, lossCount: 0 });
+    expect(result.get('b')).toMatchObject({ overlapCount: 1, winCount: 0, lossCount: 1 });
   });
 
   it('returns an empty map when the seller has no products', async () => {
