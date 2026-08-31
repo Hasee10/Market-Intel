@@ -2239,3 +2239,107 @@ different (cross-workflow vs. same-workflow):
   Phase-1 collection widening above, nothing has been triggered on
   purpose since this pushed. The next natural `market-scraper.yml` run
   (and the `market-intel-cron.yml` ticks after it) is the real test.
+
+## 2026-08-31: Frontend/render performance pass — `e551973`
+
+User asked why the app renders slowly and to fix it, explicitly believing
+"deployment or backend are not the issues." That framing turned out to be
+half right and worth recording: no *individual* query is slow and the
+infrastructure is fine, but the lag is nonetheless almost entirely
+server-side request shape, not client bundle weight. Three parallel
+Explore agents (data-fetching, bundle/hydration, caching/rendering-mode)
+converged on the same three causes.
+
+**1. Redundant work inside a single request — fixed with React `cache()`.**
+`getCurrentSeller()` is the hottest function in the codebase (every page,
+every `/api/ecommerce/*` route, most lib modules) and **each call costs
+two network round-trips, because `supabase.auth.getUser()` calls
+Supabase's auth service over the wire rather than decoding the JWT
+locally** — worth remembering, it's easy to assume it's cheap.
+`getLatestFxRates()` was independently fetched by five unrelated modules
+per render. `getMarketScope()` resolved 3-9 times on the Competitors page,
+since `getCompetitorLandscape`/`getCompetitorOverlap`/
+`getCompetitorMatchCounts` each resolve scope internally instead of
+accepting one, and the all-domains variants repeat that per tracked
+domain. Wrapped those plus `getPrimaryDomain`, `listSellerDomainSlugs`,
+`loadTaxonomy`, `loadDefinition`, `getMarketScopeForAllDomains`,
+`getMarketScopeCoverage` in `cache()` from `react`. Per-request and
+per-argument, so no change to cross-user or cross-request isolation, and
+**zero call sites had to move** — the wrap preserves the signature.
+`getMarketScopeCoverage` is keyed on the `MarketScope` object itself,
+which only works *because* `getMarketScope` is now deduped and returns a
+stable reference — don't un-cache one without the other.
+
+**2. Serial `await`s with no dependency between them.**
+`dashboard/market/page.tsx` awaited twelve fetches on twelve consecutive
+lines, all depending only on `seller`/`domain`/`reportingCurrency` (all
+resolved before the first one runs) — so page latency was the *sum* of
+twelve round-trips instead of the slowest single one. Now one
+`Promise.all`. Competitors got the same treatment in two rounds, since
+the landscapes genuinely gate whether overlap/match-counts run at all.
+
+**3. No `loading.tsx` anywhere in the app — probably the biggest
+perceived-speed item, and the one a query-timing audit cannot see.**
+The server-rendered pages emit no HTML until their last query resolves,
+so clicking a nav link left the browser sitting on the *previous* page,
+looking fully interactive but responding to nothing, for the entire
+fetch. Added `PageSkeleton` (`components/marketintel/PageSkeleton.tsx`)
+and route-level `loading.tsx` for the five server-rendered dashboard
+routes (market, market/competitors, market/definition, watchlist,
+scraper-health). The `apps/*` pages and `dashboard/overview` are client
+components that already render skeletons themselves, so they didn't need
+one.
+
+**Also:** image optimization was off (`unoptimized: true` in
+`next.config.js`) — the signin/signup/onboarding illustrations are
+~600KB PNGs each and are the first thing an unsigned-in visitor loads.
+Enabled it with AVIF/WebP and moved those three to `next/image`. Safe
+because `sharp` is installed and **there were no other `next/image`
+usages in the codebase at all**, so nothing else changed behaviour.
+
+**Two audit findings that did NOT survive checking — both would have been
+regressions if trusted:**
+- An Explore agent reported `framer-motion` as "~40KB dead weight, zero
+  imports found." True that nothing imports it directly, **false that
+  it's removable — it is a required peerDependency of Chakra UI v2**
+  (confirmed by reading `node_modules/@chakra-ui/react/package.json`) and
+  backs every Modal/Drawer/Tooltip/Collapse in the app. Removing it would
+  have broken the UI at runtime, not shrunk the bundle.
+- Adding `experimental.optimizePackageImports` for `@chakra-ui/react` and
+  `react-icons` produced a **byte-identical build** — same chunk hashes,
+  same 103 kB shared JS — because Next 15 already applies it to both by
+  default. Verified by actually building both ways and diffing the output
+  rather than assuming a win. Left out of the config with a comment
+  explaining why, instead of kept as something that reads like an
+  optimization but isn't. **General lesson: measure config-level "wins"
+  against a real before/after build; several of them are already-default
+  in Next 15.**
+
+**Verification:** `tsc --noEmit` clean, 160/160 vitest pass, production
+build succeeds. **No real-world latency measurement was possible** —
+standing no-browser-automation rule, and no Vercel analytics access from
+here. The improvement is structural and reasoned, not measured; if a
+before/after number is ever wanted, Vercel's own request-duration logs
+are the place to get it.
+
+**Deliberately not done, still open (full reasoning in the plan file
+`~/.claude/plans/compressed-stirring-goose.md`):**
+- *Phase B — caching genuinely public data.* `createClient()`
+  (`lib/supabase/server.ts`) calls `cookies()`, which forces every page
+  touching it into fully dynamic rendering. Several lib functions read
+  data their own comments call public (`getDomainBenchmarks`/
+  `getDomainPeers` in `benchmarks.ts`, `getCategoryPricing`) but still
+  use the cookie-bound client; `createPublicClient()` exists for exactly
+  this and only `showcase.ts` uses it. Blocked on two things, both real:
+  the anon-role RLS policy must be confirmed live before relying on it
+  (the code comment is not proof), and a page mixing public and
+  seller-specific data can't just take a page-level `revalidate` — it
+  needs Suspense-separated components. Not a quick win; don't attempt it
+  as one.
+- *Phase D — the per-product RPC fan-out.* `product-matching.ts:74-81`
+  and `competitors.ts:339-344` fire one `market_top_similar_candidates`
+  RPC per seller product (~20-60 per render), then Jaccard-score the
+  results in process. This is real work rather than waste, and fixing it
+  means a batched Postgres function taking many titles at once — its own
+  design pass, worth re-measuring after the above before assuming it's
+  still the bottleneck.
