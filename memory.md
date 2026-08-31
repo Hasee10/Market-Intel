@@ -2480,3 +2480,42 @@ moved (1553→1566ms, 2330→2313ms) because it treats concurrent calls as free 
 attractive.** The real win here is DB work and connection count, and only the
 Postgres benchmark could see it. If that harness is rebuilt, don't trust its
 wall-clock for anything involving concurrency.
+
+### Post-apply check on 047/048 — applied, but the speedup is NOT verified
+
+User applied both migrations and asked for confirmation of the speedup.
+What was actually established, and what was not:
+
+**Confirmed:** `market_top_similar_candidates_batch` exists and is callable —
+POSTing to `/rest/v1/rpc/market_top_similar_candidates_batch` returns HTTP 200
+rather than 404/`PGRST202`, so **migration 047 is live**. Migration 048's index
+was **not** verified (checking `pg_indexes` needs SQL access, not REST).
+
+**Not confirmed: any production timing.** Two bad measurements were produced
+and thrown out before reporting, both worth remembering as traps:
+
+1. First attempt read platform ids from `market_platforms` — which returns
+   **0 rows under the anon key** — so an empty `p_platform_ids` array was
+   passed, every query matched nothing, and the "benchmark" timed empty
+   round-trips. It produced a confident-looking "2.01x faster, and the
+   all-in-one batch is fastest" — the exact opposite of the real finding,
+   because with zero work to do, fewest-requests wins by construction.
+2. Second attempt sourced platform ids from `market_products.platform_id`
+   (anon *can* read that table) and still got 0 rows. **Root cause: both
+   `market_top_similar_candidates` (036) and the new batch function
+   inner-join `market_platforms` for `platform_name`, and RLS hides that
+   table from anon — so the join annihilates every row.** Verified by
+   searching a product by its own exact title (similarity 1.0, must match)
+   and getting 0 rows from *both* functions. **Not a 047 bug — 036 behaves
+   identically.** Authenticated sellers can read `market_platforms` (the app
+   renders platform names fine), so this only blocks outside benchmarking.
+
+**Standing lesson: these candidate-search RPCs cannot be benchmarked with the
+anon key at all.** It needs the service-role key (offered; user declined for
+now) or an authenticated session. And any future benchmark here must assert
+`rows > 0` before trusting a single number — that guard is what caught trap 2.
+
+**So the only speed figure that exists is still the local-Postgres one**
+(590ms → 341ms, 1.7x, synthetic data, 8-core laptop). It has NOT been
+reproduced against production. Do not repeat it as a measured production
+result.
