@@ -59,7 +59,7 @@ export function ComparisonSection() {
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Without Ryvl
               </span>
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#4318FF] dark:text-[#A594FF]">
+              <span className="text-xs font-semibold uppercase tracking-wide text-[#5044E5] dark:text-[#A594FF]">
                 With Ryvl
               </span>
             </div>

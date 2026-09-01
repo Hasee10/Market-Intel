@@ -66,7 +66,7 @@ export function AssistantWidget() {
       {isOpen && (
         <Reveal duration={250}>
           <div className="mb-4 flex h-[480px] max-h-[70vh] w-[calc(100vw-40px)] max-w-[360px] flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-[0_24px_48px_rgba(17,28,78,0.18)] dark:border-white/10 dark:bg-gray-900">
-            <div className="flex items-center justify-between bg-gradient-to-br from-[#4318FF] to-[#7B61FF] px-5 py-4">
+            <div className="flex items-center justify-between bg-gradient-to-br from-[#5044E5] to-[#7B61FF] px-5 py-4">
               <div>
                 <p className="text-sm font-bold text-white">Ryvl Assistant</p>
                 <p className="text-xs text-white/70">Grounded in Ryvl&apos;s published product info</p>
@@ -91,7 +91,7 @@ export function AssistantWidget() {
                   <div
                     className={`max-w-[85%] whitespace-pre-wrap rounded-[14px] px-3.5 py-2.5 text-sm leading-normal ${
                       m.role === 'user'
-                        ? 'bg-gradient-to-br from-[#4318FF] to-[#7B61FF] text-white'
+                        ? 'bg-gradient-to-br from-[#5044E5] to-[#7B61FF] text-white'
                         : 'bg-gray-50 text-[#111C4E] dark:bg-white/10 dark:text-white'
                     }`}
                   >
@@ -115,7 +115,7 @@ export function AssistantWidget() {
                       key={q}
                       type="button"
                       onClick={() => sendMessage(q)}
-                      className="rounded-lg border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-700 transition-colors hover:border-[#4318FF] hover:text-[#4318FF] dark:border-gray-700 dark:text-gray-300"
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-700 transition-colors hover:border-[#5044E5] hover:text-[#5044E5] dark:border-gray-700 dark:text-gray-300"
                     >
                       {q}
                     </button>
@@ -137,13 +137,13 @@ export function AssistantWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={isSending}
-                className="h-9 flex-1 rounded-xl border border-gray-200 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4318FF] focus:outline-none focus:ring-2 focus:ring-[#4318FF]/20 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                className="h-9 flex-1 rounded-xl border border-gray-200 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#5044E5] focus:outline-none focus:ring-2 focus:ring-[#5044E5]/20 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
               />
               <button
                 type="submit"
                 aria-label="Send"
                 disabled={isSending || !input.trim()}
-                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#4318FF] text-white transition-colors hover:bg-[#3812DB] disabled:opacity-40"
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#5044E5] text-white transition-colors hover:bg-[#4038c9] disabled:opacity-40"
               >
                 <MdSend className="size-[18px]" />
               </button>
@@ -156,7 +156,7 @@ export function AssistantWidget() {
         type="button"
         aria-label={isOpen ? 'Close assistant' : 'Open assistant'}
         onClick={() => setIsOpen((v) => !v)}
-        className="flex size-[60px] items-center justify-center rounded-full border border-[#6A53FF] bg-gradient-to-br from-[#868CFF] to-[#4318FF] text-white shadow-[0_12px_24px_rgba(67,24,255,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(67,24,255,0.45)]"
+        className="flex size-[60px] items-center justify-center rounded-full border border-[#6A53FF] bg-gradient-to-br from-[#868CFF] to-[#5044E5] text-white shadow-[0_12px_24px_rgba(67,24,255,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(67,24,255,0.45)]"
       >
         {isOpen ? <MdClose size={24} /> : <MdChatBubble size={24} />}
       </button>

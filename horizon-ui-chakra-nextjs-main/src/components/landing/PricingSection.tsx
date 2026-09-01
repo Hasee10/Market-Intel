@@ -75,12 +75,12 @@ export function PricingSection() {
               key={tier.name}
               className={`relative rounded-[20px] border p-8 ${
                 tier.highlighted
-                  ? 'border-[#4318FF] shadow-[0_20px_40px_rgba(67,24,255,0.15)] dark:shadow-[0_0_0_1px_#4318FF]'
+                  ? 'border-[#5044E5] shadow-[0_20px_40px_rgba(67,24,255,0.15)] dark:shadow-[0_0_0_1px_#5044E5]'
                   : 'border-gray-100 dark:border-gray-800'
               }`}
             >
               {tier.highlighted && (
-                <span className="absolute -top-3 left-8 rounded-full bg-[#F0EDFF] px-2.5 py-1 text-xs font-semibold text-[#4318FF] dark:bg-gray-800 dark:text-[#A594FF]">
+                <span className="absolute -top-3 left-8 rounded-full bg-[#F0EDFF] px-2.5 py-1 text-xs font-semibold text-[#5044E5] dark:bg-gray-800 dark:text-[#A594FF]">
                   Most popular
                 </span>
               )}
@@ -94,7 +94,7 @@ export function PricingSection() {
                 {tier.features.map((feature) => (
                   <span key={feature} className="flex items-start gap-2.5">
                     <MdCheck
-                      className="mt-0.5 size-4 shrink-0 text-[#4318FF] dark:text-[#A594FF]"
+                      className="mt-0.5 size-4 shrink-0 text-[#5044E5] dark:text-[#A594FF]"
                       aria-hidden="true"
                     />
                     <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
@@ -106,8 +106,8 @@ export function PricingSection() {
                 href={PATH_AUTH.signup}
                 className={`block w-full rounded-full py-3 text-center text-sm font-medium transition-colors ${
                   tier.highlighted
-                    ? 'bg-[#4318FF] text-white hover:bg-[#3812DB]'
-                    : 'border border-gray-200 text-gray-700 hover:border-[#4318FF] hover:text-[#4318FF] dark:border-gray-700 dark:text-gray-200'
+                    ? 'bg-[#5044E5] text-white hover:bg-[#4038c9]'
+                    : 'border border-gray-200 text-gray-700 hover:border-[#5044E5] hover:text-[#5044E5] dark:border-gray-700 dark:text-gray-200'
                 } ${tier.note ? 'mb-2.5' : ''}`}
               >
                 {tier.cta}

@@ -28,7 +28,7 @@ export function StatsBar() {
                 <Reveal key={stat.label} delay={i * 80}>
                   <div className="flex flex-col items-start text-left md:items-center md:text-center">
                     <Icon
-                      className="mb-3 size-6 text-[#4318FF] dark:text-[#A594FF]"
+                      className="mb-3 size-6 text-[#5044E5] dark:text-[#A594FF]"
                       aria-hidden="true"
                     />
                     <p className="text-[32px] font-semibold tracking-[-0.03em] text-[#111C4E] tabular-nums md:text-4xl dark:text-white">

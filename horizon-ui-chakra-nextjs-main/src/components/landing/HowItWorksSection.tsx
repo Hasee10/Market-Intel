@@ -40,7 +40,7 @@ export function HowItWorksSection() {
       <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
         <Reveal>
           <div className="mb-12 text-center md:mb-[72px]">
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[#4318FF] dark:text-[#A594FF]">
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-[#5044E5] dark:text-[#A594FF]">
               The process
             </p>
             <h2 className="text-[28px] font-medium tracking-[-0.02em] text-[#111C4E] md:text-[40px] dark:text-white">

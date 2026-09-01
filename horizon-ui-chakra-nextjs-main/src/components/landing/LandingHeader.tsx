@@ -21,10 +21,13 @@ export function LandingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="font-manrope sticky top-0 z-20 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-950">
+    // Translucent + backdrop-blur, matching the template's Navbar rather than
+    // a solid bar - content scrolls visibly under it.
+    <header className="font-manrope sticky top-0 z-20 bg-white/50 font-medium backdrop-blur-xl dark:bg-gray-900/70">
       {/* 3-column grid (not space-between) so the nav centres on the header's
-          true midpoint regardless of how wide the logo or button group are. */}
-      <div className="mx-auto grid h-[72px] max-w-[1200px] grid-cols-[1fr_auto] items-center px-5 md:grid-cols-[1fr_auto_1fr] md:px-[30px]">
+          true midpoint regardless of how wide the logo or button group are.
+          Padding follows the template's own scale. */}
+      <div className="grid grid-cols-[1fr_auto] items-center px-4 py-4 sm:px-12 md:grid-cols-[1fr_auto_1fr] lg:px-24 xl:px-40">
         <NextLink href="/" className="flex items-center gap-2 justify-self-start">
           <RyvlMark size={26} />
           <span className="text-xl font-bold text-[#111C4E] dark:text-white">Ryvl</span>
@@ -37,10 +40,10 @@ export function LandingHeader() {
               href={link.href}
               // Underline grows left-to-right on hover, same effect the Chakra
               // version built with a ::after pseudo-element.
-              className="group relative text-sm font-medium text-gray-600 transition-colors hover:text-[#4318FF] dark:text-gray-400 dark:hover:text-[#A594FF]"
+              className="group relative text-sm font-medium text-gray-600 transition-colors hover:text-[#5044E5] dark:text-gray-400 dark:hover:text-[#A594FF]"
             >
               {link.label}
-              <span className="absolute -bottom-1 left-0 h-0.5 w-0 rounded-full bg-[#4318FF] transition-all duration-200 group-hover:w-full dark:bg-[#A594FF]" />
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 rounded-full bg-[#5044E5] transition-all duration-200 group-hover:w-full dark:bg-[#A594FF]" />
             </NextLink>
           ))}
         </nav>
@@ -55,7 +58,7 @@ export function LandingHeader() {
           </NextLink>
           <NextLink
             href={PATH_AUTH.signup}
-            className="rounded-full bg-[#4318FF] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3812DB]"
+            className="rounded-full bg-[#5044E5] px-6 py-2 text-sm text-white transition-transform hover:scale-105"
           >
             Get started free
           </NextLink>

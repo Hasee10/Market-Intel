@@ -9,7 +9,7 @@ export function CTABanner() {
   return (
     <div className="font-manrope py-12 md:py-[70px]">
       <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
-        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#4318FF] to-[#7B61FF] px-7 py-12 md:px-16 md:py-16">
+        <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-br from-[#5044E5] to-[#7B61FF] px-7 py-12 md:px-16 md:py-16">
           {/* Decorative dot grid + glow so this reads as a designed card,
               not a flat dead block of colour. */}
           <div

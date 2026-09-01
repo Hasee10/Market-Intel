@@ -10,6 +10,8 @@ import {
 } from 'react-icons/md';
 
 import { Reveal } from 'components/reactbits/Reveal';
+import { GlowCard } from '@/components/landing/GlowCard';
+import { SectionTitle } from '@/components/landing/SectionTitle';
 import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 
 // Every feature here maps to something actually shipped in the product
@@ -65,68 +67,43 @@ export function FeaturesSection() {
   return (
     <section
       id="features"
-      className="font-manrope relative overflow-hidden bg-white py-20 md:py-[120px] dark:bg-gray-950"
+      className="font-manrope flex w-full flex-col items-center gap-7 px-4 pt-24 text-gray-700 sm:px-12 lg:px-24 xl:px-40 dark:text-white"
     >
-      {/* Ambient glow so the section isn't a flat white slab behind white
-          cards - without it there's no depth between card and page. */}
-      <div className="pointer-events-none absolute left-[-160px] top-[10%] size-[420px] rounded-full bg-[radial-gradient(circle,rgba(67,24,255,0.06)_0%,transparent_70%)]" />
-      <div className="pointer-events-none absolute bottom-[5%] right-[-180px] size-[460px] rounded-full bg-[radial-gradient(circle,rgba(67,24,255,0.06)_0%,transparent_70%)]" />
+      <SectionTitle
+        title="Everything you need to sell with your eyes open"
+        desc="Your own store analytics, plus the market context that most sellers never get to see."
+      />
 
-      <div className="relative mx-auto max-w-[1200px] px-5 md:px-[30px]">
-        <Reveal>
-          <div className="mb-12 text-center md:mb-[72px]">
-            <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#4318FF] dark:text-[#A594FF]">
-              What you get
-            </p>
-            <h2 className="mx-auto mt-3 max-w-[20ch] text-[28px] font-medium tracking-[-0.02em] text-[#111C4E] md:text-[40px] dark:text-white">
-              Everything you need to sell with your eyes open
-            </h2>
-            <p className="mx-auto mt-4 max-w-[560px] text-lg text-gray-600 dark:text-gray-400">
-              Your own store analytics, plus the market context that most sellers never get to see.
-            </p>
-          </div>
-        </Reveal>
-
-        {/* 4-column bento on desktop: the two `wide` tiles take half a row each
-            and sit on opposite rows, so the grid reads as a composition rather
-            than six identical boxes. Collapses to 2-up on tablet, 1-up on
-            mobile. */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {FEATURES.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <Reveal
-                key={feature.title}
-                delay={index * 70}
-                className={feature.wide ? 'sm:col-span-2' : ''}
-              >
-                <div
-                  className={`group h-full rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
-                    feature.wide
-                      ? 'border-[#E4DEFF] bg-gradient-to-br from-[#F7F5FF] to-white dark:border-gray-800 dark:from-gray-900 dark:to-gray-950'
-                      : 'border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900'
-                  }`}
-                >
+      {/* Template's 2-column card grid. The two `wide` differentiators keep
+          their emphasis via a gradient icon rather than a wider tile, since
+          the template's own grid is a plain 2-up. */}
+      <div className="grid w-full max-w-5xl grid-cols-1 md:grid-cols-2">
+        {FEATURES.map((feature, index) => {
+          const Icon = feature.icon;
+          return (
+            <Reveal key={feature.title} delay={index * 120} className="m-2 sm:m-4">
+              <GlowCard className="h-full">
+                <div className="flex items-center gap-6">
                   <div
-                    className={`mb-4 flex size-11 items-center justify-center rounded-xl ${
+                    className={`flex size-16 shrink-0 items-center justify-center rounded-full ${
                       feature.wide
-                        ? 'bg-gradient-to-br from-[#4318FF] to-[#7592FF] text-white'
-                        : 'border border-[#E4DEFF] bg-[#F0EDFF] text-[#4318FF] dark:border-gray-700 dark:bg-gray-800 dark:text-[#A594FF]'
+                        ? 'bg-gradient-to-br from-[#5044E5] to-[#7592FF] text-white'
+                        : 'bg-gray-100 text-[#5044E5] dark:bg-gray-700 dark:text-[#A594FF]'
                     }`}
                   >
-                    <Icon className="size-[22px]" aria-hidden="true" />
+                    <Icon className="size-7" aria-hidden="true" />
                   </div>
-                  <h3 className="mb-2 text-base font-semibold text-[#111C4E] dark:text-white">
-                    {feature.title}
-                  </h3>
-                  <p className="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
-                    {feature.description}
-                  </p>
+                  <div className="flex-1">
+                    <h3 className="font-bold">{feature.title}</h3>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-white/75">
+                      {feature.description}
+                    </p>
+                  </div>
                 </div>
-              </Reveal>
-            );
-          })}
-        </div>
+              </GlowCard>
+            </Reveal>
+          );
+        })}
       </div>
     </section>
   );

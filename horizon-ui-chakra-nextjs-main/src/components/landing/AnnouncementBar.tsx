@@ -13,7 +13,7 @@ export function AnnouncementBar() {
   if (dismissed) return null;
 
   return (
-    <div className="font-manrope bg-gradient-to-r from-[#4318FF] to-[#6A47FF] py-2.5">
+    <div className="font-manrope bg-gradient-to-r from-[#5044E5] to-[#6A47FF] py-2.5">
       <div className="relative mx-auto flex max-w-[1200px] items-center justify-center gap-2 px-5 md:px-[30px]">
         <p className="text-center text-sm text-white">
           🚀 Invite 3 sellers and unlock the Paid plan free -{' '}
