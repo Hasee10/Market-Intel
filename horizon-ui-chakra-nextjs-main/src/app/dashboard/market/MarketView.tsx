@@ -1,23 +1,8 @@
 'use client';
 
-// Chakra still used by the not-yet-ported lower half of this page (the
-// paid/premium tables and the explainer cards). Removed as those blocks
-// convert.
-import {
-  Badge,
-  Box,
-  Button,
-  Flex,
-  Grid,
-  Table as ChakraTable,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-} from '@chakra-ui/react';
+// Only useColorModeValue remains: the ApexCharts tooltips below are built as
+// raw HTML strings, so they need resolved hex values rather than classes.
+import { useColorModeValue } from '@chakra-ui/react';
 import Link from 'next/link';
 import {
   MdOutlineRemoveShoppingCart,
@@ -112,7 +97,6 @@ export default function MarketView({
   priceAnomalies,
   entitlements,
 }: MarketViewProps) {
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
   const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
   // Same custom-tooltip fix as Overview (app/dashboard/overview/page.tsx) -
@@ -337,22 +321,33 @@ export default function MarketView({
         )}
       </Card>
 
-      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
-        <Card>
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Price trend {priceForecast ? '& 14-day forecast' : '(30 days)'}
-            </Text>
-            {priceForecast && (
-              <Badge colorScheme={priceForecast.trendDirection === 'up' ? 'red' : priceForecast.trendDirection === 'down' ? 'green' : 'gray'}>
+      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card
+          className="lg:col-span-2"
+          title={`Price trend ${priceForecast ? '& 14-day forecast' : '(30 days)'}`}
+          action={
+            priceForecast ? (
+              // Colour is inverted vs Overview on purpose: rising *competitor*
+              // prices are room for this seller to follow, falling ones are the
+              // margin squeeze. Up is not automatically good here.
+              <Pill
+                tone={
+                  priceForecast.trendDirection === 'up'
+                    ? 'error'
+                    : priceForecast.trendDirection === 'down'
+                      ? 'success'
+                      : 'neutral'
+                }
+              >
                 {priceForecast.trendDirection === 'flat'
                   ? 'Stable'
                   : `${priceForecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(priceForecast.changePerWeek)}/wk`}
-              </Badge>
-            )}
-          </Flex>
+              </Pill>
+            ) : undefined
+          }
+        >
           {priceForecast ? (
-            <Box h="260px">
+            <div className="h-[260px]">
               <LineChart
                 chartData={[
                   {
@@ -390,9 +385,9 @@ export default function MarketView({
                   },
                 }}
               />
-            </Box>
+            </div>
           ) : priceTrend.length > 1 ? (
-            <Box h="260px">
+            <div className="h-[260px]">
               <LineChart
                 chartData={[
                   {
@@ -421,73 +416,66 @@ export default function MarketView({
                   },
                 }}
               />
-            </Box>
+            </div>
           ) : (
-            <Text fontSize="sm" color="secondaryGray.600">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Not enough price history yet to chart a trend for this category.
-            </Text>
+            </p>
           )}
         </Card>
 
-        <Card>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
-            Demand signal (OLX)
-          </Text>
+        <Card title="Demand signal (OLX)">
           {demandSignal ? (
-            <Flex direction="column" gap="8px">
-              <Text fontSize="sm" color="secondaryGray.600">
-                Active listings
-              </Text>
-              <Text fontSize="2xl" fontWeight="700" color={textColor}>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Active listings</p>
+              <p className="text-2xl font-bold text-gray-900 tabular-nums dark:text-white">
                 {demandSignal.activeListings}
-              </Text>
-              <Text fontSize="sm" color="secondaryGray.600">
+              </p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {demandSignal.newListingsLast7Days} new in the last 7 days
                 {demandSignal.newListingsPrior7Days > 0 &&
                   ` (vs ${demandSignal.newListingsPrior7Days} the week before)`}
-              </Text>
-            </Flex>
+              </p>
+            </div>
           ) : (
-            <Text fontSize="sm" color="secondaryGray.600">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No OLX classifieds data for this category yet.
-            </Text>
+            </p>
           )}
         </Card>
-      </Grid>
+      </div>
 
-      <Card className="mb-5">
-        <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
-          Competitor stock-outs
-        </Text>
+      <Card className="mb-5" title="Competitor stock-outs">
         {stockOuts.length === 0 ? (
-          <Text fontSize="sm" color="secondaryGray.600">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             No tracked competitor is currently showing out of stock in your category.
-          </Text>
+          </p>
         ) : (
-          <Box overflowX="auto">
-            <ChakraTable variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Product</Th>
-                  <Th>Platform</Th>
-                  <Th>Last price</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {stockOuts.map((product) => (
-                  <Tr key={product.id}>
-                    <Td>
-                      <a href={product.url} target="_blank" rel="noreferrer">
-                        {product.title}
-                      </a>
-                    </Td>
-                    <Td>{product.platformName ?? '—'}</Td>
-                    <Td>{product.price != null ? formatCurrency(product.price) : '—'}</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </ChakraTable>
-          </Box>
+          <Table minWidth={520}>
+            <THead>
+              <TH>Product</TH>
+              <TH>Platform</TH>
+              <TH numeric>Last price</TH>
+            </THead>
+            <TBody>
+              {stockOuts.map((product) => (
+                <TR key={product.id}>
+                  <TD strong>
+                    <a
+                      href={product.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="hover:text-brand-500 hover:underline"
+                    >
+                      {product.title}
+                    </a>
+                  </TD>
+                  <TD>{product.platformName ?? '—'}</TD>
+                  <TD numeric>{product.price != null ? formatCurrency(product.price) : '—'}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
         )}
       </Card>
 
@@ -496,48 +484,51 @@ export default function MarketView({
         requiredPlanLabel="Paid"
         featureName="Closest competitor match per product"
       >
-        <Card className="mb-5">
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Closest competitor match per product
-            </Text>
-            <Badge colorScheme="gray">Title-similarity match, MVP</Badge>
-          </Flex>
+        <Card
+          className="mb-5"
+          title="Closest competitor match per product"
+          action={<Pill>Title-similarity match, MVP</Pill>}
+        >
           {productMatches.length === 0 ? (
-            <Text fontSize="sm" color="secondaryGray.600">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No confident matches found yet between your active products and scraped competitor
               listings in this category.
-            </Text>
+            </p>
           ) : (
-            <Box overflowX="auto">
-              <ChakraTable variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Your product</Th>
-                    <Th>Your price</Th>
-                    <Th>Closest match</Th>
-                    <Th>Their price</Th>
-                    <Th>Confidence</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {productMatches.map((match) => (
-                    <Tr key={match.sellerProductId}>
-                      <Td>{match.sellerProductTitle}</Td>
-                      <Td>{match.sellerPrice != null ? formatCurrency(match.sellerPrice) : '—'}</Td>
-                      <Td>
-                        <a href={match.matchedUrl} target="_blank" rel="noreferrer">
-                          {match.matchedTitle}
-                        </a>{' '}
-                        {match.matchedPlatformName && `(${match.matchedPlatformName})`}
-                      </Td>
-                      <Td>{match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}</Td>
-                      <Td>{Math.round(match.confidence * 100)}%</Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </ChakraTable>
-            </Box>
+            <Table minWidth={720}>
+              <THead>
+                <TH>Your product</TH>
+                <TH numeric>Your price</TH>
+                <TH>Closest match</TH>
+                <TH numeric>Their price</TH>
+                <TH numeric>Confidence</TH>
+              </THead>
+              <TBody>
+                {productMatches.map((match) => (
+                  <TR key={match.sellerProductId}>
+                    <TD strong>{match.sellerProductTitle}</TD>
+                    <TD numeric>
+                      {match.sellerPrice != null ? formatCurrency(match.sellerPrice) : '—'}
+                    </TD>
+                    <TD>
+                      <a
+                        href={match.matchedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-brand-500 hover:underline"
+                      >
+                        {match.matchedTitle}
+                      </a>{' '}
+                      {match.matchedPlatformName && `(${match.matchedPlatformName})`}
+                    </TD>
+                    <TD numeric>
+                      {match.matchedPrice != null ? formatCurrency(match.matchedPrice) : '—'}
+                    </TD>
+                    <TD numeric>{Math.round(match.confidence * 100)}%</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </Card>
       </UpgradeGate>
@@ -547,58 +538,58 @@ export default function MarketView({
         requiredPlanLabel="Paid"
         featureName="Pricing recommendations"
       >
-        <Card className="mb-5">
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Pricing recommendations
-            </Text>
-            <Badge colorScheme="gray">Rule-based: competitor band + your margin floor</Badge>
-          </Flex>
+        <Card
+          className="mb-5"
+          title="Pricing recommendations"
+          action={<Pill>Rule-based: competitor band + your margin floor</Pill>}
+        >
           {pricingRecommendations.length === 0 ? (
-            <Text fontSize="sm" color="secondaryGray.600">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               Set both cost price and sell price on your active products to get pricing
               recommendations here.
-            </Text>
+            </p>
           ) : (
-            <Box overflowX="auto">
-              <ChakraTable variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Product</Th>
-                    <Th isNumeric>Current price</Th>
-                    <Th isNumeric>Recommended</Th>
-                    <Th>Direction</Th>
-                    <Th>Why</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {pricingRecommendations.map((rec) => (
-                    <Tr key={rec.productId}>
-                      <Td>{rec.productTitle}</Td>
-                      <Td isNumeric>{formatCurrency(rec.currentPrice)}</Td>
-                      <Td isNumeric>{formatCurrency(rec.recommendedPrice)}</Td>
-                      <Td>
-                        <Badge
-                          colorScheme={rec.direction === 'increase' ? 'green' : rec.direction === 'decrease' ? 'red' : 'gray'}
+            <Table minWidth={760}>
+              <THead>
+                <TH>Product</TH>
+                <TH numeric>Current price</TH>
+                <TH numeric>Recommended</TH>
+                <TH>Direction</TH>
+                <TH>Why</TH>
+              </THead>
+              <TBody>
+                {pricingRecommendations.map((rec) => (
+                  <TR key={rec.productId}>
+                    <TD strong>{rec.productTitle}</TD>
+                    <TD numeric>{formatCurrency(rec.currentPrice)}</TD>
+                    <TD numeric strong>
+                      {formatCurrency(rec.recommendedPrice)}
+                    </TD>
+                    <TD>
+                      <span className="flex flex-wrap items-center gap-1">
+                        <Pill
+                          tone={
+                            rec.direction === 'increase'
+                              ? 'success'
+                              : rec.direction === 'decrease'
+                                ? 'error'
+                                : 'neutral'
+                          }
                         >
                           {rec.direction}
-                        </Badge>
-                        {rec.marginConstrained && (
-                          <Badge colorScheme="orange" ml="4px">
-                            margin-constrained
-                          </Badge>
-                        )}
-                      </Td>
-                      <Td>
-                        <Text fontSize="xs" color="secondaryGray.600">
-                          {rec.rationale}
-                        </Text>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </ChakraTable>
-            </Box>
+                        </Pill>
+                        {rec.marginConstrained && <Pill tone="warning">margin-constrained</Pill>}
+                      </span>
+                    </TD>
+                    <TD>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {rec.rationale}
+                      </span>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </Card>
       </UpgradeGate>
@@ -608,106 +599,94 @@ export default function MarketView({
         requiredPlanLabel="Premium"
         featureName="Competitor price anomalies"
       >
-        <Card className="mb-5">
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Competitor price anomalies
-            </Text>
-            <Badge colorScheme="gray">IQR outliers, last 7 days</Badge>
-          </Flex>
+        <Card
+          className="mb-5"
+          title="Competitor price anomalies"
+          action={<Pill>IQR outliers, last 7 days</Pill>}
+        >
           {priceAnomalies.length === 0 ? (
-            <Text fontSize="sm" color="secondaryGray.600">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               No unusual competitor price moves detected in the last 7 days.
-            </Text>
+            </p>
           ) : (
-            <Box overflowX="auto">
-              <ChakraTable variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Product</Th>
-                    <Th>Platform</Th>
-                    <Th isNumeric>Was</Th>
-                    <Th isNumeric>Now</Th>
-                    <Th isNumeric>Change</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {priceAnomalies.map((a) => (
-                    <Tr key={a.productId}>
-                      <Td>{a.title}</Td>
-                      <Td>{a.platformName ?? '—'}</Td>
-                      <Td isNumeric>{formatCurrency(a.oldPrice)}</Td>
-                      <Td isNumeric>{formatCurrency(a.newPrice)}</Td>
-                      <Td isNumeric>
-                        <Badge colorScheme={a.pctChange > 0 ? 'red' : 'green'}>
-                          {a.pctChange > 0 ? '+' : ''}
-                          {a.pctChange}%
-                        </Badge>
-                      </Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </ChakraTable>
-            </Box>
+            <Table minWidth={680}>
+              <THead>
+                <TH>Product</TH>
+                <TH>Platform</TH>
+                <TH numeric>Was</TH>
+                <TH numeric>Now</TH>
+                <TH numeric>Change</TH>
+              </THead>
+              <TBody>
+                {priceAnomalies.map((a) => (
+                  <TR key={a.productId}>
+                    <TD strong>{a.title}</TD>
+                    <TD>{a.platformName ?? '—'}</TD>
+                    <TD numeric>{formatCurrency(a.oldPrice)}</TD>
+                    <TD numeric>{formatCurrency(a.newPrice)}</TD>
+                    <TD numeric>
+                      {/* A competitor raising prices is the opportunity here,
+                          so up is red only in the sense of "they moved" - kept
+                          identical to the previous behaviour rather than
+                          re-deciding the semantics mid-migration. */}
+                      <Pill tone={a.pctChange > 0 ? 'error' : 'success'}>
+                        {a.pctChange > 0 ? '+' : ''}
+                        {a.pctChange}%
+                      </Pill>
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </Card>
       </UpgradeGate>
 
       <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Peers in your domain">
-        <Card className="mb-5">
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Peers in your domain
-            </Text>
-            {domain && peers.length === 0 && (
-              <Badge colorScheme="gray">No peers have opted in to be visible yet</Badge>
-            )}
-          </Flex>
-          <Box overflowX="auto">
-            <ChakraTable variant="simple">
-              <Thead>
-                <Tr>
-                  <Th>Seller</Th>
-                  <Th>Shares rating</Th>
-                  <Th>Shares price positioning</Th>
-                  <Th>Shares category rank</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {peers.map((peer) => (
-                  <Tr key={peer.sellerId}>
-                    <Td>{peer.displayName ?? 'Anonymous seller'}</Td>
-                    <Td>{peer.showRating ? 'Yes' : 'No'}</Td>
-                    <Td>{peer.showPricePosition ? 'Yes' : 'No'}</Td>
-                    <Td>{peer.showCategoryRank ? 'Yes' : 'No'}</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </ChakraTable>
-          </Box>
+        <Card
+          className="mb-5"
+          title="Peers in your domain"
+          action={
+            domain && peers.length === 0 ? (
+              <Pill>No peers have opted in to be visible yet</Pill>
+            ) : undefined
+          }
+        >
+          <Table minWidth={640}>
+            <THead>
+              <TH>Seller</TH>
+              <TH>Shares rating</TH>
+              <TH>Shares price positioning</TH>
+              <TH>Shares category rank</TH>
+            </THead>
+            <TBody>
+              {peers.map((peer) => (
+                <TR key={peer.sellerId}>
+                  <TD strong>{peer.displayName ?? 'Anonymous seller'}</TD>
+                  <TD>{peer.showRating ? 'Yes' : 'No'}</TD>
+                  <TD>{peer.showPricePosition ? 'Yes' : 'No'}</TD>
+                  <TD>{peer.showCategoryRank ? 'Yes' : 'No'}</TD>
+                </TR>
+              ))}
+            </TBody>
+          </Table>
         </Card>
       </UpgradeGate>
 
-      <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="20px">
-        <Card>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="6px">
-            Opt in to be visible to peers
-          </Text>
-          <Text fontSize="sm" color="secondaryGray.600">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <Card title="Opt in to be visible to peers">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             Choose which of your own stats (rating, price range, response time) other sellers in
             your domain can see. Manage this from Settings &rarr; Public profile.
-          </Text>
+          </p>
         </Card>
-        <Card>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="6px">
-            Where this data comes from
-          </Text>
-          <Text fontSize="sm" color="secondaryGray.600">
-            Benchmarks are computed from anonymized, aggregated seller data in your domain - never
-            a direct feed of another seller&apos;s private orders, customers, or churn.
-          </Text>
+        <Card title="Where this data comes from">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Benchmarks are computed from anonymized, aggregated seller data in your domain - never a
+            direct feed of another seller&apos;s private orders, customers, or churn.
+          </p>
         </Card>
-      </Grid>
+      </div>
     </div>
   );
 }
