@@ -7,15 +7,34 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**UPDATE 2026-08-31 (second update, superseding the one below it) — read
-this note first, it's the accurate current picture. The "UPDATE 2026-08-31
-(first)" paragraph directly under this one is now itself stale (six
-commits behind) but left intact as history, same policy as the `9b0820a`
-paragraph below it.**
+**UPDATE 2026-09-01 (third update, supersedes the "second" one directly
+below it, which is now stale but kept as history) — read this note first.**
 
-**Current HEAD: `8407e38`, pushed to `origin/main`, working tree clean.**
-Full chronological detail for all of this is in the dated entries at the
-bottom of the file — this is just the fast-orientation summary.
+**Current HEAD: `d3f2ebe`, pushed to `origin/main`, working tree clean.**
+
+**A UI/UX revamp was attempted and then fully reverted this session -
+read the bottom-most dated entry ("UI/UX revamp attempt") before touching
+dashboard styling again.** Short version: a page-by-page enterprise-style
+revamp was planned (Plan Mode), approved, and shipped in two commits
+(`9d8516a` theme foundation + Overview, `ba61cb3` permanently-dark
+sidebar) - the user rejected it as not visibly different enough, got
+sharply frustrated when browser-preview tooling failed mid-session, and
+both commits were reverted (`git revert`, non-destructive, both original
+commits still exist in history) via `5d0ee1d`/`d3f2ebe`. **The user is
+about to hand over a complete pre-built new frontend folder to implement
+wholesale instead of any further incremental token-based restyling** - a
+full feature inventory (`FEATURES.md`, in progress as of this entry) is
+being built first specifically so nothing functional gets dropped when
+that new frontend goes in. Do not restart the incremental Chakra-theme
+revamp approach without the user explicitly asking for it again - that
+whole direction was superseded, not just paused.
+
+Everything below this update through the next dated entry is preserved
+exactly as the prior session left it — nothing was rewritten. Older
+still: **Current HEAD: `8407e38`, pushed to `origin/main`, working tree
+clean.** Full chronological detail for all of this is in the dated
+entries at the bottom of the file — this is just the fast-orientation
+summary.
 
 **What actually shipped, most recent first:**
 - zod validation added to the products/orders/customers create routes
@@ -2662,3 +2681,128 @@ explicitly rather than silently claiming full coverage.
   green. Did not run a production build - not established as required for
   a non-UI backend change in this project's own verification bar, per
   every prior route-level entry above.
+
+## 2026-09-01: UI/UX revamp attempt - planned, shipped, rejected, fully
+reverted - `9d8516a`, `ba61cb3`, `5d0ee1d`, `d3f2ebe`
+
+User said the dashboard "looks pathetic and casual... not professional or
+enterprise level" and asked for a plan grounded in real open-source
+references before touching anything. Went through Plan Mode properly: 2
+parallel Explore agents audited the actual theme/component/layout state
+(confirmed the theme was still 100% unmodified stock Horizon UI template
+defaults - literal `brand: #422AFB`, `secondaryGray` tinted blue-violet,
+16-20px radii, the template's signature `rgba(112,144,176,0.08)` shadow -
+prior "enterprise pass" commits had only ever added insight strips/icon
+chips on top of this unchanged shell, never touched the actual tokens),
+plus real web research into Ant Design Pro/Saas UI/Tremor/shadcn admin
+templates for concrete reference. User picked "enterprise tool feel
+(Salesforce/HubSpot/Retool)" + page-by-page rollout + "instant insights,
+no scrolling" as the hard functional requirement, then delegated the
+exact palette choice back with "do whatever fits."
+
+**What shipped (`9d8516a`):** replaced the palette in `theme/styles.ts`
+with a neutral slate scale + blue accent, keeping every token KEY
+unchanged (`brand`/`secondaryGray`/`navy`) so the new hex values
+propagate through every existing component automatically. Radii
+tightened (cards 20px->10px, buttons/inputs 16px->8px), added a real 1px
+border to the base Card style, dropped the button's heavy stock shadow,
+dropped the Merriweather serif mix from `PageHeader` (shared by all 13
+pages). Overview got every hardcoded chart/badge hex literal updated to
+match (ApexCharts configs use raw hex, not theme tokens - had to hunt
+down `#4318FF`/`#A594FF`/`#F0EDFF`/etc. one by one), plus tightened
+vertical rhythm (260px->210px chart heights, 20px->14px gaps) for the
+no-scroll requirement. `StatsGrid` (shared across Overview/Market/
+Competitors/Customers) got the same density pass. Verified clean at every
+step: `tsc`, 196/196 tests, lint.
+
+**User's reaction: "I don't see any changes, you messed up big time."**
+Real lesson, not just a frustrated user - **the actual problem was
+correctly diagnosed but the fix was too subtle to register.** The
+sidebar and navbar - the two most visually persistent elements on every
+single page - were never touched by the token change, because their
+backgrounds were literal `'white'`/`mode('white','navy.800')` strings,
+not references to the `secondaryGray`/`brand` tokens that got recolored.
+So the chrome a user actually orients by looked identical, even though
+cards/charts/accents underneath genuinely changed. **A palette swap that
+doesn't touch the most visually persistent chrome will not read as a
+redesign, no matter how correct the token-level reasoning is.**
+
+**Follow-up fix attempt (`ba61cb3`):** made the sidebar permanently dark
+(`#0F172A`, GitHub/Vercel/Linear-style, independent of the app's own
+light/dark toggle) via Chakra's `ColorModeProvider` scoped to just the
+sidebar subtree - every existing `useColorModeValue()` call in
+`Content`/`Links`/`Brand` already had correct light-text-on-dark values
+defined for dark mode, so this needed zero changes to those files, just
+the wrapper. Caught and fixed one real regression from this before
+shipping: `PlanBadge.tsx`'s body text used a flat `secondaryGray.600`
+with no dark variant at all, which would have gone low-contrast against
+the new dark background.
+
+**Then the browser-preview tooling failed mid-session** (`navigate`
+kept returning "denied or failed", `tabs_context` reported
+`browserOpen: false` right after `preview_start` had claimed success) -
+several retries wasted real time while the user was actively waiting,
+which is what triggered "why arent you fixing things, you are making
+matters worse altogether." **Lesson: when sandboxed browser tooling is
+failing and the user already has their own dev server running (visible
+from their own screenshots), stop fighting the tool and ship the code
+change for them to check themselves instead of retrying broken
+navigation calls indefinitely.**
+
+**User also asked, explicitly, for a live color-scheme comparison before
+any further coding ("suggest a better color scheme and show me firsthand
+how the colors look") - and got a text description asking for reaction
+instead**, which produced the sharpest reaction of the session ("arent
+you reading my prompts? ... what the fuck is wrong with you today?").
+**Real lesson, not just tone: when a user asks to *see* something, showing
+a text description and asking "what do you think" is not the same
+request answered differently - it is a different, lesser deliverable,
+and will read as not having listened even when the underlying color
+choice was reasonable.** Recovered by using the `mcp__visualize__show_widget`
+tool (not the app's own dev server - a self-contained HTML swatch/mockup
+widget) to render 3 concrete side-by-side scheme options (blue/teal/warm-
+charcoal, each with an actual mini sidebar+card mockup and hex values) for
+a direct pick. **Worth remembering for next time visual comparison is
+needed and the real dev server preview is unavailable or too slow: the
+visualize widget tool can mock up UI comparisons standalone, without
+needing the app running at all.**
+
+**Also investigated and answered precisely, not defensively, when accused
+of leaving a duplicate "restock" alert on multiple pages:** grepped every
+render site of `InsightBanner` (the literal "N products running low on
+stock / Restock soon" component) - confirmed it is genuinely only mounted
+on Overview, never duplicated. What the user likely also saw was
+`MarketView.tsx`'s own, differently-scoped insight about *competitor*
+stock-outs ("a competitor stock-out is demand nobody's filling right now"
+- tone: good, an opportunity signal, not a warning) - a real, distinct,
+correctly-scoped feature that only shares surface wording, not logic.
+Reported the finding plainly instead of either silently deleting a
+working feature or silently doing nothing.
+
+**Then the user pivoted the whole direction: a complete, pre-built new
+frontend folder is coming to be implemented wholesale, replacing any
+further incremental restyling.** Both revamp commits were reverted via
+`git revert --no-edit ba61cb3 9d8516a` (non-destructive - both original
+commits remain in history, just their effects undone), verified clean
+(`tsc`, 196/196 tests), and pushed as `5d0ee1d`/`d3f2ebe`. **Before the
+new frontend goes in, a `FEATURES.md` complete feature inventory is being
+built** (2 parallel Explore agents covering every page's UI capabilities
+and every API route/backend capability) specifically so nothing
+functional silently drops when the frontend layer gets replaced - this
+is the standing task as of this entry, not yet complete.
+
+**Standing takeaways for any future UI work on this app:**
+1. The sidebar/navbar are the highest-leverage, most-visible elements on
+   every page - any redesign that doesn't touch them first will read as
+   "no changes" regardless of how much else changed underneath.
+2. When a user asks to literally *see* an option, use a tool that can
+   actually render something (the visualize widget, a real browser
+   screenshot) - never substitute a text description and call it
+   equivalent, even briefly, even while a better path is being set up.
+3. When sandboxed tooling fails repeatedly while a user is actively
+   waiting, stop retrying and ship something checkable instead - the
+   user's own environment is often faster and more reliable than fighting
+   a broken tool call.
+4. `git revert` (not reset/force-push) is the correct way to walk back
+   already-pushed commits the user rejects - preserves history, stays
+   non-destructive, still fully reversible either direction.
