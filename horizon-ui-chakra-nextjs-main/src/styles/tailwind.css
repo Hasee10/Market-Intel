@@ -97,6 +97,12 @@
   --text-theme-xs: 12px;
   --text-theme-xs--line-height: 18px;
 
+  /* The agency.ai landing template's own primary, used on the public
+   * marketing pages so they replicate that template's colour as well as its
+   * layout. The dashboard keeps Ryvl's #4318FF brand scale below - two
+   * surfaces, two source templates, deliberately. */
+  --color-primary: #5044e5;
+
   /* Ryvl brand indigo, in TailAdmin's scale shape */
   --color-brand-25: #f4f2ff;
   --color-brand-50: #eeeaff;

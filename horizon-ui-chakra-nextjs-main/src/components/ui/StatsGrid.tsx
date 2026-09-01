@@ -95,39 +95,44 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
         const TrendIcon = diff < 0 ? MdArrowDownward : diff > 0 ? MdArrowUpward : MdTrendingFlat;
         const Chip = (item.icon && ICON_MAP[item.icon]) || TrendIcon;
         const chipClass = (item.color && CHIP[item.color]) || CHIP_FALLBACK;
-        const trendClass =
+        // TailAdmin's Badge: tinted pill, not coloured text. Tone still
+        // follows the sign of diff - a decline must never read as growth.
+        const badgeClass =
           diff < 0
-            ? 'text-error-600 dark:text-error-500'
-            : diff > 0
-              ? 'text-success-600 dark:text-success-500'
-              : 'text-gray-500 dark:text-gray-400';
+            ? 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500'
+            : 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500';
 
         return (
           <Reveal key={item.title} delay={index * 60}>
-            <div className="h-full rounded-2xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
-              <div className={`flex size-11 items-center justify-center rounded-xl ${chipClass}`}>
-                <Chip className="size-[22px]" aria-hidden="true" />
+            {/* Markup mirrors TailAdmin's EcommerceMetrics: icon chip on its
+                own row, then label + value on the left with the change as a
+                pill badge bottom-aligned on the right. */}
+            <div className="h-full rounded-2xl border border-gray-200 bg-white p-5 transition-shadow hover:shadow-md md:p-6 dark:border-gray-800 dark:bg-gray-900">
+              <div className={`flex size-12 items-center justify-center rounded-xl ${chipClass}`}>
+                <Chip className="size-6" aria-hidden="true" />
               </div>
 
-              <div className="mt-4">
-                <p className="text-sm text-gray-500 dark:text-gray-400">{item.title}</p>
-                <p className="mt-1.5 text-2xl font-semibold -tracking-[0.02em] text-gray-900 tabular-nums dark:text-white">
-                  <CountUp value={item.value} />
-                </p>
-                {(diff !== 0 || item.period) && (
-                  <p className="mt-1 flex items-center gap-1.5 text-xs">
-                    {diff !== 0 && (
-                      <span className={`font-semibold ${trendClass}`}>
-                        {diff > 0 ? '+' : ''}
-                        {diff}%
-                      </span>
-                    )}
-                    {item.period && (
-                      <span className="text-gray-500 dark:text-gray-400">{item.period}</span>
-                    )}
-                  </p>
+              <div className="mt-5 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{item.title}</span>
+                  <h4 className="mt-2 text-title-sm font-bold text-gray-800 tabular-nums dark:text-white/90">
+                    <CountUp value={item.value} />
+                  </h4>
+                </div>
+
+                {diff !== 0 && (
+                  <span
+                    className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass}`}
+                  >
+                    <TrendIcon className="size-3" aria-hidden="true" />
+                    {Math.abs(diff)}%
+                  </span>
                 )}
               </div>
+
+              {item.period && (
+                <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">{item.period}</p>
+              )}
             </div>
           </Reveal>
         );
