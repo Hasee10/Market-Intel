@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import NextLink from 'next/link';
 import { useColorModeValue } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdOutlineInsertChart } from 'react-icons/md';
@@ -77,7 +78,36 @@ function formatCurrency(v: number, currency: string) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 2 }).format(v);
 }
 
+// Axis labels need to stay short or they overlap: "PKR 1.2M", not
+// "PKR 1,234,567.00".
+function compactCurrency(v: number, currency: string) {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(v);
+}
+
+// "2026-08-05" -> "5 Aug". The previous `.slice(5)` produced "08-05", which
+// is neither a date a seller reads at a glance nor sortable-looking.
+function formatAxisDate(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+// Ranges the revenue trend can be narrowed to. The API returns 30 days, so
+// these slice that client-side rather than refetching - honest about the
+// data we already have instead of implying a longer history exists.
+const TREND_RANGES = [
+  { label: '7d', days: 7 },
+  { label: '14d', days: 14 },
+  { label: '30d', days: 30 },
+] as const;
+
 export default function OverviewPage() {
+  const [trendDays, setTrendDays] = useState<number>(30);
   // Only the values ApexCharts still needs survive here. Card borders, table
   // row hover, the section accent bar and the category badge all moved to
   // Tailwind classes in the markup below, so their useColorModeValue calls
@@ -157,10 +187,13 @@ export default function OverviewPage() {
   const activeProductsStat = allStats.find((s) => s.title === 'Active Products');
   const lowStockStat = allStats.find((s) => s.title === 'Low Stock Products');
 
+  // The selected window, taken off the end of the 30 days the API returns.
+  const shownTrend = revenueTrend.slice(-trendDays);
+
   const lineChartData = [
     {
       name: 'Revenue',
-      data: revenueTrend.map((p) => Number(p.revenue.toFixed(2))),
+      data: shownTrend.map((p) => Number(p.revenue.toFixed(2))),
     },
   ];
   // Phase 4 (enterprise-look pass): a raw sparkline asks the seller to read
@@ -170,8 +203,8 @@ export default function OverviewPage() {
   // line has no "peak" worth calling out) or there's only one point (a peak
   // among one value isn't a finding).
   const revenuePeak =
-    revenueTrend.length > 1 && new Set(revenueTrend.map((p) => p.revenue)).size > 1
-      ? revenueTrend.reduce((best, p) => (p.revenue > best.revenue ? p : best), revenueTrend[0])
+    shownTrend.length > 1 && new Set(shownTrend.map((p) => p.revenue)).size > 1
+      ? shownTrend.reduce((best, p) => (p.revenue > best.revenue ? p : best), shownTrend[0])
       : null;
 
   const lineChartOptions = {
@@ -184,19 +217,37 @@ export default function OverviewPage() {
     },
     markers: { size: 0, hover: { size: 5 } },
     xaxis: {
-      categories: revenueTrend.map((p) => p.date.slice(5)),
-      labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
+      // Real dates, formatted as "5 Aug" rather than the raw "08-05" slice.
+      // tickAmount caps how many labels render so 30 days doesn't produce an
+      // unreadable stack of overlapping text - previously every label was
+      // emitted and the axis collapsed to nothing.
+      categories: shownTrend.map((p) => formatAxisDate(p.date)),
+      tickAmount: Math.min(7, Math.max(2, shownTrend.length - 1)),
+      labels: {
+        show: true,
+        rotate: 0,
+        hideOverlappingLabels: true,
+        style: { colors: '#98A2B3', fontSize: '11px' },
+      },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
-    yaxis: { show: false },
-    grid: { show: false },
+    // A y-axis with no scale made an all-zero series look like a rendering
+    // bug rather than "no revenue yet". Labels on, grid lines back.
+    yaxis: {
+      show: true,
+      labels: {
+        style: { colors: '#98A2B3', fontSize: '11px' },
+        formatter: (v: number) => compactCurrency(v, reportingCurrency),
+      },
+    },
+    grid: { show: true, borderColor: '#F2F4F7', strokeDashArray: 4, xaxis: { lines: { show: false } } },
     colors: ['#465FFF'],
     annotations: revenuePeak
       ? {
           points: [
             {
-              x: revenuePeak.date.slice(5),
+              x: formatAxisDate(revenuePeak.date),
               y: Number(revenuePeak.revenue.toFixed(2)),
               marker: { size: 5, fillColor: tooltipBg, strokeColor: '#465FFF', strokeWidth: 2 },
               label: {
@@ -212,7 +263,7 @@ export default function OverviewPage() {
       : undefined,
     tooltip: {
       custom: ({ series, seriesIndex, dataPointIndex }: { series: number[][]; seriesIndex: number; dataPointIndex: number }) => {
-        const point = revenueTrend[dataPointIndex];
+        const point = shownTrend[dataPointIndex];
         const value = series[seriesIndex]?.[dataPointIndex] ?? 0;
         return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
           <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${point?.date ?? ''}</div>
@@ -324,23 +375,49 @@ export default function OverviewPage() {
       <div className="mb-5 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <Card
           className="lg:col-span-2"
-          title={`Revenue trend ${forecast ? '& 14-day forecast' : '(30 days)'}`}
+          title={`Revenue trend ${forecast ? '& 14-day forecast' : ''}`}
           action={
-            forecast ? (
-              <span
-                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  forecast.trendDirection === 'up'
-                    ? 'bg-success-50 text-success-700 dark:bg-gray-800 dark:text-success-500'
-                    : forecast.trendDirection === 'down'
-                      ? 'bg-error-50 text-error-700 dark:bg-gray-800 dark:text-error-500'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
-                }`}
-              >
-                {forecast.trendDirection === 'flat'
-                  ? 'Stable'
-                  : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek, reportingCurrency)}/wk`}
-              </span>
-            ) : undefined
+            <div className="flex shrink-0 items-center gap-2">
+              {forecast && (
+                <span
+                  className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    forecast.trendDirection === 'up'
+                      ? 'bg-success-50 text-success-700 dark:bg-gray-800 dark:text-success-500'
+                      : forecast.trendDirection === 'down'
+                        ? 'bg-error-50 text-error-700 dark:bg-gray-800 dark:text-error-500'
+                        : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                  }`}
+                >
+                  {forecast.trendDirection === 'flat'
+                    ? 'Stable'
+                    : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek, reportingCurrency)}/wk`}
+                </span>
+              )}
+
+              {/* Range selector, TailAdmin's segmented-control pattern. Only
+                  offered on the plain trend - the forecast series is a fixed
+                  60-day fit plus 14 projected days, so slicing it would
+                  misrepresent what the model was fitted on. */}
+              {!forecast && (
+                <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+                  {TREND_RANGES.map((range) => (
+                    <button
+                      key={range.label}
+                      type="button"
+                      onClick={() => setTrendDays(range.days)}
+                      aria-pressed={trendDays === range.days}
+                      className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                        trendDays === range.days
+                          ? 'bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white'
+                          : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                      }`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           }
         >
           {revenueLoading ? (
@@ -403,7 +480,7 @@ export default function OverviewPage() {
                 }}
               />
             </div>
-          ) : revenueTrend.length === 0 ? (
+          ) : shownTrend.length === 0 ? (
             <ChartEmptyState
               message="No revenue data yet - record your first order to see a trend here."
               ctaLabel="Add an order"

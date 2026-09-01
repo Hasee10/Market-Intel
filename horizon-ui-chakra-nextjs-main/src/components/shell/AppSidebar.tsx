@@ -19,6 +19,25 @@ import type { IRoute } from 'types/navigation';
 import { PlanCard } from './PlanCard';
 import { RyvlWordmark } from './RyvlWordmark';
 
+// Per-destination icon colour, keyed by path. Nav items were previously a
+// uniform grey, which made the list read as one undifferentiated block -
+// the same "scan by colour before you read" problem StatsGrid's per-metric
+// chips fixed on Overview. Full static class strings because Tailwind scans
+// source text and can't see an interpolated class name.
+const ICON_TINT: Record<string, string> = {
+  '/dashboard/overview': 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400',
+  '/dashboard/market': 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-500',
+  '/dashboard/market/competitors': 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-500',
+  '/dashboard/market/definition': 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400',
+  '/dashboard/watchlist': 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500',
+  '/apps/products': 'bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400',
+  '/apps/products/categories': 'bg-blue-light-50 text-blue-light-600 dark:bg-blue-light-500/15 dark:text-blue-light-500',
+  '/apps/orders': 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500',
+  '/apps/customers': 'bg-orange-50 text-orange-600 dark:bg-orange-500/15 dark:text-orange-500',
+  '/apps/settings': 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
+};
+const ICON_TINT_FALLBACK = 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+
 function NavItem({
   route,
   isActive,
@@ -28,6 +47,8 @@ function NavItem({
   isActive: boolean;
   isCollapsed: boolean;
 }) {
+  const tint = ICON_TINT[route.path] ?? ICON_TINT_FALLBACK;
+
   return (
     <NextLink
       href={route.layout + route.path}
@@ -35,16 +56,19 @@ function NavItem({
       aria-current={isActive ? 'page' : undefined}
       className={[
         'group flex items-center gap-3 rounded-lg text-sm transition-colors',
-        isCollapsed ? 'justify-center px-0 py-2.5' : 'px-2.5 py-2.5',
+        isCollapsed ? 'justify-center px-0 py-2' : 'px-2.5 py-2',
         isActive
-          ? 'bg-brand-50 font-medium text-brand-500 dark:bg-gray-800 dark:text-brand-400'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-200',
+          ? 'bg-brand-50 font-semibold text-brand-600 dark:bg-gray-800 dark:text-brand-400'
+          : 'font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800',
       ].join(' ')}
     >
-      {/* route.icon is a Chakra <Icon color="inherit">, so it takes its colour
-          from the CSS `color` these Tailwind classes set - no per-icon
-          styling needed and no need to duplicate the icon list. */}
-      <span className="flex size-5 shrink-0 items-center justify-center">{route.icon}</span>
+      {/* Tinted rounded chip per destination. route.icon is a Chakra
+          <Icon color="inherit">, so it picks up the chip's text colour. */}
+      <span
+        className={`flex size-8 shrink-0 items-center justify-center rounded-lg transition-colors ${tint}`}
+      >
+        {route.icon}
+      </span>
       {!isCollapsed && <span className="truncate">{route.name}</span>}
     </NextLink>
   );
@@ -81,8 +105,9 @@ export function AppSidebar({ routes }: { routes: IRoute[] }) {
           return (
             <div key={route.layout + route.path}>
               {startsSection && !isCollapsed && (
-                <p className="mb-1.5 mt-4 px-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
+                <p className="mb-2 mt-5 flex items-center gap-2 px-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
                   {route.section}
+                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
                 </p>
               )}
               {startsSection && isCollapsed && (
