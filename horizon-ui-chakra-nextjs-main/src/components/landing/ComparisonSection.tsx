@@ -53,36 +53,46 @@ export function ComparisonSection() {
         </Reveal>
 
         <Reveal delay={80}>
-          <div className="overflow-hidden rounded-2xl border border-gray-100 dark:border-gray-800">
-            <div className="grid grid-cols-3 bg-[#F7F8FF] px-4 py-3.5 md:px-7 dark:bg-gray-900">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400" />
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+          {/* The right column carries a tinted, ring-outlined band running the
+              full height of the table. Both columns previously looked
+              identical, which buried the entire point of the comparison. */}
+          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60 dark:border-gray-700 dark:bg-gray-900 dark:shadow-black/20">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-[#5044E5]/[0.04] ring-1 ring-inset ring-[#5044E5]/20 dark:bg-[#5044E5]/10"
+            />
+
+            <div className="relative grid grid-cols-3 border-b border-gray-200 px-4 py-4 md:px-7 dark:border-gray-700">
+              <span />
+              <span className="text-xs font-bold uppercase tracking-[0.08em] text-gray-400">
                 Without Ryvl
               </span>
-              <span className="text-xs font-semibold uppercase tracking-wide text-[#5044E5] dark:text-[#A594FF]">
+              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#5044E5] dark:text-[#A594FF]">
                 With Ryvl
               </span>
             </div>
 
-            {ROWS.map((row) => (
+            {ROWS.map((row, i) => (
               <div
                 key={row.label}
-                className="grid grid-cols-3 items-start gap-3 border-t border-gray-100 px-4 py-4 transition-colors hover:bg-[#FAFAFF] md:px-7 dark:border-gray-800 dark:hover:bg-gray-900"
+                className={`relative grid grid-cols-3 items-start gap-4 px-4 py-5 md:px-7 ${
+                  i > 0 ? 'border-t border-gray-100 dark:border-gray-800' : ''
+                }`}
               >
-                <span className="text-sm font-medium text-[#111C4E] dark:text-white">
+                <span className="text-sm font-semibold text-[#111C4E] dark:text-white">
                   {row.label}
                 </span>
 
-                <span className="flex items-start gap-2 text-sm text-gray-500 dark:text-gray-400">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-gray-800">
+                <span className="flex items-start gap-2.5 text-sm text-gray-400 line-through decoration-gray-300 dark:text-gray-500">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-red-50 no-underline dark:bg-red-500/15">
                     <MdClose className="size-3.5 text-red-500" aria-hidden="true" />
                   </span>
                   {row.without}
                 </span>
 
-                <span className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-green-50 dark:bg-gray-800">
-                    <MdCheck className="size-3.5 text-green-600" aria-hidden="true" />
+                <span className="flex items-start gap-2.5 text-sm font-medium text-gray-800 dark:text-gray-100">
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                    <MdCheck className="size-3.5" aria-hidden="true" />
                   </span>
                   {row.with}
                 </span>

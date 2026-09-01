@@ -2,6 +2,8 @@ import { AnnouncementBar } from '@/components/landing/AnnouncementBar';
 import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { ComparisonSection } from '@/components/landing/ComparisonSection';
 import { ShowcaseSection } from '@/components/landing/ShowcaseSection';
+import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
+import { FaqSection } from '@/components/landing/FaqSection';
 import { CompanyLogoSlider } from '@/components/landing/CompanyLogoSlider';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
@@ -40,8 +42,10 @@ export default async function Home() {
       <MarketplaceLogoSlider />
       <CompanyLogoSlider sellers={showcaseSellers} brands={showcaseBrands} />
       <FeaturesSection />
+      <HowItWorksSection />
       <ShowcaseSection />
       <ComparisonSection />
+      <FaqSection />
       <CTABanner />
       <LandingFooter />
       <AssistantWidget />
