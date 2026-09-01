@@ -21,9 +21,22 @@ const TRUST_LINES = ['Free on your own store data', 'No credit card required'];
 
 export function LandingHero() {
   return (
-    <section className="font-manrope w-full overflow-hidden px-4 py-20 text-center sm:px-12 lg:px-24 xl:px-40">
+    <section className="font-manrope relative w-full overflow-hidden px-4 py-20 text-center sm:px-12 lg:px-24 xl:px-40">
+      {/* The template's soft pastel washes behind the hero - a large blue/
+          indigo bloom to the upper right and a pink one lower left. Without
+          them the hero sits on flat white and loses most of its character.
+          Light mode only, matching the template, which hides them in dark. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -right-40 -top-56 size-[680px] rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_65%)] blur-2xl dark:hidden"
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute -bottom-56 -left-48 size-[560px] rounded-full bg-[radial-gradient(circle,rgba(216,120,255,0.16)_0%,rgba(216,120,255,0)_65%)] blur-2xl dark:hidden"
+      />
+      <div className="relative">
       <Reveal>
-        <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 py-1.5 pl-1.5 pr-4 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
+        <span className="relative inline-flex items-center gap-2 rounded-full border border-gray-300 py-1.5 pl-1.5 pr-4 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
           <span className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#3641F5] dark:bg-gray-800 dark:text-[#A594FF]">
             For online sellers
           </span>
@@ -77,10 +90,10 @@ export function LandingHero() {
         </div>
       </Reveal>
 
-      {/* The hero illustration was removed on request. The template puts a
-          product screenshot here; until a real dashboard capture exists,
-          leaving the space empty reads better than a stock illustration
-          that shows nothing about the product. */}
+      {/* Hero illustration removed on request - the template puts a product
+          screenshot here, and a stock illustration showing nothing about the
+          product is worse than empty until a real capture exists. */}
+      </div>
     </section>
   );
 }

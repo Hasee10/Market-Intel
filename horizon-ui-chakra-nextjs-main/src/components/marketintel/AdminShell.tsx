@@ -1,6 +1,5 @@
 'use client';
 
-import { useColorMode } from '@chakra-ui/react';
 import { usePathname } from 'next/navigation';
 import { PropsWithChildren, useEffect, useState } from 'react';
 
@@ -30,7 +29,6 @@ export default function AdminShell({ children }: AdminShellProps) {
   const [toggleSidebar, setToggleSidebar] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
-  const { colorMode } = useColorMode();
 
   useEffect(() => {
     window.document.documentElement.dir = 'ltr';
@@ -41,14 +39,6 @@ export default function AdminShell({ children }: AdminShellProps) {
   useEffect(() => {
     window.localStorage.setItem(COLLAPSE_STORAGE_KEY, isCollapsed ? '1' : '0');
   }, [isCollapsed]);
-
-  // Chakra owns the colour mode; Tailwind's `dark:` variant keys off a class
-  // (see the @custom-variant in styles/tailwind.css). Mirroring one onto the
-  // other here is what stops the migrated chrome and the not-yet-migrated
-  // page bodies from ever disagreeing about which theme is active.
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', colorMode === 'dark');
-  }, [colorMode]);
 
   const sidebarWidth = isCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH_EXPANDED;
 

@@ -9,8 +9,18 @@ import 'styles/App.css';
 import 'styles/Contact.css';
 import 'styles/MiniCalendar.css';
 import { ChakraProvider } from '@chakra-ui/react';
+
+import { ColorModeBridge } from '@/components/shell/ColorModeBridge';
 import theme from '../theme/theme';
 
 export default function AppWrappers({ children }: { children: ReactNode }) {
-  return <ChakraProvider theme={theme}>{children}</ChakraProvider>;
+  return (
+    <ChakraProvider theme={theme}>
+      {/* App-wide on purpose - see the component's own comment. Mounting this
+          only inside AdminShell left the public pages with Chakra's dark
+          background but no Tailwind dark: variants. */}
+      <ColorModeBridge />
+      {children}
+    </ChakraProvider>
+  );
 }
