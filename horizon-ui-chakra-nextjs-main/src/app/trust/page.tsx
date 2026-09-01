@@ -7,9 +7,8 @@ import { TrustSection } from '@/components/landing/TrustSection';
 
 // Was an anchor section on the homepage, now its own route so it can be
 // linked/shared/indexed on its own, same as pricing's promotion off the
-// homepage. TrustSection is still reused as-is on /pricing (right above the
-// pricing table, where "what do I get for this" and "is my data safe" sit
-// together) - this page is the other place it's linked from.
+// homepage. This is now the only place TrustSection renders - it used to sit
+// on /pricing as well, above the pricing table, and was removed from there.
 export default function TrustPage() {
   return (
     <>

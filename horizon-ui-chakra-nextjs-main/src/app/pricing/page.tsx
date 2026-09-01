@@ -3,7 +3,6 @@ import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { PricingPageBanner } from '@/components/landing/PricingPageBanner';
 import { PricingSection } from '@/components/landing/PricingSection';
-import { TrustSection } from '@/components/landing/TrustSection';
 
 // Dedicated pricing page - was an anchor section on the homepage, now its
 // own route so it can be linked/shared/indexed on its own and doesn't force
@@ -16,7 +15,6 @@ export default function PricingPage() {
       <LandingHeader />
       <PricingPageBanner />
       <PricingSection />
-      <TrustSection />
       <LandingFooter />
       <AssistantWidget />
     </>
