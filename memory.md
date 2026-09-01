@@ -3294,3 +3294,68 @@ and deleting them belongs with the end-of-migration Chakra removal.
 Verified: tsc, 196/196, lint (only the 2 known pre-existing warnings),
 `next build` clean, shared first-load JS still 103 kB. **Build took 23
 seconds on D: - the same build was 7.4 minutes on the corrupted E:.**
+
+## 2026-09-01: Shared components + Overview ported - `9197151`, `c191600`
+
+**Landing-page order settled by the user** (they asked three times, so it
+mattered): **finish the dashboard first**, landing page last. And when it
+comes: **strip the agency.ai template's risky content and replace with
+real Ryvl content** - which means going back to the user for the real
+team list, any real customers/partners, and the contact form's real
+destination. The three risks are non-negotiable blockers, not styling
+choices: 8 real strangers' names+photos in `Teams`, real
+Microsoft/Zoom/Coinbase logos under "Trusted by Leading Companies", and a
+contact form posting to the template author's own web3forms API key.
+
+### Shared components first, then the page - the leverage move
+
+`PageHeader`, `StatsGrid` and `InsightStrip` appear on nearly every
+authenticated page, so porting those three lifted **eight** pages at once
+(Overview, Market, Competitors, Watchlist, Products, Orders, Customers,
+RetentionPanel) instead of one. Do this before per-page work on any
+future migration of this kind.
+
+**Technique worth reusing: re-export shims.** The old
+`components/marketintel/{PageHeader,StatsGrid,InsightStrip}.tsx` are now
+one-line re-exports pointing at the real Tailwind implementations in
+`components/ui/`. Props and exported types are identical, so **not one
+page needed editing**. The shims get deleted with their imports during the
+final Chakra removal - they're documented as such in each file.
+
+New Tailwind primitives now in `components/ui/`: `PageHeader`,
+`StatsGrid`, `InsightStrip`, `Card`, `SectionHeading`.
+
+**Tailwind gotcha that will bite again: class names cannot be built by
+interpolation.** Tailwind scans source *text*, so a
+`` `bg-${color}-50` `` never reaches the stylesheet. Both `StatsGrid`
+(per-metric chips) and `InsightStrip` (per-tone colours) therefore use
+full static class strings in a lookup map. Keep doing that.
+
+**Behaviour deliberately preserved**, not just appearance: `StatsGrid`
+still drives distinct chips from the API's own icon/colour keys, still
+colours the trend by the *sign* of `diff` (a decline must never be styled
+as growth - that was a real past bug), still renders `period` verbatim,
+and still reuses `CountUp`/`Reveal` so the count-up and staggered
+entrance survive. Each page's insight *rules* were untouched; only the
+shared chrome moved.
+
+**Two intentional design changes**, both reversing something previously
+added: `PageHeader` drops the Merriweather serif from page titles (a
+dense analytics page is scanned, not read - the serif/sans mix was
+already flagged as reading editorial), and `SectionHeading` drops the
+coloured accent bar (it encoded nothing; weight and spacing do the work).
+
+**Overview body ported** on those primitives - both chart cards, both
+donuts, the products table, empty states, skeletons. ApexCharts configs
+including the dashed-forecast series and custom tooltip were NOT touched.
+Removed five `useColorModeValue` calls that went dead when their values
+became Tailwind classes; the three ApexCharts genuinely still needs are
+kept and commented as to why.
+
+**Tailwind is measurably lighter than Chakra here**: Overview went 11.2 kB
+-> 10.5 kB route and 213 kB -> 209 kB first load, with shared JS flat at
+103 kB. Useful counter-evidence if bundle cost is ever raised as an
+objection to finishing the migration.
+
+**Remaining**: 12 dashboard pages, then delete Chakra (`143` import sites
+at the migration's start) and the shims, then the landing page.
