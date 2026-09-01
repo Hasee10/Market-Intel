@@ -3492,10 +3492,116 @@ stays semantic so cancelled can't read like completed.
 
 **Chakra import sites: 143 at start -> 124.**
 
-**Remaining**: `MarketView` (722 lines, the biggest), Competitors, Market
-Definition, Watchlist, Products/Orders/Customers page bodies, Categories,
-Settings, Scraper Health, Onboarding, the 3 auth pages, plus
-`BulkImportDrawer`, `CompetitorsDrawer`, `RetentionPanel`,
-`MarketScopeBanner`, `DomainsManager`, `ReferralCard`, `AuthCard`,
-`OnboardingChecklist`, `DownloadReportButton`, `SellerAssistantWidget`.
-Then delete Chakra + the shims.
+**Remaining at that point**: `MarketView`, Competitors, and the rest.
+
+## 2026-09-01: THE CASCADE BUG - read this before touching tailwind.css
+
+**The single worst mistake of the migration, and the most reusable
+lesson.** The landing page shipped visibly broken across six commits:
+headings collapsed to body size, buttons rendered with no background,
+layout looked shattered. User's words: "what the fuck this is soo messed
+up", with screenshots.
+
+**Cause:** `tailwind.css` imported utilities as
+`@import 'tailwindcss/utilities.css' layer(utilities)`. Per the CSS
+cascade an **UNLAYERED rule beats a layered one regardless of
+specificity**, and Chakra's `CSSReset` injects unlayered global element
+rules (`h1`, `h2`, `p`, `a`, `button`) through Emotion. So Chakra's bare
+`h1` outranked `.text-6xl`, and its `a` outranked `.bg-[#4318FF]`.
+
+**Why it hid for so long:** the dashboard shell is `div`/`span`-heavy so
+almost nothing collided; the landing page is built from real semantic
+elements and took the full hit.
+
+**Fix:** import utilities WITHOUT `layer()`. Normal specificity then
+applies - a Tailwind class (0,1,0) beats Chakra's element selectors
+(0,0,1) - while Chakra's *component* styles (Emotion classes, same
+specificity but injected at runtime after the stylesheet) still win on
+elements carrying both. That ordering is exactly what a gradual migration
+needs. **Do not "tidy" utilities back into a layer while Chakra is still
+installed.**
+
+**Two process lessons, both mine:**
+1. I documented that layer tradeoff in my own file header and then failed
+   to reason it through to semantic elements. Writing a caveat down is
+   not the same as applying it.
+2. **`tsc` + tests + build cannot catch visual breakage.** Six commits
+   passed all three while the page looked destroyed. With the standing
+   no-preview rule I can't check myself, so the honest arrangement is
+   smaller batches with the user eyeballing each before more is stacked
+   on top. I verified the fix by inspecting the built CSS for `@layer`
+   blocks - do that, not just "it compiled".
+
+## 2026-09-01: Template fidelity - what the user actually wanted
+
+Two rounds of "this isn't the template" feedback clarified the brief
+beyond what the earlier plan captured.
+
+**Landing**: "replicate the color and UI of the provided template, but
+with our content, that was the whole point" - and later "the strictness
+is gone", i.e. don't be literal, be *good*, but match that template.
+Acting on it: switched the marketing surface to the template's own
+`--color-primary: #5044E5`, rebuilt Features/Trust on **GlowCard** (their
+signature ServicesCard - a blurred blue/indigo/purple blob that tracks
+the cursor inside the card, plus the inner panel's padding shift on
+hover), added **SectionTitle** (their centred heading + constrained
+sub-line), made the navbar translucent with `backdrop-blur-xl`, and
+adopted their padding scale (`px-4 sm:px-12 lg:px-24 xl:px-40`).
+**Removed the hero SVG on request** - that slot holds a product
+screenshot in the template, and a stock illustration showing nothing
+about the product is worse than empty.
+
+**Dashboard**: user reported ALL of composition, typography, spacing and
+colour as wrong. Fixes:
+- **Colour**: brand scale is now TailAdmin's own `#465FFF`-anchored scale
+  verbatim, replacing the Ryvl-`#4318FF`-anchored one I had substituted.
+  Chart hexes follow. **The logo mark keeps `#4318FF`** - identity, not
+  template styling.
+- **Typography - a real bug**: `font-outfit` was only on individual
+  components, never on the shell, so anything in a page body that didn't
+  set the family itself inherited Chakra's Inter. **The dashboard was
+  rendering in two typefaces.** Now set once on `AdminShell`'s wrapper.
+- **Spacing**: content box matches their `AppLayout` exactly
+  (`mx-auto max-w-[1536px] p-4 md:p-6`), cards `p-5 md:p-6`, grids
+  `gap-4 md:gap-6`.
+- **Composition**: `StatsGrid` rebuilt to their `EcommerceMetrics`
+  markup - icon chip on its own row, then label/value left with the
+  change as a **pill badge bottom-aligned right**, not coloured text
+  underneath. Their `MonthlyTarget` gauge and `DemographicCard` map stay
+  out: no Ryvl data behind either, flagged to the user rather than filled
+  with invented numbers.
+
+**Standing rule that emerged: two surfaces, two source templates,
+deliberately.** Marketing = agency.ai (#5044E5, Manrope). App = TailAdmin
+(#465FFF, Outfit). Don't "unify" them without asking.
+
+## 2026-09-01: Market + Competitors ported - `6ff22f2`, `8baf394`
+
+`MarketView` fully Tailwind - all seven tables, both charts, demand
+signal, explainer cards. Only `useColorModeValue` remains, needed because
+ApexCharts tooltips are raw HTML strings requiring resolved hex.
+
+**Two semantics deliberately NOT normalised**: the price-trend badge
+inverts good/bad vs Overview (rising *competitor* prices are room to
+follow; falling ones are the margin squeeze), and the anomaly badge keeps
+its existing colouring rather than being re-decided mid-migration.
+
+Competitors: added a **Tabs** primitive (controlled items list, not
+Chakra's compound API - one tabbed surface in the app; arrow keys, roles
+and roving tabindex wired properly since Chakra gave that for free).
+Column Tooltips became `title` attributes. The assortment bar survives as
+a plain div - relative size is the point of that column.
+
+**Bundle keeps dropping, useful counter-evidence for the migration's
+cost**: Market 205 kB -> 152 kB, Competitors 204 kB -> 123 kB, Overview
+213 kB -> 209 kB, shared JS flat at 103 kB.
+
+**Chakra import sites: 143 at start -> 118.**
+
+**Remaining**: Market Definition, Watchlist, Products/Orders/Customers
+page bodies + their drawers and cards, Categories, Settings, Scraper
+Health, Onboarding, 3 auth pages, `BulkImportDrawer`,
+`CompetitorsDrawer`, `RetentionPanel`, `DomainsManager`, `ReferralCard`,
+`AuthCard`, `OnboardingChecklist`, `DownloadReportButton`,
+`SellerAssistantWidget`. Then delete Chakra + the shims + `AppWrappers`'
+provider.
