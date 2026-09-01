@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { OrderDto } from '@/types/order';
+
+// The 4 values NewOrderDrawer/EditOrderDrawer's <Select> actually offers -
+// see components/marketintel/OrdersTable.tsx's STATUS_COLORS for the same
+// list used to color the badge. customerId/externalOrderId are always sent
+// as '' rather than omitted when left blank, same as products/customers -
+// see blankToNull()'s own comment.
+const OrderCreateSchema = z.object({
+  customerId: blankToNull(z.string().trim().min(1)),
+  externalOrderId: blankToNull(z.string().trim().min(1)),
+  orderDate: z.string().trim().min(1, 'orderDate is required'),
+  totalAmount: z.number({ required_error: 'totalAmount is required', invalid_type_error: 'totalAmount must be a number' }),
+  currency: blankToNull(z.string().trim().min(1)),
+  status: z.enum(['completed', 'pending', 'cancelled', 'refunded']).nullish(),
+});
 
 function mapOrder(row: any): OrderDto {
   const customer = Array.isArray(row.seller_customers) ? row.seller_customers[0] : row.seller_customers;
@@ -62,18 +78,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  if (!body.orderDate || body.totalAmount == null) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: ['orderDate and totalAmount are required'],
-        message: 'orderDate and totalAmount are required',
-      },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(request, OrderCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
 
   const supabase = await createClient();
 

@@ -92,4 +92,30 @@ describe('POST /api/products', () => {
     await POST(makeRequest({}));
     expect(suggestCategoryMock).not.toHaveBeenCalled();
   });
+
+  // New with the zod validation - {} previously reached the insert with
+  // title: undefined instead of failing cleanly.
+  it('rejects a missing title with a 400 instead of inserting title: undefined', async () => {
+    const response = await POST(makeRequest({}));
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.succeeded).toBe(false);
+    expect(insertedRow).toBeNull();
+  });
+
+  it('rejects a negative sellPrice - the old code accepted any number', async () => {
+    const response = await POST(makeRequest({ title: 'iPhone 15', sellPrice: -100 }));
+    expect(response.status).toBe(400);
+  });
+
+  it('treats a blank sku/categoryId the same as omitting them (NewProductDrawer always sends "")', async () => {
+    await POST(makeRequest({ title: 'iPhone 15', sku: '', categoryId: '' }));
+
+    expect(insertedRow.sku).toBeNull();
+    // categoryId '' -> null falls through to the auto-suggest path, which
+    // the mock resolves to cat-mobiles - this asserts the blank string
+    // didn't fail validation as "too short", not the suggestion outcome.
+    expect(suggestCategoryMock).toHaveBeenCalled();
+  });
 });

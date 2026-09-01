@@ -1,9 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { suggestCategory } from '@/lib/ai/suggest-category';
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { IProduct } from '@/types/products';
+
+// NewProductDrawer always sends sku/categoryId as '' rather than omitting
+// them when left blank - blankToNull() keeps that meaning "not provided"
+// instead of failing a min-length check.
+const ProductCreateSchema = z.object({
+  title: z.string().trim().min(1, 'title is required'),
+  sku: blankToNull(z.string().trim().min(1)),
+  categoryId: blankToNull(z.string().trim().min(1)),
+  costPrice: z.number().nonnegative().nullish(),
+  sellPrice: z.number().nonnegative().nullish(),
+  currency: blankToNull(z.string().trim().min(1)),
+  stockQty: z.number().int().nonnegative().nullish(),
+  isActive: z.boolean().optional(),
+});
 
 function mapProduct(row: any): IProduct {
   const category = Array.isArray(row.seller_categories)
@@ -77,7 +93,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  const parsed = await parseJsonBody(request, ProductCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   const supabase = await createClient();
 
   // Safety net for the "auto-assigned" guarantee: the frontend already

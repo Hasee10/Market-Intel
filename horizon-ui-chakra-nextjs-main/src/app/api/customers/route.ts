@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller';
 import { createClient } from '@/lib/supabase/server';
 import { CustomerDto } from '@/types/customer';
+
+// Nothing is required here, unchanged from before - a customer can be
+// created from just an externalCustomerId, just an email, or neither
+// (matches NewCustomerDrawer, which doesn't mark either field mandatory).
+// NewCustomerDrawer always sends every field with an initial empty-string
+// value rather than omitting it, so blankToNull() is needed on all three
+// string fields to keep "left blank" working as "not provided".
+const CustomerCreateSchema = z.object({
+  externalCustomerId: blankToNull(z.string().trim().min(1)),
+  email: blankToNull(z.string().trim().email('email must be a valid email address')),
+  ordersCount: z.number().int().nonnegative().nullish(),
+  totalSpent: z.number().nonnegative().nullish(),
+  currency: blankToNull(z.string().trim().min(1)),
+});
 
 function mapCustomer(row: any): CustomerDto {
   return {
@@ -61,7 +77,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  const parsed = await parseJsonBody(request, CustomerCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
   const supabase = await createClient();
 
   const { data, error } = await supabase
