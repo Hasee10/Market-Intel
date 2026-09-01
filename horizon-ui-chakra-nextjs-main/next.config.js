@@ -32,6 +32,12 @@ const nextConfig = {
       'images.unsplash.com',
       'i.ibb.co',
       'scontent.fotp8-1.fna.fbcdn.net',
+      // Testimonial avatars (components/landing/testimonials.ts). This is a
+      // free fake-identity generator, so the faces are stock, not the named
+      // customers - fine as a placeholder, wrong to leave in front of real
+      // names long-term. Drop this entry once those are replaced with real
+      // photos or with the initials fallback.
+      'randomuser.me',
     ],
     // Was `unoptimized: true`, which meant next/image served every asset at
     // full original size in its original format. The landing page's four

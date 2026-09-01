@@ -2,6 +2,7 @@ import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { TrustSection } from '@/components/landing/TrustSection';
 
 // Was an anchor section on the homepage, now its own route so it can be
@@ -19,6 +20,9 @@ export default function TrustPage() {
       />
       <LandingHeader />
       <TrustSection />
+      {/* After the three privacy guarantees, before the CTA: the claims land
+          first, then sellers saying those claims were what convinced them. */}
+      <TestimonialsSection />
       <CTABanner />
       <LandingFooter />
       <AssistantWidget />
