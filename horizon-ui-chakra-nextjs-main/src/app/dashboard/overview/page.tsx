@@ -372,9 +372,9 @@ export default function OverviewPage() {
       <StatsGrid data={primaryStats} loading={statsLoading} columns={4} />
 
       <SectionHeading title="Revenue & fulfillment" />
-      <div className="mb-5 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
+      <div className="mb-5 @container grid grid-cols-1 gap-4 md:gap-6 @3xl:grid-cols-3">
         <Card
-          className="lg:col-span-2"
+          className="@3xl:col-span-2"
           title={`Revenue trend ${forecast ? '& 14-day forecast' : ''}`}
           action={
             <div className="flex shrink-0 items-center gap-2">
@@ -549,8 +549,8 @@ export default function OverviewPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
-        <Card className="lg:col-span-5" title="Category inventory value">
+      <div className="@container grid grid-cols-1 gap-4 md:gap-6 @3xl:grid-cols-12">
+        <Card className="@3xl:col-span-5" title="Category inventory value">
           {categoriesLoading ? (
             chartSkeleton
           ) : categories.length === 0 ? (
@@ -566,7 +566,7 @@ export default function OverviewPage() {
           )}
         </Card>
 
-        <Card className="lg:col-span-7" title="Top products by inventory value">
+        <Card className="@3xl:col-span-7" title="Top products by inventory value">
           {productsLoading ? (
             chartSkeleton
           ) : topProducts.length === 0 ? (

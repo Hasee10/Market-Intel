@@ -59,11 +59,20 @@ const CHIP: Record<string, string> = {
 };
 const CHIP_FALLBACK = 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
 
+// CONTAINER queries, not viewport ones. The sidebar is 264px wide, so the
+// cards sit in a box roughly that much narrower than the window - a
+// viewport-based `xl:` was measuring space the grid never had.
+//
+// It also made the layout depend on the device in a way that looked random:
+// Windows defaults to 125% display scaling on many laptops, so a 1366px
+// screen reports 1092 CSS px, falls under xl, and silently drops from four
+// columns to two. @container asks the only question that matters - how wide
+// is the grid actually allowed to be.
 const COLUMN_CLASS: Record<number, string> = {
-  1: 'sm:grid-cols-1 xl:grid-cols-1',
-  2: 'sm:grid-cols-2 xl:grid-cols-2',
-  3: 'sm:grid-cols-2 xl:grid-cols-3',
-  4: 'sm:grid-cols-2 xl:grid-cols-4',
+  1: '@md:grid-cols-1',
+  2: '@md:grid-cols-2',
+  3: '@md:grid-cols-2 @4xl:grid-cols-3',
+  4: '@md:grid-cols-2 @4xl:grid-cols-4',
 };
 
 type StatsGridProps = {
@@ -73,8 +82,10 @@ type StatsGridProps = {
 };
 
 export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
-  // gap-4 md:gap-6 is TailAdmin's grid rhythm throughout its dashboard.
-  const gridClass = `mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 ${
+  // @container on the wrapper is what makes the COLUMN_CLASS queries above
+  // resolve against this grid's own width. gap-4 md:gap-6 is TailAdmin's
+  // rhythm throughout its dashboard.
+  const gridClass = `@container mb-6 grid grid-cols-1 gap-4 md:gap-6 ${
     COLUMN_CLASS[columns] ?? COLUMN_CLASS[4]
   }`;
 

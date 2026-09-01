@@ -321,9 +321,9 @@ export default function MarketView({
         )}
       </Card>
 
-      <div className="mb-5 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
+      <div className="mb-5 @container grid grid-cols-1 gap-4 md:gap-6 @3xl:grid-cols-3">
         <Card
-          className="lg:col-span-2"
+          className="@3xl:col-span-2"
           title={`Price trend ${priceForecast ? '& 14-day forecast' : '(30 days)'}`}
           action={
             priceForecast ? (
@@ -673,7 +673,7 @@ export default function MarketView({
         </Card>
       </UpgradeGate>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="@container grid grid-cols-1 gap-4 @2xl:grid-cols-2">
         <Card title="Opt in to be visible to peers">
           <p className="text-sm text-gray-500 dark:text-gray-400">
             Choose which of your own stats (rating, price range, response time) other sellers in
