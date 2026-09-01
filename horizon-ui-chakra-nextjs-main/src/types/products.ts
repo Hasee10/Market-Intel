@@ -16,6 +16,8 @@ export interface IProduct {
   currency: string;
   stockQty: number | null;
   isActive: boolean;
+  /** Optional seller-supplied image URL. Null falls back to the category tile. */
+  imageUrl: string | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -14,6 +14,7 @@ import {
   DrawerOverlay,
   Flex,
   FormControl,
+  FormHelperText,
   FormLabel,
   Icon,
   Input,
@@ -48,6 +49,7 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
   const [stockQty, setStockQty] = useState(0);
   const [sku, setSku] = useState('');
   const [categoryId, setCategoryId] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
   const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
@@ -84,6 +86,7 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
     setStockQty(0);
     setSku('');
     setCategoryId('');
+    setImageUrl('');
     setAiConfidence(null);
   };
 
@@ -162,7 +165,7 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
       const response = await fetch('/api/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, sellPrice, costPrice, currency, stockQty, sku, categoryId }),
+        body: JSON.stringify({ title, sellPrice, costPrice, currency, stockQty, sku, categoryId, imageUrl }),
       });
 
       const data = await response.json();
@@ -247,6 +250,20 @@ export function NewProductDrawer({ isOpen, onClose, onProductCreated }: NewProdu
                 value={sku}
                 onChange={(e) => setSku(e.target.value)}
               />
+            </FormControl>
+            <FormControl>
+              <FormLabel fontSize="sm" fontWeight="500">
+                Image URL
+              </FormLabel>
+              <Input
+                type="url"
+                placeholder="https://…/product.jpg"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+              />
+              <FormHelperText fontSize="xs">
+                Optional. Leave blank to use the category icon.
+              </FormHelperText>
             </FormControl>
             <FormControl isRequired>
               <Flex justify="space-between" align="center" mb="2px">

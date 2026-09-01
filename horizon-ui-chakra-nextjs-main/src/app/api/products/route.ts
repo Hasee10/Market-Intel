@@ -19,6 +19,9 @@ const ProductCreateSchema = z.object({
   currency: blankToNull(z.string().trim().min(1)),
   stockQty: z.number().int().nonnegative().nullish(),
   isActive: z.boolean().optional(),
+  // Not z.string().url(): an empty string is how the UI signals "clear the
+  // image", and url() would reject it. The write path normalises '' to null.
+  imageUrl: z.string().optional(),
 });
 
 function mapProduct(row: any): IProduct {
@@ -37,13 +40,47 @@ function mapProduct(row: any): IProduct {
     currency: row.currency,
     stockQty: row.stock_qty,
     isActive: row.is_active,
+    imageUrl: row.image_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 const PRODUCT_COLUMNS =
-  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, created_at, updated_at, seller_categories(name)';
+  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, image_url, created_at, updated_at, seller_categories(name)';
+
+// Fills in a real product photo for rows the seller hasn't given one, by
+// matching the title against the scraped catalogue (market_products already
+// stores an image for tens of thousands of listings across 56 marketplaces).
+//
+// Mutates in place and never throws: an image is decoration, so a failure
+// here must not take down the products list. The UI already falls back to a
+// category tile when imageUrl is null.
+//
+// One RPC call for the whole page - see migration 050 for why, and for the
+// similarity floor that stops a loose match showing the wrong product.
+async function attachScrapedImages(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  products: IProduct[],
+): Promise<void> {
+  const needing = products.filter((p) => !p.imageUrl && p.title);
+  if (needing.length === 0) return;
+
+  try {
+    const { data, error } = await supabase.rpc('market_images_for_titles', {
+      p_titles: needing.map((p) => p.title),
+    });
+    if (error || !data) return;
+
+    for (const row of data as { query_index: number; image_url: string }[]) {
+      const target = needing[row.query_index];
+      if (target) target.imageUrl = row.image_url;
+    }
+  } catch {
+    // Migration 050 not applied yet, or the RPC failed - products still
+    // render, just with category tiles.
+  }
+}
 
 export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();
@@ -76,9 +113,12 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  const products = (data ?? []).map(mapProduct);
+  await attachScrapedImages(supabase, products);
+
   return NextResponse.json({
     succeeded: true,
-    data: (data ?? []).map(mapProduct),
+    data: products,
     errors: [],
     message: 'Products retrieved successfully',
   });
@@ -133,6 +173,9 @@ export async function POST(request: NextRequest) {
       currency: body.currency || 'PKR',
       stock_qty: body.stockQty ?? null,
       is_active: body.isActive ?? true,
+      // Empty string means "cleared", not "set to empty" - store null so
+      // the UI falls back to the category tile.
+      image_url: body.imageUrl?.trim() || null,
     })
     .select(PRODUCT_COLUMNS)
     .single();

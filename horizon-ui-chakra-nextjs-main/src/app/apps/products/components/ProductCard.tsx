@@ -52,7 +52,7 @@ export function ProductCard({ data, onEdit, onViewCompetitors }: ProductCardProp
   return (
     <Card className="flex h-full flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
       <div className="mb-3 flex items-start gap-3">
-        <ProductThumb categoryName={data.categoryName} size="lg" />
+        <ProductThumb src={data.imageUrl} alt={data.title} categoryName={data.categoryName} size="lg" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-bold text-gray-900 dark:text-white">{data.title}</p>
           <div className="mt-1.5 flex flex-wrap items-center gap-2">

@@ -8,10 +8,11 @@
 // accent colour the Categories page already uses (categoryVisuals.ts), so a
 // "Sports & Outdoors" product looks the same everywhere in the app.
 //
-// If an image column is added later, give this an `src` prop and render the
-// real image when present, falling back to this tile - every call site
-// already passes the category, so nothing else changes.
+// Migration 049 added seller_products.image_url, so `src` now carries a real
+// seller-supplied image when one exists. The category tile remains the
+// fallback for products without one, and for images whose URL has rotted.
 
+import { useState } from 'react';
 import { MdImageNotSupported } from 'react-icons/md';
 
 import { CATEGORY_VISUALS } from '@/app/apps/products/categories/components/categoryVisuals';
@@ -27,18 +28,42 @@ function slugify(categoryName: string): string {
 }
 
 export function ProductThumb({
+  src,
+  alt,
   categoryName,
   size = 'md',
 }: {
+  /** Seller-supplied image URL. Falls back to the category tile when absent. */
+  src?: string | null;
+  alt?: string;
   categoryName: string | null;
   /** md for table rows, lg for the grid cards. */
   size?: 'md' | 'lg';
 }) {
+  const [failed, setFailed] = useState(false);
+
   const visual = categoryName ? CATEGORY_VISUALS[slugify(categoryName)] : undefined;
   const Icon = visual?.icon ?? MdImageNotSupported;
   const accent = visual?.color ?? '#98A2B3';
   const box = size === 'lg' ? 'size-14 rounded-xl' : 'size-10 rounded-lg';
   const glyph = size === 'lg' ? 'size-7' : 'size-5';
+
+  // A dead URL degrades to the tile rather than a broken-image icon - these
+  // point at arbitrary third-party hosts, so some will rot.
+  if (src && !failed) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element -- arbitrary
+      // seller-supplied third-party host; next/image can't optimise it and
+      // would need every domain whitelisted in next.config.js.
+      <img
+        src={src}
+        alt={alt ?? ''}
+        onError={() => setFailed(true)}
+        loading="lazy"
+        className={`shrink-0 border border-gray-200 object-cover dark:border-gray-700 ${box}`}
+      />
+    );
+  }
 
   return (
     <span

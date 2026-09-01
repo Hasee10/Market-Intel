@@ -20,13 +20,14 @@ function mapProduct(row: any): IProduct {
     currency: row.currency,
     stockQty: row.stock_qty,
     isActive: row.is_active,
+    imageUrl: row.image_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 const PRODUCT_COLUMNS =
-  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, created_at, updated_at, seller_categories(name)';
+  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, image_url, created_at, updated_at, seller_categories(name)';
 
 export async function PUT(
   request: NextRequest,
@@ -55,6 +56,9 @@ export async function PUT(
       currency: body.currency || 'PKR',
       stock_qty: body.stockQty ?? null,
       is_active: body.isActive ?? true,
+      // Empty string means "cleared", not "set to empty" - store null so
+      // the UI falls back to the category tile.
+      image_url: body.imageUrl?.trim() || null,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)

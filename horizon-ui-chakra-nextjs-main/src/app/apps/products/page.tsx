@@ -65,6 +65,12 @@ function buildImportFields(skuRequired: boolean, reportingCurrency: string): Imp
     { key: 'sellPrice', label: 'Sell price', type: 'number' },
     { key: 'stockQty', label: 'Stock quantity', type: 'number' },
     { key: 'isActive', label: 'Active (yes/no)', type: 'boolean' },
+    {
+      key: 'imageUrl',
+      label: 'Image URL',
+      helperText:
+        'Optional. Most store platforms export one - rows without it fall back to the category icon.',
+    },
   ];
 }
 

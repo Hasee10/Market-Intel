@@ -27,6 +27,7 @@ type ImportRow = {
   sellPrice?: number;
   stockQty?: number;
   isActive?: boolean;
+  imageUrl?: string;
   currency?: string;
 };
 
@@ -184,6 +185,7 @@ export async function POST(request: NextRequest) {
     sell_price: r.sellPrice ?? null,
     stock_qty: r.stockQty ?? null,
     is_active: r.isActive ?? true,
+    image_url: r.imageUrl?.trim() || null,
     currency: r.currency && VALID_CURRENCY_CODES.has(r.currency) ? r.currency : defaultCurrency,
     updated_at: new Date().toISOString(),
   });

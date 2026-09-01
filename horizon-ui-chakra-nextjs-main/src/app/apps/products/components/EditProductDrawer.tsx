@@ -8,6 +8,7 @@ import { useToast } from '@chakra-ui/react';
 import { Button } from '@/components/ui/Button';
 import { Drawer } from '@/components/ui/Drawer';
 import { Field, Input, Select, Toggle } from '@/components/ui/Field';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 
 import { IProduct, IProductCategory, SUPPORTED_CURRENCIES } from '@/types/products';
 
@@ -37,6 +38,7 @@ export function EditProductDrawer({
   const [sku, setSku] = useState('');
   const [isActive, setIsActive] = useState(true);
   const [categoryId, setCategoryId] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
   const fetchCategories = useCallback(async () => {
     setCategoriesLoading(true);
@@ -75,6 +77,7 @@ export function EditProductDrawer({
       setSku(product.sku || '');
       setIsActive(product.isActive);
       setCategoryId(product.categoryId || '');
+      setImageUrl(product.imageUrl || '');
     }
   }, [product]);
 
@@ -103,6 +106,7 @@ export function EditProductDrawer({
           sku,
           isActive,
           categoryId,
+          imageUrl,
         }),
       });
 
@@ -227,6 +231,23 @@ export function EditProductDrawer({
             value={sku}
             onChange={(e) => setSku(e.target.value)}
           />
+        </Field>
+
+        <Field
+          label="Image URL"
+          hint="Paste a link to the product photo. Leave blank to use the category icon."
+        >
+          <div className="flex items-center gap-3">
+            {/* Live preview, so a typo is obvious before saving rather than
+                after the row renders. */}
+            <ProductThumb src={imageUrl} alt={title} categoryName={product?.categoryName ?? null} />
+            <Input
+              type="url"
+              placeholder="https://…/product.jpg"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+            />
+          </div>
         </Field>
 
         <Field label="Category" required>

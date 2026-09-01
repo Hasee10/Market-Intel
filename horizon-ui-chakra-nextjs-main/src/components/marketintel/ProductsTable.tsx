@@ -57,7 +57,7 @@ export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: Prod
                         product rows. SKU moves under the title on narrow
                         screens via its own column, so nothing is lost. */}
                     <span className="flex items-center gap-3">
-                      <ProductThumb categoryName={product.categoryName} />
+                      <ProductThumb src={product.imageUrl} alt={product.title} categoryName={product.categoryName} />
                       <span className="min-w-0 truncate">{product.title}</span>
                     </span>
                   </TD>
