@@ -3359,3 +3359,88 @@ objection to finishing the migration.
 
 **Remaining**: 12 dashboard pages, then delete Chakra (`143` import sites
 at the migration's start) and the shims, then the landing page.
+
+## 2026-09-01: Landing pages rebuilt - `874a2ac`, `104a525`, `63afcc6`
+
+**Order changed mid-session, on a behavioural signal not a stated one.**
+The user picked "finish the dashboard first" in an explicit question, then
+asked about the landing page three more times. Read the repetition rather
+than the answer, offered to switch, and they said "do what fits you" -
+so the landing page jumped the queue. **Worth remembering: repeated
+asking outweighs a one-off menu choice.**
+
+### The risk assessment was wrong, and checking fixed it
+
+I had warned the user three times about blockers in the agency.ai
+template - the 8 real strangers in `Teams`, the borrowed
+Microsoft/Zoom/Coinbase logos, the contact form posting to the template
+author's own web3forms key. **None of it applied.** Ryvl's landing page
+already has real content (real headline, real six features,
+`CompanyLogoSlider` on live Supabase showcase data). The job was
+restyling *Ryvl's* sections in the template's visual language - the
+template's own components are simply never imported, so there was
+nothing to strip and nothing needed from the user. **Lesson: an audit of
+a template says nothing about what a migration will actually touch until
+you read the target too.**
+
+### "Strictly follow the template" reversed one of my own calls
+
+User instruction was explicit. The template ships **Manrope**, so the
+marketing pages now use Manrope - not the Outfit I had proposed and
+argued for on brand-consistency grounds. Manrope is scoped to the landing
+surface via a `font-manrope` utility; the app stays on Outfit, so each
+surface matches the template it came from. Same `--font-manrope-src`
+indirection as Outfit, for the same `@theme` name-collision reason.
+
+Brand colour was NOT surrendered to the template: `#4318FF` stays, the
+template's `#5044E5` is unused. Read "follow the template" as *design
+language*, not *brand identity* - the user wants their own brand.
+
+**The hero was the real change**: the template is a single centred column
+with an oversized medium-weight headline, one gradient-filled word, a
+pill badge above and the visual *below* the copy. Ryvl's was a
+two-column split - that was Horizon's layout, not the template's, and
+half-adopting it would have missed the point of the instruction.
+
+**framer-motion trap**: the template uses `whileInView`, which landed in
+framer-motion 6. This app is pinned to **4.x because Chakra 2.6
+peer-depends on it**, so upgrading to match the template could break
+Chakra while the dashboard still uses it. Used this repo's existing
+`Reveal` instead - same staggered fade-and-rise, no dependency risk.
+**Do not upgrade framer-motion until Chakra is fully removed.**
+
+**Custom cursor deliberately not carried over.** The template sets
+`cursor: none` globally and draws its own. It's a portfolio flourish that
+breaks the pointer for anyone relying on it - wrong trade for a B2B
+analytics product. Flagged to the user rather than silently dropped;
+still open if they want it.
+
+### Ported
+
+`AnnouncementBar`, `LandingHeader`, `LandingHero`, `StatsBar`,
+`FeaturesSection`, `ComparisonSection`, `CTABanner`, `LandingFooter`,
+`HowItWorksSection`, `TrustSection`, `PricingSection`.
+
+**All copy and hedges kept verbatim** - the user was explicit that no
+Ryvl feature or planned content could be lost. Specifically preserved:
+the deliberate 12-not-13 category count, the two `wide` differentiator
+tiles in Features, the comparison framed against how sellers work today
+rather than a named competitor, Trust's wording matching the in-product
+Market alert word-for-word, and Pricing's real `entitlements.ts` tiers
+with no dollar figures (no billing provider is wired, so a price would be
+a lie at checkout) and the conditional peer-benchmarking line.
+
+**Kept the numbered 01/02/03 markers in HowItWorks** even though the
+dashboard's decorative section bar was dropped - that sequence is real,
+the bar encoded nothing. Structure should mean something.
+
+**Still Chakra on the landing surface**: `MarketplaceLogoSlider`,
+`CompanyLogoSlider`, `LogoMarquee`, `LogoTile`, `AssistantWidget`,
+`PricingPageBanner`. All still render correctly - untouched, not dropped.
+
+**Pages got lighter**: /pricing 3.52 -> 2.78 kB, /trust 2.82 -> 1.75 kB,
+first load down on all three.
+
+**Still outstanding**: a real dashboard screenshot for the hero (the SVG
+illustration is fine but undersells the rebuilt product), the 12
+dashboard pages, then the Chakra removal.
