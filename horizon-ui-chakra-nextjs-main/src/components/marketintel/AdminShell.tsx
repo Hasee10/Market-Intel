@@ -6,7 +6,7 @@ import { PropsWithChildren, useEffect, useState } from 'react';
 import { SellerAssistantWidget } from 'components/marketintel/SellerAssistantWidget';
 import { AppHeader } from 'components/shell/AppHeader';
 import { AppSidebar, AppSidebarMobile } from 'components/shell/AppSidebar';
-import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/shell/sidebarWidth';
 import { SidebarContext } from 'contexts/SidebarContext';
 import routes from 'routes';
 import { getActiveRoute } from 'utils/navigation';

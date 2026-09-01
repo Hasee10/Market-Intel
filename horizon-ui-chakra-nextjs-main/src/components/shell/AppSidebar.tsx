@@ -13,7 +13,7 @@ import { usePathname } from 'next/navigation';
 import { useContext, useState } from 'react';
 
 import { SidebarContext } from 'contexts/SidebarContext';
-import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth';
+import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/shell/sidebarWidth';
 import type { IRoute } from 'types/navigation';
 
 import { PlanCard } from './PlanCard';
