@@ -2,7 +2,6 @@
 
 import { Suspense, useCallback, useMemo, useState } from 'react';
 
-import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Tag, TagCloseButton, TagLabel, Text, useColorModeValue } from '@chakra-ui/react';
 import {
   MdAddCircleOutline,
   MdGridView,
@@ -15,7 +14,8 @@ import {
 } from 'react-icons/md';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-import Card from 'components/card/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Reveal } from 'components/reactbits/Reveal';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
@@ -139,9 +139,6 @@ function ProductsPageContent() {
   const [importOpen, setImportOpen] = useState(false);
   const [competitorsOpen, setCompetitorsOpen] = useState(false);
 
-  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
-
   const apiUrl = categoryFilterId ? `/api/products?categoryId=${categoryFilterId}` : '/api/products';
   const {
     data: productsData,
@@ -181,13 +178,16 @@ function ProductsPageContent() {
   const renderContent = () => {
     if (productsLoading) {
       return viewMode === 'grid' ? (
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
+        <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={`product-loading-${i}`} height="220px" borderRadius="16px" />
+            <div
+              key={`product-loading-${i}`}
+              className="h-[220px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800"
+            />
           ))}
-        </SimpleGrid>
+        </div>
       ) : (
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
+        <Card>
           <ProductsTable data={[]} loading onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
         </Card>
       );
@@ -204,48 +204,44 @@ function ProductsPageContent() {
 
     if (!productsData?.data?.length) {
       return (
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <Stack align="center" spacing="8px" py="24px">
-            <Icon as={MdOutlineSearchOff} boxSize="28px" color="secondaryGray.600" />
-            <Text fontSize="lg" fontWeight="700">
-              No products found
-            </Text>
-            <Text color="secondaryGray.600">
+        <Card>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <MdOutlineSearchOff className="size-7 text-gray-400" aria-hidden="true" />
+            <p className="text-lg font-bold text-gray-900 dark:text-white">No products found</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {categoryFilterName
                 ? `Nothing in ${categoryFilterName} yet. Add one to get started.`
                 : "You don't have any products yet. Create one to get started."}
-            </Text>
+            </p>
             <Button
-              variant="brand"
-              leftIcon={<Icon as={MdAddCircleOutline} />}
+              className="mt-2"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
               onClick={() => setNewOpen(true)}
             >
               New Product
             </Button>
-          </Stack>
+          </div>
         </Card>
       );
     }
 
     return viewMode === 'grid' ? (
-      <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
+      <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
         {productsData.data.map((p, i) => (
           <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
             <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
           </Reveal>
         ))}
-      </SimpleGrid>
+      </div>
     ) : (
-      <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-        <Box overflowX="auto">
-          <ProductsTable
+      <Card>
+        <ProductsTable
             data={productsData.data}
             loading={false}
             onEdit={handleEditProduct}
             onViewCompetitors={handleViewCompetitors}
           />
-        </Box>
-      </Card>
+        </Card>
     );
   };
 
@@ -255,38 +251,55 @@ function ProductsPageContent() {
         title="Products"
         breadcrumbItems={breadcrumbItems}
         actionButton={
-          <Flex gap="8px">
+          <div className="flex flex-wrap gap-2">
             {productsData?.data && productsData.data.length > 0 && (
-              <>
-                <Button
-                  variant={viewMode === 'grid' ? 'brand' : 'outline'}
+              // Segmented control, same as Customers - two loose buttons
+              // differing only by fill read as unrelated actions.
+              <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+                <button
+                  type="button"
+                  aria-label="Grid view"
+                  aria-pressed={viewMode === 'grid'}
                   onClick={() => setViewMode('grid')}
-                  p="0"
-                  w="40px"
+                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
                 >
-                  <Icon as={MdGridView} />
-                </Button>
-                <Button
-                  variant={viewMode === 'table' ? 'brand' : 'outline'}
+                  <MdGridView className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Table view"
+                  aria-pressed={viewMode === 'table'}
                   onClick={() => setViewMode('table')}
-                  p="0"
-                  w="40px"
+                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
                 >
-                  <Icon as={MdViewList} />
-                </Button>
-              </>
+                  <MdViewList className="size-4" />
+                </button>
+              </div>
             )}
-            <Button variant="outline" leftIcon={<Icon as={MdUploadFile} />} onClick={() => setImportOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MdUploadFile className="size-4" />}
+              onClick={() => setImportOpen(true)}
+            >
               Import CSV
             </Button>
             <Button
-              variant="brand"
-              leftIcon={<Icon as={MdAddCircleOutline} />}
+              size="sm"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
               onClick={() => setNewOpen(true)}
             >
               New Product
             </Button>
-          </Flex>
+          </div>
         }
       />
 
@@ -295,12 +308,21 @@ function ProductsPageContent() {
       )}
 
       {categoryFilterName && (
-        <Flex mb="16px">
-          <Tag size="lg" borderRadius="full" variant="subtle" colorScheme="brand">
-            <TagLabel>Category: {categoryFilterName}</TagLabel>
-            <TagCloseButton onClick={clearCategoryFilter} />
-          </Tag>
-        </Flex>
+        <div className="mb-4 flex">
+          <span className="inline-flex items-center gap-2 rounded-full bg-brand-50 py-1.5 pl-3.5 pr-2 text-sm font-medium text-brand-700 dark:bg-gray-800 dark:text-brand-400">
+            Category: {categoryFilterName}
+            <button
+              type="button"
+              onClick={clearCategoryFilter}
+              aria-label={`Clear ${categoryFilterName} filter`}
+              className="flex size-5 items-center justify-center rounded-full transition-colors hover:bg-brand-100 dark:hover:bg-gray-700"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="size-3">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </span>
+        </div>
       )}
 
       {renderContent()}

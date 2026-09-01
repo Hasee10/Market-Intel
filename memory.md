@@ -3702,10 +3702,82 @@ Match with `/\r?\n/` when scripting edits here.
 `NewCustomerDrawer`, `EditCustomerDrawer`, `NewOrderDrawer`,
 `EditOrderDrawer`, `EditProductDrawer`.
 
-**Still Chakra**: Products page + `ProductCard`/`NewProductDrawer`/
-`CompetitorsDrawer`, Categories, Settings, Scraper Health, Market
-Definition, Onboarding, 3 auth pages, `BulkImportDrawer`,
-`RetentionPanel`, `DomainsManager`, `ReferralCard`, `AuthCard`,
-`OnboardingChecklist`, `DownloadReportButton`, `SellerAssistantWidget`,
-plus `useToast`/`useColorModeValue` call sites that are behaviour rather
-than styling and go with the final removal.
+## 2026-09-01: Real product images - migrations `049` + `050`
+
+User wanted actual product photos in the Products table, like TailAdmin's
+demo. `seller_products` had no image column at all.
+
+**049** adds `seller_products.image_url` - nullable, a URL not an upload
+(sellers importing by CSV already have URLs from their store platform;
+accepting files means a bucket, validation and a deletion path for no
+benefit until someone asks). Wired through both product drawers with a
+live preview, and as a CSV import column.
+
+**050 is the good part.** Most sellers will never fill that column in, but
+**`market_products` already stores a real photo for tens of thousands of
+scraped listings**. `market_images_for_titles(p_titles[], p_min_similarity)`
+trigram-matches a seller's product title against that catalogue using the
+036 GIN index and returns the closest listing's image - so "Samsung Galaxy
+A15" picks up the real phone photo from Daraz. One RPC per page, not N
+queries. **0.35 similarity floor is deliberate**: a weak match would show a
+different product beside the seller's own name, which is worse than no
+image. The seller's own `image_url` always wins.
+
+**Both are applied** (user confirmed via information_schema).
+
+**A mistake worth not repeating**: putting `image_url` in the products
+`SELECT` list made the whole page hard-fail with a red error until 049 was
+applied. `attachScrapedImages` degrades gracefully; the column select does
+not. **A migration that isn't applied yet should never blank a page** -
+offered to harden this, not yet done.
+
+## 2026-09-01: Container queries - the device-dependent layout bug
+
+User asked "does this happen on all devices?" after the stat cards looked
+different on their laptop vs monitor. **Yes, and predictably:** the grids
+used *viewport* breakpoints (`xl:` = 1280px) but sit in a container the
+264px sidebar makes much narrower - they were measuring space the grid
+never had.
+
+It looked arbitrary because **Windows defaults to 125% display scaling on
+many laptops**, so a 1366px screen reports 1092 CSS px, falls under `xl`,
+and silently drops four stat cards to two while the same build shows four
+on a larger monitor.
+
+Fixed with `@container` + `@md:`/`@4xl:` variants on `StatsGrid` and on
+Overview's and Market's row grids. **Verified by grepping the built CSS for
+`@container (min-width:…)` rules, not just that it compiled** - same
+discipline as the cascade fix.
+
+**Use container queries for anything inside the dashboard shell.** Viewport
+breakpoints are wrong there by construction.
+
+## 2026-09-01: Remaining-work inventory (measured, not estimated)
+
+`grep -rl '@chakra-ui' src` = **114 files**, but that number is misleading:
+
+- **33 are `src/views/admin/**` - dead Horizon template demo code.**
+  Verified: `grep` for any import of `views/` from `src/app` or
+  `src/components` returns **zero**. `ASSETS.md` flagged this tree back in
+  the documentation phase. **These get deleted, not ported.**
+- Another ~20 are Horizon template leftovers under `components/` that the
+  real app never renders either (`card/NFT`, `card/Mastercard`,
+  `menu/*`, `navbar/NavbarRTL`, `calendar/*`, `views`-adjacent widgets).
+  Check reachability before porting any of them.
+- `theme/**` (11 files) goes with the Chakra removal itself.
+- Genuinely live and still to port: **Products page (done), Categories,
+  Settings, Scraper Health, Market Definition, Onboarding/CategoryPicker,
+  3 auth pages + `layouts/auth/Default`**, and the components
+  `BulkImportDrawer`, `CompetitorsDrawer`, `NewProductDrawer`,
+  `RetentionPanel`, `DomainsManager`, `ReferralCard`, `AuthCard`,
+  `OnboardingChecklist`, `DownloadReportButton`,
+  `SellerAssistantWidget`, `PasswordInput`, `PasswordRequirements`,
+  `SearchBar`, plus the old `sidebar/*` and `navbar/*` trees that nothing
+  renders any more.
+- Deliberately kept until the very end: `useToast`, `useColorModeValue`
+  and `usePrefersReducedMotion` call sites, and `CountUp`/`Reveal`/
+  `ShinyText`/`SpotlightCard`. These are **behaviour, not styling** -
+  replacing them early buys nothing and risks regressions.
+
+**Do the dead-code deletion first next session** - it removes a third of
+the apparent work and makes the real remainder visible.
