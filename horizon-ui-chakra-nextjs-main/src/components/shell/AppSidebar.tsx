@@ -10,7 +10,7 @@
 
 import NextLink from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 
 import { SidebarContext } from 'contexts/SidebarContext';
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/sidebar/sidebarWidth';
@@ -74,6 +74,136 @@ function NavItem({
   );
 }
 
+// Groups routes into TailAdmin's collapsible dropdown structure: top-level
+// items render on their own, and each `section` becomes an expandable parent
+// with its routes as children.
+//
+// The group holding the current route starts expanded, so the sidebar never
+// hides where you are - and expanding is per-group, not accordion, because
+// closing one section to open another is annoying on a nav this small.
+function NavTree({
+  routes,
+  pathname,
+  isCollapsed,
+  onNavigate,
+}: {
+  routes: IRoute[];
+  pathname: string | null;
+  isCollapsed: boolean;
+  onNavigate?: () => void;
+}) {
+  const groups: { section: string | null; routes: IRoute[] }[] = [];
+  for (const route of routes) {
+    const section = route.section ?? null;
+    const last = groups[groups.length - 1];
+    if (last && last.section === section) last.routes.push(route);
+    else groups.push({ section, routes: [route] });
+  }
+
+  const activeSection =
+    routes.find((r) => pathname === r.layout + r.path)?.section ?? null;
+
+  const [open, setOpen] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      groups
+        .filter((g) => g.section)
+        .map((g) => [g.section as string, g.section === activeSection]),
+    ),
+  );
+
+  return (
+    <>
+      {groups.map((group) => {
+        // Ungrouped routes (Overview) stay as plain top-level items.
+        if (!group.section) {
+          return group.routes.map((route) => (
+            <div key={route.layout + route.path} onClick={onNavigate}>
+              <NavItem
+                route={route}
+                isActive={pathname === route.layout + route.path}
+                isCollapsed={isCollapsed}
+              />
+            </div>
+          ));
+        }
+
+        // Collapsed rail has no room for a disclosure, so children render
+        // flat behind a divider - the icon chips still identify them.
+        if (isCollapsed) {
+          return (
+            <div key={group.section}>
+              <hr className="my-3 border-gray-200 dark:border-gray-800" />
+              {group.routes.map((route) => (
+                <NavItem
+                  key={route.layout + route.path}
+                  route={route}
+                  isActive={pathname === route.layout + route.path}
+                  isCollapsed
+                />
+              ))}
+            </div>
+          );
+        }
+
+        const isOpen = open[group.section] ?? false;
+        const hasActive = group.routes.some((r) => pathname === r.layout + r.path);
+
+        return (
+          <div key={group.section} className="mt-4">
+            <button
+              type="button"
+              onClick={() => setOpen((prev) => ({ ...prev, [group.section!]: !isOpen }))}
+              aria-expanded={isOpen}
+              className={`flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-[10.5px] font-semibold uppercase tracking-[0.1em] transition-colors ${
+                hasActive
+                  ? 'text-brand-600 dark:text-brand-400'
+                  : 'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300'
+              }`}
+            >
+              {group.section}
+              <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2.5}
+                aria-hidden="true"
+                className={`size-3 shrink-0 transition-transform duration-200 ${
+                  isOpen ? 'rotate-180' : ''
+                }`}
+              >
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+
+            {/* Grid-rows trick animates to auto height, which max-height
+                guesses can't do without clipping or lag. */}
+            <div
+              className={`grid transition-all duration-200 ease-out ${
+                isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+              }`}
+            >
+              <div className="overflow-hidden">
+                <div className="pt-1">
+                  {group.routes.map((route) => (
+                    <div key={route.layout + route.path} onClick={onNavigate}>
+                      <NavItem
+                        route={route}
+                        isActive={pathname === route.layout + route.path}
+                        isCollapsed={false}
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
 export function AppSidebar({ routes }: { routes: IRoute[] }) {
   const pathname = usePathname();
   const { isCollapsed = false } = useContext(SidebarContext);
@@ -96,27 +226,7 @@ export function AppSidebar({ routes }: { routes: IRoute[] }) {
       </NextLink>
 
       <nav className="flex-1 overflow-y-auto">
-        {routes.map((route, index) => {
-          const isActive = pathname === route.layout + route.path;
-          // Section header renders only when this route starts a new group -
-          // same rule the Chakra sidebar used (see IRoute.section).
-          const startsSection = route.section && route.section !== routes[index - 1]?.section;
-
-          return (
-            <div key={route.layout + route.path}>
-              {startsSection && !isCollapsed && (
-                <p className="mb-2 mt-5 flex items-center gap-2 px-2 text-[10.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 dark:text-gray-500">
-                  {route.section}
-                  <span className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
-                </p>
-              )}
-              {startsSection && isCollapsed && (
-                <hr className="my-3 border-gray-200 dark:border-gray-800" />
-              )}
-              <NavItem route={route} isActive={isActive} isCollapsed={isCollapsed} />
-            </div>
-          );
-        })}
+        <NavTree routes={routes} pathname={pathname} isCollapsed={isCollapsed} />
       </nav>
 
       <PlanCard isCollapsed={isCollapsed} />
@@ -162,21 +272,13 @@ export function AppSidebarMobile({ routes }: { routes: IRoute[] }) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto" onClick={() => setToggleSidebar?.(false)}>
-          {routes.map((route, index) => {
-            const isActive = pathname === route.layout + route.path;
-            const startsSection = route.section && route.section !== routes[index - 1]?.section;
-            return (
-              <div key={route.layout + route.path}>
-                {startsSection && (
-                  <p className="mb-1.5 mt-4 px-2 text-[10.5px] font-medium uppercase tracking-[0.08em] text-gray-400 dark:text-gray-500">
-                    {route.section}
-                  </p>
-                )}
-                <NavItem route={route} isActive={isActive} isCollapsed={false} />
-              </div>
-            );
-          })}
+        <nav className="flex-1 overflow-y-auto">
+          <NavTree
+            routes={routes}
+            pathname={pathname}
+            isCollapsed={false}
+            onNavigate={() => setToggleSidebar?.(false)}
+          />
         </nav>
 
         <PlanCard isCollapsed={false} />
