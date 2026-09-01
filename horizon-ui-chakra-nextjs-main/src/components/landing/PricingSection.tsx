@@ -1,8 +1,7 @@
 'use client';
 
-import { Badge, Box, Button, Container, Flex, Heading, Icon, SimpleGrid, Text, useColorModeValue } from '@chakra-ui/react';
-import { MdCheck } from 'react-icons/md';
 import NextLink from 'next/link';
+import { MdCheck } from 'react-icons/md';
 
 import { PATH_AUTH } from '@/lib/paths';
 
@@ -15,7 +14,11 @@ const TIERS = [
   {
     name: 'Free',
     tagline: 'Your own store, fully analyzed',
-    features: ['Overview, products, customers, orders', 'Churn & retention insights', 'Bulk CSV import'],
+    features: [
+      'Overview, products, customers, orders',
+      'Churn & retention insights',
+      'Bulk CSV import',
+    ],
     cta: 'Start free',
     highlighted: false,
   },
@@ -54,82 +57,70 @@ const TIERS = [
 ];
 
 export function PricingSection() {
-  const heading = useColorModeValue('#111C4E', 'white');
-  const body = useColorModeValue('gray.600', 'secondaryGray.400');
-  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const cardShadow = useColorModeValue('0px 20px 40px rgba(67, 24, 255, 0.15)', '0px 0px 0px 1px #4318FF');
-  const featureText = useColorModeValue('gray.700', 'secondaryGray.300');
-  const noteText = useColorModeValue('gray.500', 'secondaryGray.500');
-
   return (
-    <Box id="pricing" py={{ base: '70px', md: '100px' }}>
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Box textAlign="center" mb="60px">
-          <Heading
-            as="h2"
-            fontFamily="var(--font-merriweather), serif"
-            fontSize={{ base: '28px', md: '36px' }}
-            color={heading}
-            mb="12px"
-          >
+    <section id="pricing" className="font-manrope py-[70px] md:py-[100px]">
+      <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
+        <div className="mb-14 text-center">
+          <h2 className="text-[28px] font-medium tracking-[-0.02em] text-[#111C4E] md:text-4xl dark:text-white">
             Grows with how deep you want to go
-          </Heading>
-          <Text color={body} fontSize="lg" maxW="560px" mx="auto">
+          </h2>
+          <p className="mx-auto mt-3 max-w-[560px] text-lg text-gray-600 dark:text-gray-400">
             Start free on your own store. Unlock market intelligence as you need it.
-          </Text>
-        </Box>
+          </p>
+        </div>
 
-        <SimpleGrid columns={{ base: 1, md: 3 }} spacing="32px">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {TIERS.map((tier) => (
-            <Box
+            <div
               key={tier.name}
-              borderRadius="20px"
-              p="32px"
-              border="1px solid"
-              borderColor={tier.highlighted ? '#4318FF' : cardBorder}
-              boxShadow={tier.highlighted ? cardShadow : 'none'}
-              position="relative"
+              className={`relative rounded-[20px] border p-8 ${
+                tier.highlighted
+                  ? 'border-[#4318FF] shadow-[0_20px_40px_rgba(67,24,255,0.15)] dark:shadow-[0_0_0_1px_#4318FF]'
+                  : 'border-gray-100 dark:border-gray-800'
+              }`}
             >
               {tier.highlighted && (
-                <Badge position="absolute" top="-12px" left="32px" colorScheme="purple" borderRadius="full" px="10px">
+                <span className="absolute -top-3 left-8 rounded-full bg-[#F0EDFF] px-2.5 py-1 text-xs font-semibold text-[#4318FF] dark:bg-gray-800 dark:text-[#A594FF]">
                   Most popular
-                </Badge>
+                </span>
               )}
-              <Text fontWeight="800" fontSize="xl" color={heading} mb="4px">
+
+              <p className="mb-1 text-xl font-extrabold text-[#111C4E] dark:text-white">
                 {tier.name}
-              </Text>
-              <Text color={body} fontSize="sm" mb="24px">
-                {tier.tagline}
-              </Text>
-              <Box mb="24px">
+              </p>
+              <p className="mb-6 text-sm text-gray-600 dark:text-gray-400">{tier.tagline}</p>
+
+              <div className="mb-7 flex flex-col gap-3">
                 {tier.features.map((feature) => (
-                  <Flex key={feature} align="start" gap="8px" mb="10px">
-                    <Icon as={MdCheck} color="#4318FF" boxSize="18px" mt="2px" />
-                    <Text fontSize="sm" color={featureText}>
-                      {feature}
-                    </Text>
-                  </Flex>
+                  <span key={feature} className="flex items-start gap-2.5">
+                    <MdCheck
+                      className="mt-0.5 size-4 shrink-0 text-[#4318FF] dark:text-[#A594FF]"
+                      aria-hidden="true"
+                    />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
+                  </span>
                 ))}
-              </Box>
-              <Button
-                as={NextLink}
+              </div>
+
+              <NextLink
                 href={PATH_AUTH.signup}
-                variant={tier.highlighted ? 'brand' : 'outline'}
-                w="100%"
-                mb={tier.note ? '10px' : '0'}
+                className={`block w-full rounded-full py-3 text-center text-sm font-medium transition-colors ${
+                  tier.highlighted
+                    ? 'bg-[#4318FF] text-white hover:bg-[#3812DB]'
+                    : 'border border-gray-200 text-gray-700 hover:border-[#4318FF] hover:text-[#4318FF] dark:border-gray-700 dark:text-gray-200'
+                } ${tier.note ? 'mb-2.5' : ''}`}
               >
                 {tier.cta}
-              </Button>
+              </NextLink>
+
               {tier.note && (
-                <Text fontSize="xs" color={noteText} textAlign="center">
-                  {tier.note}
-                </Text>
+                <p className="text-center text-xs text-gray-500 dark:text-gray-400">{tier.note}</p>
               )}
-            </Box>
+            </div>
           ))}
-        </SimpleGrid>
-      </Container>
-    </Box>
+        </div>
+      </div>
+    </section>
   );
 }
 
