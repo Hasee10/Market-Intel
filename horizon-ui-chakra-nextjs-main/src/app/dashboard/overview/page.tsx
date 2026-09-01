@@ -1,29 +1,9 @@
 'use client';
 
 import NextLink from 'next/link';
-import {
-  Badge,
-  Box,
-  Button,
-  Flex,
-  Grid,
-  GridItem,
-  Heading,
-  Icon,
-  SimpleGrid,
-  Skeleton,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  useColorModeValue,
-} from '@chakra-ui/react';
+import { useColorModeValue } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdOutlineInsertChart } from 'react-icons/md';
 
-import Card from 'components/card/Card';
 import PieChart from 'components/charts/PieChart';
 import LineChart from 'components/charts/LineChart';
 
@@ -31,8 +11,10 @@ import { DownloadReportButton } from '@/components/marketintel/DownloadReportBut
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { InsightBanner } from '@/components/marketintel/InsightBanner';
 import { OnboardingChecklist } from '@/components/marketintel/OnboardingChecklist';
-import { PageHeader } from '@/components/marketintel/PageHeader';
-import { StatsGrid, StatItem } from '@/components/marketintel/StatsGrid';
+import { Card } from '@/components/ui/Card';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { SectionHeading } from '@/components/ui/SectionHeading';
+import { StatsGrid, StatItem } from '@/components/ui/StatsGrid';
 import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
@@ -43,17 +25,23 @@ import type { RevenueForecast } from '@/lib/market-intel/forecast';
 // just flat "No X yet" text with nowhere to go.
 function ChartEmptyState({ message, ctaLabel, ctaHref }: { message: string; ctaLabel: string; ctaHref: string }) {
   return (
-    <Flex direction="column" align="center" justify="center" h="260px" gap="10px">
-      <Icon as={MdOutlineInsertChart} boxSize="32px" color="secondaryGray.400" />
-      <Text color="secondaryGray.600" textAlign="center">
-        {message}
-      </Text>
-      <Button as={NextLink} href={ctaHref} size="sm" variant="outline" leftIcon={<Icon as={MdAddCircleOutline} />}>
+    <div className="flex h-[260px] flex-col items-center justify-center gap-2.5 px-4 text-center">
+      <MdOutlineInsertChart className="size-8 text-gray-300 dark:text-gray-600" aria-hidden="true" />
+      <p className="text-sm text-gray-500 dark:text-gray-400">{message}</p>
+      <NextLink
+        href={ctaHref}
+        className="mt-1 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300 dark:hover:text-brand-400"
+      >
+        <MdAddCircleOutline className="size-4" aria-hidden="true" />
         {ctaLabel}
-      </Button>
-    </Flex>
+      </NextLink>
+    </div>
   );
 }
+
+const chartSkeleton = (
+  <div className="h-[260px] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+);
 
 type OrderStatusRow = { status: string; count: number; value: number; percentage: number };
 type CategoryRow = { category: string; value: number; products: number; percentage: number };
@@ -88,16 +76,13 @@ function formatCurrency(v: number, currency: string) {
 }
 
 export default function OverviewPage() {
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
+  // Only the values ApexCharts still needs survive here. Card borders, table
+  // row hover, the section accent bar and the category badge all moved to
+  // Tailwind classes in the markup below, so their useColorModeValue calls
+  // were removed rather than left dangling.
   const cardBg = useColorModeValue('white', 'navy.700');
-  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
-  const sectionAccent = useColorModeValue('#4318FF', '#A594FF');
   const donutLabelColor = useColorModeValue('#1B2559', '#FFFFFF');
   const donutTotalColor = useColorModeValue('#A3AED0', '#A3AED0');
-  const tableRowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
-  const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
-  const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
   // Chart tooltips previously hardcoded `theme: 'dark'` unconditionally -
   // even in light mode - and ApexCharts' generic dark preset (a flat grey,
   // not this app's specific navy) sat close enough in luminance to Ryvl's
@@ -307,7 +292,7 @@ export default function OverviewPage() {
   };
 
   return (
-    <Box>
+    <div className="font-outfit">
       <PageHeader title="Overview" actionButton={<DownloadReportButton />} />
 
       <OnboardingChecklist />
@@ -333,30 +318,33 @@ export default function OverviewPage() {
           silently split the wrong stats. */}
       <StatsGrid data={primaryStats} loading={statsLoading} columns={4} />
 
-      <Flex align="center" gap="10px" mb="14px" mt="12px">
-        <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
-        <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
-          Revenue & fulfillment
-        </Heading>
-      </Flex>
-      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <Flex justify="space-between" align="center" mb="10px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Revenue trend {forecast ? '& 14-day forecast' : '(30 days)'}
-            </Text>
-            {forecast && (
-              <Badge colorScheme={forecast.trendDirection === 'up' ? 'green' : forecast.trendDirection === 'down' ? 'red' : 'gray'}>
+      <SectionHeading title="Revenue & fulfillment" />
+      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <Card
+          className="lg:col-span-2"
+          title={`Revenue trend ${forecast ? '& 14-day forecast' : '(30 days)'}`}
+          action={
+            forecast ? (
+              <span
+                className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  forecast.trendDirection === 'up'
+                    ? 'bg-success-50 text-success-700 dark:bg-gray-800 dark:text-success-500'
+                    : forecast.trendDirection === 'down'
+                      ? 'bg-error-50 text-error-700 dark:bg-gray-800 dark:text-error-500'
+                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                }`}
+              >
                 {forecast.trendDirection === 'flat'
                   ? 'Stable'
                   : `${forecast.trendDirection === 'up' ? '+' : ''}${formatCurrency(forecast.changePerWeek, reportingCurrency)}/wk`}
-              </Badge>
-            )}
-          </Flex>
+              </span>
+            ) : undefined
+          }
+        >
           {revenueLoading ? (
-            <Skeleton height="260px" />
+            chartSkeleton
           ) : forecast ? (
-            <Box h="260px">
+            <div className="h-[260px]">
               <LineChart
                 type="area"
                 chartData={[
@@ -412,7 +400,7 @@ export default function OverviewPage() {
                   },
                 }}
               />
-            </Box>
+            </div>
           ) : revenueTrend.length === 0 ? (
             <ChartEmptyState
               message="No revenue data yet - record your first order to see a trend here."
@@ -420,17 +408,15 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.orders}
             />
           ) : (
-            <Box h="260px">
+            <div className="h-[260px]">
               <LineChart type="area" chartData={lineChartData} chartOptions={lineChartOptions} />
-            </Box>
+            </div>
           )}
         </Card>
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
-            Order status
-          </Text>
+
+        <Card title="Order status">
           {ordersLoading ? (
-            <Skeleton height="260px" />
+            chartSkeleton
           ) : orders.length === 0 ? (
             <ChartEmptyState
               message="No orders yet - add one to see fulfillment status here."
@@ -438,59 +424,56 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.orders}
             />
           ) : (
-            <Box h="260px">
+            <div className="h-[260px]">
               <PieChart type="donut" chartData={orderPieData} chartOptions={orderPieOptions} />
-            </Box>
+            </div>
           )}
         </Card>
-      </Grid>
+      </div>
 
-      <Flex align="center" justify="space-between" wrap="wrap" gap="12px" mb="14px" mt="12px">
-        <Flex align="center" gap="10px">
-          <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
-          <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
-            Products & inventory
-          </Heading>
-        </Flex>
-        {!statsLoading && (activeProductsStat || lowStockStat) && (
-          <Flex gap="20px">
-            {activeProductsStat && (
-              <Flex align="baseline" gap="6px">
-                <Text fontSize="lg" fontWeight="700" color={textColor}>
-                  {activeProductsStat.value}
-                </Text>
-                <Text fontSize="xs" color="secondaryGray.600">
-                  active{activeProductsStat.period ? ` (${activeProductsStat.period})` : ''}
-                </Text>
-              </Flex>
-            )}
-            {lowStockStat && (
-              <Flex align="baseline" gap="6px">
-                <Text
-                  fontSize="lg"
-                  fontWeight="700"
-                  // Low stock is the one inventory figure that's a warning
-                  // above zero - everywhere else on this page, colour means
-                  // trend direction; here it means "needs attention".
-                  color={Number(lowStockStat.value.replace(/,/g, '')) > 0 ? 'orange.500' : textColor}
-                >
-                  {lowStockStat.value}
-                </Text>
-                <Text fontSize="xs" color="secondaryGray.600">
-                  low stock{lowStockStat.period ? ` (${lowStockStat.period})` : ''}
-                </Text>
-              </Flex>
-            )}
-          </Flex>
-        )}
-      </Flex>
-      <Grid templateColumns={{ base: '1fr', lg: '5fr 7fr' }} gap="20px">
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
-            Category inventory value
-          </Text>
+      <SectionHeading
+        title="Products & inventory"
+        meta={
+          !statsLoading && (activeProductsStat || lowStockStat) ? (
+            <div className="flex items-baseline gap-5">
+              {activeProductsStat && (
+                <p className="flex items-baseline gap-1.5">
+                  <span className="text-base font-semibold text-gray-900 tabular-nums dark:text-white">
+                    {activeProductsStat.value}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    active{activeProductsStat.period ? ` (${activeProductsStat.period})` : ''}
+                  </span>
+                </p>
+              )}
+              {lowStockStat && (
+                <p className="flex items-baseline gap-1.5">
+                  {/* Low stock is the one inventory figure that's a warning
+                      above zero - everywhere else on this page colour means
+                      trend direction; here it means "needs attention". */}
+                  <span
+                    className={`text-base font-semibold tabular-nums ${
+                      Number(lowStockStat.value.replace(/,/g, '')) > 0
+                        ? 'text-orange-500'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {lowStockStat.value}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    low stock{lowStockStat.period ? ` (${lowStockStat.period})` : ''}
+                  </span>
+                </p>
+              )}
+            </div>
+          ) : undefined
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+        <Card className="lg:col-span-5" title="Category inventory value">
           {categoriesLoading ? (
-            <Skeleton height="260px" />
+            chartSkeleton
           ) : categories.length === 0 ? (
             <ChartEmptyState
               message="No active products yet - add one to see category breakdown here."
@@ -498,17 +481,15 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.products.root}
             />
           ) : (
-            <Box h="260px">
+            <div className="h-[260px]">
               <PieChart type="donut" chartData={categoryPieData} chartOptions={categoryPieOptions} />
-            </Box>
+            </div>
           )}
         </Card>
-        <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
-          <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
-            Top products by inventory value
-          </Text>
+
+        <Card className="lg:col-span-7" title="Top products by inventory value">
           {productsLoading ? (
-            <Skeleton height="260px" />
+            chartSkeleton
           ) : topProducts.length === 0 ? (
             <ChartEmptyState
               message="No products yet - add your catalog to rank by inventory value here."
@@ -517,49 +498,71 @@ export default function OverviewPage() {
             />
           ) : (
             <>
-              <Box overflowX="auto">
-                <Table variant="simple">
-                  <Thead>
-                    <Tr>
-                      <Th>Title</Th>
-                      <Th>Category</Th>
-                      <Th isNumeric>Sell price</Th>
-                      <Th isNumeric>Stock</Th>
-                      <Th isNumeric>Inventory value</Th>
-                    </Tr>
-                  </Thead>
-                  <Tbody>
+              {/* Scrolls within its own container so the page body never
+                  scrolls sideways on a narrow viewport. */}
+              <div className="-mx-1 overflow-x-auto px-1">
+                <table className="w-full min-w-[560px] border-collapse">
+                  <thead>
+                    <tr className="border-b border-gray-200 dark:border-gray-800">
+                      <th className="pb-3 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
+                        Title
+                      </th>
+                      <th className="pb-3 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
+                        Category
+                      </th>
+                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
+                        Sell price
+                      </th>
+                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
+                        Stock
+                      </th>
+                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
+                        Inventory value
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {topProducts.map((p) => (
-                      <Tr key={p.id} transition="background-color 0.15s ease" _hover={{ bg: tableRowHoverBg }}>
-                        <Td fontWeight="600" color={textColor}>
+                      <tr
+                        key={p.id}
+                        className="border-b border-gray-100 transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
+                      >
+                        <td className="py-3 pr-3 text-sm font-medium text-gray-900 dark:text-white">
                           {p.title}
-                        </Td>
-                        <Td>
-                          <Badge borderRadius="full" px="10px" py="2px" fontSize="xs" fontWeight="600" bg={categoryBadgeBg} color={categoryBadgeColor}>
+                        </td>
+                        <td className="py-3 pr-3">
+                          <span className="whitespace-nowrap rounded-md bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 dark:bg-gray-800 dark:text-brand-400">
                             {p.category}
-                          </Badge>
-                        </Td>
-                        <Td isNumeric>{formatCurrency(p.sellPrice, p.currency)}</Td>
-                        <Td isNumeric>{p.stockQty}</Td>
-                        <Td isNumeric fontWeight="700" color={textColor}>
+                          </span>
+                        </td>
+                        <td className="py-3 text-right text-sm text-gray-600 tabular-nums dark:text-gray-400">
+                          {formatCurrency(p.sellPrice, p.currency)}
+                        </td>
+                        <td className="py-3 text-right text-sm text-gray-600 tabular-nums dark:text-gray-400">
+                          {p.stockQty}
+                        </td>
+                        <td className="py-3 text-right text-sm font-semibold text-gray-900 tabular-nums dark:text-white">
                           {formatCurrency(p.inventoryValue, p.currency)}
-                        </Td>
-                      </Tr>
+                        </td>
+                      </tr>
                     ))}
-                  </Tbody>
-                </Table>
-              </Box>
+                  </tbody>
+                </table>
+              </div>
               {(productsData?.data?.length ?? 0) > topProducts.length && (
-                <Flex justify="flex-end" mt="12px">
-                  <Button as={NextLink} href={PATH_APPS.products.root} size="sm" variant="ghost" colorScheme="brand">
-                    View all products →
-                  </Button>
-                </Flex>
+                <div className="mt-3 flex justify-end">
+                  <NextLink
+                    href={PATH_APPS.products.root}
+                    className="text-sm font-medium text-brand-500 transition-colors hover:text-brand-600 dark:text-brand-400"
+                  >
+                    View all products &rarr;
+                  </NextLink>
+                </div>
               )}
             </>
           )}
         </Card>
-      </Grid>
-    </Box>
+      </div>
+    </div>
   );
 }
