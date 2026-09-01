@@ -89,7 +89,7 @@ function PhoneCompetitors() {
 /** Wide browser chassis for the desktop shot. */
 function Desktop() {
   return (
-    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
+    <div className="w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900">
       <div className="flex items-center gap-1 border-b border-gray-100 px-2 py-1.5 dark:border-gray-800">
         <span className="size-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />
         <span className="size-1.5 rounded-full bg-gray-200 dark:bg-gray-700" />
@@ -171,17 +171,23 @@ export function ShowcaseSection() {
         desc="The market context most sellers never get to see - on your desk and in your pocket."
       />
 
-      <div className="grid w-full max-w-5xl grid-cols-1 gap-8 pt-4 md:grid-cols-3">
+      <div className="grid w-full max-w-5xl grid-cols-1 items-stretch gap-8 pt-4 md:grid-cols-3">
         {ITEMS.map((item, i) => (
-          <Reveal key={item.title} delay={i * 120}>
+          <Reveal key={item.title} delay={i * 120} className="h-full">
             <div className="flex h-full flex-col">
-              <div className="flex flex-1 items-center justify-center rounded-2xl bg-gradient-to-br from-[#EEF0FF] to-[#F7F5FF] p-6 dark:from-gray-800 dark:to-gray-900">
+              {/* Fixed-height stage with the frame centred inside it. Letting
+                  the panel size to its contents made the desktop card - which
+                  is shorter than a phone - sit visibly higher than its
+                  neighbours and broke the row. */}
+              <div className="flex h-[340px] items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-[#E6E9FF] via-[#F2F0FF] to-[#FBF0FF] p-6 ring-1 ring-inset ring-white/60 dark:from-gray-800 dark:via-gray-850 dark:to-gray-900 dark:ring-white/5">
                 {item.frame}
               </div>
-              <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">
+              <h3 className="mt-5 text-lg font-medium text-gray-900 dark:text-white">
                 {item.title}
               </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-white/70">{item.description}</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-gray-500 dark:text-white/70">
+                {item.description}
+              </p>
             </div>
           </Reveal>
         ))}
