@@ -19,7 +19,14 @@ vi.mock('@/lib/supabase/server', () => ({
         eq: () => ({
           eq: () => ({
             not: () => ({
-              not: async () => ({ data: productRows, error: null }),
+              // Annotated, not inferred: strictNullChecks is off project-wide,
+              // so a bare `error: null` infers as implicit any and trips
+              // TS7018 - the same explicit shape the other market-intel test
+              // mocks use.
+              not: async (): Promise<{ data: any[]; error: null }> => ({
+                data: productRows,
+                error: null,
+              }),
             }),
           }),
         }),
