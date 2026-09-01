@@ -2,26 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
-import {
-  Button,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
-  Flex,
-  FormControl,
-  FormLabel,
-  Input,
-  NumberInput,
-  NumberInputField,
-  Select,
-  Stack,
-  Switch,
-  useToast,
-} from '@chakra-ui/react';
+// useToast only - see WatchlistView for why toasts stay on Chakra.
+import { useToast } from '@chakra-ui/react';
+
+import { Button } from '@/components/ui/Button';
+import { Drawer } from '@/components/ui/Drawer';
+import { Field, Input, Select, Toggle } from '@/components/ui/Field';
 
 import { IProduct, IProductCategory, SUPPORTED_CURRENCIES } from '@/types/products';
 
@@ -170,107 +156,96 @@ export function EditProductDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
-      <DrawerOverlay />
-      <DrawerContent>
-        <DrawerCloseButton />
-        <DrawerHeader>Edit product</DrawerHeader>
-        <DrawerBody>
-          <Stack spacing="16px">
-            <FormControl isRequired>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Title
-              </FormLabel>
-              <Input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} />
-            </FormControl>
-            <Flex gap="12px">
-              <FormControl flex="2">
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Sell price
-                </FormLabel>
-                <NumberInput value={sellPrice} onChange={(_, v) => setSellPrice(v || 0)} min={0}>
-                  <NumberInputField placeholder="sell price" />
-                </NumberInput>
-              </FormControl>
-              <FormControl flex="1">
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Currency
-                </FormLabel>
-                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                  {SUPPORTED_CURRENCIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code}
-                    </option>
-                  ))}
-                </Select>
-              </FormControl>
-            </Flex>
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Cost price
-              </FormLabel>
-              <NumberInput value={costPrice} onChange={(_, v) => setCostPrice(v || 0)} min={0}>
-                <NumberInputField placeholder="cost price" />
-              </NumberInput>
-            </FormControl>
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Stock quantity
-              </FormLabel>
-              <NumberInput value={stockQty} onChange={(_, v) => setStockQty(v || 0)} min={0}>
-                <NumberInputField placeholder="stock quantity" />
-              </NumberInput>
-            </FormControl>
-            <FormControl>
-              <FormLabel fontSize="sm" fontWeight="500">
-                SKU
-              </FormLabel>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit product"
+      footer={
+        <div className="flex w-full justify-between">
+          <Button variant="danger" onClick={handleDelete} loading={loading}>
+            Delete Product
+          </Button>
+          <Button onClick={handleSubmit} loading={loading}>
+            Update Product
+          </Button>
+        </div>
+      }
+    >
+      <div className="flex flex-col gap-4">
+        <Field label="Title" required>
+          <Input placeholder="title" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Field>
+
+        <div className="flex gap-3">
+          <div className="flex-[2]">
+            <Field label="Sell price">
               <Input
-                placeholder="Stock Keeping Unit"
-                value={sku}
-                onChange={(e) => setSku(e.target.value)}
+                type="number"
+                min={0}
+                placeholder="sell price"
+                value={sellPrice}
+                onChange={(e) => setSellPrice(Number(e.target.value) || 0)}
               />
-            </FormControl>
-            <FormControl isRequired>
-              <FormLabel fontSize="sm" fontWeight="500">
-                Category
-              </FormLabel>
-              <Select
-                placeholder="Select category"
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                isDisabled={categoriesLoading}
-              >
-                {categories.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
+            </Field>
+          </div>
+          <div className="flex-1">
+            <Field label="Currency">
+              <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                {SUPPORTED_CURRENCIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code}
                   </option>
                 ))}
               </Select>
-            </FormControl>
-            <Flex align="center" justify="space-between">
-              <FormLabel mb="0" fontSize="sm" fontWeight="500">
-                Active
-              </FormLabel>
-              <Switch
-                isChecked={isActive}
-                onChange={(e) => setIsActive(e.target.checked)}
-                colorScheme="brand"
-              />
-            </Flex>
-          </Stack>
-        </DrawerBody>
-        <DrawerFooter>
-          <Flex justify="space-between" w="100%">
-            <Button colorScheme="red" variant="outline" onClick={handleDelete} isLoading={loading}>
-              Delete Product
-            </Button>
-            <Button variant="brand" onClick={handleSubmit} isLoading={loading}>
-              Update Product
-            </Button>
-          </Flex>
-        </DrawerFooter>
-      </DrawerContent>
+            </Field>
+          </div>
+        </div>
+
+        <Field label="Cost price">
+          <Input
+            type="number"
+            min={0}
+            placeholder="cost price"
+            value={costPrice}
+            onChange={(e) => setCostPrice(Number(e.target.value) || 0)}
+          />
+        </Field>
+
+        <Field label="Stock quantity">
+          <Input
+            type="number"
+            min={0}
+            placeholder="stock quantity"
+            value={stockQty}
+            onChange={(e) => setStockQty(Number(e.target.value) || 0)}
+          />
+        </Field>
+
+        <Field label="SKU">
+          <Input
+            placeholder="Stock Keeping Unit"
+            value={sku}
+            onChange={(e) => setSku(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Category" required>
+          <Select
+            value={categoryId}
+            onChange={(e) => setCategoryId(e.target.value)}
+            disabled={categoriesLoading}
+          >
+            <option value="">Select category</option>
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Toggle label="Active" checked={isActive} onChange={setIsActive} />
+      </div>
     </Drawer>
   );
 }

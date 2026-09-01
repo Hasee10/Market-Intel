@@ -66,6 +66,35 @@ export function Textarea({
   return <textarea {...rest} className={`${control} ${invalid ? bad : ok} ${className}`} />;
 }
 
+// Replaces Chakra's Switch. A real checkbox underneath, visually hidden but
+// still focusable and screen-reader correct - a div-with-onClick toggle
+// would lose both.
+export function Toggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  label: string;
+}) {
+  return (
+    <label className="font-outfit flex cursor-pointer items-center justify-between gap-3">
+      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+      <span className="relative inline-flex">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="peer sr-only"
+        />
+        <span className="block h-6 w-11 rounded-full bg-gray-200 transition-colors peer-checked:bg-brand-500 peer-focus-visible:ring-2 peer-focus-visible:ring-brand-300 dark:bg-gray-700" />
+        <span className="pointer-events-none absolute left-0.5 top-0.5 size-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5" />
+      </span>
+    </label>
+  );
+}
+
 export function Select({
   invalid,
   className = '',
