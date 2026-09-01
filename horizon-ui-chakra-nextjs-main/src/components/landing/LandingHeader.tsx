@@ -21,9 +21,14 @@ export function LandingHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    // Translucent + backdrop-blur, matching the template's Navbar rather than
-    // a solid bar - content scrolls visibly under it.
-    <header className="font-manrope sticky top-0 z-20 bg-white/50 font-medium backdrop-blur-xl dark:bg-gray-900/70">
+    // Glass, not just translucency. Three things together make it read as
+    // frosted rather than as a faded bar:
+    //   - a low background alpha, so what scrolls under is genuinely visible
+    //   - saturate on the backdrop, because blurring alone washes colour out
+    //     and the result looks grey and dead against a coloured hero
+    //   - a light hairline along the bottom edge, which is what gives glass
+    //     its thickness; without it the bar just dissolves into the page
+    <header className="font-manrope sticky top-0 z-20 border-b border-white/40 bg-white/30 font-medium backdrop-blur-2xl backdrop-saturate-150 dark:border-white/10 dark:bg-gray-950/30">
       {/* 3-column grid (not space-between) so the nav centres on the header's
           true midpoint regardless of how wide the logo or button group are.
           Padding follows the template's own scale. */}

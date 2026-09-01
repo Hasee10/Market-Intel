@@ -37,7 +37,7 @@ const POINTS = [
 const NODE_PX = 56; // size-14
 const NODE_RADIUS = NODE_PX / 2;
 const CONNECTOR_CLEARANCE = NODE_RADIUS + 6; // 6px of air before the circle
-const COLUMN_GAP_PX = 24; // md:gap-x-6
+const COLUMN_GAP_PX = 24; // sm:gap-x-6 - must match the <ol> gap exactly
 
 // Rendered as one connected pipeline rather than three separate cards: these
 // three guarantees are sequential in the data path (aggregate -> gate on
@@ -64,7 +64,12 @@ export function TrustSection() {
           skips Tailwind's preflight (see styles/tailwind.css), so a bare
           <ol> keeps its default numbering and renders "1." beside each
           node. */}
-      <ol className="grid w-full max-w-6xl list-none grid-cols-1 gap-y-12 md:grid-cols-3 md:gap-x-6 md:gap-y-0">
+      {/* Goes horizontal at sm (640px), not md: the chain is the point of
+          this section, and a stack of three cards says nothing a plain grid
+          didn't. One gap value across every breakpoint, because the
+          connector offsets below are computed from COLUMN_GAP_PX - a
+          responsive gap would put the links 8px off between breakpoints. */}
+      <ol className="grid w-full max-w-6xl list-none grid-cols-1 gap-y-12 sm:grid-cols-3 sm:gap-x-6 sm:gap-y-0">
         {POINTS.map((point, i) => {
           const Icon = point.icon;
           return (
@@ -118,7 +123,7 @@ function Connector() {
       {/* Stacked layout: the chain runs downward through the row gap. */}
       <span
         aria-hidden="true"
-        className="chain-line-y absolute -top-12 left-1/2 h-12 w-px -translate-x-1/2 text-gray-300 md:hidden dark:text-gray-600"
+        className="chain-line-y absolute -top-12 left-1/2 h-12 w-px -translate-x-1/2 text-gray-300 sm:hidden dark:text-gray-600"
       />
 
       {/* Side-by-side layout: horizontal, node edge to node edge. */}
@@ -129,7 +134,7 @@ function Connector() {
           left: `calc(-50% - ${COLUMN_GAP_PX}px + ${CONNECTOR_CLEARANCE}px)`,
           right: `calc(50% + ${CONNECTOR_CLEARANCE}px)`,
         }}
-        className="chain-line absolute hidden h-px text-gray-300 md:block dark:text-gray-600"
+        className="chain-line absolute hidden h-px text-gray-300 sm:block dark:text-gray-600"
       />
 
       {/* Arrowhead, so the chain reads as flow rather than as a rule between
@@ -138,7 +143,7 @@ function Connector() {
       <span
         aria-hidden="true"
         style={{ top: NODE_RADIUS - 1, right: `calc(50% + ${CONNECTOR_CLEARANCE}px)` }}
-        className="absolute hidden size-1.5 -translate-y-1/2 rotate-45 border-t border-r border-gray-400 md:block dark:border-gray-500"
+        className="absolute hidden size-1.5 -translate-y-1/2 rotate-45 border-t border-r border-gray-400 sm:block dark:border-gray-500"
       />
     </>
   );
