@@ -7,14 +7,27 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**UPDATE 2026-09-01 (fourth update, supersedes the "third" one directly
+**UPDATE 2026-09-01 (fifth update, supersedes the "fourth" one directly
 below it, which is now stale but kept as history) — READ THIS FIRST,
-especially if you are the fresh session the user said they'd start after
-this update was written. Skip straight to the bottom-most dated entry
-("Frontend rebuild: documentation phase") for full detail - this is just
-the fast-orientation summary.**
+especially if you are the fresh session the user said they'd start. Skip
+straight to the bottom-most dated entry ("Frontend rebuild: documentation
+phase") for full detail on everything through the fourth update, then the
+entry right above this paragraph's own position for what got added after
+it (search "TailAdmin") - this note is just the fast-orientation summary.**
 
-**Current HEAD: `bd6481d`, pushed to `origin/main`, working tree clean.**
+**Current HEAD: `82d5cd3`, pushed to `origin/main`, working tree clean.**
+
+**Since the "fourth" update below: a second template arrived and was
+audited the same way - `tailadmin-react-dashboard/` (TailAdmin React,
+MIT, committed in full) mapped specifically against Ryvl's real Overview
+page content (user explicitly scoped this to Overview only - "dashboard
+as the part in the overview only, we will be adjusting the rest of the
+features as well" - the other 12 pages are still a separate, later
+task). See `OVERVIEW_TEMPLATE_AUDIT.md`, read alongside the other four.
+Two real gaps found there: the template's `MonthlyTarget` (a revenue-goal
+gauge) and `DemographicCard` (customer-country map) have no Ryvl feature
+or data behind them at all - flagged as open questions, not silently
+kept or dropped. Still zero implementation - fetched and read only.**
 
 **The user's plan, in their own words: adopt a new template's UI, port
 Ryvl's real features onto it, strip what's unnecessary. "implement
@@ -3018,3 +3031,90 @@ from what got *checked*, not what got *written* - every one of the 4
 documents above had at least one claim caught and corrected by actually
 verifying against the filesystem/grep before shipping, not by writing
 confidently. Carry that discipline into whatever gets implemented next.
+
+## 2026-09-01: TailAdmin React dashboard - Overview page audit - `82d5cd3`
+
+Same session, continued. User asked for "good dashboard places" (plural,
+research request - answered with 4 real candidates: TailAdmin React,
+shadcn-admin, Tremor blocks, Flowbite React admin, each with a real link
+and a one-line fit assessment against the enterprise/dense brief and the
+landing template's own stack). Then: "use tailadmin react's dashboard in
+our overview and make ready the system for the new session to get started
+immediately. prep it."
+
+**Scope clarification worth preserving exactly**: initially read "the
+dashboard" as potentially meaning the whole 13-page authenticated app -
+asked, and the user corrected: **"dashboard" in this context means
+specifically the Overview/home-page pattern (KPI cards + charts), and the
+other 12 pages will each be adjusted separately, later, one at a time -
+same page-by-page discipline as everything else in this project.** Don't
+re-litigate this scope in a future session without re-reading this
+correction first.
+
+**Fetched `github.com/TailAdmin/free-react-tailwind-admin-dashboard`**
+(shallow clone, `.git` stripped after - same pattern as the landing
+template) - confirmed via its own `package.json`: React 19 + Vite +
+Tailwind 4 + TypeScript + `apexcharts`/`react-apexcharts`. **The
+apexcharts match matters** - it's the exact same charting library Ryvl's
+current Overview already uses, which is a real, checked compatibility
+signal, not a guess - chart config logic (colors, tooltips, series shape)
+has a much shorter path to reuse than if the template used a different
+charting library entirely.
+
+**Found the actual Overview-equivalent immediately** via the plan's own
+instruction to check the template's real structure first, not assume:
+`src/pages/Dashboard/Home.tsx`, a 12-column grid composing 6 components
+(`EcommerceMetrics`, `MonthlySalesChart`, `MonthlyTarget`,
+`StatisticsChart`, `DemographicCard`, `RecentOrders`). Read every one of
+the 6 in full before writing the mapping doc, not just skimmed.
+
+**`OVERVIEW_TEMPLATE_AUDIT.md` is the result.** Component-by-component
+mapping against `FEATURES.md`'s real, already-documented Overview
+content - not a generic "looks similar" pass:
+- `EcommerceMetrics` (2 stat cards) - Ryvl's real `StatsGrid` already does
+  this better (4 metrics, per-metric icon/color) - port the *visual
+  style* in, not the narrower 2-metric structure.
+- `MonthlySalesChart` (12 fixed months, dummy bar data) - doesn't match
+  Ryvl's real 30-day *trend* shape at all - flagged as a content-shape
+  decision (keep Ryvl's real chart + this template's styling, or also add
+  a monthly view?), not assumed either way.
+- **`MonthlyTarget`** (a radial gauge toward a hardcoded "$20K" revenue
+  goal) - **checked against `FEATURES.md` and confirmed Ryvl has no
+  seller-set-target feature anywhere.** Genuinely nothing to map this to -
+  flagged as drop/repurpose/new-feature-request, explicitly not decided
+  here.
+- `StatisticsChart` (2-series area chart + date-range picker) - closest
+  real match to Ryvl's existing actual-vs-forecast dashed-line chart.
+- **`DemographicCard`** (world map, customers by country) - **same
+  situation as `MonthlyTarget`: checked, confirmed no real Ryvl data
+  behind it** (the seller's own country in `countries.ts` is a different
+  thing entirely from customer geography, which Ryvl doesn't track at
+  all). Flagged, not silently kept or dropped.
+- **`RecentOrders`** - caught a naming bug in the template itself before
+  it could propagate: despite being titled "Recent Orders," the component
+  actually renders a *products* table (`interface Product`, columns
+  Products/Category/Price/Status, zero order/customer/date fields).
+  Flagged explicitly so a future session doesn't inherit the same
+  confusion - real candidates are Ryvl's actual top-products-by-value
+  table (closer structural match) or a real orders list (different
+  columns entirely), the implementing session needs to pick one on
+  purpose.
+- **Dummy-data check, done deliberately after the landing template's
+  real-person/real-logo scare**: confirmed this template's placeholder
+  data is entirely generic (fake numbers, generic Apple-product names,
+  fixed Jan-Dec months) - no real people, no real brand logos this time.
+  Worth explicitly ruling this out rather than assuming a second template
+  is clean just because the first one had a specific type of problem.
+- **A 4th brand-color candidate found**: `--color-brand-500: #465FFF`
+  (`tailadmin-react-dashboard/src/index.css:50`) - unlike the 3 already
+  in `ASSETS.md`, this one is a complete, proper 11-step Tailwind scale
+  (`brand-25` through `brand-950`), not a single flat hex. Noted as
+  possibly worth reusing the *scale's structure* while swapping in Ryvl's
+  real `#4318FF` as the anchor value - a suggestion, not a decision made
+  here.
+
+**Both template folders are now committed in full** (landing template +
+TailAdmin dashboard, both `.git`-stripped) so the implementing session has
+everything locally without depending on a live GitHub fetch or the user's
+local disk. Per instruction, zero application code was touched in
+producing any of this - fetched, read, and documented only.
