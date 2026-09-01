@@ -2,10 +2,10 @@
 
 import { useCallback, useState } from 'react';
 
-import { Box, Button, Flex, Icon, SimpleGrid, Skeleton, Stack, Text } from '@chakra-ui/react';
 import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
 
-import Card from 'components/card/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { CustomersTable } from '@/components/marketintel/CustomersTable';
@@ -65,11 +65,14 @@ export default function CustomersPage() {
   const renderContent = () => {
     if (customersLoading) {
       return viewMode === 'grid' ? (
-        <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={`customer-loading-${i}`} height="180px" borderRadius="16px" />
+            <div
+              key={`customer-loading-${i}`}
+              className="h-[180px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800"
+            />
           ))}
-        </SimpleGrid>
+        </div>
       ) : (
         <Card>
           <CustomersTable data={[]} loading onEdit={handleEditCustomer} />
@@ -91,41 +94,38 @@ export default function CustomersPage() {
     if (!customersData?.data?.length) {
       return (
         <Card>
-          <Stack align="center" spacing="8px" py="24px">
-            <Icon as={MdOutlineSearchOff} boxSize="28px" color="secondaryGray.600" />
-            <Text fontSize="lg" fontWeight="700">
-              No customers found
-            </Text>
-            <Text color="secondaryGray.600">
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <MdOutlineSearchOff className="size-7 text-gray-400" aria-hidden="true" />
+            <p className="text-lg font-bold text-gray-900 dark:text-white">No customers found</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               You don&apos;t have any customers yet. Create one to get started.
-            </Text>
+            </p>
             <Button
-              variant="brand"
-              leftIcon={<Icon as={MdAddCircleOutline} />}
+              className="mt-2"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
               onClick={() => setNewOpen(true)}
             >
               New Customer
             </Button>
-          </Stack>
+          </div>
         </Card>
       );
     }
 
     return viewMode === 'grid' ? (
-      <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
         {(customersData.data as CustomerDto[]).map((customer) => (
           <CustomerCard key={customer.id} data={customer} onEdit={handleEditCustomer} />
         ))}
-      </SimpleGrid>
+      </div>
     ) : (
       <Card>
-        <Box overflowX="auto">
-          <CustomersTable
-            data={customersData.data as CustomerDto[]}
-            loading={false}
-            onEdit={handleEditCustomer}
-          />
-        </Box>
+        {/* Table brings its own overflow-x container, so no wrapper needed. */}
+        <CustomersTable
+          data={customersData.data as CustomerDto[]}
+          loading={false}
+          onEdit={handleEditCustomer}
+        />
       </Card>
     );
   };
@@ -136,38 +136,55 @@ export default function CustomersPage() {
         title="Customers"
         breadcrumbItems={breadcrumbItems}
         actionButton={
-          <Flex gap="8px">
+          <div className="flex flex-wrap gap-2">
             {customersData?.data && customersData.data.length > 0 && (
-              <>
-                <Button
-                  variant={viewMode === 'grid' ? 'brand' : 'outline'}
+              // Segmented grid/table switch, matching the same control on
+              // Products rather than two loose buttons.
+              <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
+                <button
+                  type="button"
+                  aria-label="Grid view"
+                  aria-pressed={viewMode === 'grid'}
                   onClick={() => setViewMode('grid')}
-                  p="0"
-                  w="40px"
+                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+                    viewMode === 'grid'
+                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
                 >
-                  <Icon as={MdGridView} />
-                </Button>
-                <Button
-                  variant={viewMode === 'table' ? 'brand' : 'outline'}
+                  <MdGridView className="size-4" />
+                </button>
+                <button
+                  type="button"
+                  aria-label="Table view"
+                  aria-pressed={viewMode === 'table'}
                   onClick={() => setViewMode('table')}
-                  p="0"
-                  w="40px"
+                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
+                    viewMode === 'table'
+                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
+                      : 'text-gray-500 dark:text-gray-400'
+                  }`}
                 >
-                  <Icon as={MdViewList} />
-                </Button>
-              </>
+                  <MdViewList className="size-4" />
+                </button>
+              </div>
             )}
-            <Button variant="outline" leftIcon={<Icon as={MdUploadFile} />} onClick={() => setImportOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MdUploadFile className="size-4" />}
+              onClick={() => setImportOpen(true)}
+            >
               Import CSV
             </Button>
             <Button
-              variant="brand"
-              leftIcon={<Icon as={MdAddCircleOutline} />}
+              size="sm"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
               onClick={() => setNewOpen(true)}
             >
               New Customer
             </Button>
-          </Flex>
+          </div>
         }
       />
 

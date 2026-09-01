@@ -2,7 +2,6 @@
 
 import { useCallback, useState } from 'react';
 
-import { Button, Flex, Icon, Stack, Text } from '@chakra-ui/react';
 import {
   MdAddCircleOutline,
   MdOutlineSearchOff,
@@ -11,7 +10,8 @@ import {
   MdOutlineCheckCircle,
 } from 'react-icons/md';
 
-import Card from 'components/card/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
@@ -101,16 +101,20 @@ export default function OrdersPage() {
     if (!ordersLoading && !ordersData?.data?.length) {
       return (
         <Card>
-          <Stack align="center" spacing="8px" py="24px">
-            <Icon as={MdOutlineSearchOff} boxSize="28px" color="secondaryGray.600" />
-            <Text fontSize="lg" fontWeight="700">
-              No orders found
-            </Text>
-            <Text color="secondaryGray.600">You don&apos;t have any orders yet. Add one to get started.</Text>
-            <Button variant="brand" leftIcon={<Icon as={MdAddCircleOutline} />} onClick={() => setNewOpen(true)}>
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <MdOutlineSearchOff className="size-7 text-gray-400" aria-hidden="true" />
+            <p className="text-lg font-bold text-gray-900 dark:text-white">No orders found</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              You don&apos;t have any orders yet. Add one to get started.
+            </p>
+            <Button
+              className="mt-2"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
+              onClick={() => setNewOpen(true)}
+            >
               New Order
             </Button>
-          </Stack>
+          </div>
         </Card>
       );
     }
@@ -128,14 +132,23 @@ export default function OrdersPage() {
         title="Orders"
         breadcrumbItems={breadcrumbItems}
         actionButton={
-          <Flex gap="8px">
-            <Button variant="outline" leftIcon={<Icon as={MdUploadFile} />} onClick={() => setImportOpen(true)}>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              leftIcon={<MdUploadFile className="size-4" />}
+              onClick={() => setImportOpen(true)}
+            >
               Import CSV
             </Button>
-            <Button variant="brand" leftIcon={<Icon as={MdAddCircleOutline} />} onClick={() => setNewOpen(true)}>
+            <Button
+              size="sm"
+              leftIcon={<MdAddCircleOutline className="size-4" />}
+              onClick={() => setNewOpen(true)}
+            >
               New Order
             </Button>
-          </Flex>
+          </div>
         }
       />
 
