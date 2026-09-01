@@ -7,20 +7,86 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**UPDATE 2026-08-31 — read this note, then skip to the bottom-most dated
-entry for full current context; the paragraphs immediately below (HEAD
-`9b0820a` era) are now two sessions stale but left intact as history.**
-Current HEAD is `caf2d0b`, pushed to `origin/main`, working tree clean.
-Since `9b0820a`: the anomaly-detection persistence gate shipped
-(`2ef5e94`), a robustness/feature roadmap was written (`new_feature.md`),
-scraper Phase 1 shipped across three commits (`669b652`/`27db281`/`17cf3bd`
-— page-cap raises + two collection-widening migrations, 045 and 046, both
-already applied live by the user), and **this file itself was briefly,
-accidentally overwritten wholesale by a fresh session that hadn't read it
-first, then restored from git history and merged properly** — see the
-bottom-most entry for the full story and what to take from it. Everything
-below this paragraph through the next dated `## 2026-08-3x` heading is
-preserved exactly as the prior session left it — nothing was rewritten.
+**UPDATE 2026-08-31 (second update, superseding the one below it) — read
+this note first, it's the accurate current picture. The "UPDATE 2026-08-31
+(first)" paragraph directly under this one is now itself stale (six
+commits behind) but left intact as history, same policy as the `9b0820a`
+paragraph below it.**
+
+**Current HEAD: `8407e38`, pushed to `origin/main`, working tree clean.**
+Full chronological detail for all of this is in the dated entries at the
+bottom of the file — this is just the fast-orientation summary.
+
+**What actually shipped, most recent first:**
+- zod validation added to the products/orders/customers create routes
+  (`701e7c4`) - see that entry for a real TS-inference bug that had to be
+  root-caused, and a real wiring bug the new tests caught before it shipped.
+- Groq client got a 15s timeout + one retry, previously unbounded (`25c36e2`).
+- **A different session's work was pulled in via `git pull --ff-only`**
+  (now folded into history as `e551973`, `da4ef12`, `0c09cd9`, `f72df83`,
+  plus its own `memory.md` entries) - a frontend render-performance pass and
+  a candidate-search speedup (migrations 047/048). Read those entries before
+  touching either area again; both have real, non-obvious "don't redo this"
+  findings.
+- Workflow chaining wired up (`16fbfd5`) - Review Scraper now fires via
+  `workflow_run` after Market Scraper completes instead of a fixed clock
+  offset; `fx-rates` now has a real `needs:` dependency from
+  `benchmarks`/`churn` instead of just sorting earlier by clock time.
+- Scraper Phase 1 (`669b652`/`27db281`/`17cf3bd`) - page-cap raises +
+  two collection-widening migrations (045, 046), both applied live.
+- Anomaly-detection persistence gate (`2ef5e94`).
+- This file was briefly, accidentally overwritten wholesale by a fresh
+  session that hadn't read it first, then restored from git history and
+  merged properly - see that entry (search "self-inflicted") for what to
+  take from it before ever using `Write` on this file.
+
+**What is genuinely outstanding right now, i.e. what a picking-up session
+should actually work on or ask the user about:**
+1. **Blocked on DB access, not on anything code-side** — migration 048's
+   index is unverified live (047 confirmed via REST), the candidate-search
+   production benchmark can't run (anon key can't see `market_platforms`,
+   RLS hides it - needs service-role key or an authenticated session, user
+   has been asked, undecided as of this writing), and Phase B (caching
+   public benchmark/pricing data) needs the same access to confirm anon RLS
+   is actually live before it can even be scoped. **The Supabase MCP tools
+   available in this environment are connected to a different account
+   entirely (checked via `list_projects`, 7 unrelated projects, none of them
+   this one) - do not try any of them on a guess.**
+2. **Needs the next natural cron tick to prove out, not more code**: the
+   scraper collection-widening yield (045/046 applied but no scrape run
+   since), the workflow chaining (`16fbfd5`, never actually fired yet), and
+   `stationarypk` (diagnosed as a runner-IP blackhole, same signature as
+   OLX, only one data point exists - if the next run reproduces 100%
+   timeouts, drop it like OLX).
+3. **Not started, no blocker, just needs a priority call**: Phase 2 of the
+   scraper plan (a second marketplace source - Daraz is currently the only
+   source yielding competitor seller identity), and the `MAX_BUCKET_SIZE =
+   5000` dedup cap in `matching.ts` hasn't been rechecked against current
+   product volume since the widening work.
+4. **Deferred by explicit user instruction, not forgotten**: real rate
+   limiting (Upstash/Redis) and Sentry error tracking both need a new
+   external service account - user said no external/paid signups for now.
+   `DEMO_ALL_FEATURES_UNLOCKED = true` bypassing all entitlement gating is
+   intentional-for-now, flagged so it doesn't get forgotten before launch.
+
+---
+
+**UPDATE 2026-08-31 (first, now stale — kept for history only, see the
+update above this one for the real current state):** read this note, then
+skip to the bottom-most dated entry for full current context; the
+paragraphs immediately below (HEAD `9b0820a` era) are now two sessions
+stale but left intact as history. Current HEAD is `caf2d0b`, pushed to
+`origin/main`, working tree clean. Since `9b0820a`: the anomaly-detection
+persistence gate shipped (`2ef5e94`), a robustness/feature roadmap was
+written (`new_feature.md`), scraper Phase 1 shipped across three commits
+(`669b652`/`27db281`/`17cf3bd` — page-cap raises + two collection-widening
+migrations, 045 and 046, both already applied live by the user), and this
+file itself was briefly, accidentally overwritten wholesale by a fresh
+session that hadn't read it first, then restored from git history and
+merged properly — see the bottom-most entry for the full story and what to
+take from it. Everything below this paragraph through the next dated
+`## 2026-08-3x` heading is preserved exactly as the prior session left it —
+nothing was rewritten.
 
 **Original note from the `9b0820a` era, kept verbatim:** Ask 1 (per-product
 competitor drawer), Ask 3 (dashboard assistant), Ask 2 tier (a)
