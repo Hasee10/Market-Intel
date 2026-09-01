@@ -3118,3 +3118,129 @@ TailAdmin dashboard, both `.git`-stripped) so the implementing session has
 everything locally without depending on a live GitHub fetch or the user's
 local disk. Per instruction, zero application code was touched in
 producing any of this - fetched, read, and documented only.
+
+## 2026-09-01: Migration begins - Tailwind/Chakra spike, TS 5 upgrade,
+and the repo moved off a failing disk - `d82dfe1`, `23d3eb2`
+
+**REPO MOVED. The project now lives at `D:\Market-Intel`.** Not
+`E:\Market-Intel-fresh2` - see the disk section below. The E: copy is
+left in place as a fallback but should not be worked in.
+
+### The architecture decision, and overruling MIGRATION_PLAN.md
+
+User asked how the full UI rehaul would begin, and delegated the call
+("do what is good and better... you are in control"). Read the whole
+221-commit history first, especially the reverted revamp.
+
+`MIGRATION_PLAN.md` had said: if the template is client-only (it is -
+both are Vite), keep Next.js as a headless API and build a separate SPA.
+**That was overruled, deliberately.** Reasons, in order of weight:
+`@supabase/ssr` runs auth through Next.js middleware and cookies, so a
+separate origin means rebuilding auth entirely - the most expensive
+possible way to "not touch the backend"; and nothing would be visible
+for weeks, which is the same failure shape as the revamp that already
+got rejected. **The decision: keep Next.js, add Tailwind alongside
+Chakra, convert page by page, delete Chakra when its last import site is
+gone (143 files import it today).** TailAdmin's components are plain
+React + Tailwind classes - portable JSX; only the router and entry file
+are Vite-specific, and `react-router` `<Link>` -> `next/link` is
+mechanical.
+
+**One claim I made and had to correct**: I told the user the SPA split
+would mean converting "every server-component page" to client fetching.
+Checked afterwards - **11 of 20 pages are already client components**
+using `useFetch`; only ~10 are server components. Corrected it to the
+user unprompted rather than letting a decision rest on a wrong number.
+The auth argument was the load-bearing one anyway and is unaffected.
+
+### The spike, and what it actually proved
+
+Hypothesis worth testing before committing to a multi-week migration:
+can Tailwind 4 and Chakra 2 share one page here? **Answer: yes,
+confirmed by a real `next build`.**
+
+The key move is in `src/styles/tailwind.css`: it imports
+`tailwindcss/theme.css` and `tailwindcss/utilities.css` **but not
+preflight**. Stock `@import "tailwindcss"` would pull in a global reset
+on top of Chakra's own CSSReset - the single most likely way to visibly
+break the 143 not-yet-migrated Chakra call sites. Consequence worth
+remembering: Tailwind utilities sit in a CSS layer, and unlayered rules
+always beat layered ones, so Emotion's runtime-injected styles win any
+conflict. That's the *safe* direction for a gradual migration, but it
+means **Tailwind classes belong on new markup, not sprinkled onto
+existing Chakra components.**
+
+Tokens ported from TailAdmin with the brand scale re-anchored from its
+`#465FFF` onto Ryvl's real `#4318FF` (per `ryvl-hero-assets`, already
+hardcoded in `RyvlMark.tsx`). Throwaway `/spike/tailwind` page renders
+both systems side by side - **delete it before the migration proper.**
+
+Result: `tsc` clean, 196/196 tests, `next build` succeeds, and **shared
+first-load JS unchanged at 103 kB** - Tailwind costs nothing on the
+shared chunk.
+
+### TypeScript 4.9 -> 5.9, and 7 latent errors it exposed
+
+`next build`'s type-check failed under TS 4.9.5 on **zod 3.25.76's
+bundled v4 declarations**, which use `const` type parameters (TS 5+
+syntax). Note the trap: **plain `tsc --noEmit` passed** because
+`skipLibCheck: true` hides it - only the build walked into the file. So
+"tsc is clean" is not sufficient evidence the build will pass here.
+
+TS 5 was needed for TailAdmin anyway, so upgrading beat pinning zod
+back. It then surfaced 7 pre-existing errors, all type-only, no runtime
+change: `fx-job` (filtering out `'USD'` narrows the element type, so the
+deliberate USD/USD row wouldn't push - **looked like a real bug, wasn't**);
+`reports/generate` (Buffer no longer assignable to `BodyInit` under the
+newer `@types/node` - now a zero-copy `Uint8Array` view); and five
+implicit-`any` inference cases needing explicit return/property types.
+
+### FOURTH filesystem incident - and this time Windows named it
+
+Adding one icon import previously exposed a corrupt `react-icons`; this
+time `next build` died on chunk files missing from inside
+`node_modules/@chakra-ui`. Isolated it properly instead of guessing: the
+missing file was genuinely absent while siblings were present, webpack
+threw `EIO: i/o error`, `rm -rf` failed on non-empty "empty" dirs, and
+PowerShell gave the real reason - **"The file or directory is corrupted
+and unreadable"** (NTFS `ERROR_FILE_CORRUPT`). Then, decisively:
+
+```
+Get-Volume -DriveLetter E
+HealthStatus      : Warning
+OperationalStatus : Full Repair Needed
+```
+
+SMART reports all three physical disks healthy, so this is filesystem
+damage, not a dying drive - but E: is a mechanical HDD and this is the
+4th incident on it (original repo NTFS corruption -> git packfile
+corruption -> react-icons -> @chakra-ui). **Stop treating these as
+coincidences.**
+
+**Useful trick discovered**: the corrupt `node_modules` could not be
+deleted, but it COULD be **renamed** - directory-entry operations
+succeed even when contents are unreadable. `Rename-Item` then a fresh
+`npm install` sidesteps the corruption without needing chkdsk first.
+
+**Resolution**: rather than keep fighting it, cloned fresh from GitHub
+to `D:\Market-Intel` (Healthy, 76GB free) and copied over the only
+untracked thing that mattered, `.env.local`. Verified with `git fsck`.
+**The speed difference is the whole argument: `npm install` took 58
+seconds on D: versus over ten minutes on E:.** `chkdsk E: /f /r` still
+un-run; nothing depends on E: any more so it no longer blocks work.
+
+### Standing state for the next session
+
+- **Approved and shipped**: Tailwind installed, coexistence proven, TS 5.
+- **Awaiting approval when this was written**: the shell (sidebar +
+  header) - mockup rendered for the user showing expanded (240px),
+  collapsed (80px), and dark, using the real `routes.tsx` nav and the
+  real `localStorage` collapse key `market-intel-sidebar-collapsed`.
+- **Deliberately NOT touched: the landing page.** User asked directly.
+  `src/components/landing/*` is untouched; the agency.ai template was
+  only ever audited. Separate scope, separate decision.
+- **Order of work**: shell first. This is the whole lesson of the
+  rejected revamp - the chrome is what makes a redesign register.
+- Mockups get **rendered**, never described. Two artifacts were produced
+  this session (Overview, then the shell) and both were asked for before
+  any code. Keep that pattern.
