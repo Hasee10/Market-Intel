@@ -1,8 +1,8 @@
 'use client';
 
-import { Button, Icon, Skeleton, Table, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
 import { MdEdit } from 'react-icons/md';
 
+import { Table, THead, TH, TBody, TR, TD } from '@/components/ui/Table';
 import type { CustomerDto } from '@/types/customer';
 
 type CustomersTableProps = {
@@ -16,44 +16,42 @@ const formatCurrency = (amount: number, currency: string) =>
 
 export function CustomersTable({ data, loading, onEdit }: CustomersTableProps) {
   return (
-    <Table variant="simple">
-      <Thead>
-        <Tr>
-          <Th>Customer</Th>
-          <Th>Email</Th>
-          <Th isNumeric>Orders</Th>
-          <Th isNumeric>Total spent</Th>
-          <Th />
-        </Tr>
-      </Thead>
-      <Tbody>
+    <Table>
+      <THead>
+        <TH>Customer</TH>
+        <TH>Email</TH>
+        <TH numeric>Orders</TH>
+        <TH numeric>Total spent</TH>
+        <TH />
+      </THead>
+      <TBody>
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <Tr key={`row-loading-${i}`}>
-                <Td colSpan={5}>
-                  <Skeleton height="20px" />
-                </Td>
-              </Tr>
+              <TR key={`row-loading-${i}`}>
+                <TD colSpan={5}>
+                  <span className="block h-5 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+                </TD>
+              </TR>
             ))
           : data.map((customer) => (
-              <Tr key={customer.id}>
-                <Td>{customer.externalCustomerId || 'Customer'}</Td>
-                <Td>{customer.email || 'N/A'}</Td>
-                <Td isNumeric>{customer.ordersCount}</Td>
-                <Td isNumeric>{formatCurrency(customer.totalSpent, customer.currency)}</Td>
-                <Td>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    leftIcon={<Icon as={MdEdit} />}
+              <TR key={customer.id}>
+                <TD strong>{customer.externalCustomerId || 'Customer'}</TD>
+                <TD>{customer.email || 'N/A'}</TD>
+                <TD numeric>{customer.ordersCount}</TD>
+                <TD numeric>{formatCurrency(customer.totalSpent, customer.currency)}</TD>
+                <TD>
+                  <button
+                    type="button"
                     onClick={() => onEdit?.(customer)}
+                    className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800"
                   >
+                    <MdEdit className="size-4" aria-hidden="true" />
                     Edit
-                  </Button>
-                </Td>
-              </Tr>
+                  </button>
+                </TD>
+              </TR>
             ))}
-      </Tbody>
+      </TBody>
     </Table>
   );
 }

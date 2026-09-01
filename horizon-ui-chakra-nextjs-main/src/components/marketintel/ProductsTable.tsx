@@ -1,8 +1,8 @@
 'use client';
 
-import { Badge, Button, Flex, Icon, Skeleton, Table, Tbody, Td, Th, Thead, Tr, useColorModeValue } from '@chakra-ui/react';
 import { MdEdit, MdStorefront } from 'react-icons/md';
 
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import type { IProduct } from '@/types/products';
 
 type ProductsTableProps = {
@@ -13,7 +13,9 @@ type ProductsTableProps = {
 };
 
 const formatCurrency = (amount: number | null, currency: string) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount ?? 0);
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+    amount ?? 0,
+  );
 
 // Same threshold Overview's "Low Stock Products" stat uses
 // (api/ecommerce/stats/route.ts), so a product flagged low here is flagged
@@ -21,77 +23,72 @@ const formatCurrency = (amount: number | null, currency: string) =>
 // dashboard.
 const LOW_STOCK_THRESHOLD = 10;
 
-export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: ProductsTableProps) {
-  const rowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
-  const titleColor = useColorModeValue('secondaryGray.900', 'white');
-  const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
-  const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
-  const lowStockColor = useColorModeValue('#DD6B20', '#FBB03B');
+const rowAction =
+  'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800';
 
+export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: ProductsTableProps) {
   return (
-    <Table variant="simple">
-      <Thead>
-        <Tr>
-          <Th>Product</Th>
-          <Th>SKU</Th>
-          <Th>Category</Th>
-          <Th isNumeric>Sell price</Th>
-          <Th isNumeric>Stock</Th>
-          <Th>Status</Th>
-          <Th />
-        </Tr>
-      </Thead>
-      <Tbody>
+    <Table minWidth={760}>
+      <THead>
+        <TH>Product</TH>
+        <TH>SKU</TH>
+        <TH>Category</TH>
+        <TH numeric>Sell price</TH>
+        <TH numeric>Stock</TH>
+        <TH>Status</TH>
+        <TH />
+      </THead>
+      <TBody>
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
-              <Tr key={`row-loading-${i}`}>
-                <Td colSpan={7}>
-                  <Skeleton height="20px" />
-                </Td>
-              </Tr>
+              <TR key={`row-loading-${i}`}>
+                <TD colSpan={7}>
+                  <span className="block h-5 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+                </TD>
+              </TR>
             ))
           : data.map((product) => {
               const isLowStock = product.isActive && (product.stockQty ?? 0) < LOW_STOCK_THRESHOLD;
               return (
-                <Tr key={product.id} transition="background-color 0.15s ease" _hover={{ bg: rowHoverBg }}>
-                  <Td fontWeight="600" color={titleColor}>
-                    {product.title}
-                  </Td>
-                  <Td>{product.sku || 'N/A'}</Td>
-                  <Td>
-                    <Badge borderRadius="full" px="10px" py="2px" fontSize="xs" fontWeight="600" bg={categoryBadgeBg} color={categoryBadgeColor}>
-                      {product.categoryName || 'Uncategorized'}
-                    </Badge>
-                  </Td>
-                  <Td isNumeric>{formatCurrency(product.sellPrice, product.currency)}</Td>
-                  <Td isNumeric color={isLowStock ? lowStockColor : undefined} fontWeight={isLowStock ? '700' : '400'}>
+                <TR key={product.id}>
+                  <TD strong>{product.title}</TD>
+                  <TD>{product.sku || 'N/A'}</TD>
+                  <TD>
+                    <Pill tone="brand">{product.categoryName || 'Uncategorized'}</Pill>
+                  </TD>
+                  <TD numeric>{formatCurrency(product.sellPrice, product.currency)}</TD>
+                  <TD
+                    numeric
+                    className={isLowStock ? '!font-bold !text-orange-600 dark:!text-orange-500' : ''}
+                  >
                     {product.stockQty ?? 0}
                     {isLowStock && ' ⚠'}
-                  </Td>
-                  <Td>
-                    <Badge colorScheme={product.isActive ? 'green' : 'gray'} borderRadius="full">
+                  </TD>
+                  <TD>
+                    <Pill tone={product.isActive ? 'success' : 'neutral'}>
                       {product.isActive ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <Flex gap="4px">
-                      <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(product)}>
+                    </Pill>
+                  </TD>
+                  <TD>
+                    <div className="flex gap-1">
+                      <button type="button" onClick={() => onEdit?.(product)} className={rowAction}>
+                        <MdEdit className="size-4" aria-hidden="true" />
                         Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        leftIcon={<Icon as={MdStorefront} />}
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => onViewCompetitors?.(product)}
+                        className={rowAction}
                       >
+                        <MdStorefront className="size-4" aria-hidden="true" />
                         Competitors
-                      </Button>
-                    </Flex>
-                  </Td>
-                </Tr>
+                      </button>
+                    </div>
+                  </TD>
+                </TR>
               );
             })}
-      </Tbody>
+      </TBody>
     </Table>
   );
 }
