@@ -6,6 +6,7 @@ import { MdCheckCircle } from 'react-icons/md';
 import { PATH_AUTH } from '@/lib/paths';
 import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 import { Reveal } from 'components/reactbits/Reveal';
+import { HeroPreview } from '@/components/landing/HeroPreview';
 
 // Rebuilt to follow the agency.ai landing template's hero: single centred
 // column, oversized medium-weight headline with one gradient-filled word,
@@ -90,9 +91,9 @@ export function LandingHero() {
         </div>
       </Reveal>
 
-      {/* Hero illustration removed on request - the template puts a product
-          screenshot here, and a stock illustration showing nothing about the
-          product is worse than empty until a real capture exists. */}
+      <Reveal delay={380}>
+        <HeroPreview />
+      </Reveal>
       </div>
     </section>
   );
