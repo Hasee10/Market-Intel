@@ -2,25 +2,12 @@
 
 import { useEffect, useState } from 'react';
 
-import {
-  Button,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerOverlay,
-  Flex,
-  FormControl,
-  FormLabel,
-  Input,
-  NumberInput,
-  NumberInputField,
-  Select,
-  Stack,
-  useToast,
-} from '@chakra-ui/react';
+// useToast only - see WatchlistView for why toasts stay on Chakra.
+import { useToast } from '@chakra-ui/react';
+
+import { Button } from '@/components/ui/Button';
+import { Drawer } from '@/components/ui/Drawer';
+import { Field, Input, Select } from '@/components/ui/Field';
 
 import type { CustomerDto } from '@/types/customer';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
@@ -121,78 +108,74 @@ export function EditCustomerDrawer({
   };
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="md">
-      <DrawerOverlay />
-      <DrawerContent>
-        <DrawerCloseButton />
-        <DrawerHeader>Edit customer</DrawerHeader>
-        <DrawerBody>
-          {customer && (
-            <Stack spacing="16px">
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Email
-                </FormLabel>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Edit customer"
+      footer={
+        <div className="flex w-full justify-between">
+          <Button variant="danger" onClick={handleDelete} loading={loading}>
+            Delete Customer
+          </Button>
+          <Button onClick={handleSubmit} loading={loading}>
+            Update Customer
+          </Button>
+        </div>
+      }
+    >
+      {customer && (
+        <div className="flex flex-col gap-4">
+          <Field label="Email">
+            <Input
+              type="email"
+              placeholder="customer@email.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </Field>
+
+          <Field label="External customer ID">
+            <Input
+              placeholder="ID from your store platform"
+              value={externalCustomerId}
+              onChange={(e) => setExternalCustomerId(e.target.value)}
+            />
+          </Field>
+
+          <Field label="Orders count">
+            <Input
+              type="number"
+              min={0}
+              value={ordersCount}
+              onChange={(e) => setOrdersCount(Number(e.target.value) || 0)}
+            />
+          </Field>
+
+          <div className="flex gap-3">
+            <div className="flex-[2]">
+              <Field label="Total spent">
                 <Input
-                  placeholder="customer@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="number"
+                  min={0}
+                  value={totalSpent}
+                  onChange={(e) => setTotalSpent(Number(e.target.value) || 0)}
                 />
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="500">
-                  External customer ID
-                </FormLabel>
-                <Input
-                  placeholder="ID from your store platform"
-                  value={externalCustomerId}
-                  onChange={(e) => setExternalCustomerId(e.target.value)}
-                />
-              </FormControl>
-              <FormControl>
-                <FormLabel fontSize="sm" fontWeight="500">
-                  Orders count
-                </FormLabel>
-                <NumberInput value={ordersCount} onChange={(_, v) => setOrdersCount(v || 0)} min={0}>
-                  <NumberInputField />
-                </NumberInput>
-              </FormControl>
-              <Flex gap="12px">
-                <FormControl flex="2">
-                  <FormLabel fontSize="sm" fontWeight="500">
-                    Total spent
-                  </FormLabel>
-                  <NumberInput value={totalSpent} onChange={(_, v) => setTotalSpent(v || 0)} min={0}>
-                    <NumberInputField />
-                  </NumberInput>
-                </FormControl>
-                <FormControl flex="1">
-                  <FormLabel fontSize="sm" fontWeight="500">
-                    Currency
-                  </FormLabel>
-                  <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
-                    {SUPPORTED_CURRENCIES.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.code}
-                      </option>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Flex>
-            </Stack>
-          )}
-        </DrawerBody>
-        <DrawerFooter>
-          <Flex justify="space-between" w="100%">
-            <Button colorScheme="red" variant="outline" onClick={handleDelete} isLoading={loading}>
-              Delete Customer
-            </Button>
-            <Button variant="brand" onClick={handleSubmit} isLoading={loading}>
-              Update Customer
-            </Button>
-          </Flex>
-        </DrawerFooter>
-      </DrawerContent>
+              </Field>
+            </div>
+            <div className="flex-1">
+              <Field label="Currency">
+                <Select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  {SUPPORTED_CURRENCIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+          </div>
+        </div>
+      )}
     </Drawer>
   );
 }

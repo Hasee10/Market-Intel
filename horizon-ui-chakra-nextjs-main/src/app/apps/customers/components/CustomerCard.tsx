@@ -1,9 +1,9 @@
 'use client';
 
-import { Button, Flex, Icon, Text } from '@chakra-ui/react';
 import { MdEdit, MdOutlineMail } from 'react-icons/md';
 
-import Card from 'components/card/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import type { CustomerDto } from '@/types/customer';
 
 type CustomerCardProps = {
@@ -18,42 +18,41 @@ const formatCurrency = (amount: number, currency: string) =>
 
 export function CustomerCard({ data, onEdit }: CustomerCardProps) {
   return (
-    <Card>
-      <Text fontSize="md" fontWeight="700" mb="6px">
+    <Card className="flex h-full flex-col">
+      <p className="mb-1.5 truncate text-base font-bold text-gray-900 dark:text-white">
         {data.externalCustomerId || 'Customer'}
-      </Text>
+      </p>
 
-      <Flex align="center" gap="6px" mb="12px">
-        <Icon as={MdOutlineMail} color="secondaryGray.600" boxSize="14px" />
-        <Text fontSize="xs" color="secondaryGray.600">
-          {data.email || 'N/A'}
-        </Text>
-      </Flex>
+      <p className="mb-3 flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+        <MdOutlineMail className="size-3.5 shrink-0" aria-hidden="true" />
+        <span className="truncate">{data.email || 'N/A'}</span>
+      </p>
 
-      <Flex justify="space-between" mb="12px">
+      <div className="mb-3 flex justify-between gap-3">
         <div>
-          <Text fontSize="xs" color="secondaryGray.600">
-            Orders
-          </Text>
-          <Text fontSize="sm" fontWeight="600">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Orders</p>
+          <p className="text-sm font-semibold text-gray-900 tabular-nums dark:text-white">
             {data.ordersCount}
-          </Text>
+          </p>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <Text fontSize="xs" color="secondaryGray.600">
-            Total Spent
-          </Text>
-          <Text fontSize="sm" fontWeight="600">
+        <div className="text-right">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Total Spent</p>
+          <p className="text-sm font-semibold text-gray-900 tabular-nums dark:text-white">
             {formatCurrency(data.totalSpent, data.currency)}
-          </Text>
+          </p>
         </div>
-      </Flex>
+      </div>
 
-      <Flex justify="flex-end">
-        <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(data)}>
+      <div className="mt-auto flex justify-end">
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<MdEdit className="size-4" />}
+          onClick={() => onEdit?.(data)}
+        >
           Edit
         </Button>
-      </Flex>
+      </div>
     </Card>
   );
 }
