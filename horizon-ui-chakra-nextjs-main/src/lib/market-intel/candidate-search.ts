@@ -132,7 +132,7 @@ export async function findTopSimilarCandidatesBatch(
   queryTitles: string[],
   limit: number = DEFAULT_CANDIDATE_LIMIT,
 ): Promise<SimilarCandidate[][]> {
-  const result: SimilarCandidate[][] = queryTitles.map(() => []);
+  const result: SimilarCandidate[][] = queryTitles.map((): SimilarCandidate[] => []);
   if (categorySlugs.length === 0 || platformIds.length === 0 || queryTitles.length === 0) return result;
 
   // Position in `queryTitles` for each title actually sent. Each chunk's
@@ -191,7 +191,7 @@ export async function findTopSimilarCandidatesBatch(
     const perTitle = await Promise.all(
       sent.map((s) => findTopSimilarCandidates(supabase, categorySlugs, platformIds, s.title, limit)),
     );
-    const fallback: SimilarCandidate[][] = queryTitles.map(() => []);
+    const fallback: SimilarCandidate[][] = queryTitles.map((): SimilarCandidate[] => []);
     sent.forEach((s, i) => {
       fallback[s.originalIndex] = perTitle[i];
     });

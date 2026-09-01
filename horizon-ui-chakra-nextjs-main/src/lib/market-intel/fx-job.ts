@@ -30,7 +30,11 @@ export async function refreshFxRates(): Promise<FxJobResult> {
   const rows = SUPPORTED_CURRENCIES.filter((c) => c.code !== 'USD')
     .map((c) => ({
       base_currency: 'USD',
-      quote_currency: c.code,
+      // Widened to string on purpose: the filter above narrows c.code to the
+      // non-USD currencies, which would make the explicit USD/USD row pushed
+      // below un-assignable to the inferred element type. TS 4.9 didn't infer
+      // this narrowly; TS 5 does.
+      quote_currency: c.code as string,
       rate: payload.rates[c.code],
       rate_date: rateDate,
     }))

@@ -142,7 +142,7 @@ export async function collectRevenueAndProducts(
               // order-line-items - same gap as contributionBasis above), so
               // this stays null rather than fabricating a days-of-cover
               // estimate from a number that isn't tracked.
-              daysOfCoverEstimate: null,
+              daysOfCoverEstimate: null as number | null,
             })),
           supplyVoidOpportunities: null, // populated by the market-signals rule engine, not here
         };

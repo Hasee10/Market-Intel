@@ -145,7 +145,12 @@ export async function POST(request: NextRequest) {
               // all fail the same way. Rows in unprocessed batches simply
               // keep category_id: null, same as today.
               if (err instanceof GroqNotConfiguredError) systemicFailure = true;
-              return batch.map(() => null);
+              // Return type stated explicitly so this branch lines up with the
+              // success branch above - without it TS 5 infers `any[]` here and
+              // the whole Promise.all result loses its type.
+              return batch.map(
+                (): Awaited<ReturnType<typeof suggestCategoriesBatch>>[number] => null,
+              );
             }
           }),
         );

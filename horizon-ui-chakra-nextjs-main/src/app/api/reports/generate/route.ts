@@ -51,7 +51,16 @@ export async function GET(request: NextRequest) {
   const slug = seller.businessName.replace(/[^a-z0-9]+/gi, '-').toLowerCase();
   const fileName = `${slug}-report.${format}`;
 
-  return new NextResponse(buffer, {
+  // Zero-copy view over the same bytes. Node's Buffer stopped being directly
+  // assignable to BodyInit in the newer @types/node that came with TS 5;
+  // a plain Uint8Array over the same memory satisfies it without duplicating
+  // a report that can run to several MB.
+  // `buffer.buffer` is typed ArrayBufferLike because a Buffer *could* be backed
+  // by a SharedArrayBuffer; ours never is (pdfkit/pptxgenjs allocate normally),
+  // so narrowing it here is safe and keeps this a view rather than a copy.
+  const body = new Uint8Array(buffer.buffer as ArrayBuffer, buffer.byteOffset, buffer.byteLength);
+
+  return new NextResponse(body, {
     status: 200,
     headers: {
       'Content-Type': CONTENT_TYPES[format],

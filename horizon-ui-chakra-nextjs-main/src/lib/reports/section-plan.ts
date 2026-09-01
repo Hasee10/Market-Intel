@@ -337,7 +337,7 @@ function buildToc(
     // are shown, greyed - a reader deserves to know what was considered.
     const deliberate = /Fewer than|healthy state/i.test(reason);
     return {
-      number: null,
+      number: null as number | null,
       title: SECTION_TITLES[kind] ?? kind,
       status: deliberate ? ('omitted' as const) : ('not_enough_data' as const),
     };
