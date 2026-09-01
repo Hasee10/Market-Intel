@@ -56,7 +56,11 @@ export default function AdminShell({ children }: AdminShellProps) {
     <SidebarContext.Provider
       value={{ toggleSidebar, setToggleSidebar, isCollapsed, setIsCollapsed }}
     >
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      {/* font-outfit belongs on the shell, not just on individual components:
+          without it here, anything rendered inside a page body that doesn't
+          set the family itself inherits Chakra's Inter and the dashboard
+          quietly renders in two typefaces. */}
+      <div className="font-outfit min-h-screen bg-gray-50 dark:bg-gray-950">
         <AppSidebar routes={routes} />
         <AppSidebarMobile routes={routes} />
 
@@ -67,7 +71,9 @@ export default function AdminShell({ children }: AdminShellProps) {
           className="transition-[margin] duration-200 ease-out xl:ml-[var(--sidebar-w)]"
         >
           <AppHeader breadcrumb={getActiveRoute(routes, pathname)} />
-          <main className="p-5 md:p-7">{children}</main>
+          {/* Matches TailAdmin's AppLayout content box exactly: centred, capped
+              at their 2xl breakpoint, p-4 stepping to p-6. */}
+          <main className="mx-auto max-w-[1536px] p-4 md:p-6">{children}</main>
         </div>
 
         <SellerAssistantWidget />

@@ -23,7 +23,8 @@ export function Card({
 }) {
   return (
     <div
-      className={`font-outfit rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-gray-900 ${className}`}
+      // p-5 md:p-6 is TailAdmin's exact card padding step.
+      className={`font-outfit rounded-2xl border border-gray-200 bg-white p-5 md:p-6 dark:border-gray-800 dark:bg-gray-900 ${className}`}
     >
       {(title || action) && (
         <div className="mb-4 flex items-start justify-between gap-3">

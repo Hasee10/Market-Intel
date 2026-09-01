@@ -103,19 +103,24 @@
    * surfaces, two source templates, deliberately. */
   --color-primary: #5044e5;
 
-  /* Ryvl brand indigo, in TailAdmin's scale shape */
-  --color-brand-25: #f4f2ff;
-  --color-brand-50: #eeeaff;
-  --color-brand-100: #ded7ff;
-  --color-brand-200: #c3b6ff;
-  --color-brand-300: #9d88ff;
-  --color-brand-400: #7355ff;
-  --color-brand-500: #4318ff;
-  --color-brand-600: #3812db;
-  --color-brand-700: #2d0eb0;
-  --color-brand-800: #250c8f;
-  --color-brand-900: #1f0b74;
-  --color-brand-950: #120640;
+  /* TailAdmin's own brand scale, verbatim from
+   * tailadmin-react-dashboard/src/index.css. The dashboard replicates that
+   * template's colour as well as its layout; the marketing pages use the
+   * agency template's --color-primary above. Ryvl's #4318FF is still the
+   * logo mark's colour (RyvlMark.tsx) - noted in ASSETS.md as a deliberate
+   * divergence rather than drift. */
+  --color-brand-25: #f2f7ff;
+  --color-brand-50: #ecf3ff;
+  --color-brand-100: #dde9ff;
+  --color-brand-200: #c2d6ff;
+  --color-brand-300: #9cb9ff;
+  --color-brand-400: #7592ff;
+  --color-brand-500: #465fff;
+  --color-brand-600: #3641f5;
+  --color-brand-700: #2a31d8;
+  --color-brand-800: #252dae;
+  --color-brand-900: #262e89;
+  --color-brand-950: #161950;
 
   --color-gray-25: #fcfcfd;
   --color-gray-50: #f9fafb;

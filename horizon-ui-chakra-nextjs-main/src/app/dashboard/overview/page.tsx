@@ -57,8 +57,10 @@ type TopProductRow = {
 };
 type RevenuePoint = { date: string; revenue: number };
 
+// Chart palette anchored on TailAdmin's brand-500 (#465FFF) so the charts
+// match the rest of the dashboard - ApexCharts takes raw hex, not tokens.
 const PALETTE = [
-  '#4318FF',
+  '#465FFF',
   '#6AD2FF',
   '#05CD99',
   '#FFB547',
@@ -189,19 +191,19 @@ export default function OverviewPage() {
     },
     yaxis: { show: false },
     grid: { show: false },
-    colors: ['#4318FF'],
+    colors: ['#465FFF'],
     annotations: revenuePeak
       ? {
           points: [
             {
               x: revenuePeak.date.slice(5),
               y: Number(revenuePeak.revenue.toFixed(2)),
-              marker: { size: 5, fillColor: tooltipBg, strokeColor: '#4318FF', strokeWidth: 2 },
+              marker: { size: 5, fillColor: tooltipBg, strokeColor: '#465FFF', strokeWidth: 2 },
               label: {
-                borderColor: '#4318FF',
+                borderColor: '#465FFF',
                 borderWidth: 0,
                 offsetY: -6,
-                style: { color: '#FFFFFF', background: '#4318FF', fontSize: '10px', fontWeight: 700, padding: { left: 8, right: 8, top: 4, bottom: 4 } },
+                style: { color: '#FFFFFF', background: '#465FFF', fontSize: '10px', fontWeight: 700, padding: { left: 8, right: 8, top: 4, bottom: 4 } },
                 text: `Best day: ${formatCurrency(revenuePeak.revenue, reportingCurrency)}`,
               },
             },
@@ -319,7 +321,7 @@ export default function OverviewPage() {
       <StatsGrid data={primaryStats} loading={statsLoading} columns={4} />
 
       <SectionHeading title="Revenue & fulfillment" />
-      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mb-5 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <Card
           className="lg:col-span-2"
           title={`Revenue trend ${forecast ? '& 14-day forecast' : '(30 days)'}`}
@@ -382,7 +384,7 @@ export default function OverviewPage() {
                   },
                   yaxis: { show: false },
                   grid: { show: false },
-                  colors: ['#4318FF', '#A3AED0'],
+                  colors: ['#465FFF', '#A3AED0'],
                   tooltip: {
                     custom: ({ series, dataPointIndex }: { series: number[][]; dataPointIndex: number }) => {
                       const point = forecast.points[dataPointIndex];
@@ -470,7 +472,7 @@ export default function OverviewPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
         <Card className="lg:col-span-5" title="Category inventory value">
           {categoriesLoading ? (
             chartSkeleton

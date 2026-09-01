@@ -321,7 +321,7 @@ export default function MarketView({
         )}
       </Card>
 
-      <div className="mb-5 grid grid-cols-1 gap-4 lg:grid-cols-3">
+      <div className="mb-5 grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <Card
           className="lg:col-span-2"
           title={`Price trend ${priceForecast ? '& 14-day forecast' : '(30 days)'}`}
@@ -371,7 +371,7 @@ export default function MarketView({
                   },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
-                  colors: ['#4318FF', '#A3AED0'],
+                  colors: ['#465FFF', '#A3AED0'],
                   tooltip: {
                     custom: ({ series, dataPointIndex }: { series: number[][]; dataPointIndex: number }) => {
                       const point = priceForecast.points[dataPointIndex];
@@ -403,7 +403,7 @@ export default function MarketView({
                   },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: 3 },
-                  colors: ['#4318FF'],
+                  colors: ['#465FFF'],
                   tooltip: {
                     custom: ({ series, seriesIndex, dataPointIndex }: { series: number[][]; seriesIndex: number; dataPointIndex: number }) => {
                       const point = priceTrend[dataPointIndex];

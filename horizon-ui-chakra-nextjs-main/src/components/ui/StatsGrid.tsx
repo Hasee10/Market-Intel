@@ -73,7 +73,10 @@ type StatsGridProps = {
 };
 
 export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
-  const gridClass = `mb-5 grid grid-cols-1 gap-4 ${COLUMN_CLASS[columns] ?? COLUMN_CLASS[4]}`;
+  // gap-4 md:gap-6 is TailAdmin's grid rhythm throughout its dashboard.
+  const gridClass = `mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 ${
+    COLUMN_CLASS[columns] ?? COLUMN_CLASS[4]
+  }`;
 
   if (loading) {
     return (
