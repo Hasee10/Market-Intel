@@ -58,6 +58,12 @@ const SLIDE_EASING = 'cubic-bezier(0.65, 0.05, 0.36, 1)';
 // difference isn't visible.
 const ROLL_DEGREES = 140;
 
+// How far the shape's centre travels to land mirrored: viewport width minus
+// twice its offset (cx = -6.7vw), i.e. 100 - 2*(-6.7). Derived, not tuned by
+// eye - if cx above changes, this has to change with it or the curve stops
+// being a mirror on the far side.
+const SLIDE_VW = 113.4;
+
 export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -106,29 +112,26 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
         </FormCell>
       </div>
 
-      {/* The sliding panel. pointer-events-none on the shell so it never
-          swallows clicks meant for the form underneath during the slide;
-          only its own content re-enables them. */}
-      <div
-        aria-hidden="true"
-        style={{ transform: `translateX(${isSignin ? '0%' : '100%'})`, transition }}
-        className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 lg:block"
-      >
-        {/* A single quarter of a very large circle, not a lens.
+      {/* THE SHAPE. One quadrant of a circle far larger than the viewport:
+          209vh across, centred on the viewport's top edge and a little off
+          the left of it. Only the lower-right quarter crosses the screen, so
+          the edge sweeps from 52% of the width at the top to 10% at the
+          bottom - a corner turning, where the previous smaller circle only
+          managed 62% to 40% and read as a gentle lean. The bottom-left
+          corner sits 100.7vh from the centre against a 104.3vh radius, which
+          is what keeps the fill reaching it.
 
-            The circle is 146vh across with its centre 32vh down the viewport,
-            so only its lower-right quadrant crosses the screen: the edge
-            sweeps from ~62% of the width at the top to ~40% at the bottom.
-            Pushing the centre above the middle is what makes it a sweep
-            rather than a symmetric bulge.
-
-            It has to stay centred on the panel's own midpoint. The panel
-            slides by exactly its own width, so a shape centred anywhere else
-            lands off-centre on the far side and the curve stops mirroring -
-            it would bulge the wrong way in sign-up mode. Centred, the left
-            flank on the right-hand side is the exact mirror of the right
-            flank on the left, with no flip to animate. */}
-        <div className="absolute top-[-41vh] left-1/2 h-[146vh] w-[146vh] -translate-x-1/2 overflow-hidden rounded-full bg-gradient-to-br from-[#EEF0FF] via-[#E4E0FF] to-[#D9D3FF] dark:from-[#1A1A3C] dark:via-[#221F4E] dark:to-[#2B2660]">
+          It moves by translating its centre to the mirrored x. A circle is
+          symmetric about its own centre, so putting the centre at (viewport
+          width - cx) IS the mirror image - no flip has to be animated, and
+          nothing collapses through zero mid-travel the way scaleX(-1) would.
+          That is also what frees the shape from being centred on a
+          half-width panel, which is the constraint that was flattening it. */}
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block">
+        <div
+          style={{ transform: `translateX(${isSignin ? '0vw' : `${SLIDE_VW}vw`})`, transition }}
+          className="absolute top-[-104vh] left-[calc(-6.7vw-104vh)] size-[209vh] overflow-hidden rounded-full bg-gradient-to-br from-[#E9E5FF] via-[#DAD3FF] to-[#C7BEFF] dark:from-[#1A1A3C] dark:via-[#241F52] dark:to-[#2E2768]"
+        >
           <div
             style={{
               transform: `rotate(${prefersReducedMotion || isSignin ? 0 : ROLL_DEGREES}deg)`,
@@ -137,7 +140,21 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
             className="absolute inset-0 bg-[radial-gradient(circle,rgba(80,68,229,0.13)_1.5px,transparent_1.6px)] bg-[length:26px_26px]"
           />
         </div>
+      </div>
 
+      {/* THE CONTENT, on its own layer. It travels half a viewport - left
+          half to right half - while the shape travels 113vw, because the two
+          are solving different problems: the shape has to land mirrored, the
+          content only has to land centred in the other half.
+
+          Deliberately NOT aria-hidden. The switch button below is the only
+          way to change mode on desktop, so hiding this from assistive tech
+          would strand keyboard and screen-reader users on whichever side
+          they opened. */}
+      <div
+        style={{ transform: `translateX(${isSignin ? '0vw' : '50vw'})`, transition }}
+        className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 lg:block"
+      >
         <PanelDecor />
 
         <div className="pointer-events-auto relative flex h-full flex-col items-center justify-center gap-6 px-12 text-center">
@@ -191,24 +208,30 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
 function PanelDecor() {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      <svg className="absolute top-[12%] left-[14%] size-24 text-[#4318FF]/15 dark:text-[#A594FF]/20" viewBox="0 0 100 100" fill="none">
-        <circle cx="50" cy="50" r="46" stroke="currentColor" strokeWidth="2" />
+      {/* Dashed orbit, deliberately echoing the dashed connectors on the
+          trust page rather than inventing a second decorative language. */}
+      <svg className="absolute top-[9%] left-[10%] size-32 text-[#4318FF]/20 dark:text-[#A594FF]/25" viewBox="0 0 100 100" fill="none">
+        <circle cx="50" cy="50" r="47" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 7" />
+        <circle cx="50" cy="3" r="3.5" fill="currentColor" />
       </svg>
 
-      <svg className="absolute top-[22%] right-[18%] size-16 text-[#4318FF]/25 dark:text-[#A594FF]/30" viewBox="0 0 60 60" fill="currentColor">
-        <circle cx="8" cy="8" r="3.5" />
-        <circle cx="30" cy="8" r="3.5" />
-        <circle cx="52" cy="8" r="3.5" />
-        <circle cx="8" cy="30" r="3.5" />
-        <circle cx="30" cy="30" r="3.5" />
-        <circle cx="8" cy="52" r="3.5" />
+      {/* Dot grid, aligned to the same 26px rhythm as the panel texture so it
+          reads as part of the surface instead of a sticker on top of it. */}
+      <svg className="absolute top-[17%] right-[12%] size-20 text-[#4318FF]/25 dark:text-[#A594FF]/30" viewBox="0 0 70 70" fill="currentColor">
+        {[0, 1, 2].map((r) =>
+          [0, 1, 2].map((c) => <circle key={`${r}-${c}`} cx={9 + c * 26} cy={9 + r * 26} r="3.2" />),
+        )}
       </svg>
 
-      <svg className="absolute bottom-[10%] left-[8%] size-32 text-[#7592FF]/15 dark:text-[#A594FF]/12" viewBox="0 0 120 120" fill="currentColor">
-        <path d="M60 4c26 0 56 16 56 46s-22 66-52 66S4 84 4 54 34 4 60 4Z" />
+      {/* Concentric arcs - a quarter turn, the same motif as the panel edge
+          itself, so the decoration restates the shape rather than fighting it. */}
+      <svg className="absolute bottom-[14%] left-[6%] size-36 text-[#5044E5]/18 dark:text-[#A594FF]/20" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <path d="M4 116A112 112 0 0 1 116 4" />
+        <path d="M30 116A86 86 0 0 1 116 30" />
+        <path d="M56 116A60 60 0 0 1 116 56" />
       </svg>
 
-      <svg className="absolute right-[10%] bottom-[22%] size-10 text-[#FFB547]/45" viewBox="0 0 40 40" fill="currentColor">
+      <svg className="absolute right-[14%] bottom-[26%] size-9 text-[#FFB547]/55" viewBox="0 0 40 40" fill="currentColor">
         <path d="M20 0c1.6 9.8 8.6 16.8 18.4 18.4C28.6 20 21.6 27 20 36.8 18.4 27 11.4 20 1.6 18.4 11.4 16.8 18.4 9.8 20 0Z" />
       </svg>
     </div>

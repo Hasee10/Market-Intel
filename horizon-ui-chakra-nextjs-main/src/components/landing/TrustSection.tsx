@@ -99,10 +99,30 @@ export function TrustSection() {
                     the space left over, which is what makes the three cards
                     end level. */}
                 <GlowCard className="mt-5 w-full grow">
-                  <h3 className="text-center font-bold">{point.title}</h3>
-                  <p className="mt-2 text-center text-sm text-gray-600 dark:text-white/75">
-                    {point.description}
-                  </p>
+                  {/* The card's own icon, oversized and nearly invisible in
+                      the corner. Three identical white boxes were the stale
+                      part; this gives each one a distinct silhouette without
+                      adding anything to read. Clipped by GlowCard's outer
+                      overflow-hidden, and behind the text via z-order. */}
+                  <Icon
+                    aria-hidden="true"
+                    className="pointer-events-none absolute -right-4 -bottom-4 size-28 text-[#5044E5]/[0.06] dark:text-[#A594FF]/[0.07]"
+                  />
+
+                  <div className="relative">
+                    <h3 className="text-center font-bold">{point.title}</h3>
+                    {/* Short centred rule under the title: gives the block a
+                        top-to-bottom structure instead of two stacked
+                        paragraphs, and picks up the indigo used by the node
+                        above it. */}
+                    <span
+                      aria-hidden="true"
+                      className="mx-auto mt-3 block h-px w-10 bg-gradient-to-r from-transparent via-[#5044E5]/40 to-transparent dark:via-[#A594FF]/40"
+                    />
+                    <p className="mt-3 text-center text-sm leading-relaxed text-gray-600 dark:text-white/75">
+                      {point.description}
+                    </p>
+                  </div>
                 </GlowCard>
               </Reveal>
             </li>
