@@ -2519,3 +2519,80 @@ now) or an authenticated session. And any future benchmark here must assert
 (590ms → 341ms, 1.7x, synthetic data, 8-core laptop). It has NOT been
 reproduced against production. Do not repeat it as a measured production
 result.
+
+## 2026-08-31: Groq timeout/retry + zod validation on the 3 create routes
+- `25c36e2`, `701e7c4`
+
+User asked "what's outstanding" across everything logged above, then said
+"proceed with whatever needs attention" - a broad go-ahead. Sorted the list
+into what's blocked (needs DB access - see below), what's a priority call,
+and what's pure code with zero external dependency, then did the latter.
+
+**Supabase MCP is connected, but to the wrong account - checked, not
+assumed.** `list_projects` returned 7 real projects, none of them
+Market-Intel/Ryvl (Vespa Verse, NLP-RAG-Agent, quantedge-db, car-xray,
+Milestone, Job-Portal, Islamic_RAG_Agent - one, Job-Portal, is
+`ACTIVE_HEALTHY` and live). Did not guess which one might secretly be this
+project's backing DB or query any of them - that would be touching a
+stranger's live data on a hunch. This means the items blocked on DB access
+(migration 048's index, the candidate-search production benchmark, Phase B's
+anon-RLS confirmation) are **still blocked**, unchanged from before - this
+was a real, checked dead end, not a new option.
+
+**1. Groq client timeout/retry (`25c36e2`).** Both `callGroqJson`/
+`callGroqChat` used plain `fetch()` with no bound at all - a hung request
+sat open indefinitely. Added a shared `fetchGroqWithRetry()`: 15s
+per-attempt timeout via `AbortController`, one retry only for failure
+classes a second attempt can plausibly fix (429, 5xx, timeout, network
+failure) - a 4xx like a bad key still fails on the first response,
+unchanged. 7 new tests, including the timeout path under `vi.useFakeTimers()`
+- worth remembering for reuse: attach the `expect(promise).rejects.toThrow()`
+assertion *before* advancing timers, not after, or vitest flags a real
+(harmless) unhandled-rejection window even though the test still passes.
+
+**2. zod validation on products/orders/customers POST (`701e7c4`).**
+Scoped deliberately to the 3 single-object create routes, not the 13 POST
+routes total - bulk-import (CSV rows, partial-failure-tolerant by design)
+and the AI-assistant/notification routes are a separate pass if wanted, said
+explicitly rather than silently claiming full coverage.
+
+- **zod v4 was installed first, then reverted after `tsc --noEmit` failed
+  with dozens of parse errors inside zod's own `.d.ts` files.** Root cause:
+  zod v4's type definitions use TS 5+ syntax (`const` type parameters) this
+  project's pinned `typescript ^4.9.4` cannot parse. zod v3 (`^3.25.76`) is
+  fully compatible. **Check a library's TS version requirement against this
+  repo's pinned 4.9 before installing anything new that ships its own
+  complex `.d.ts` files** - `npm install` succeeding is not proof it's
+  usable, only `tsc --noEmit` is.
+- **A real, non-obvious TS inference bug, isolated and fixed, not
+  worked around.** A generic `parseJsonBody<T>(request, schema: ZodType<T>)`
+  silently collapsed specific object fields to `unknown`/`{}` instead of
+  erroring, when passed a `z.object({...})` whose per-field Input and Output
+  types genuinely differ (exactly what the new `blankToNull()` helper
+  produces). Root-caused with an isolated minimal repro outside the real
+  files (confirmed the exact failing case before touching a fix), not
+  trial-and-error on the actual routes. Fix: pin the schema parameter's
+  Input generic slot to `any` - `ZodType<T, ZodTypeDef, any>` - which
+  decouples inference of T from also having to solve Input, instead of
+  defaulting to `ZodType<T, ZodTypeDef, T>`. Documented inline since this is
+  exactly the kind of fix a future "simplification" pass would revert
+  without understanding why it's there.
+- **`blankToNull()` exists because these forms send every field as `''`,
+  never omit it** - `NewProductDrawer`/`NewOrderDrawer`/`NewCustomerDrawer`
+  all `useState('')`. A plain `z.string().min(1)` would reject that as
+  "too short" instead of treating it as "not provided", breaking the
+  legitimate blank-field case these routes previously handled fine via
+  `body.field || null`. Checked each form's actual submit body before
+  writing the schema, not assumed from the route code alone.
+- **The tests caught a real bug before it shipped, which is the entire
+  point of writing them before believing the work is done.** The customers
+  route had `CustomerCreateSchema` defined and imported but the POST handler
+  itself was never switched from `request.json()` to `parseJsonBody()` -
+  a pure oversight, not a design question. Two new tests (malformed email,
+  negative `totalSpent`) got 200 instead of the expected 400, which is what
+  surfaced it. Fixed, then all 30 test files / 196 tests passed clean.
+- Verified: `tsc --noEmit` clean, `next lint` clean (only the same 2
+  pre-existing unrelated warnings from before this session), full suite
+  green. Did not run a production build - not established as required for
+  a non-UI backend change in this project's own verification bar, per
+  every prior route-level entry above.
