@@ -64,11 +64,13 @@ const ROLL_DEGREES = 140;
 // being a mirror on the far side.
 const SLIDE_VW = 113.4;
 
-// The content column is 42vw wide and pinned left, so its centre sits at
-// 21vw - well inside the arc rather than at the half-panel's 25vw, where the
-// text ran past the curve as it narrowed toward the bottom. Its travel is
-// derived the same way as the shape's: 100 - 2*21.
-const CONTENT_WIDTH_VW = 42;
+// The content column is pinned left, so its centre sits at half its width -
+// 19vw, not the half-panel's 25vw, where copy ran past the curve as it
+// narrowed toward the bottom. Moving from 21vw to 19vw is what buys room for
+// the larger illustration: worst-case clearance at 21:9 goes from 5.0vh to
+// 6.5vh even with the art up from 340px to 400px. Travel is derived the same
+// way as the shape's, so the two can't drift apart.
+const CONTENT_WIDTH_VW = 38;
 const CONTENT_SLIDE_VW = 100 - CONTENT_WIDTH_VW;
 
 export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
@@ -160,7 +162,7 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
           they opened. */}
       <div
         style={{ transform: `translateX(${isSignin ? '0vw' : `${CONTENT_SLIDE_VW}vw`})`, transition }}
-        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[42vw] lg:block"
+        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[38vw] lg:block"
       >
         <PanelDecor />
 
@@ -175,7 +177,7 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
               never shows the gap of a fresh image decode. Sized off the
               viewport height so the art grows with the panel rather than
               sitting in a fixed box in the middle of a large arc. */}
-          <div className="relative h-[38vh] max-h-[360px] w-full max-w-[340px]">
+          <div className="relative h-[44vh] max-h-[420px] w-full max-w-[400px]">
             {(['signin', 'signup'] as const).map((key) => (
               <Image
                 key={key}
