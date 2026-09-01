@@ -43,7 +43,7 @@ import type { RevenueForecast } from '@/lib/market-intel/forecast';
 // just flat "No X yet" text with nowhere to go.
 function ChartEmptyState({ message, ctaLabel, ctaHref }: { message: string; ctaLabel: string; ctaHref: string }) {
   return (
-    <Flex direction="column" align="center" justify="center" h="210px" gap="10px">
+    <Flex direction="column" align="center" justify="center" h="260px" gap="10px">
       <Icon as={MdOutlineInsertChart} boxSize="32px" color="secondaryGray.400" />
       <Text color="secondaryGray.600" textAlign="center">
         {message}
@@ -70,7 +70,7 @@ type TopProductRow = {
 type RevenuePoint = { date: string; revenue: number };
 
 const PALETTE = [
-  '#2563EB',
+  '#4318FF',
   '#6AD2FF',
   '#05CD99',
   '#FFB547',
@@ -92,24 +92,24 @@ export default function OverviewPage() {
   const cardBg = useColorModeValue('white', 'navy.700');
   const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
   const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
-  const sectionAccent = useColorModeValue('#2563EB', '#60A5FA');
-  const donutLabelColor = useColorModeValue('#0F172A', '#FFFFFF');
-  const donutTotalColor = useColorModeValue('#64748B', '#64748B');
-  const tableRowHoverBg = useColorModeValue('#F8FAFC', 'whiteAlpha.50');
-  const categoryBadgeBg = useColorModeValue('#DBEAFE', 'whiteAlpha.100');
-  const categoryBadgeColor = useColorModeValue('#2563EB', '#60A5FA');
+  const sectionAccent = useColorModeValue('#4318FF', '#A594FF');
+  const donutLabelColor = useColorModeValue('#1B2559', '#FFFFFF');
+  const donutTotalColor = useColorModeValue('#A3AED0', '#A3AED0');
+  const tableRowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
+  const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
+  const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
   // Chart tooltips previously hardcoded `theme: 'dark'` unconditionally -
   // even in light mode - and ApexCharts' generic dark preset (a flat grey,
   // not this app's specific navy) sat close enough in luminance to Ryvl's
   // actual dark surface that the tooltip box read as barely-there against
   // the page behind it. These match cardBg/cardBorder/textColor exactly
-  // (navy.700 = #1E293B, from theme/styles.ts), as raw hex because
+  // (navy.700 = #1B254B, from theme/styles.ts), as raw hex because
   // ApexCharts' tooltip.custom returns an HTML string, not JSX - Chakra
   // tokens like "navy.700" aren't resolvable CSS outside a styled component.
-  const tooltipBg = useColorModeValue('#FFFFFF', '#1E293B');
+  const tooltipBg = useColorModeValue('#FFFFFF', '#1B254B');
   const tooltipBorder = useColorModeValue('#E2E8F0', 'rgba(255,255,255,0.14)');
-  const tooltipText = useColorModeValue('#0F172A', '#FFFFFF');
-  const tooltipMuted = useColorModeValue('#334155', '#64748B');
+  const tooltipText = useColorModeValue('#1B2559', '#FFFFFF');
+  const tooltipMuted = useColorModeValue('#707EAE', '#A3AED0');
 
   const { data: statsData, loading: statsLoading } = useFetch<IApiResponse<StatItem[]>>(
     '/api/ecommerce/stats',
@@ -198,25 +198,25 @@ export default function OverviewPage() {
     markers: { size: 0, hover: { size: 5 } },
     xaxis: {
       categories: revenueTrend.map((p) => p.date.slice(5)),
-      labels: { style: { colors: '#64748B', fontSize: '10px' } },
+      labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
       axisBorder: { show: false },
       axisTicks: { show: false },
     },
     yaxis: { show: false },
     grid: { show: false },
-    colors: ['#2563EB'],
+    colors: ['#4318FF'],
     annotations: revenuePeak
       ? {
           points: [
             {
               x: revenuePeak.date.slice(5),
               y: Number(revenuePeak.revenue.toFixed(2)),
-              marker: { size: 5, fillColor: tooltipBg, strokeColor: '#2563EB', strokeWidth: 2 },
+              marker: { size: 5, fillColor: tooltipBg, strokeColor: '#4318FF', strokeWidth: 2 },
               label: {
-                borderColor: '#2563EB',
+                borderColor: '#4318FF',
                 borderWidth: 0,
                 offsetY: -6,
-                style: { color: '#FFFFFF', background: '#2563EB', fontSize: '10px', fontWeight: 700, padding: { left: 8, right: 8, top: 4, bottom: 4 } },
+                style: { color: '#FFFFFF', background: '#4318FF', fontSize: '10px', fontWeight: 700, padding: { left: 8, right: 8, top: 4, bottom: 4 } },
                 text: `Best day: ${formatCurrency(revenuePeak.revenue, reportingCurrency)}`,
               },
             },
@@ -333,18 +333,13 @@ export default function OverviewPage() {
           silently split the wrong stats. */}
       <StatsGrid data={primaryStats} loading={statsLoading} columns={4} />
 
-      {/* 2026-09-01 revamp: dropped the Merriweather serif (see PageHeader's
-          own comment) and tightened size/margins - "instant insight, no
-          scroll" means every section label should cost as little vertical
-          space as it can while staying legible, not read as a magazine
-          section break. */}
-      <Flex align="center" gap="8px" mb="10px" mt="8px">
-        <Box w="4px" h="14px" borderRadius="full" bg={sectionAccent} />
-        <Heading size="sm" fontWeight="700" color={textColor}>
+      <Flex align="center" gap="10px" mb="14px" mt="12px">
+        <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
+        <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
           Revenue & fulfillment
         </Heading>
       </Flex>
-      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="14px" mb="14px">
+      <Grid templateColumns={{ base: '1fr', lg: '2fr 1fr' }} gap="20px" mb="20px">
         <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Flex justify="space-between" align="center" mb="10px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
@@ -359,9 +354,9 @@ export default function OverviewPage() {
             )}
           </Flex>
           {revenueLoading ? (
-            <Skeleton height="210px" />
+            <Skeleton height="260px" />
           ) : forecast ? (
-            <Box h="210px">
+            <Box h="260px">
               <LineChart
                 type="area"
                 chartData={[
@@ -393,13 +388,13 @@ export default function OverviewPage() {
                   markers: { size: 0, hover: { size: 5 } },
                   xaxis: {
                     categories: forecast.points.map((p) => p.date.slice(5)),
-                    labels: { style: { colors: '#64748B', fontSize: '10px' } },
+                    labels: { style: { colors: '#A3AED0', fontSize: '10px' } },
                     axisBorder: { show: false },
                     axisTicks: { show: false },
                   },
                   yaxis: { show: false },
                   grid: { show: false },
-                  colors: ['#2563EB', '#64748B'],
+                  colors: ['#4318FF', '#A3AED0'],
                   tooltip: {
                     custom: ({ series, dataPointIndex }: { series: number[][]; dataPointIndex: number }) => {
                       const point = forecast.points[dataPointIndex];
@@ -425,7 +420,7 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.orders}
             />
           ) : (
-            <Box h="210px">
+            <Box h="260px">
               <LineChart type="area" chartData={lineChartData} chartOptions={lineChartOptions} />
             </Box>
           )}
@@ -435,7 +430,7 @@ export default function OverviewPage() {
             Order status
           </Text>
           {ordersLoading ? (
-            <Skeleton height="210px" />
+            <Skeleton height="260px" />
           ) : orders.length === 0 ? (
             <ChartEmptyState
               message="No orders yet - add one to see fulfillment status here."
@@ -443,17 +438,17 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.orders}
             />
           ) : (
-            <Box h="210px">
+            <Box h="260px">
               <PieChart type="donut" chartData={orderPieData} chartOptions={orderPieOptions} />
             </Box>
           )}
         </Card>
       </Grid>
 
-      <Flex align="center" justify="space-between" wrap="wrap" gap="12px" mb="10px" mt="8px">
-        <Flex align="center" gap="8px">
-          <Box w="4px" h="14px" borderRadius="full" bg={sectionAccent} />
-          <Heading size="sm" fontWeight="700" color={textColor}>
+      <Flex align="center" justify="space-between" wrap="wrap" gap="12px" mb="14px" mt="12px">
+        <Flex align="center" gap="10px">
+          <Box w="4px" h="18px" borderRadius="full" bg={sectionAccent} />
+          <Heading size="md" color={textColor} fontFamily="var(--font-merriweather), serif">
             Products & inventory
           </Heading>
         </Flex>
@@ -489,13 +484,13 @@ export default function OverviewPage() {
           </Flex>
         )}
       </Flex>
-      <Grid templateColumns={{ base: '1fr', lg: '5fr 7fr' }} gap="14px">
+      <Grid templateColumns={{ base: '1fr', lg: '5fr 7fr' }} gap="20px">
         <Card border="1px solid" borderColor={cardBorder} boxShadow={cardShadow}>
           <Text fontSize="lg" fontWeight="600" color={textColor} mb="10px">
             Category inventory value
           </Text>
           {categoriesLoading ? (
-            <Skeleton height="210px" />
+            <Skeleton height="260px" />
           ) : categories.length === 0 ? (
             <ChartEmptyState
               message="No active products yet - add one to see category breakdown here."
@@ -503,7 +498,7 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.products.root}
             />
           ) : (
-            <Box h="210px">
+            <Box h="260px">
               <PieChart type="donut" chartData={categoryPieData} chartOptions={categoryPieOptions} />
             </Box>
           )}
@@ -513,7 +508,7 @@ export default function OverviewPage() {
             Top products by inventory value
           </Text>
           {productsLoading ? (
-            <Skeleton height="210px" />
+            <Skeleton height="260px" />
           ) : topProducts.length === 0 ? (
             <ChartEmptyState
               message="No products yet - add your catalog to rank by inventory value here."

@@ -2,18 +2,6 @@ import { mode, StyleFunctionProps } from "@chakra-ui/theme-tools";
 
 const bodyFont = "var(--font-inter), sans-serif";
 
-// Enterprise-dashboard palette (2026-09-01 revamp) - replaces the stock
-// Horizon UI template's purple/lavender defaults (brand #422AFB,
-// secondaryGray tinted toward blue-violet, navy literally navy-blue) with a
-// neutral slate scale + a restrained professional blue accent. Every token
-// KEY below is unchanged on purpose - hundreds of components across the app
-// reference `secondaryGray.600`, `navy.800`, `brand.500` etc. directly:
-// changing what these keys mean (their hex values) propagates the new
-// palette everywhere automatically; renaming the keys themselves would mean
-// touching every one of those call sites instead, which is out of scope for
-// a foundation-only pass. Only lib/reports/** (PDF/PPTX export) is exempt -
-// it has its own separate design-tokens.ts and was explicitly told not to
-// change.
 export const globalStyles = {
   fonts: {
     heading: bodyFont,
@@ -21,80 +9,80 @@ export const globalStyles = {
   },
   colors: {
     brand: {
-      100: "#DBEAFE",
-      200: "#93C5FD",
-      300: "#60A5FA",
-      400: "#3B82F6",
-      500: "#2563EB",
-      600: "#1D4ED8",
-      700: "#1E40AF",
-      800: "#1E3A8A",
-      900: "#172554",
+      100: "#E9E3FF",
+      200: "#422AFB",
+      300: "#422AFB",
+      400: "#7551FF",
+      500: "#422AFB",
+      600: "#3311DB",
+      700: "#02044A",
+      800: "#190793",
+      900: "#11047A",
     },
     brandScheme: {
-      100: "#DBEAFE",
-      200: "#60A5FA",
-      300: "#60A5FA",
-      400: "#3B82F6",
-      500: "#2563EB",
-      600: "#1D4ED8",
-      700: "#1E40AF",
-      800: "#1E3A8A",
-      900: "#1E40AF",
+      100: "#E9E3FF",
+      200: "#7551FF",
+      300: "#7551FF",
+      400: "#7551FF",
+      500: "#422AFB",
+      600: "#3311DB",
+      700: "#02044A",
+      800: "#190793",
+      900: "#02044A",
     },
     brandTabs: {
-      100: "#DBEAFE",
-      200: "#2563EB",
-      300: "#2563EB",
-      400: "#2563EB",
-      500: "#2563EB",
-      600: "#1D4ED8",
-      700: "#1E40AF",
-      800: "#1E3A8A",
-      900: "#1E40AF",
+      100: "#E9E3FF",
+      200: "#422AFB",
+      300: "#422AFB",
+      400: "#422AFB",
+      500: "#422AFB",
+      600: "#3311DB",
+      700: "#02044A",
+      800: "#190793",
+      900: "#02044A",
     },
     secondaryGray: {
-      100: "#F1F5F9",
-      200: "#E2E8F0",
-      300: "#F8FAFC",
-      400: "#E5E9F0",
-      500: "#64748B",
-      600: "#475569",
-      700: "#334155",
-      800: "#334155",
-      900: "#0F172A",
+      100: "#E0E5F2",
+      200: "#E1E9F8",
+      300: "#F4F7FE",
+      400: "#E9EDF7",
+      500: "#8F9BBA",
+      600: "#A3AED0",
+      700: "#707EAE",
+      800: "#707EAE",
+      900: "#1B2559",
     },
     red: {
-      100: "#FEE2E2",
-      500: "#DC2626",
-      600: "#B91C1C",
+      100: "#FEEFEE",
+      500: "#EE5D50",
+      600: "#E31A1A",
     },
     blue: {
-      50: "#EFF6FF",
-      500: "#2563EB",
+      50: "#EFF4FB",
+      500: "#3965FF",
     },
     orange: {
-      100: "#FEF3C7",
-      500: "#D97706",
+      100: "#FFF6DA",
+      500: "#FFB547",
     },
     green: {
-      100: "#DCFCE7",
-      500: "#16A34A",
+      100: "#E6FAF5",
+      500: "#01B574",
     },
     navy: {
-      50: "#F1F5F9",
-      100: "#E2E8F0",
-      200: "#CBD5E1",
-      300: "#94A3B8",
-      400: "#64748B",
-      500: "#475569",
-      600: "#334155",
-      700: "#1E293B",
-      800: "#1E293B",
-      900: "#0F172A",
+      50: "#d0dcfb",
+      100: "#aac0fe",
+      200: "#a3b9f8",
+      300: "#728fea",
+      400: "#3652ba",
+      500: "#1b3bbb",
+      600: "#24388a",
+      700: "#1B254B",
+      800: "#111c44",
+      900: "#0b1437",
     },
     gray: {
-      100: "#F8FAFC",
+      100: "#FAFCFE",
     },
   },
   styles: {
@@ -103,6 +91,7 @@ export const globalStyles = {
         overflowX: "hidden",
         bg: mode("secondaryGray.300", "navy.900")(props),
         fontFamily: bodyFont,
+        letterSpacing: "-0.5px",
       },
       input: {
         color: "gray.700",
