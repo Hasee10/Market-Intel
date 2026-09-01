@@ -3598,10 +3598,114 @@ cost**: Market 205 kB -> 152 kB, Competitors 204 kB -> 123 kB, Overview
 
 **Chakra import sites: 143 at start -> 118.**
 
-**Remaining**: Market Definition, Watchlist, Products/Orders/Customers
-page bodies + their drawers and cards, Categories, Settings, Scraper
-Health, Onboarding, 3 auth pages, `BulkImportDrawer`,
-`CompetitorsDrawer`, `RetentionPanel`, `DomainsManager`, `ReferralCard`,
-`AuthCard`, `OnboardingChecklist`, `DownloadReportButton`,
-`SellerAssistantWidget`. Then delete Chakra + the shims + `AppWrappers`'
-provider.
+**Remaining at that point**: Market Definition, Watchlist, the apps pages
+and their drawers, and the rest.
+
+## 2026-09-01: SECOND theme bug, same shape as the cascade one
+
+**The landing page rendered dark-grey text on dark navy with invisible
+outline buttons.** Cause: the Chakra -> Tailwind colour-mode bridge lived
+**inside `AdminShell`**, which never mounts on the public marketing pages.
+Chakra still themed `<body>` dark (it owns colour mode) while
+`<html class="dark">` was never set, so every Tailwind `dark:` variant
+stayed inactive. The two systems disagreed about the active theme on
+exactly the pages built entirely from Tailwind classes.
+
+Extracted as `components/shell/ColorModeBridge.tsx` and mounted in
+`AppWrappers` so it runs app-wide.
+
+**The pattern to watch for, now seen twice: something scoped to the
+dashboard that the public pages silently depended on.** First the CSS
+layer, then the colour-mode class. When adding anything global to the
+migration, check it runs on BOTH surfaces.
+
+## 2026-09-01: Landing polish rounds, driven entirely by screenshots
+
+The user sent screenshots repeatedly; almost every real fix came from
+those, not from reasoning. Worth internalising - `tsc`/tests/build never
+caught any of it.
+
+Shipped across several rounds:
+- **`HeroPreview`** and **`ShowcaseSection`** - product visuals drawn as
+  *markup*, not screenshots: sharp at any size, correct in dark mode, no
+  image weight, and they cannot go stale when a page changes. Swapping in
+  real captures later is just replacing each frame's inner content with an
+  `<img>`; the chassis stays. User asked for "product screenshots like in
+  a phone" - this is that, with no asset work needed from them.
+- **`FaqSection`** reuses the 11 real `FAQS` from
+  `lib/ai/assistant-knowledge.ts` rather than new copy, so the page and
+  the chat widget can never answer the same question differently. It also
+  fills the slot the template uses for "Meet the team", which Ryvl has no
+  honest content for.
+- **`ContactSection`** - the template's own version POSTs to web3forms
+  with **the original author's API key hardcoded**, so submissions would
+  land in a stranger's inbox. Ours uses `mailto:` with
+  `NEXT_PUBLIC_CONTACT_EMAIL`, because there is no email provider wired up
+  (`sendEmailStub` is a deliberate no-op) and no contact table - a form
+  that appeared to submit would silently drop messages. **Unset env var =
+  section does not render at all.**
+- One-click dark toggle on marketing pages (the Light/Dark/System menu
+  stays in the dashboard header); the template's pastel hero washes;
+  `GlowCard` + `SectionTitle` applied throughout.
+
+**Two real layout bugs found only by looking**: Features cards centred the
+icon against a variable-height text block so it floated differently in
+every card (now `items-start` + `items-stretch`), and the Showcase panels
+sized to their contents so the desktop frame sat higher than the two
+phones (now a fixed-height stage).
+
+## 2026-09-01: Dashboard fidelity + apps pages - through `333dcfb`
+
+**User reported ALL of composition/typography/spacing/colour wrong on the
+dashboard.** Fixes: brand scale swapped to TailAdmin's own `#465FFF`
+verbatim (logo mark keeps Ryvl's `#4318FF` - identity, not styling);
+content box matched to their `AppLayout` (`mx-auto max-w-[1536px] p-4
+md:p-6`), cards `p-5 md:p-6`, grids `gap-4 md:gap-6`; `StatsGrid` rebuilt
+to their `EcommerceMetrics` markup with the change as a **pill badge
+bottom-right**, not coloured text underneath.
+
+**Typography was a real bug**: `font-outfit` sat on individual components
+but never on the shell, so anything in a page body that didn't set the
+family inherited Chakra's Inter - **the dashboard was rendering in two
+typefaces.** Now set once on `AdminShell`'s wrapper.
+
+**Sidebar**: icons were uniform grey, so the nav read as one block - now
+per-destination tinted chips. Sections became **collapsible dropdowns**
+(TailAdmin's pattern) with the active group auto-open, per-group not
+accordion, animated via `grid-rows-[0fr/1fr]` rather than max-height.
+Width 240 -> 264 to fit "Market Definition" beside a 32px chip.
+
+**Revenue chart**: x-axis emitted all 30 categories with no tick limit, so
+the labels collapsed and no dates rendered at all. Now `tickAmount`-capped
+with overlap hiding and "5 Aug" formatting; y-axis back on with compact
+currency and dashed grid, because an all-zero series with no axis looked
+like a rendering bug rather than "no revenue yet". Added a 7d/14d/30d
+range selector that slices the data already fetched - deliberately not
+offered on the forecast series, which is a fixed 60-day fit.
+
+**New primitives**: `Tabs`, `Table` (+`Pill`), `Alert`, `Button`,
+`Field`/`Input`/`Select`/`Textarea`/`Toggle`, `Drawer`.
+- `Drawer` reimplements Escape-to-close, overlay click, body scroll lock
+  and focus-on-open. **Focus is deliberately NOT trapped** - that needs a
+  full tab-cycle and a half-done trap is worse than none; noted in-file.
+- `Toggle` wraps a real hidden checkbox, not a div-with-onClick, so focus
+  and screen-reader behaviour survive.
+- Chakra's `Select` had a `placeholder` prop rendering an empty first
+  option; native selects don't, so those became explicit
+  `<option value="">` entries.
+
+**Windows gotcha that cost time**: these files are checked out **CRLF**, so
+node scripts matching `'import {\n  Button,'` silently found nothing.
+Match with `/\r?\n/` when scripting edits here.
+
+**Ported since**: Watchlist, Orders, Customers pages, `CustomerCard`,
+`NewCustomerDrawer`, `EditCustomerDrawer`, `NewOrderDrawer`,
+`EditOrderDrawer`, `EditProductDrawer`.
+
+**Still Chakra**: Products page + `ProductCard`/`NewProductDrawer`/
+`CompetitorsDrawer`, Categories, Settings, Scraper Health, Market
+Definition, Onboarding, 3 auth pages, `BulkImportDrawer`,
+`RetentionPanel`, `DomainsManager`, `ReferralCard`, `AuthCard`,
+`OnboardingChecklist`, `DownloadReportButton`, `SellerAssistantWidget`,
+plus `useToast`/`useColorModeValue` call sites that are behaviour rather
+than styling and go with the final removal.
