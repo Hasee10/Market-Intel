@@ -22,13 +22,6 @@ export function PlanBadge({ isCollapsed }: { isCollapsed?: boolean }) {
   const planTier = data?.data?.planTier ?? 'free';
   const borderColor = useColorModeValue('gray.100', 'whiteAlpha.100');
   const bg = useColorModeValue('secondaryGray.100', 'whiteAlpha.50');
-  // This component only ever renders inside the sidebar, which is now
-  // permanently dark (see Sidebar.tsx) - so this always resolves to the
-  // second value in practice, but kept as a real light/dark pair rather
-  // than a hardcoded light-on-dark color in case it's ever reused outside
-  // the sidebar. The previous flat `secondaryGray.600` (no dark variant)
-  // was low-contrast against a dark background.
-  const bodyTextColor = useColorModeValue('secondaryGray.600', 'secondaryGray.400');
 
   if (isCollapsed) return null;
 
@@ -55,12 +48,12 @@ export function PlanBadge({ isCollapsed }: { isCollapsed?: boolean }) {
         <Icon as={MdOutlineWorkspacePremium} color="brand.400" boxSize="16px" />
       </Flex>
       {planTier === 'free' && (
-        <Text fontSize="xs" color={bodyTextColor}>
+        <Text fontSize="xs" color="secondaryGray.600">
           Refer 3 sellers to unlock Paid, free.
         </Text>
       )}
       {planTier === 'paid' && (
-        <Text fontSize="xs" color={bodyTextColor}>
+        <Text fontSize="xs" color="secondaryGray.600">
           Go Premium for forecasting & pricing recommendations.
         </Text>
       )}
