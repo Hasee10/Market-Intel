@@ -15,6 +15,7 @@ import LineChart from '@/components/charts/LineChart';
 import { Alert } from '@/components/ui/Alert';
 import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
@@ -112,6 +113,10 @@ export default function MarketView({
   entitlements,
 }: MarketViewProps) {
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
+  // Recommendations ran to 40+ rows and buried every section under them;
+  // stock-outs are shorter but the same shape of problem.
+  const recPage = usePagination(pricingRecommendations, 10);
+  const stockOutPage = usePagination(stockOuts, 8);
   const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
   // Same custom-tooltip fix as Overview (app/dashboard/overview/page.tsx) -
   // these two charts had no tooltip styling at all, so they fell through to
@@ -216,12 +221,6 @@ export default function MarketView({
           ))}
         </div>
       )}
-
-      <Alert status="info" title="Peer benchmarking, not surveillance" className="mb-5">
-        You only see aggregate or seller-opted-in fields for other sellers in your domain (e.g.
-        rating, price positioning, response time). Nothing private about a competitor&apos;s
-        business is ever shown.
-      </Alert>
 
       {!domain && (
         <Alert status="warning" className="mb-5">
@@ -335,9 +334,17 @@ export default function MarketView({
         )}
       </Card>
 
-      <div className="mb-5 @container grid grid-cols-1 gap-4 md:gap-6 @3xl:grid-cols-3">
+      {/* Two columns only when there is actually a demand signal to put in
+          the second one. OLX is a disabled scraper path, so for most sellers
+          that card is permanently empty and was holding a third of the row to
+          say "no data yet". */}
+      <div
+        className={`mb-5 @container grid grid-cols-1 gap-4 md:gap-6 ${
+          demandSignal ? '@3xl:grid-cols-3' : ''
+        }`}
+      >
         <Card
-          className="@3xl:col-span-2"
+          className={demandSignal ? '@3xl:col-span-2' : undefined}
           title={`Price trend ${priceForecast ? '& 14-day forecast' : '(30 days)'}`}
           action={
             priceForecast ? (
@@ -450,9 +457,9 @@ export default function MarketView({
           )}
         </Card>
 
+        {demandSignal && (
         <Card title="Demand signal (OLX)">
-          {demandSignal ? (
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
               <p className="text-sm text-gray-500 dark:text-gray-400">Active listings</p>
               <p className="text-2xl font-bold text-gray-900 tabular-nums dark:text-white">
                 {demandSignal.activeListings}
@@ -462,13 +469,9 @@ export default function MarketView({
                 {demandSignal.newListingsPrior7Days > 0 &&
                   ` (vs ${demandSignal.newListingsPrior7Days} the week before)`}
               </p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              No OLX classifieds data for this category yet.
-            </p>
-          )}
+          </div>
         </Card>
+        )}
       </div>
 
       <Card className="mb-5" title="Competitor stock-outs">
@@ -484,7 +487,7 @@ export default function MarketView({
               <TH numeric>Last price</TH>
             </THead>
             <TBody>
-              {stockOuts.map((product) => (
+              {stockOutPage.visible.map((product) => (
                 <TR key={product.id}>
                   <TD strong>
                     <a
@@ -503,6 +506,15 @@ export default function MarketView({
             </TBody>
           </Table>
         )}
+        <Pagination
+          page={stockOutPage.page}
+          pageCount={stockOutPage.pageCount}
+          onPageChange={stockOutPage.setPage}
+          rangeStart={stockOutPage.rangeStart}
+          rangeEnd={stockOutPage.rangeEnd}
+          total={stockOutPage.total}
+          label="stock-outs"
+        />
       </Card>
 
       <UpgradeGate
@@ -584,7 +596,7 @@ export default function MarketView({
                 <TH>Why</TH>
               </THead>
               <TBody>
-                {pricingRecommendations.map((rec) => (
+                {recPage.visible.map((rec) => (
                   <TR key={rec.productId}>
                     <TD strong>
                       {rec.productTitle}
@@ -596,6 +608,16 @@ export default function MarketView({
                       {rec.categorySlug !== domain?.categorySlug && (
                         <span className="mt-0.5 block text-xs font-normal text-gray-400 dark:text-gray-500">
                           {formatMetric(rec.categorySlug.replace(/-/g, ' '))} band
+                        </span>
+                      )}
+                      {/* Duplicates are collapsed to one row so the advice
+                          can't contradict itself, but the seller still needs
+                          to know the rows exist - this layer can only paper
+                          over them, not fix them. */}
+                      {rec.duplicateEntries > 1 && (
+                        <span className="mt-0.5 block text-xs font-normal text-orange-700 dark:text-orange-500">
+                          {rec.duplicateEntries} duplicate catalogue entries - priced off the highest
+                          cost
                         </span>
                       )}
                     </TD>
@@ -629,6 +651,15 @@ export default function MarketView({
               </TBody>
             </Table>
           )}
+          <Pagination
+            page={recPage.page}
+            pageCount={recPage.pageCount}
+            onPageChange={recPage.setPage}
+            rangeStart={recPage.rangeStart}
+            rangeEnd={recPage.rangeEnd}
+            total={recPage.total}
+            label="products"
+          />
         </Card>
       </UpgradeGate>
 
@@ -711,20 +742,21 @@ export default function MarketView({
         </Card>
       </UpgradeGate>
 
-      <div className="@container grid grid-cols-1 gap-4 @2xl:grid-cols-2">
-        <Card title="Opt in to be visible to peers">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Choose which of your own stats (rating, price range, response time) other sellers in
-            your domain can see. Manage this from Settings &rarr; Public profile.
-          </p>
-        </Card>
-        <Card title="Where this data comes from">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Benchmarks are computed from anonymized, aggregated seller data in your domain - never a
-            direct feed of another seller&apos;s private orders, customers, or churn.
-          </p>
-        </Card>
-      </div>
+      {/* One card, not three places saying the same thing. This absorbed the
+          permanent "Peer benchmarking, not surveillance" banner that used to
+          sit above the fold on every visit, and the separate opt-in card next
+          to it - all three were static copy that never changed. */}
+      <Card title="Where this data comes from">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Benchmarks are computed from anonymized, aggregated seller data in your domain - never a
+          direct feed of another seller&apos;s private orders, customers, or churn. You only ever
+          see aggregate or seller-opted-in fields (rating, price positioning, response time);
+          nothing private about a competitor&apos;s business is shown.
+        </p>
+        <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          To choose which of your own stats peers can see, go to Settings &rarr; Public profile.
+        </p>
+      </Card>
     </div>
   );
 }

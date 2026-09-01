@@ -28,6 +28,13 @@ export type PricingRecommendation = {
    * without wondering which numbers produced it.
    */
   categorySlug: string;
+  /**
+   * How many active catalogue rows collapsed into this recommendation - 1 for
+   * a normal product. Above 1 means the seller has duplicate entries for the
+   * same item, which is worth telling them about: it is a data problem this
+   * layer can only paper over, not fix.
+   */
+  duplicateEntries: number;
   costPrice: number | null;
   currentPrice: number;
   recommendedPrice: number;
@@ -41,6 +48,48 @@ export type PricingRecommendation = {
 
 function round2(value: number): number {
   return Math.round(value * 100) / 100;
+}
+
+// Collapses duplicate catalogue rows so one product yields one recommendation.
+//
+// The duplicates are real and the database permits them: migration 035's
+// unique indexes are (seller_id, sku) and (seller_id, import_key), and
+// Postgres treats NULLs as distinct - so a product created by hand with
+// neither field can be entered any number of times, exactly as 027 warned.
+//
+// Left alone this produced flatly contradictory advice: the same phone at the
+// same price told to increase in one row and decrease in the next, because
+// each row carried a different cost and so a different margin floor. Two
+// answers is worse than one imperfect answer - the seller cannot act on
+// either.
+//
+// The surviving row is the one with the HIGHEST cost. The margin floor has to
+// clear the dearest copy the seller actually holds; taking the cheapest would
+// recommend a price that loses money on the rest of the stock.
+//
+// Keyed on category plus normalised title, not title alone, so two genuinely
+// different products that happen to share a name across categories stay
+// separate. This is deliberately a display-layer repair - it makes the advice
+// usable, but the duplicate rows are still there, which is why the count
+// travels with the result instead of being quietly swallowed.
+function dedupeCatalogueRows<T extends { title: string; cost_price: unknown }>(
+  rows: T[],
+  categoryOf: (row: T) => string | null,
+): { product: T; duplicateEntries: number }[] {
+  const byKey = new Map<string, { product: T; duplicateEntries: number }>();
+
+  for (const row of rows) {
+    const key = `${categoryOf(row) ?? ''}::${row.title.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+    const seen = byKey.get(key);
+    if (!seen) {
+      byKey.set(key, { product: row, duplicateEntries: 1 });
+      continue;
+    }
+    seen.duplicateEntries += 1;
+    if (Number(row.cost_price) > Number(seen.product.cost_price)) seen.product = row;
+  }
+
+  return [...byKey.values()];
 }
 
 // Recommends a price for each active product with both cost_price and
@@ -102,7 +151,7 @@ export async function getPricingRecommendations(
   const matchByProductId = new Map(matches.map((m) => [m.sellerProductId, m]));
   const recommendations: PricingRecommendation[] = [];
 
-  for (const product of productsRes.data) {
+  for (const { product, duplicateEntries } of dedupeCatalogueRows(productsRes.data, categoryOf)) {
     // Products can each be in a different currency (seller_products.currency)
     // - convert to the seller's reporting currency, which categoryPricing is
     // already in, so cost/current/recommended prices compare correctly
@@ -167,6 +216,7 @@ export async function getPricingRecommendations(
       productId: product.id,
       productTitle: product.title,
       categorySlug: productCategory,
+      duplicateEntries,
       costPrice,
       currentPrice,
       recommendedPrice,

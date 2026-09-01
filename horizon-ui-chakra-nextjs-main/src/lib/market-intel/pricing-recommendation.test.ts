@@ -144,6 +144,57 @@ describe('getPricingRecommendations', () => {
     expect(rec.competitorHigh).toBe(90000);
   });
 
+  it('collapses duplicate catalogue rows into one recommendation', async () => {
+    // The reported case: the same phone entered twice with different costs,
+    // producing "increase" on one row and "decrease" on the next.
+    pricingBySlug['mobiles'] = band(40000, 90000);
+    productRows = [
+      product({ id: 'a', title: 'Samsung Galaxy A15', slug: 'mobiles', cost_price: 55000, sell_price: 65000 }),
+      product({ id: 'b', title: 'Samsung Galaxy A15', slug: 'mobiles', cost_price: 62500, sell_price: 65000 }),
+    ];
+
+    const recs = await getPricingRecommendations('seller1', 'beauty', 'PKR');
+
+    expect(recs).toHaveLength(1);
+    expect(recs[0].duplicateEntries).toBe(2);
+  });
+
+  it('keeps the highest cost when merging, so the floor clears the dearest copy', async () => {
+    pricingBySlug['mobiles'] = band(40000, 90000);
+    productRows = [
+      product({ id: 'cheap', title: 'Phone', slug: 'mobiles', cost_price: 55000, sell_price: 65000 }),
+      product({ id: 'dear', title: 'Phone', slug: 'mobiles', cost_price: 62500, sell_price: 65000 }),
+    ];
+
+    const [rec] = await getPricingRecommendations('seller1', 'beauty', 'PKR');
+
+    expect(rec.costPrice).toBe(62500);
+  });
+
+  it('treats titles differing only by case or spacing as the same product', async () => {
+    pricingBySlug['mobiles'] = band(40000, 90000);
+    productRows = [
+      product({ id: 'a', title: 'Samsung Galaxy A15', slug: 'mobiles' }),
+      product({ id: 'b', title: '  samsung   galaxy a15 ', slug: 'mobiles' }),
+    ];
+
+    expect(await getPricingRecommendations('seller1', 'beauty', 'PKR')).toHaveLength(1);
+  });
+
+  it('does not merge the same title across different categories', async () => {
+    pricingBySlug['mobiles'] = band(40000, 90000);
+    pricingBySlug['accessories'] = band(500, 3000);
+    productRows = [
+      product({ id: 'a', title: 'Charger', slug: 'mobiles', cost_price: 1000, sell_price: 2000 }),
+      product({ id: 'b', title: 'Charger', slug: 'accessories', cost_price: 1000, sell_price: 2000 }),
+    ];
+
+    const recs = await getPricingRecommendations('seller1', 'beauty', 'PKR');
+
+    expect(recs).toHaveLength(2);
+    expect(recs.every((r) => r.duplicateEntries === 1)).toBe(true);
+  });
+
   it('still uses a match when the product is inside the matched scope', async () => {
     pricingBySlug['beauty'] = band(475, 2821);
     scopeSlugs = ['beauty'];
