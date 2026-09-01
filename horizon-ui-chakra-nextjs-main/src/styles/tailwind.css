@@ -22,6 +22,13 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
+/* Class-based dark mode, same declaration TailAdmin uses. Chakra's own
+ * colour mode stays the single source of truth - AdminShell mirrors it onto
+ * <html class="dark"> (see syncTailwindDarkClass there) so `dark:` utilities
+ * and useColorModeValue() can never disagree about which theme is active.
+ */
+@custom-variant dark (&:is(.dark *));
+
 /* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
  * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and
@@ -29,7 +36,9 @@
  * 11-step scale, not its hue. See ASSETS.md for the full colour-drift story.
  */
 @theme {
-  --font-outfit: Outfit, ui-sans-serif, system-ui, sans-serif;
+  /* Resolves to the next/font-hosted family declared in app/layout.tsx, so
+   * this never hits the Google Fonts CDN at request time. */
+  --font-outfit: var(--font-outfit-src, Outfit), ui-sans-serif, system-ui, sans-serif;
 
   --breakpoint-2xsm: 375px;
   --breakpoint-xsm: 425px;

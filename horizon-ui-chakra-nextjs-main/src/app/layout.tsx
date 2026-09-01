@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Merriweather } from 'next/font/google';
+import { Inter, Merriweather, Outfit } from 'next/font/google';
 import React, { ReactNode } from 'react';
 import AppWrappers from './AppWrappers';
 
@@ -15,6 +15,15 @@ const merriweather = Merriweather({
   variable: '--font-merriweather',
   display: 'swap',
 });
+// Outfit is TailAdmin's own typeface and a large part of why that template
+// reads the way it does. Scoped to the migrated shell/pages via the
+// font-outfit utility rather than set app-wide, so Chakra pages that haven't
+// been ported yet keep rendering in Inter exactly as they do today.
+// Named --font-outfit-src, not --font-outfit, on purpose: Tailwind's @theme
+// block in styles/tailwind.css already owns --font-outfit (that's what makes
+// the `font-outfit` utility exist) and both land on the same element, so
+// reusing the name would have one silently overwrite the other.
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit-src', display: 'swap' });
 
 // Real metadata via Next's App Router API - replaces app/head.tsx (deleted:
 // that special-file convention was dropped after Next 13.3, so it never
@@ -39,7 +48,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${merriweather.variable}`}>
+    <html lang="en" className={`${inter.variable} ${merriweather.variable} ${outfit.variable}`}>
       <body id={'root'}>
         <AppWrappers>{children}</AppWrappers>
       </body>
