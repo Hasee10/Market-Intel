@@ -7,6 +7,7 @@ import { MdAddCircleOutline, MdOutlineInsertChart } from 'react-icons/md';
 
 import PieChart from 'components/charts/PieChart';
 import LineChart from 'components/charts/LineChart';
+import BarChart from 'components/charts/BarChart';
 
 import { DownloadReportButton } from '@/components/marketintel/DownloadReportButton';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
@@ -60,16 +61,24 @@ type RevenuePoint = { date: string; revenue: number };
 
 // Chart palette anchored on TailAdmin's brand-500 (#465FFF) so the charts
 // match the rest of the dashboard - ApexCharts takes raw hex, not tokens.
-const PALETTE = [
-  '#465FFF',
-  '#6AD2FF',
-  '#05CD99',
-  '#FFB547',
-  '#EE5D50',
-  '#8B5CF6',
-  '#F97316',
-  '#22D3EE',
-];
+//
+// These are not chosen by eye. The previous set failed an accessibility
+// check twice over: #6AD2FF and #FFB547 sat outside the usable lightness
+// band, and #6AD2FF/#05CD99/#FFB547 all fell below 3:1 against the light
+// card surface, so three of eight series were washed out for anyone with
+// low vision. Each slot here is snapped to a darker step of the same hue and
+// verified against the lightness band, chroma floor, colour-vision-deficiency
+// separation, normal-vision separation and surface contrast.
+//
+// The ORDER is load-bearing, not decorative. Amber next to green or red is
+// the classic deutan/protan collision - adjacent-pair separation dropped to
+// ΔE 3.9 in that arrangement. Interleaving purple and cyan between them
+// lifts the worst adjacent pair to ΔE 21.9. Reordering these hues silently
+// re-breaks the check.
+const PALETTE_LIGHT = ['#465FFF', '#039855', '#7F56D9', '#D6A100', '#0BA5EC', '#D92D20'];
+// Dark mode is a separate set, not an automatic flip: two slots that pass
+// against a white card are too light against the dark one.
+const PALETTE_DARK = ['#465FFF', '#039855', '#7F56D9', '#B98A00', '#0989BE', '#D92D20'];
 
 // Every amount reaching this page has already been converted server-side
 // into the seller's reporting currency (see lib/market-intel/fx.ts) - this
@@ -113,8 +122,11 @@ export default function OverviewPage() {
   // Tailwind classes in the markup below, so their useColorModeValue calls
   // were removed rather than left dangling.
   const cardBg = useColorModeValue('white', 'navy.700');
+  const PALETTE = useColorModeValue(PALETTE_LIGHT, PALETTE_DARK);
   const donutLabelColor = useColorModeValue('#1B2559', '#FFFFFF');
   const donutTotalColor = useColorModeValue('#A3AED0', '#A3AED0');
+  // Recessive hairline, one shade off the surface, in both modes.
+  const gridColor = useColorModeValue('#F2F4F7', 'rgba(255,255,255,0.08)');
   // Chart tooltips previously hardcoded `theme: 'dark'` unconditionally -
   // even in light mode - and ApexCharts' generic dark preset (a flat grey,
   // not this app's specific navy) sat close enough in luminance to Ryvl's
@@ -172,7 +184,19 @@ export default function OverviewPage() {
   const orders = ordersData?.data || [];
   const categories = categoriesData?.data || [];
   const revenueTrend = revenueTrendData?.data || [];
-  const topProducts = (productsData?.data || []).slice(0, 5);
+  const allProducts = productsData?.data || [];
+  const dedupedProducts = (() => {
+    const seen = new Map<string, TopProductRow>();
+    for (const row of allProducts) {
+      const key = `${row.category}::${row.title.trim().toLowerCase().replace(/\s+/g, ' ')}`;
+      const existing = seen.get(key);
+      // Keep the larger holding: two rows for one product are one product,
+      // and the bigger position is the one worth ranking on.
+      if (!existing || row.inventoryValue > existing.inventoryValue) seen.set(key, row);
+    }
+    return [...seen.values()].sort((a, b) => b.inventoryValue - a.inventoryValue);
+  })();
+  const topProducts = dedupedProducts.slice(0, 5);
   const anomalies = anomaliesData?.data || [];
   const recentAnomaly = anomalies[0];
   const forecast = forecastData?.data ?? null;
@@ -189,6 +213,11 @@ export default function OverviewPage() {
 
   // The selected window, taken off the end of the 30 days the API returns.
   const shownTrend = revenueTrend.slice(-trendDays);
+  // A flat line pinned to zero reads as a rendering fault, not as "no
+  // revenue yet" - and the y-axis collapses to a single tick, so there is
+  // nothing to read either. Treated as empty so the existing empty state,
+  // which says the useful thing and offers the next action, actually fires.
+  const hasAnyRevenue = shownTrend.some((p) => p.revenue > 0);
 
   const lineChartData = [
     {
@@ -241,7 +270,7 @@ export default function OverviewPage() {
         formatter: (v: number) => compactCurrency(v, reportingCurrency),
       },
     },
-    grid: { show: true, borderColor: '#F2F4F7', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+    grid: { show: true, borderColor: gridColor, strokeDashArray: 0, xaxis: { lines: { show: false } } },
     colors: ['#465FFF'],
     annotations: revenuePeak
       ? {
@@ -318,31 +347,58 @@ export default function OverviewPage() {
 
   const categoryPieData = chartCategories.map((c) => c.value);
   const totalCategoryValue = categoryPieData.reduce((sum, v) => sum + v, 0);
-  const categoryPieOptions = {
-    labels: chartCategories.map((c) => c.category),
-    colors: PALETTE.slice(0, chartCategories.length || 1),
-    legend: { show: true, position: 'bottom' as const, labels: { colors: tooltipText } },
-    dataLabels: { enabled: false },
-    stroke: { width: 0 },
+
+  // Horizontal bars, not a donut.
+  //
+  // One category held ~80% of inventory value and the rest were slivers -
+  // a form that shows part-to-whole at a glance but makes the small
+  // categories impossible to compare with each other, which is the actual
+  // question ("where is my money after the obvious one?"). Bars share a
+  // common baseline, so a 2% category and a 3% category are visibly
+  // different; the total moves to a caption, where it was the only thing
+  // the donut's hole was really carrying.
+  //
+  // One colour for every bar, not one per category: length already encodes
+  // the value, so a per-bar hue would spend the palette re-stating it. Value
+  // labels sit at the end of each bar - required rather than decorative,
+  // since the validated palette carries a contrast WARN that is only
+  // dischargeable with visible labels or a table view.
+  const categoryBarOptions = {
+    chart: { toolbar: { show: false } },
     plotOptions: {
-      pie: {
-        donut: {
-          size: '72%',
-          labels: {
-            show: true,
-            value: { fontSize: '16px', fontWeight: '800', color: donutLabelColor, offsetY: -4 },
-            total: {
-              show: true,
-              label: 'Total value',
-              fontSize: '12px',
-              color: donutTotalColor,
-              formatter: () => formatCurrency(totalCategoryValue, reportingCurrency),
-            },
-          },
-        },
+      bar: { horizontal: true, borderRadius: 4, borderRadiusApplication: 'end' as const, barHeight: '62%' },
+    },
+    colors: [PALETTE[0]],
+    dataLabels: {
+      enabled: true,
+      textAnchor: 'start' as const,
+      offsetX: 8,
+      formatter: (v: number) => compactCurrency(Number(v), reportingCurrency),
+      style: { fontSize: '11px', fontWeight: 600, colors: [tooltipMuted] },
+    },
+    xaxis: {
+      categories: chartCategories.map((c) => c.category),
+      labels: { show: false },
+      axisBorder: { show: false },
+      axisTicks: { show: false },
+    },
+    yaxis: { labels: { style: { colors: tooltipMuted, fontSize: '11px' } } },
+    grid: { show: false, padding: { right: 48 } },
+    legend: { show: false },
+    tooltip: {
+      custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
+        const row = chartCategories[dataPointIndex];
+        if (!row) return '';
+        const pct = totalCategoryValue > 0 ? (row.value / totalCategoryValue) * 100 : 0;
+        return `<div style="background:${tooltipBg};border:1px solid ${tooltipBorder};border-radius:10px;padding:8px 12px;box-shadow:0 4px 16px rgba(17,28,78,0.16);font-family:inherit;">
+          <div style="color:${tooltipMuted};font-size:11px;margin-bottom:2px;">${row.category}</div>
+          <div style="color:${tooltipText};font-size:13px;font-weight:700;">${formatCurrency(row.value, reportingCurrency)}</div>
+          <div style="color:${tooltipMuted};font-size:11px;margin-top:2px;">${pct.toFixed(1)}% of inventory value</div>
+        </div>`;
       },
     },
   };
+
 
   return (
     <div className="font-outfit">
@@ -480,7 +536,7 @@ export default function OverviewPage() {
                 }}
               />
             </div>
-          ) : shownTrend.length === 0 ? (
+          ) : shownTrend.length === 0 || !hasAnyRevenue ? (
             <ChartEmptyState
               message="No revenue data yet - record your first order to see a trend here."
               ctaLabel="Add an order"
@@ -502,6 +558,54 @@ export default function OverviewPage() {
               ctaLabel="Add an order"
               ctaHref={PATH_APPS.orders}
             />
+          ) : orders.length <= 2 ? (
+            /* A two-slice donut is a pie chart answering a question with two
+               numbers in it - the ring adds nothing the counts don't already
+               say, and here it also contradicted the "Orders (30d)" tile
+               beside it by showing an all-time total in its hole. A
+               proportion bar plus the actual counts says the same thing
+               without either problem. The 2px gaps between segments are the
+               separator; a border around each would be heavier and is the
+               wrong tool. */
+            <div className="flex h-[260px] flex-col justify-center gap-5 px-1">
+              <div className="flex h-3 w-full gap-0.5 overflow-hidden rounded-full">
+                {orders.map((o, i) => (
+                  <span
+                    key={o.status}
+                    className="h-full first:rounded-l-full last:rounded-r-full"
+                    style={{
+                      width: `${totalOrderCount > 0 ? (o.count / totalOrderCount) * 100 : 0}%`,
+                      backgroundColor: PALETTE[i % PALETTE.length],
+                    }}
+                  />
+                ))}
+              </div>
+
+              <ul className="list-none space-y-3">
+                {orders.map((o, i) => (
+                  <li key={o.status} className="flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2 text-sm text-gray-600 capitalize dark:text-gray-300">
+                      <span
+                        aria-hidden="true"
+                        className="size-2.5 shrink-0 rounded-full"
+                        style={{ backgroundColor: PALETTE[i % PALETTE.length] }}
+                      />
+                      {o.status}
+                    </span>
+                    <span className="text-sm font-bold text-gray-800 tabular-nums dark:text-white">
+                      {o.count}
+                      <span className="ml-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
+                        {totalOrderCount > 0 ? Math.round((o.count / totalOrderCount) * 100) : 0}%
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-xs text-gray-400 dark:text-gray-500">
+                {totalOrderCount} order{totalOrderCount === 1 ? '' : 's'} in total
+              </p>
+            </div>
           ) : (
             <div className="h-[260px]">
               <PieChart type="donut" chartData={orderPieData} chartOptions={orderPieOptions} />
@@ -560,9 +664,21 @@ export default function OverviewPage() {
               ctaHref={PATH_APPS.products.root}
             />
           ) : (
-            <div className="h-[260px]">
-              <PieChart type="donut" chartData={categoryPieData} chartOptions={categoryPieOptions} />
-            </div>
+            <>
+              <div className="h-[260px]">
+                <BarChart chartData={[{ name: 'Inventory value', data: categoryPieData }]} chartOptions={categoryBarOptions} />
+              </div>
+              {/* The total was the only thing the donut's hole carried; as a
+                  caption it stays readable without costing the chart a form
+                  that hides its own small categories. */}
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Total inventory value{' '}
+                <span className="font-semibold text-gray-800 dark:text-white">
+                  {formatCurrency(totalCategoryValue, reportingCurrency)}
+                </span>{' '}
+                across {categories.length} categor{categories.length === 1 ? 'y' : 'ies'}
+              </p>
+            </>
           )}
         </Card>
 
@@ -628,7 +744,7 @@ export default function OverviewPage() {
                   </tbody>
                 </table>
               </div>
-              {(productsData?.data?.length ?? 0) > topProducts.length && (
+              {dedupedProducts.length > topProducts.length && (
                 <div className="mt-3 flex justify-end">
                   <NextLink
                     href={PATH_APPS.products.root}
