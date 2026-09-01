@@ -2794,10 +2794,47 @@ notifications, market-intel core logic), merged into one reference doc.
 **This is the standing reference for the incoming frontend rebuild - read
 it before implementing the new frontend folder, and treat anything listed
 there as something that needs a home in the new design, not something
-that can be dropped by not knowing it existed.** Not yet reconciled
-against the actual new-frontend folder, since that folder had not been
-provided as of this entry - that reconciliation is the next real step
-once it arrives.
+that can be dropped by not knowing it existed.**
+
+**Verified, not just asserted, before telling the user it was complete**
+(`c360c90`): cross-checked `FEATURES.md` against real `find`/`grep`
+counts - 20/20 `page.tsx` files, 41/41 `route.ts` files, 22/22 shared
+`components/marketintel/*` files, and all 27 `lib/market-intel/*`
+modules (24 map to documented features, the other 3 -
+`market-insights.ts`/`similarity.ts`/`seller.ts` - are correctly-folded-in
+infrastructure, not separate features missed). Found one real gap
+(`countries.ts`'s 6-country `skuRequired` config was only vaguely
+alluded to) and patched it rather than leaving it. **This verify-by-count
+method is worth reusing any time an inventory/audit document needs to be
+trusted, not just skimmed for plausibility.**
+
+**`ASSETS.md` added** (`c360c90`) after the user clarified scope further:
+frontend-only, and design assets (images/fonts/icons) plus copy need
+preserving too, not just behavior. Catalogs the real Ryvl-branded image
+assets, the hand-coded `RyvlMark.tsx` brand SVG (exact path data, and its
+default color is hardcoded `#4318FF` - the old stock purple, not a theme
+token - flagged as something to decide about deliberately if the palette
+changes again), the two fonts (Inter app-wide, Merriweather scoped to
+marketing headlines only), and the icon system. **Confirmed ~30 files
+under `public/img/` are genuinely dead** (leftover Horizon UI template
+demo assets - avatars, NFT marketplace images, fake dashboards), only
+referenced by a parallel `src/views/admin/**` component tree that nothing
+under the real `src/app/` routes ever imports - verified via grep, not
+assumed from the directory name looking template-ish. One claim caught
+and corrected before it shipped: an initial draft said
+`ryvl-logo-horizontal.png` was "used app-wide" without checking - a grep
+showed zero real code references, only a comment mentioning it - fixed
+to say so honestly rather than leave a plausible-sounding but false claim
+in a document meant to be authoritative.
+
+Marketing-page copy (`src/components/landing/*`) was explicitly **not**
+transcribed verbatim in either document - flagged as a separate scope
+decision, not silently assumed in or out. Say so explicitly if it needs
+covering too.
+
+Neither document has been reconciled against the actual new-frontend
+folder yet, since that folder had not been provided as of this entry -
+that reconciliation is the next real step once it arrives.
 
 **Standing takeaways for any future UI work on this app:**
 1. The sidebar/navbar are the highest-leverage, most-visible elements on
