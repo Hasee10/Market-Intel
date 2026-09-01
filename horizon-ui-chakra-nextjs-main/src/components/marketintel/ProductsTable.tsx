@@ -3,6 +3,7 @@
 import { MdEdit, MdStorefront } from 'react-icons/md';
 
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import type { IProduct } from '@/types/products';
 
 type ProductsTableProps = {
@@ -51,7 +52,15 @@ export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: Prod
               const isLowStock = product.isActive && (product.stockQty ?? 0) < LOW_STOCK_THRESHOLD;
               return (
                 <TR key={product.id}>
-                  <TD strong>{product.title}</TD>
+                  <TD strong>
+                    {/* Thumbnail + title in one cell, matching TailAdmin's
+                        product rows. SKU moves under the title on narrow
+                        screens via its own column, so nothing is lost. */}
+                    <span className="flex items-center gap-3">
+                      <ProductThumb categoryName={product.categoryName} />
+                      <span className="min-w-0 truncate">{product.title}</span>
+                    </span>
+                  </TD>
                   <TD>{product.sku || 'N/A'}</TD>
                   <TD>
                     <Pill tone="brand">{product.categoryName || 'Uncategorized'}</Pill>

@@ -1,9 +1,11 @@
 'use client';
 
-import { Badge, Box, Button, Flex, Icon, Text, useColorModeValue } from '@chakra-ui/react';
 import { MdEdit, MdStorefront } from 'react-icons/md';
 
-import Card from 'components/card/Card';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Pill } from '@/components/ui/Table';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import { IProduct } from '@/types/products';
 
 type ProductCardProps = {
@@ -15,7 +17,9 @@ type ProductCardProps = {
 // Was hardcoded to 'USD' regardless of the product's actual currency -
 // every non-USD product showed a misleading $ sign on the wrong amount.
 const formatCurrency = (amount: number | null, currency: string) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(amount ?? 0);
+  new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+    amount ?? 0,
+  );
 
 // Same threshold Overview's "Low Stock Products" stat uses
 // (api/ecommerce/stats/route.ts) - keeping this in sync means a product
@@ -29,12 +33,6 @@ const LOW_STOCK_THRESHOLD = 10;
 const HEALTHY_MARGIN_PCT = 0.15;
 
 export function ProductCard({ data, onEdit, onViewCompetitors }: ProductCardProps) {
-  const cardBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const cardShadow = useColorModeValue('0px 4px 16px rgba(17, 28, 78, 0.04)', 'none');
-  const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
-  const categoryBadgeBg = useColorModeValue('#F0EDFF', 'whiteAlpha.100');
-  const categoryBadgeColor = useColorModeValue('#4318FF', '#A594FF');
-  const lowStockColor = useColorModeValue('#DD6B20', '#FBB03B');
   const isLowStock = data.isActive && (data.stockQty ?? 0) < LOW_STOCK_THRESHOLD;
 
   const marginPct =
@@ -42,76 +40,76 @@ export function ProductCard({ data, onEdit, onViewCompetitors }: ProductCardProp
       ? ((data.sellPrice - data.costPrice) / data.sellPrice) * 100
       : null;
 
+  const marginClass =
+    marginPct === null
+      ? ''
+      : marginPct >= HEALTHY_MARGIN_PCT * 100
+        ? 'text-success-600 dark:text-success-500'
+        : marginPct < 0
+          ? 'text-error-600 dark:text-error-500'
+          : 'text-orange-500';
+
   return (
-    <Card
-      border="1px solid"
-      borderColor={cardBorder}
-      boxShadow={cardShadow}
-      transition="all 0.2s ease"
-      _hover={{ transform: 'translateY(-3px)', boxShadow: '0px 16px 32px rgba(17, 28, 78, 0.08)' }}
-    >
-      <Flex justify="space-between" align="start" mb="10px">
-        <Text fontSize="md" fontWeight="700" noOfLines={1}>
-          {data.title}
-        </Text>
-        <Badge colorScheme={data.isActive ? 'green' : 'gray'} borderRadius="full" flexShrink={0} ml="8px">
+    <Card className="flex h-full flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg">
+      <div className="mb-3 flex items-start gap-3">
+        <ProductThumb categoryName={data.categoryName} size="lg" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-base font-bold text-gray-900 dark:text-white">{data.title}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <Pill tone="brand">{data.categoryName || 'Uncategorized'}</Pill>
+            {data.sku && (
+              <span className="text-xs text-gray-500 dark:text-gray-400">SKU {data.sku}</span>
+            )}
+          </div>
+        </div>
+        <Pill tone={data.isActive ? 'success' : 'neutral'}>
           {data.isActive ? 'Active' : 'Inactive'}
-        </Badge>
-      </Flex>
+        </Pill>
+      </div>
 
-      <Flex align="center" gap="8px" mb="16px" wrap="wrap">
-        <Badge borderRadius="full" px="10px" py="2px" fontSize="xs" fontWeight="600" bg={categoryBadgeBg} color={categoryBadgeColor}>
-          {data.categoryName || 'Uncategorized'}
-        </Badge>
-        {data.sku && (
-          <Text fontSize="xs" color={mutedColor}>
-            SKU {data.sku}
-          </Text>
-        )}
-      </Flex>
-
-      <Flex justify="space-between" mb="16px">
-        <Box>
-          <Text fontSize="xs" color={mutedColor}>
-            Sell price
-          </Text>
-          <Text fontSize="sm" fontWeight="600">
+      <div className="mb-4 flex justify-between gap-3">
+        <div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Sell price</p>
+          <p className="text-sm font-semibold text-gray-900 tabular-nums dark:text-white">
             {formatCurrency(data.sellPrice, data.currency)}
-          </Text>
+          </p>
           {marginPct !== null && (
-            <Text
-              fontSize="xs"
-              fontWeight="600"
-              color={marginPct >= HEALTHY_MARGIN_PCT * 100 ? 'green.500' : marginPct < 0 ? 'red.500' : 'orange.400'}
-            >
+            <p className={`text-xs font-semibold tabular-nums ${marginClass}`}>
               {marginPct.toFixed(0)}% margin
-            </Text>
+            </p>
           )}
-        </Box>
-        <Box textAlign="right">
-          <Text fontSize="xs" color={mutedColor}>
-            Stock
-          </Text>
-          <Text fontSize="sm" fontWeight="600" color={isLowStock ? lowStockColor : undefined}>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-gray-500 dark:text-gray-400">Stock</p>
+          <p
+            className={`text-sm font-semibold tabular-nums ${
+              isLowStock ? 'text-orange-600 dark:text-orange-500' : 'text-gray-900 dark:text-white'
+            }`}
+          >
             {data.stockQty ?? 0}
             {isLowStock && ' ⚠'}
-          </Text>
-        </Box>
-      </Flex>
+          </p>
+        </div>
+      </div>
 
-      <Flex justify="flex-end" gap="4px">
+      <div className="mt-auto flex justify-end gap-1">
         <Button
-          size="sm"
           variant="ghost"
-          leftIcon={<Icon as={MdStorefront} />}
+          size="sm"
+          leftIcon={<MdStorefront className="size-4" />}
           onClick={() => onViewCompetitors?.(data)}
         >
           Competitors
         </Button>
-        <Button size="sm" variant="ghost" leftIcon={<Icon as={MdEdit} />} onClick={() => onEdit?.(data)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          leftIcon={<MdEdit className="size-4" />}
+          onClick={() => onEdit?.(data)}
+        >
           Edit
         </Button>
-      </Flex>
+      </div>
     </Card>
   );
 }
