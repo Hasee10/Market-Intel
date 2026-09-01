@@ -16,7 +16,7 @@ export const inputStyles = {
             border: "1px solid",
             color: mode("secondaryGray.900", "white")(props),
             borderColor: mode("secondaryGray.100", "whiteAlpha.100")(props),
-            borderRadius: "16px",
+            borderRadius: "8px",
             fontSize: "sm",
             p: "20px",
             _placeholder: { color: "secondaryGray.400" },
@@ -32,7 +32,7 @@ export const inputStyles = {
               "secondaryGray.100",
               "rgba(135, 140, 189, 0.3)"
             )(props),
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600", fontWeight: "400" },
           },
         }),
@@ -41,7 +41,7 @@ export const inputStyles = {
             bg: "transparent",
             border: "1px solid",
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),
@@ -69,7 +69,7 @@ export const inputStyles = {
             border: "1px solid",
 
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),
@@ -79,7 +79,7 @@ export const inputStyles = {
             border: "1px solid",
 
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),
@@ -89,7 +89,7 @@ export const inputStyles = {
             border: "1px solid",
 
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),
@@ -117,7 +117,7 @@ export const inputStyles = {
             border: "1px solid",
             color: "secondaryGray.600",
             borderColor: mode("secondaryGray.100", "whiteAlpha.100")(props),
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
           icon: {
@@ -180,7 +180,7 @@ export const inputStyles = {
             border: "1px solid",
 
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),
@@ -190,7 +190,7 @@ export const inputStyles = {
             border: "1px solid",
 
             borderColor: "secondaryGray.100",
-            borderRadius: "16px",
+            borderRadius: "8px",
             _placeholder: { color: "secondaryGray.600" },
           },
         }),

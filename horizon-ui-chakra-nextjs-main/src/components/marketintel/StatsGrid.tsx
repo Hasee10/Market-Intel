@@ -79,16 +79,16 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
 
   if (loading) {
     return (
-      <SimpleGrid columns={{ base: 1, sm: 2, xl: columns }} gap="20px" mb="20px">
+      <SimpleGrid columns={{ base: 1, sm: 2, xl: columns }} gap="14px" mb="16px">
         {Array.from({ length: columns }).map((_, i) => (
-          <Skeleton key={i} height="90px" borderRadius="20px" />
+          <Skeleton key={i} height="76px" borderRadius="10px" />
         ))}
       </SimpleGrid>
     );
   }
 
   return (
-    <SimpleGrid columns={{ base: 1, sm: 2, xl: columns }} gap="20px" mb="20px">
+    <SimpleGrid columns={{ base: 1, sm: 2, xl: columns }} gap="14px" mb="16px">
       {data.map((item, index) => {
         const diff = item.diff ?? 0;
         const trendIcon = diff < 0 ? MdArrowDownward : diff > 0 ? MdArrowUpward : MdTrendingFlat;
@@ -107,7 +107,7 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
           // last tile feeling late.
           <Reveal key={item.title} delay={index * 60}>
             <SpotlightCard
-              py="15px"
+              py="12px"
               h="100%"
               border="1px solid"
               borderColor={cardBorder}
@@ -117,16 +117,16 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
             >
               <Flex my="auto" h="100%" align="center">
                 <IconBox
-                  w="56px"
-                  h="56px"
+                  w="44px"
+                  h="44px"
                   bg={iconBoxBg}
-                  icon={<Icon w="28px" h="28px" as={iconComponent} color={iconColor} />}
+                  icon={<Icon w="22px" h="22px" as={iconComponent} color={iconColor} />}
                 />
-                <Stat my="auto" ms="18px">
-                  <StatLabel lineHeight="100%" color="secondaryGray.600" fontSize="sm">
+                <Stat my="auto" ms="14px">
+                  <StatLabel lineHeight="100%" color="secondaryGray.600" fontSize="xs">
                     {item.title}
                   </StatLabel>
-                  <StatNumber color={textColor} fontSize="2xl">
+                  <StatNumber color={textColor} fontSize="xl">
                     <CountUp value={item.value} />
                   </StatNumber>
                   {(diff !== 0 || item.period) && (

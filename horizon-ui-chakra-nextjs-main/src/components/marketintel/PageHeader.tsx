@@ -50,13 +50,16 @@ export function PageHeader({
             ))}
           </Breadcrumb>
         )}
-        {/* Merriweather was already loaded app-wide (app/layout.tsx) but
-            scoped to marketing headlines only - every dashboard page title
-            rendered in Inter, the same face as body text, so nothing on the
-            authenticated side ever got the serif weight the landing pages
-            use for "this is a real, considered product." One page header
-            component, thirteen pages, one change. */}
-        <Heading size="lg" color={textColor} fontFamily="var(--font-merriweather), serif">
+        {/* 2026-09-01 revamp: reverted to Inter (no Merriweather). A serif
+            page title read as editorial/marketing on a page whose whole
+            point is to be scanned fast for numbers, not the "considered
+            product" feel it was going for on the landing pages - and a
+            dense, professional dashboard should read as one consistent
+            typeface, not two. Sized down from `lg` (already reads large
+            enough against the tightened 10px-radius/8px-radius shell
+            around it) and weighted 600 instead of relying on the serif's
+            own weight for presence. */}
+        <Heading size="md" fontWeight="600" color={textColor}>
           {title}
         </Heading>
       </Flex>

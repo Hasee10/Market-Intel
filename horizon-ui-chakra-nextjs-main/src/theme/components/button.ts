@@ -3,9 +3,12 @@ export const buttonStyles = {
   components: {
     Button: {
       baseStyle: {
-        borderRadius: "16px",
-        boxShadow: "45px 76px 113px 7px rgba(112, 144, 176, 0.08)",
-        transition: ".25s all ease",
+        // 2026-09-01 revamp: 16px -> 8px radius, and dropped the stock
+        // template's heavy diffuse drop-shadow (45px blur, present on every
+        // button regardless of variant) - a structured/enterprise button
+        // reads through border + fill contrast, not an ambient glow.
+        borderRadius: "8px",
+        transition: ".15s all ease",
         boxSizing: "border-box",
         _focus: {
           boxShadow: "none",
@@ -16,7 +19,7 @@ export const buttonStyles = {
       },
       variants: {
         outline: () => ({
-          borderRadius: "16px",
+          borderRadius: "8px",
         }),
         brand: (props: StyleFunctionProps) => ({
           bg: mode("brand.500", "brand.400")(props),
