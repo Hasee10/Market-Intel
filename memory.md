@@ -3781,3 +3781,89 @@ breakpoints are wrong there by construction.
 
 **Do the dead-code deletion first next session** - it removes a third of
 the apparent work and makes the real remainder visible.
+
+---
+
+## 2026-09-01 (later): dashboard grids were collapsing to one column everywhere
+
+**Symptom:** the user opened Overview and said "what the hell is this... I
+absolutely hate this." Stat cards rendered as full-width slabs stacked
+vertically instead of a 4-across row; same on Market and Products. It read
+as a bad design decision. It was not - it was a bug, and the layout on
+screen was the fallback, never the intended design.
+
+**Root cause:** every grid put `@container` on the SAME element as its
+column variants:
+
+```
+<div className="@container grid grid-cols-1 @3xl:grid-cols-3">
+```
+
+An element is never its own container-query context. `container-type`
+establishes containment for DESCENDANTS. So `@3xl:grid-cols-3` had no
+ancestor container to resolve against, matched nothing, and the grid stayed
+on its `grid-cols-1` base forever.
+
+Seven sites, four files: `StatsGrid.tsx:88`, `overview/page.tsx:375` and
+`:552`, `MarketView.tsx:324` and `:676`, `products/page.tsx:181` and `:229`.
+`StatsGrid` is on every dashboard page, which is why it looked global.
+
+**Fix (commit below): one line.** Added `@container` to AdminShell's
+`<main>` - the content box all seven grids fill. Their own variants now
+resolve against it. The grids themselves were NOT touched: they keep their
+own `@container`, which correctly scopes the child `@3xl:col-span-*`
+variants that Cards inside them use. Also corrected the comment in
+`StatsGrid` that asserted the wrong model ("@container on the wrapper is
+what makes the COLUMN_CLASS queries resolve against this grid's own
+width") - that false comment is why the bug read as intentional.
+
+**Verified the mechanism, not just the tests:** the emitted stylesheet
+contains `.\@container { container-type: inline-size }` and all six query
+blocks (28/36/42/48/56/72rem), matching exactly the `@md`/`@xl`/`@2xl`/
+`@3xl`/`@4xl`/`@6xl` variants in use. The CSS was always correct - nothing
+was establishing the container. `tsc` clean, 196/196 tests, lint clean
+(one pre-existing `<img>` warning in `ProductThumb.tsx`).
+
+### Two environment facts that cost time - read before running the app
+
+1. **Neither `.env.local` has Supabase credentials.** D: and E: both contain
+   only `GROQ_API_KEY`, `MISTRAL_API_KEY`, `OPENROUTER_API_KEY`, and the
+   vars are not in the OS environment. A dev server started from a Claude
+   shell 500s on every authenticated page ("Your project's URL and Key are
+   required"). The user's own setup supplies them some other way. **Do not
+   assume you can screenshot the dashboard** - say so instead of guessing.
+2. **The preview tooling is pinned to the stale E: path.** `preview_start`
+   spawned `next dev` with cwd on `E:\Market-Intel-fresh2` regardless of
+   `--prefix`, an absolute path, or a `cmd /c cd /d` wrapper, and died on
+   E:'s corrupt `node_modules/styled-jsx`. Identical byte-for-byte output on
+   every retry = a cached failure, not a fresh run. Workaround: start it
+   with `npx next dev -p <port>` via Bash from the D: directory.
+
+### Mistake logged: overwrote a tracked file again
+
+`.claude/launch.json` already existed (config name `ryvl-web`). I wrote my
+own over it without reading it first, then deleted it - only caught it in
+the commit diff, same way the `memory.md` clobber was caught. Restored
+byte-identical via `git checkout --`. **Read before Write, every time, even
+for a file you assume is absent.** This is the second instance in this
+project.
+
+### Also this session
+
+- Diagnosed the Competitors drawer ("Samsung Galaxy A15" matched against a
+  Z Fold at 12x the price). Root cause is real and separate: plain Jaccard
+  in `similarity.ts` weights `samsung` and `galaxy` exactly as much as the
+  model number, so the brand prefix alone scores 0.29-0.50 against a 0.20
+  threshold - every phone in a family matches every other. Fix is IDF
+  weighting (NOT embeddings, despite what `similarity.ts:19` claims).
+  **Work was started and then reverted at the user's request - nothing from
+  it is on disk.** Design note for whoever picks it up: make it additive.
+  Plain Jaccard must keep deciding inclusion, because for fungible goods
+  (the diapers case in `product-matching.ts:129`) the shared category word
+  IS the signal and IDF would down-weight it. Use the IDF score for ranking
+  and banding only.
+- Two further real bugs found in the same file, not yet fixed:
+  `selectDiverseTopN`'s round-robin output IS the render order
+  (`product-matching.ts:259`), so platform rotation outranks relevance; and
+  `sellerPrice`/`priceDiff` are computed then destructured away at
+  `:276`, so the drawer can never show "you are 7% under the median".

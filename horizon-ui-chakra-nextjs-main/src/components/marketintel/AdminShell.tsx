@@ -62,8 +62,18 @@ export default function AdminShell({ children }: AdminShellProps) {
         >
           <AppHeader breadcrumb={getActiveRoute(routes, pathname)} />
           {/* Matches TailAdmin's AppLayout content box exactly: centred, capped
-              at their 2xl breakpoint, p-4 stepping to p-6. */}
-          <main className="mx-auto max-w-[1536px] p-4 md:p-6">{children}</main>
+              at their 2xl breakpoint, p-4 stepping to p-6.
+
+              @container here is load-bearing, not decoration. Page grids size
+              their columns with container variants (@md:grid-cols-2,
+              @3xl:grid-cols-12, ...) to avoid measuring the viewport when what
+              they actually sit in is this box, narrowed by the sidebar. Those
+              variants resolve against the nearest ANCESTOR container - an
+              element is never its own query container - so without this they
+              matched nothing and every grid on every page silently collapsed
+              to its grid-cols-1 base. Removing this puts the whole dashboard
+              back to one full-width column. */}
+          <main className="@container mx-auto max-w-[1536px] p-4 md:p-6">{children}</main>
         </div>
 
         <SellerAssistantWidget />

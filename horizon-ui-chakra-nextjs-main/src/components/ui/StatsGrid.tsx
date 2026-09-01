@@ -82,9 +82,12 @@ type StatsGridProps = {
 };
 
 export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
-  // @container on the wrapper is what makes the COLUMN_CLASS queries above
-  // resolve against this grid's own width. gap-4 md:gap-6 is TailAdmin's
-  // rhythm throughout its dashboard.
+  // COLUMN_CLASS's queries resolve against the @container on AdminShell's
+  // <main>, not against this element - an element is never its own query
+  // container, so the @container here only scopes descendants (none of the
+  // cards below use container variants today). Any page rendering this
+  // outside AdminShell needs its own @container ancestor or the grid falls
+  // back to grid-cols-1. gap-4 md:gap-6 is TailAdmin's rhythm throughout.
   const gridClass = `@container mb-6 grid grid-cols-1 gap-4 md:gap-6 ${
     COLUMN_CLASS[columns] ?? COLUMN_CLASS[4]
   }`;
