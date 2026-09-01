@@ -29,6 +29,20 @@
  */
 @custom-variant dark (&:is(.dark *));
 
+/* Logo marquee track (components/landing/LogoMarquee.tsx). Defined here
+ * rather than as an Emotion keyframes object, which is what the Chakra
+ * version used. -50% is the loop point because the track renders its items
+ * twice, so the reset is invisible. Duration and direction stay inline on
+ * the element: both are computed from the item count at runtime. */
+@keyframes logo-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 /* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
  * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and

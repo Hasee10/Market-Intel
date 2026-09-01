@@ -1,7 +1,6 @@
 'use client';
 
-import { Box, Container, Flex, Text, usePrefersReducedMotion, useColorModeValue } from '@chakra-ui/react';
-import { keyframes } from '@emotion/react';
+import { usePrefersReducedMotion } from '@chakra-ui/react';
 
 import { LogoTile } from '@/components/landing/LogoTile';
 import { Reveal } from 'components/reactbits/Reveal';
@@ -10,11 +9,11 @@ import { Reveal } from 'components/reactbits/Reveal';
 // same edge-fade/pause-on-hover/reduced-motion behaviour, different label
 // and item source. Kept as one component rather than two copies so a future
 // tweak to the animation only has to happen once.
-
-const scroll = keyframes({
-  from: { transform: 'translateX(0)' },
-  to: { transform: 'translateX(-50%)' },
-});
+//
+// The keyframes now live in styles/tailwind.css (@keyframes logo-marquee)
+// instead of an Emotion keyframes object. Duration and direction stay as
+// inline style because both are derived from the item count at runtime,
+// which no static utility class can express.
 
 export type LogoMarqueeItem = { key: string; name: string; domain?: string };
 
@@ -42,13 +41,6 @@ export function LogoMarquee({
   /** Which way the track scrolls - 'right' just plays the same keyframes in reverse. */
   direction?: 'left' | 'right';
 }) {
-  const sectionBg = useColorModeValue('white', 'navy.900');
-  const labelColor = useColorModeValue('gray.500', 'whiteAlpha.500');
-  const edgeFade = useColorModeValue(
-    'linear-gradient(90deg, white 0%, transparent 15%, transparent 85%, white 100%)',
-    'linear-gradient(90deg, #111C44 0%, transparent 15%, transparent 85%, #111C44 100%)',
-  );
-  const dividerColor = useColorModeValue('gray.100', 'whiteAlpha.100');
   const prefersReducedMotion = usePrefersReducedMotion();
 
   if (items.length === 0) return null;
@@ -64,44 +56,44 @@ export function LogoMarquee({
   const track = prefersReducedMotion ? items : [...items, ...items];
 
   return (
-    <Box bg={sectionBg} py={{ base: '40px', md: '56px' }} borderTop="1px solid" borderBottom="1px solid" borderColor={dividerColor}>
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
+    <div className="font-manrope border-y border-gray-100 bg-white py-10 md:py-14 dark:border-white/10 dark:bg-gray-950">
+      <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
         <Reveal>
-          <Text
-            textAlign="center"
-            fontSize="xs"
-            fontWeight="700"
-            color={labelColor}
-            letterSpacing="0.08em"
-            textTransform="uppercase"
-            mb="28px"
-          >
+          <p className="mb-7 text-center text-xs font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-white/50">
             {label}
-          </Text>
+          </p>
         </Reveal>
 
-        <Box position="relative" overflow="hidden" _before={{ content: '""' }}>
-          <Box position="absolute" inset="0" bg={edgeFade} zIndex="1" pointerEvents="none" />
-          <Flex
-            gap="48px"
-            align="center"
-            w={prefersReducedMotion ? '100%' : 'max-content'}
-            flexWrap={prefersReducedMotion ? 'wrap' : 'nowrap'}
-            justify={prefersReducedMotion ? 'center' : 'flex-start'}
-            animation={
+        <div className="relative overflow-hidden">
+          {/* Edge fade so tiles dissolve at both ends rather than being cut
+              off mid-logo. Two overlays because the gradient's end colour has
+              to match whichever surface is behind it. */}
+          <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,white_0%,transparent_15%,transparent_85%,white_100%)] dark:hidden" />
+          <div className="pointer-events-none absolute inset-0 z-10 hidden bg-[linear-gradient(90deg,#111C44_0%,transparent_15%,transparent_85%,#111C44_100%)] dark:block" />
+
+          <div
+            style={
               prefersReducedMotion
                 ? undefined
-                : `${scroll} ${durationSeconds}s linear infinite${direction === 'right' ? ' reverse' : ''}`
+                : {
+                    animation: `logo-marquee ${durationSeconds}s linear infinite${
+                      direction === 'right' ? ' reverse' : ''
+                    }`,
+                  }
             }
-            sx={prefersReducedMotion ? undefined : { '&:hover': { animationPlayState: 'paused' } }}
+            className={
+              prefersReducedMotion
+                ? 'flex w-full flex-wrap items-center justify-center gap-12'
+                : 'flex w-max flex-nowrap items-center gap-12 hover:[animation-play-state:paused]'
+            }
           >
             {track.map((item, i) => (
               <LogoTile key={`${item.key}-${i}`} name={item.name} domain={item.domain} />
             ))}
-          </Flex>
-        </Box>
-      </Container>
-    </Box>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
