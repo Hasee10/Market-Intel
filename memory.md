@@ -3244,3 +3244,53 @@ un-run; nothing depends on E: any more so it no longer blocks work.
 - Mockups get **rendered**, never described. Two artifacts were produced
   this session (Overview, then the shell) and both were asked for before
   any code. Keep that pattern.
+
+## 2026-09-01: Shell migrated to Tailwind - `0a092ee`
+
+First real page-by-page step, and first on purpose: the chrome is what
+makes a redesign register (the whole lesson of the reverted revamp).
+Mockup was rendered and approved before any code, per the standing
+pattern.
+
+**New**: `components/shell/` - `AppSidebar` (+ `AppSidebarMobile`
+drawer), `AppHeader`, `PlanCard`, `NotificationsMenu`, `RyvlWordmark`.
+`AdminShell` now composes those instead of Horizon's Chakra
+Sidebar/Navbar.
+
+**What deliberately did NOT change**, so nav/collapse keep one source of
+truth: `routes.tsx`, `SidebarContext`, the `market-intel-sidebar-collapsed`
+localStorage key, and the 240/80 widths (TailAdmin's 290 was NOT adopted -
+this repo already tried 290 and cut it, see `sidebarWidth.ts`). Page
+bodies are untouched and still Chakra.
+
+**Two integration traps worth remembering:**
+1. **Dark mode has to be bridged.** Chakra owns colour mode; Tailwind's
+   `dark:` keys off a class. `AdminShell` mirrors Chakra's `colorMode`
+   onto `<html class="dark">`, and `tailwind.css` declares
+   `@custom-variant dark (&:is(.dark *))`. Without that bridge the
+   migrated chrome and the un-migrated page bodies disagree about the
+   active theme.
+2. **next/font and Tailwind `@theme` collide on variable names.** Outfit
+   is registered as `--font-outfit-src`, NOT `--font-outfit`, because
+   Tailwind's `@theme` already owns `--font-outfit` (that's what makes
+   the `font-outfit` utility exist) and both land on `<html>` - same
+   name means one silently overwrites the other. Outfit is scoped to the
+   shell via the utility rather than set app-wide, so un-migrated Chakra
+   pages stay on Inter.
+
+**Real find, not a port**: the old navbar's notification bell rendered
+hardcoded Horizon placeholder text ("Horizon UI Dashboard PRO",
+"Horizon Design System Free") and was wired to nothing - while a genuine
+notifications feature already existed behind it (`GET /api/notifications`,
+`POST /api/notifications/[id]/read`, fed by the low-stock and price-alert
+crons). `NotificationsMenu` renders the real data with optimistic
+mark-read and a proper empty state. **Worth checking other template
+chrome for the same pattern before porting it** - placeholder content
+that looks like a feature.
+
+Old Chakra `Sidebar`/`Navbar` files left in place: nothing renders them,
+and deleting them belongs with the end-of-migration Chakra removal.
+
+Verified: tsc, 196/196, lint (only the 2 known pre-existing warnings),
+`next build` clean, shared first-load JS still 103 kB. **Build took 23
+seconds on D: - the same build was 7.4 minutes on the corrupted E:.**
