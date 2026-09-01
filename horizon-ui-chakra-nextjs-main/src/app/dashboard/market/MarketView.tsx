@@ -49,6 +49,20 @@ function formatCurrencyAs(value: number, currency: string) {
   }).format(value);
 }
 
+// Axis ticks, not table cells. Neither price chart set a yaxis at all, so
+// ApexCharts fell back to its raw default and rendered ticks as
+// "2000.0000000000000". Compact notation keeps a 6-figure PKR tick from
+// crowding out the plot, and maximumFractionDigits caps the float noise at
+// source rather than trimming the string afterwards.
+function formatAxisCurrency(value: number, currency: string) {
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    notation: 'compact',
+    maximumFractionDigits: 1,
+  }).format(value);
+}
+
 function formatRelativeTime(iso: string) {
   const hours = Math.round((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));
   if (hours < 1) return 'less than an hour ago';
@@ -369,6 +383,12 @@ export default function MarketView({
                     categories: priceForecast.points.map((p) => p.date.slice(5)),
                     labels: { style: { colors: tooltipMuted, fontSize: '10px' } },
                   },
+                  yaxis: {
+                    labels: {
+                      style: { colors: tooltipMuted, fontSize: '10px' },
+                      formatter: (value: number) => formatAxisCurrency(value, reportingCurrency),
+                    },
+                  },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: [3, 3], dashArray: [0, 6] },
                   colors: ['#465FFF', '#A3AED0'],
@@ -400,6 +420,12 @@ export default function MarketView({
                   xaxis: {
                     categories: priceTrend.map((p) => p.date.slice(5)),
                     labels: { style: { colors: tooltipMuted, fontSize: '10px' } },
+                  },
+                  yaxis: {
+                    labels: {
+                      style: { colors: tooltipMuted, fontSize: '10px' },
+                      formatter: (value: number) => formatAxisCurrency(value, reportingCurrency),
+                    },
                   },
                   dataLabels: { enabled: false },
                   stroke: { curve: 'smooth', width: 3 },
@@ -560,7 +586,19 @@ export default function MarketView({
               <TBody>
                 {pricingRecommendations.map((rec) => (
                   <TR key={rec.productId}>
-                    <TD strong>{rec.productTitle}</TD>
+                    <TD strong>
+                      {rec.productTitle}
+                      {/* Each row is judged against its own category's band,
+                          not the market on screen, so the catalogue can span
+                          categories. Naming the band here is what makes a bed
+                          appearing under a beauty market read as deliberate
+                          rather than as a bug. */}
+                      {rec.categorySlug !== domain?.categorySlug && (
+                        <span className="mt-0.5 block text-xs font-normal text-gray-400 dark:text-gray-500">
+                          {formatMetric(rec.categorySlug.replace(/-/g, ' '))} band
+                        </span>
+                      )}
+                    </TD>
                     <TD numeric>{formatCurrency(rec.currentPrice)}</TD>
                     <TD numeric strong>
                       {formatCurrency(rec.recommendedPrice)}

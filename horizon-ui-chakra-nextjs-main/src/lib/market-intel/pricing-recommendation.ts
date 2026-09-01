@@ -1,7 +1,8 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
+import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/category-pricing';
+import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { findTopProductMatches } from '@/lib/market-intel/product-matching';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
@@ -20,6 +21,13 @@ const MIN_BASELINE_PRICE = 0.01;
 export type PricingRecommendation = {
   productId: string;
   productTitle: string;
+  /**
+   * The category whose competitor band this row was judged against - always
+   * the product's own, never the market currently on screen. Surfaced so a
+   * recommendation on a product outside the viewed domain can be read
+   * without wondering which numbers produced it.
+   */
+  categorySlug: string;
   costPrice: number | null;
   currentPrice: number;
   recommendedPrice: number;
@@ -50,21 +58,47 @@ export async function getPricingRecommendations(
 ): Promise<PricingRecommendation[]> {
   const supabase = await createClient();
 
-  const [productsRes, categoryPricing, matches, fxRates] = await Promise.all([
+  const [productsRes, matches, fxRates, scope] = await Promise.all([
     supabase
+      // seller_categories(slug) is the fix for the bug this query used to
+      // have: it selected every active product but priced them all against
+      // ONE category's band - whichever market was being viewed. A seller
+      // with beds and phones got both judged against, say, the beauty P75,
+      // so every row cited the same competitor figure and the advice was
+      // simply wrong for anything outside that one category.
       .from('seller_products')
-      .select('id, title, cost_price, sell_price, currency')
+      .select('id, title, cost_price, sell_price, currency, seller_categories(slug)')
       .eq('seller_id', sellerId)
       .eq('is_active', true)
       .not('cost_price', 'is', null)
       .not('sell_price', 'is', null),
-    getCategoryPricing(categorySlug, reportingCurrency),
     findTopProductMatches(sellerId, categorySlug, reportingCurrency),
     getLatestFxRates(),
+    getMarketScope(categorySlug, sellerId),
   ]);
 
-  if (productsRes.error || !productsRes.data || !categoryPricing) return [];
+  if (productsRes.error || !productsRes.data) return [];
 
+  const categoryOf = (row: { seller_categories?: unknown }): string | null => {
+    const joined = row.seller_categories;
+    const first = Array.isArray(joined) ? joined[0] : joined;
+    return (first as { slug?: string } | null | undefined)?.slug ?? null;
+  };
+
+  // One band per distinct category the seller actually sells in, fetched
+  // once rather than per product.
+  const slugs = [...new Set(productsRes.data.map(categoryOf).filter((s): s is string => !!s))];
+  const pricingBySlug = new Map<string, CategoryPricing | null>(
+    await Promise.all(
+      slugs.map(async (slug) => [slug, await getCategoryPricing(slug, reportingCurrency)] as const),
+    ),
+  );
+
+  // Matches were computed against the viewed market's scope, so they are only
+  // meaningful for products that actually sit inside it. Trusting one for a
+  // product from another category would reintroduce the same class of bug in
+  // a subtler form - a bed "matched" to a shampoo listing.
+  const inMatchScope = new Set(scope.categorySlugs);
   const matchByProductId = new Map(matches.map((m) => [m.sellerProductId, m]));
   const recommendations: PricingRecommendation[] = [];
 
@@ -76,7 +110,16 @@ export async function getPricingRecommendations(
     const costPrice = convertCurrency(Number(product.cost_price), product.currency, reportingCurrency, fxRates);
     const currentPrice = convertCurrency(Number(product.sell_price), product.currency, reportingCurrency, fxRates);
     if (Math.abs(currentPrice) < MIN_BASELINE_PRICE) continue;
-    const match = matchByProductId.get(product.id);
+
+    // A product with no category mapped has no band of its own, and there is
+    // no honest substitute - it used to inherit the viewed market's, which is
+    // exactly the defect being fixed. Skipped instead.
+    const productCategory = categoryOf(product);
+    if (!productCategory) continue;
+    const categoryPricing = pricingBySlug.get(productCategory);
+    if (!categoryPricing) continue;
+
+    const match = inMatchScope.has(productCategory) ? matchByProductId.get(product.id) : undefined;
 
     // Without a confident product match, the competitor band falls back to
     // the category's P25/P75 - which migration 026 now withholds below its
@@ -123,6 +166,7 @@ export async function getPricingRecommendations(
     recommendations.push({
       productId: product.id,
       productTitle: product.title,
+      categorySlug: productCategory,
       costPrice,
       currentPrice,
       recommendedPrice,
