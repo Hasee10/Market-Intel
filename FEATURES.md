@@ -157,7 +157,7 @@ Customer-record CRUD + retention/churn analytics.
 
 ### 10. Settings (`/apps/settings`)
 Business profile, currency/country, privacy, showcase, domains, referrals.
-- "Business information" card: name, email (read-only), reporting currency select, country select (drives required fields like SKU), plan-tier badge
+- "Business information" card: name, email (read-only), reporting currency select, country select (`src/lib/market-intel/countries.ts` - 6 supported: Pakistan, United States, United Kingdom, UAE, Saudi Arabia, India; each has a `skuRequired` flag, default `false` for all - drives whether SKU is a required field on both the Product create/edit form *and* the Products CSV bulk-import validation, not just a Settings-page cosmetic), plan-tier badge
 - "Public profile" card: master public toggle + display name + 3 sub-toggles (show price position/rating/category rank), all disabled unless public
 - "Marketing site showcase" card: website input + logo-on-homepage toggle (needs a website first) - distinct from peer-visibility privacy
 - `DomainsManager` card
