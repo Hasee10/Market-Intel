@@ -64,6 +64,13 @@ const ROLL_DEGREES = 140;
 // being a mirror on the far side.
 const SLIDE_VW = 113.4;
 
+// The content column is 42vw wide and pinned left, so its centre sits at
+// 21vw - well inside the arc rather than at the half-panel's 25vw, where the
+// text ran past the curve as it narrowed toward the bottom. Its travel is
+// derived the same way as the shape's: 100 - 2*21.
+const CONTENT_WIDTH_VW = 42;
+const CONTENT_SLIDE_VW = 100 - CONTENT_WIDTH_VW;
+
 export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -130,39 +137,45 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block">
         <div
           style={{ transform: `translateX(${isSignin ? '0vw' : `${SLIDE_VW}vw`})`, transition }}
-          className="absolute top-[-104vh] left-[calc(-6.7vw-104vh)] size-[209vh] overflow-hidden rounded-full bg-gradient-to-br from-[#E9E5FF] via-[#DAD3FF] to-[#C7BEFF] dark:from-[#1A1A3C] dark:via-[#241F52] dark:to-[#2E2768]"
+          className="absolute top-[-104vh] left-[calc(-6.7vw-104vh)] size-[209vh] overflow-hidden rounded-full bg-gradient-to-br from-[#5A4AE3] via-[#4A38D6] to-[#3A2AB8] dark:from-[#2A2270] dark:via-[#221B5E] dark:to-[#1A1443]"
         >
           <div
             style={{
               transform: `rotate(${prefersReducedMotion || isSignin ? 0 : ROLL_DEGREES}deg)`,
               transition: prefersReducedMotion ? undefined : `transform ${SLIDE_MS}ms ${SLIDE_EASING}`,
             }}
-            className="absolute inset-0 bg-[radial-gradient(circle,rgba(80,68,229,0.13)_1.5px,transparent_1.6px)] bg-[length:26px_26px]"
+            className="absolute inset-0 bg-[radial-gradient(circle,rgba(255,255,255,0.14)_1.5px,transparent_1.6px)] bg-[length:26px_26px]"
           />
         </div>
       </div>
 
-      {/* THE CONTENT, on its own layer. It travels half a viewport - left
-          half to right half - while the shape travels 113vw, because the two
-          are solving different problems: the shape has to land mirrored, the
-          content only has to land centred in the other half.
+      {/* THE CONTENT, on its own layer. It travels 58vw while the shape
+          travels 113vw, because the two are solving different problems: the
+          shape has to land mirrored about the viewport, the content only has
+          to land at the mirror of its own centre (21vw -> 79vw).
 
           Deliberately NOT aria-hidden. The switch button below is the only
           way to change mode on desktop, so hiding this from assistive tech
           would strand keyboard and screen-reader users on whichever side
           they opened. */}
       <div
-        style={{ transform: `translateX(${isSignin ? '0vw' : '50vw'})`, transition }}
-        className="pointer-events-none absolute inset-y-0 left-0 hidden w-1/2 lg:block"
+        style={{ transform: `translateX(${isSignin ? '0vw' : `${CONTENT_SLIDE_VW}vw`})`, transition }}
+        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[42vw] lg:block"
       >
         <PanelDecor />
 
-        <div className="pointer-events-auto relative flex h-full flex-col items-center justify-center gap-6 px-12 text-center">
+        {/* pb lifts the whole block into the wide part of the arc. The curve
+            narrows from 52% of the width at the top to 10% at the bottom, so
+            content centred in the full height would sit exactly where there
+            is least room - which is how the copy ended up crossing the edge.
+            Ending the block by ~70vh leaves at least 5vh of clearance at the
+            widest viewport this has to cope with (21:9). */}
+        <div className="pointer-events-auto relative flex h-full flex-col items-center justify-center gap-6 px-8 pb-[18vh] text-center">
           {/* Both illustrations stay mounted and cross-fade, so switching
               never shows the gap of a fresh image decode. Sized off the
               viewport height so the art grows with the panel rather than
               sitting in a fixed box in the middle of a large arc. */}
-          <div className="relative h-[46vh] max-h-[440px] w-full max-w-[400px]">
+          <div className="relative h-[38vh] max-h-[360px] w-full max-w-[340px]">
             {(['signin', 'signup'] as const).map((key) => (
               <Image
                 key={key}
@@ -177,17 +190,18 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
             ))}
           </div>
 
-          <div className="max-w-sm">
-            <h2 className="text-2xl font-bold text-[#111C4E] dark:text-white">{panel.heading}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-white/70">
-              {panel.body}
-            </p>
+          {/* White on the indigo fill, in both themes: the panel is dark in
+              light mode too now, so the usual dark: pairing would invert the
+              one surface that never goes light. */}
+          <div className="max-w-[320px]">
+            <h2 className="text-2xl font-bold text-white">{panel.heading}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/75">{panel.body}</p>
           </div>
 
           <button
             type="button"
             onClick={() => switchTo(isSignin ? 'signup' : 'signin')}
-            className="rounded-full border-2 border-[#4318FF] px-8 py-2.5 text-sm font-semibold text-[#4318FF] transition-colors hover:bg-[#4318FF] hover:text-white dark:border-[#A594FF] dark:text-[#A594FF] dark:hover:bg-[#A594FF] dark:hover:text-[#1A1A3C]"
+            className="rounded-full border-2 border-white/85 px-8 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white hover:text-[#4A38D6]"
           >
             {panel.cta}
           </button>
@@ -210,14 +224,16 @@ function PanelDecor() {
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       {/* Dashed orbit, deliberately echoing the dashed connectors on the
           trust page rather than inventing a second decorative language. */}
-      <svg className="absolute top-[9%] left-[10%] size-32 text-[#4318FF]/20 dark:text-[#A594FF]/25" viewBox="0 0 100 100" fill="none">
+      {/* All white-tinted: these sit on the indigo fill, which is dark in
+          both colour modes. */}
+      <svg className="absolute top-[9%] left-[10%] size-32 text-white/25" viewBox="0 0 100 100" fill="none">
         <circle cx="50" cy="50" r="47" stroke="currentColor" strokeWidth="1.5" strokeDasharray="5 7" />
         <circle cx="50" cy="3" r="3.5" fill="currentColor" />
       </svg>
 
       {/* Dot grid, aligned to the same 26px rhythm as the panel texture so it
           reads as part of the surface instead of a sticker on top of it. */}
-      <svg className="absolute top-[17%] right-[12%] size-20 text-[#4318FF]/25 dark:text-[#A594FF]/30" viewBox="0 0 70 70" fill="currentColor">
+      <svg className="absolute top-[17%] right-[12%] size-20 text-white/28" viewBox="0 0 70 70" fill="currentColor">
         {[0, 1, 2].map((r) =>
           [0, 1, 2].map((c) => <circle key={`${r}-${c}`} cx={9 + c * 26} cy={9 + r * 26} r="3.2" />),
         )}
@@ -225,13 +241,13 @@ function PanelDecor() {
 
       {/* Concentric arcs - a quarter turn, the same motif as the panel edge
           itself, so the decoration restates the shape rather than fighting it. */}
-      <svg className="absolute bottom-[14%] left-[6%] size-36 text-[#5044E5]/18 dark:text-[#A594FF]/20" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <svg className="absolute bottom-[14%] left-[6%] size-36 text-white/22" viewBox="0 0 120 120" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
         <path d="M4 116A112 112 0 0 1 116 4" />
         <path d="M30 116A86 86 0 0 1 116 30" />
         <path d="M56 116A60 60 0 0 1 116 56" />
       </svg>
 
-      <svg className="absolute right-[14%] bottom-[26%] size-9 text-[#FFB547]/55" viewBox="0 0 40 40" fill="currentColor">
+      <svg className="absolute right-[14%] bottom-[26%] size-9 text-[#FFCE7A]/80" viewBox="0 0 40 40" fill="currentColor">
         <path d="M20 0c1.6 9.8 8.6 16.8 18.4 18.4C28.6 20 21.6 27 20 36.8 18.4 27 11.4 20 1.6 18.4 11.4 16.8 18.4 9.8 20 0Z" />
       </svg>
     </div>
