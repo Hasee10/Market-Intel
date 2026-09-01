@@ -1,7 +1,6 @@
 'use client';
 
-import { usePrefersReducedMotion } from '@chakra-ui/react';
-
+import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 import { LogoTile } from '@/components/landing/LogoTile';
 import { Reveal } from 'components/reactbits/Reveal';
 
