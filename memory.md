@@ -7,10 +7,61 @@ happens; don't let it go stale the way `mind.md` did. As always: a claim
 here that a file/table/feature exists is a claim about the past — verify
 anything load-bearing against the live repo/DB before acting on it.
 
-**UPDATE 2026-09-01 (third update, supersedes the "second" one directly
-below it, which is now stale but kept as history) — read this note first.**
+**UPDATE 2026-09-01 (fourth update, supersedes the "third" one directly
+below it, which is now stale but kept as history) — READ THIS FIRST,
+especially if you are the fresh session the user said they'd start after
+this update was written. Skip straight to the bottom-most dated entry
+("Frontend rebuild: documentation phase") for full detail - this is just
+the fast-orientation summary.**
 
-**Current HEAD: `d3f2ebe`, pushed to `origin/main`, working tree clean.**
+**Current HEAD: `bd6481d`, pushed to `origin/main`, working tree clean.**
+
+**The user's plan, in their own words: adopt a new template's UI, port
+Ryvl's real features onto it, strip what's unnecessary. "implement
+nothing, document everything. i will start a new claude session we will
+do everything then on only" - so if you are that new session, the
+previous session's job was 100% documentation, zero implementation, and
+yours is to actually build. Read these four documents, in this order,
+before writing any code:**
+
+1. **`MIGRATION_PLAN.md`** - overall strategy, and the open framework
+   question it flags (now partially answered - see below).
+2. **`FEATURES.md`** - complete behavior inventory of the current app,
+   verified against real file counts (20/20 pages, 41/41 API routes,
+   22/22 components), not just asserted.
+3. **`ASSETS.md`** - complete design-asset inventory: the real approved
+   brand palette (`#4318FF` indigo, `#111C4E` navy, `#FFB547` accent,
+   `#EEF2FF` pale bg - from `ryvl-hero-assets/README.txt`), source vector
+   files, fonts, confirmed-dead template cruft.
+4. **`LANDING_TEMPLATE_AUDIT.md`** - the new template
+   (`agency.ai-landing-page-master/`, committed in full) audited in
+   detail: what it is, what must be removed (some of it a real
+   misrepresentation risk, not just style - see below), and a
+   section-by-section remap to Ryvl's actual existing marketing copy.
+
+**Two things resolved that `MIGRATION_PLAN.md` still poses as open
+questions - update your mental model accordingly when reading it:**
+- The framework question is **answered for the marketing site**: the
+  attached template is Vite + React 19 + Tailwind 4 + Framer Motion, no
+  backend, no Next.js. It is confirmed to be a **marketing/agency landing
+  page template only** - no dashboard primitives exist in it at all (no
+  sidebar, no data table, no drawer, no auth pages, no router). The
+  13-page authenticated dashboard is a **separate, not-yet-sourced**
+  template the user said they'll gather and clarify later - don't conflate
+  the two or assume this template is meant to become the dashboard.
+- Given that, "we won't touch the backend" almost certainly means: the
+  current Next.js app's 41 API routes/cron jobs/server logic stay exactly
+  where they are, untouched - only the frontend/marketing-site layer is
+  being replaced for now.
+
+**The single most important thing to not miss in `LANDING_TEMPLATE_AUDIT.md`**:
+the template's `Teams.jsx`/`assets.js` ships **real strangers' actual
+names and photos** as fake "team members" (traced to the original
+template author's real associates), and `TrustedBy.jsx` uses real
+Microsoft/Google/Airbnb/Coinbase logos implying false endorsement. These
+are not stylistic nitpicks - shipping either as-is would misrepresent real
+people/companies. Remove before anything resembling a real deploy, not
+just "eventually."
 
 **A UI/UX revamp was attempted and then fully reverted this session -
 read the bottom-most dated entry ("UI/UX revamp attempt") before touching
@@ -2851,3 +2902,119 @@ that reconciliation is the next real step once it arrives.
 4. `git revert` (not reset/force-push) is the correct way to walk back
    already-pushed commits the user rejects - preserves history, stays
    non-destructive, still fully reversible either direction.
+
+## 2026-09-01: Frontend rebuild - documentation phase - `309fd92`,
+`76dd914`, `721334c`, `bd6481d`
+
+Continuation of the same session as the entry above. After the UI revamp
+was reverted, the user's direction crystallized into a real plan: adopt a
+new template's UI, port Ryvl's real features/assets onto it, strip what's
+unnecessary. Four documents were produced, in order, **and this entire
+phase was explicitly documentation-only - the user said so directly
+("implement nothing, document everything") and no application code was
+touched anywhere in this phase, only markdown files and (at the very end)
+adding the attached template folder itself to the repo.**
+
+**1. `FEATURES.md` verification pass (`309fd92`, `c360c90`).** The user
+asked "every last thing is documented? nothing left behind?" - rather
+than reassure, actually checked: cross-referenced the doc against real
+`find`/`grep` counts (20/20 pages, 41/41 API routes, 22/22 shared
+components, all 27 `lib/market-intel/*` modules accounted for - 24 as
+named features, 3 correctly folded in as infrastructure). Found one real
+gap (`countries.ts`'s 6-country `skuRequired` config was only vaguely
+alluded to) and fixed it rather than letting a plausible-sounding
+"verified" claim stand on an actual miss. **This verify-by-count method -
+cross-check an inventory doc against real file-system counts before
+calling it complete - is reusable any time an audit/inventory document
+needs to be trusted, not just skimmed for plausibility.**
+
+**2. `ASSETS.md` (`c360c90`, then corrected in `721334c`).** First pass
+only searched inside `horizon-ui-chakra-nextjs-main/` and missed two
+repo-root folders entirely - `ryvl-hero-assets/` and `Page_Assets/` -
+which hold the real source design files (higher-res, genuinely editable
+vector SVGs) behind the flattened PNGs the app actually serves.
+`ryvl-hero-assets/README.txt` also names the **real approved brand
+palette**: indigo `#4318FF`, dark navy `#111C4E`, warm accent `#FFB547`,
+pale background `#EEF2FF` - more authoritative than the live theme code,
+which has quietly drifted to `#422AFB` for its `brand.500` token (though
+`RyvlMark.tsx`'s hardcoded default color does still match the real
+`#4318FF` exactly). **Lesson: an asset/design audit needs to search the
+whole repo, not just the one app directory that happens to be the live
+deployed one - source/original files often live outside it.** Also caught
+and corrected one own claim before it shipped: an early draft said
+`ryvl-logo-horizontal.png` was "used app-wide" without actually checking -
+a grep showed zero real references, only a comment mentioning it.
+
+**3. `MIGRATION_PLAN.md` (`721334c`).** Written before the actual new
+template had been attached, specifically flagging the one decision
+everything else depends on: is the incoming "React" template client-only
+(no backend, meaning the 41 API routes/cron jobs need to stay in the
+current Next.js app as a pure API service) or another Next.js template
+(a more direct swap)? Explicitly told the next session not to guess this
+and to check the template's own `package.json`/structure first. This
+turned out to matter immediately - see below.
+
+**4. The template arrived mid-session**: `agency.ai-landing-page-master/`.
+Investigated per the plan's own instruction (checked `package.json`
+first) - confirmed **Vite + React 19 + Tailwind 4 + Framer Motion, zero
+backend**. But a second finding mattered more than the framework
+question: reading its actual component files (`App.jsx`,
+`Navbar`/`Hero`/`TrustedBy`/`Services`/`OurWork`/`Teams`/`ContactUs`/
+`Footer`) showed **zero dashboard primitives at all** - no sidebar, no
+data table, no drawer, no auth page, no router. This is a single-page
+agency/freelancer marketing site template, not a dashboard template.
+**Stopped and asked the user rather than assuming** which of "replace the
+marketing site" vs. "somehow become the full dashboard too" was intended -
+the two imply wildly different scope and the wrong guess would have
+wasted the next session's entire effort. User confirmed: they'll source
+the dashboard template separately later; for now, audit this one for what
+needs removing and how to remap Ryvl's real positioning onto its UI.
+
+**`LANDING_TEMPLATE_AUDIT.md` (`bd6481d`)** is the result. Real findings,
+not just style commentary:
+- **`Teams.jsx` + `assets.js`'s `teamData`**: 8 entries with **real
+  people's actual names and real photo URLs** (GitHub avatars, a LinkedIn
+  CDN photo, `randomuser.me` portraits) - one entry, "MD Amdad Islam,"
+  matches the template's own footer credit ("Developed By Amdad Islam"),
+  confirming these are the original author's real associates, not
+  generated placeholder data. Shipping this as Ryvl's team page would
+  misrepresent real strangers as Ryvl employees - flagged as a real
+  problem to fix, not a nice-to-have.
+- **`TrustedBy.jsx` + `assets.js`'s `company_logos`**: real
+  Microsoft/Zoom/Rakuten/Coinbase/Airbnb/Google logos captioned "Trusted
+  by Leading Companies" - none of these are actual Ryvl customers, a
+  false-endorsement risk.
+- **`ContactUs.jsx`** posts to `https://api.web3forms.com/submit` with a
+  **hardcoded API key belonging to the original template author** - any
+  submission today would land in a stranger's inbox, not Ryvl's.
+- Stale dev credit in the footer, dead commented-out code (an entire old
+  footer version left as a JSX comment referencing "PrebuiltUI"), generic
+  unwired social icons.
+- **Section-by-section remap grounded in Ryvl's actual, already-written
+  copy, not invented content**: `LandingHero.tsx:85-108`'s real headline
+  ("See your market. Not just your store.") and subhead were pulled
+  verbatim, and `FeaturesSection.tsx:28-64`'s real 6 feature
+  titles/descriptions (Live competitor tracking, Peer benchmarking,
+  Watchlists & price alerts, Churn & retention insights, Orders/products/
+  customers, Pricing recommendations) were checked and substituted for an
+  earlier, less accurate paraphrase before the document shipped - same
+  "verify before trusting your own claim" discipline as the `ASSETS.md`
+  correction above.
+- Open questions explicitly left for the user rather than decided alone:
+  custom cursor keep/drop, Manrope vs. Ryvl's existing Inter/Merriweather,
+  which exact brand-color value to standardize on (3 candidates now
+  exist: template's `#5044E5`, real brand `#4318FF`, live app's drifted
+  `#422AFB`), whether `Teams`/`OurWork` survive as sections at all.
+
+**The template folder itself was committed to the repo in full**
+(3.7MB, no `node_modules`, 58 files) rather than left as an untracked
+local folder - untracked work has no backup and could be lost; this
+doesn't count as "implementing," it's just making sure the thing the user
+attached doesn't only exist on their local disk.
+
+**Standing takeaway from this whole documentation phase**: when asked to
+audit/inventory/document something, the credibility of the document comes
+from what got *checked*, not what got *written* - every one of the 4
+documents above had at least one claim caught and corrected by actually
+verifying against the filesystem/grep before shipping, not by writing
+confidently. Carry that discipline into whatever gets implemented next.
