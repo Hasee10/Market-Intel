@@ -15,6 +15,66 @@ export class GroqNotConfiguredError extends Error {
   }
 }
 
+// Neither caller previously bounded how long a hung Groq request could sit
+// - a stalled connection would hold the request open indefinitely rather
+// than erroring, since plain fetch() has no default timeout. 15s per
+// attempt, one retry on the failure classes actually worth retrying
+// (timeout, network failure, 429, 5xx) - a 4xx (bad key, bad request) is
+// retried at most once too since Groq's own transient auth hiccups aren't
+// distinguishable from a real bad key without another round trip, but a
+// second identical 401 fails fast rather than looping.
+const GROQ_TIMEOUT_MS = 15_000;
+const GROQ_RETRY_DELAY_MS = 300;
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+// Shared fetch behind both callGroqJson/callGroqChat - timeout via
+// AbortController (fetch has no built-in one), one retry only for the
+// failure classes a second attempt can plausibly fix. A non-retryable 4xx
+// still throws immediately on the first attempt, unchanged from before.
+async function fetchGroqWithRetry(body: unknown, apiKey: string): Promise<Response> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), GROQ_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(GROQ_URL, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+
+      if (!response.ok && isRetryableStatus(response.status) && attempt === 1) {
+        await new Promise((resolve) => setTimeout(resolve, GROQ_RETRY_DELAY_MS));
+        continue;
+      }
+      return response;
+    } catch (err) {
+      clearTimeout(timeout);
+      lastError = err;
+      if (attempt === 1) {
+        await new Promise((resolve) => setTimeout(resolve, GROQ_RETRY_DELAY_MS));
+        continue;
+      }
+      const isTimeout = err instanceof Error && err.name === 'AbortError';
+      throw new Error(isTimeout ? `Groq API request timed out after ${GROQ_TIMEOUT_MS}ms (2 attempts)` : `Groq API request failed: ${(err as Error).message}`);
+    }
+  }
+
+  // Unreachable (the loop always returns or throws), but keeps TypeScript
+  // from seeing a possible undefined return.
+  throw lastError instanceof Error ? lastError : new Error('Groq API request failed');
+}
+
 type GroqJsonOptions = {
   model?: string;
   system: string;
@@ -29,13 +89,8 @@ export async function callGroqJson<T>({ model = 'openai/gpt-oss-20b', system, us
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new GroqNotConfiguredError();
 
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  const response = await fetchGroqWithRetry(
+    {
       model,
       temperature,
       response_format: { type: 'json_object' },
@@ -43,8 +98,9 @@ export async function callGroqJson<T>({ model = 'openai/gpt-oss-20b', system, us
         { role: 'system', content: system },
         { role: 'user', content: user },
       ],
-    }),
-  });
+    },
+    apiKey,
+  );
 
   if (!response.ok) {
     throw new Error(`Groq API request failed: ${response.status} ${await response.text()}`);
@@ -75,14 +131,7 @@ export async function callGroqChat({ model = 'openai/gpt-oss-20b', messages, tem
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) throw new GroqNotConfiguredError();
 
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ model, temperature, messages }),
-  });
+  const response = await fetchGroqWithRetry({ model, temperature, messages }, apiKey);
 
   if (!response.ok) {
     throw new Error(`Groq API request failed: ${response.status} ${await response.text()}`);
