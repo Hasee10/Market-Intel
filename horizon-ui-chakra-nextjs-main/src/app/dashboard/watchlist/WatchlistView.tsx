@@ -3,29 +3,13 @@
 import { useEffect, useState } from 'react';
 import NextLink from 'next/link';
 
-import {
-  Badge,
-  Box,
-  Button,
-  Flex,
-  Icon,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  InputRightElement,
-  Link as ChakraLink,
-  Spinner,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tr,
-  IconButton,
-  useColorModeValue,
-  useToast,
-} from '@chakra-ui/react';
+// useToast is behaviour, not styling - it renders outside this tree
+// entirely. Kept while Chakra is still installed rather than building a
+// toast system just for this page; it goes with the final Chakra removal.
+import { useToast } from '@chakra-ui/react';
+
+import { Card } from '@/components/ui/Card';
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import {
   MdDelete,
   MdAdd,
@@ -35,7 +19,6 @@ import {
   MdOutlineVisibility,
   MdOutlineCheckCircle,
 } from 'react-icons/md';
-import Card from 'components/card/Card';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { PageHeader } from '@/components/marketintel/PageHeader';
@@ -111,7 +94,6 @@ export default function WatchlistView({
   notifications: initialNotifications,
 }: WatchlistViewProps) {
   const toast = useToast();
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
   const [watchlists, setWatchlists] = useState(initialWatchlists);
   const [notifications, setNotifications] = useState(initialNotifications);
   const [newName, setNewName] = useState('');
@@ -173,7 +155,7 @@ export default function WatchlistView({
   }
 
   return (
-    <Box>
+    <div className="font-outfit">
       <PageHeader title="Watchlist" />
 
       {/* Computed from live state, not the initial props, so marking an
@@ -181,61 +163,64 @@ export default function WatchlistView({
           without a page reload. */}
       <InsightStrip insight={computeWatchlistInsight(notifications, watchlists)} />
 
-      <Card mb="20px">
-        <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
-          Recent alerts
-        </Text>
+      <Card className="mb-5" title="Recent alerts">
         {notifications.length === 0 ? (
-          <Text fontSize="sm" color="secondaryGray.600">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             No price or stock alerts yet. Add a competitor product to a watchlist below to start
             tracking it.
-          </Text>
+          </p>
         ) : (
-          <Flex direction="column" gap="10px">
+          <div className="flex flex-col gap-2.5">
             {notifications.map((n) => (
-              <Flex
+              <div
                 key={n.id}
-                justify="space-between"
-                align="center"
-                p="10px"
-                borderRadius="12px"
-                bg={n.isRead ? 'transparent' : 'secondaryGray.100'}
+                className={`flex items-center justify-between gap-3 rounded-xl p-2.5 ${
+                  n.isRead ? '' : 'bg-gray-50 dark:bg-gray-800'
+                }`}
               >
-                <Box>
-                  <Text fontSize="sm" fontWeight="600" color={textColor}>
-                    {n.title}
-                  </Text>
-                  <Text fontSize="xs" color="secondaryGray.600">
-                    {n.message}
-                  </Text>
-                </Box>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{n.title}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">{n.message}</p>
+                </div>
                 {!n.isRead && (
-                  <Button size="xs" variant="outline" onClick={() => handleMarkRead(n.id)}>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkRead(n.id)}
+                    className="shrink-0 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+                  >
                     Mark read
-                  </Button>
+                  </button>
                 )}
-              </Flex>
+              </div>
             ))}
-          </Flex>
+          </div>
         )}
       </Card>
 
-      <Card mb="20px">
-        <Flex gap="10px" mb="16px">
-          <Input
+      <Card className="mb-5">
+        <div className="mb-4 flex flex-wrap gap-2.5">
+          <input
+            type="text"
             placeholder="New watchlist name (e.g. Mobile competitors)"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
+            className="h-10 min-w-0 flex-1 rounded-lg border border-gray-200 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-gray-800"
           />
-          <Button variant="brand" isLoading={creating} onClick={handleCreateWatchlist} leftIcon={<MdAdd />}>
-            New watchlist
-          </Button>
-        </Flex>
+          <button
+            type="button"
+            onClick={handleCreateWatchlist}
+            disabled={creating}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-60"
+          >
+            <MdAdd className="size-4" aria-hidden="true" />
+            {creating ? 'Creating…' : 'New watchlist'}
+          </button>
+        </div>
 
         {watchlists.length === 0 && (
-          <Text fontSize="sm" color="secondaryGray.600">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             No watchlists yet. Create one to start tracking competitor products.
-          </Text>
+          </p>
         )}
       </Card>
 
@@ -250,7 +235,7 @@ export default function WatchlistView({
           onRemoveItem={(itemId) => handleRemoveItem(watchlist.id, itemId)}
         />
       ))}
-    </Box>
+    </div>
   );
 }
 
@@ -270,7 +255,6 @@ function WatchlistCard({
   onRemoveItem: (itemId: string) => void;
 }) {
   const toast = useToast();
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ProductSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -340,101 +324,123 @@ function WatchlistCard({
   }
 
   return (
-    <Card mb="20px">
-      <Flex justify="space-between" align="center" mb="12px">
-        <Text fontSize="lg" fontWeight="600" color={textColor}>
-          {watchlist.name}
-        </Text>
-        <IconButton aria-label="Delete watchlist" icon={<MdDelete />} size="sm" variant="ghost" onClick={onDelete} />
-      </Flex>
-
-      <InputGroup mb="12px">
-        <InputLeftElement pointerEvents="none">
-          <Icon as={MdSearch} color="secondaryGray.600" />
-        </InputLeftElement>
-        <Input
+    <Card
+      className="mb-5"
+      title={watchlist.name}
+      action={
+        <button
+          type="button"
+          aria-label="Delete watchlist"
+          onClick={onDelete}
+          className="flex size-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
+        >
+          <MdDelete className="size-4" />
+        </button>
+      }
+    >
+      <div className="relative mb-3">
+        <MdSearch
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400"
+          aria-hidden="true"
+        />
+        <input
+          type="text"
           placeholder="Search competitor products to track..."
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          className="h-10 w-full rounded-lg border border-gray-200 pl-9 pr-9 text-sm text-gray-900 placeholder:text-gray-400 focus:border-brand-300 focus:outline-none focus:ring-2 focus:ring-brand-100 dark:border-gray-700 dark:bg-gray-950 dark:text-white dark:focus:ring-gray-800"
         />
         {searching && (
-          <InputRightElement>
-            <Spinner size="sm" color="secondaryGray.600" />
-          </InputRightElement>
+          <span
+            aria-label="Searching"
+            className="absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin rounded-full border-2 border-gray-200 border-t-brand-500"
+          />
         )}
-      </InputGroup>
+      </div>
 
       {results.length > 0 && (
-        <Flex direction="column" gap="6px" mb="16px">
+        <div className="mb-4 flex flex-col gap-1.5">
           {results.map((r) => (
-            <Flex key={r.id} justify="space-between" align="center" p="8px" borderRadius="8px" bg="secondaryGray.100">
-              <Text fontSize="sm">
+            <div
+              key={r.id}
+              className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-2 dark:bg-gray-800"
+            >
+              <span className="min-w-0 truncate text-sm text-gray-700 dark:text-gray-300">
                 {r.title} {r.platformName ? `· ${r.platformName}` : ''} ·{' '}
                 {formatPrice(r.price, reportingCurrency)}
-              </Text>
-              <Button size="xs" variant="brand" onClick={() => handleAdd(r.id)}>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleAdd(r.id)}
+                className="shrink-0 rounded-lg bg-brand-500 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-brand-600"
+              >
                 Track
-              </Button>
-            </Flex>
+              </button>
+            </div>
           ))}
-        </Flex>
+        </div>
       )}
 
       {hasSearched && !searching && results.length === 0 && (
-        <Text fontSize="sm" color="secondaryGray.600" mb="16px">
+        <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
           No competitor products match “{trimmed}” in your market. Widen your{' '}
-          <ChakraLink as={NextLink} href="/dashboard/market/definition" color="brand.500" fontWeight="500">
+          <NextLink
+            href="/dashboard/market/definition"
+            className="font-medium text-brand-500 hover:underline dark:text-brand-400"
+          >
             market definition
-          </ChakraLink>{' '}
+          </NextLink>{' '}
           if this looks wrong.
-        </Text>
+        </p>
       )}
 
       {watchlist.items.length === 0 ? (
-        <Text fontSize="sm" color="secondaryGray.600">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           No products tracked yet in this watchlist.
-        </Text>
+        </p>
       ) : (
-        <Box overflowX="auto">
-          <Table variant="simple">
-            <Thead>
-              <Tr>
-                <Th>Product</Th>
-                <Th>Platform</Th>
-                <Th>Price</Th>
-                <Th>Stock</Th>
-                <Th></Th>
-              </Tr>
-            </Thead>
-            <Tbody>
-              {watchlist.items.map((item) => (
-                <Tr key={item.id}>
-                  <Td>
-                    <a href={item.url} target="_blank" rel="noreferrer">
-                      {item.title}
-                    </a>
-                  </Td>
-                  <Td>{item.platformName ?? '—'}</Td>
-                  <Td>{formatPrice(item.price, reportingCurrency)}</Td>
-                  <Td>
-                    <Badge colorScheme={item.inStock ? 'green' : 'red'}>
-                      {item.inStock ? 'In stock' : 'Out of stock'}
-                    </Badge>
-                  </Td>
-                  <Td>
-                    <IconButton
-                      aria-label="Remove item"
-                      icon={<MdDelete />}
-                      size="xs"
-                      variant="ghost"
-                      onClick={() => onRemoveItem(item.id)}
-                    />
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          </Table>
-        </Box>
+        <Table minWidth={560}>
+          <THead>
+            <TH>Product</TH>
+            <TH>Platform</TH>
+            <TH numeric>Price</TH>
+            <TH>Stock</TH>
+            <TH />
+          </THead>
+          <TBody>
+            {watchlist.items.map((item) => (
+              <TR key={item.id}>
+                <TD strong>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:text-brand-500 hover:underline"
+                  >
+                    {item.title}
+                  </a>
+                </TD>
+                <TD>{item.platformName ?? '—'}</TD>
+                <TD numeric>{formatPrice(item.price, reportingCurrency)}</TD>
+                <TD>
+                  <Pill tone={item.inStock ? 'success' : 'error'}>
+                    {item.inStock ? 'In stock' : 'Out of stock'}
+                  </Pill>
+                </TD>
+                <TD>
+                  <button
+                    type="button"
+                    aria-label="Remove item"
+                    onClick={() => onRemoveItem(item.id)}
+                    className="flex size-7 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
+                  >
+                    <MdDelete className="size-3.5" />
+                  </button>
+                </TD>
+              </TR>
+            ))}
+          </TBody>
+        </Table>
       )}
     </Card>
   );
