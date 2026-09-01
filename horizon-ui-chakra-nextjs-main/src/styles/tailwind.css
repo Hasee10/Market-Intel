@@ -1,0 +1,105 @@
+/* Tailwind 4 entry for the Chakra -> Tailwind migration.
+ *
+ * THE IMPORTANT PART: this deliberately does NOT import Tailwind's
+ * preflight. The stock `@import "tailwindcss"` expands to four lines - the
+ * layer declaration, theme, preflight, utilities - and preflight is a global
+ * reset that unsets margins, list styles, heading sizes and border defaults
+ * on bare elements. Chakra's own CSSReset has already done that job for the
+ * existing 143 Chakra call sites, and loading a second, differently-opinionated
+ * reset on top is the one thing most likely to visibly break pages that
+ * haven't been migrated yet. So we take theme + utilities only.
+ *
+ * Consequence worth knowing: Tailwind's utilities live in a CSS layer, and
+ * per the cascade an unlayered rule always beats a layered one. Emotion (what
+ * Chakra compiles to) injects unlayered <style> tags at runtime, so on any
+ * element that somehow had both, Chakra would win. That's the safe direction
+ * for a gradual migration - old markup keeps rendering exactly as it does
+ * today - but it does mean Tailwind classes should be applied to new,
+ * non-Chakra markup, not sprinkled onto existing Chakra components.
+ */
+@layer theme, base, components, utilities;
+
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
+ * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
+ * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and
+ * already hardcoded in RyvlMark.tsx). We keep the shape of TailAdmin's
+ * 11-step scale, not its hue. See ASSETS.md for the full colour-drift story.
+ */
+@theme {
+  --font-outfit: Outfit, ui-sans-serif, system-ui, sans-serif;
+
+  --breakpoint-2xsm: 375px;
+  --breakpoint-xsm: 425px;
+  --breakpoint-3xl: 2000px;
+
+  --text-title-2xl: 72px;
+  --text-title-2xl--line-height: 90px;
+  --text-title-xl: 60px;
+  --text-title-xl--line-height: 72px;
+  --text-title-lg: 48px;
+  --text-title-lg--line-height: 60px;
+  --text-title-md: 36px;
+  --text-title-md--line-height: 44px;
+  --text-title-sm: 30px;
+  --text-title-sm--line-height: 38px;
+  --text-theme-xl: 20px;
+  --text-theme-xl--line-height: 30px;
+  --text-theme-sm: 14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs: 12px;
+  --text-theme-xs--line-height: 18px;
+
+  /* Ryvl brand indigo, in TailAdmin's scale shape */
+  --color-brand-25: #f4f2ff;
+  --color-brand-50: #eeeaff;
+  --color-brand-100: #ded7ff;
+  --color-brand-200: #c3b6ff;
+  --color-brand-300: #9d88ff;
+  --color-brand-400: #7355ff;
+  --color-brand-500: #4318ff;
+  --color-brand-600: #3812db;
+  --color-brand-700: #2d0eb0;
+  --color-brand-800: #250c8f;
+  --color-brand-900: #1f0b74;
+  --color-brand-950: #120640;
+
+  --color-gray-25: #fcfcfd;
+  --color-gray-50: #f9fafb;
+  --color-gray-100: #f2f4f7;
+  --color-gray-200: #e4e7ec;
+  --color-gray-300: #d0d5dd;
+  --color-gray-400: #98a2b3;
+  --color-gray-500: #667085;
+  --color-gray-600: #475467;
+  --color-gray-700: #344054;
+  --color-gray-800: #1d2939;
+  --color-gray-900: #101828;
+  --color-gray-950: #0c111d;
+  --color-gray-dark: #1a2231;
+
+  --color-success-25: #f6fef9;
+  --color-success-50: #ecfdf3;
+  --color-success-100: #d1fadf;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-success-700: #027a48;
+
+  --color-error-25: #fffbfa;
+  --color-error-50: #fef3f2;
+  --color-error-100: #fee4e2;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+  --color-error-700: #b42318;
+
+  --color-orange-50: #fff6ed;
+  --color-orange-100: #ffead5;
+  --color-orange-200: #fddcab;
+  --color-orange-500: #fb6514;
+  --color-orange-700: #c4320a;
+  --color-orange-900: #7e2410;
+
+  --color-blue-light-500: #0ba5ec;
+}
