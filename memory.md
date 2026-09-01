@@ -3444,3 +3444,58 @@ first load down on all three.
 **Still outstanding**: a real dashboard screenshot for the hero (the SVG
 illustration is fine but undersells the rebuilt product), the 12
 dashboard pages, then the Chakra removal.
+
+## 2026-09-01: Landing finished + shared dashboard components +
+table primitives - `5ca672a`, `59bcadc`, `1d63c2a`, `8e19879`
+
+**The public marketing surface is now 100% Chakra-free.** Finished
+`LogoMarquee`, `LogoTile`, `PricingPageBanner`, `AssistantWidget`, and
+replaced the last Chakra import there (`usePrefersReducedMotion`) with a
+local hook in `lib/hooks/`.
+
+**`LogoMarquee` detail worth keeping**: its scroll keyframes moved from an
+Emotion `keyframes` object into `styles/tailwind.css` as
+`@keyframes logo-marquee`. Duration and direction stay as *inline style*
+because both are computed from the item count at runtime - no static
+utility class can express that. Pause-on-hover is
+`hover:[animation-play-state:paused]` (Tailwind arbitrary property). The
+constant-speed-not-fixed-duration behaviour is load-bearing: a fixed
+duration makes longer seller/brand lists scroll faster and unreadable.
+
+**`AssistantWidget`: `whitespace-pre-wrap` is load-bearing and is now
+commented as such.** The assistant is prompted to separate list items
+with real newlines and the CSS default collapses them into the run-on
+paragraph the user once called "pathetic". A future "cleanup" pass must
+not remove it.
+
+### Shared dashboard components - the leverage pass, round two
+
+Ported `ErrorAlert`, `PageSkeleton`, `UpgradeGate` to `components/ui/`
+with the same **re-export shim** technique, so no page needed editing.
+`ErrorAlert` keeps its left accent bar because there the stripe encodes
+*severity* - that's the test the dashboard's decorative section bar
+failed and why it was dropped. Structural devices must mean something.
+
+### Table primitives
+
+`components/ui/Table.tsx` - `Table/THead/TH/TBody/TR/TD/Pill`. Chose
+**primitives over a config-driven `<DataTable columns={...} />`**: these
+tables have genuinely different cells (badges, links, action buttons,
+drawer triggers) and a column-config API would need an escape hatch on
+nearly every column. `Table` always wraps itself in an `overflow-x`
+container so wide tables scroll in their own box, never the page body.
+
+Ported `ProductsTable`, `OrdersTable`, `CustomersTable` onto them.
+Preserved: the low-stock threshold still matches Overview's own stat
+(one definition of "low" per dashboard, not two), and order-status colour
+stays semantic so cancelled can't read like completed.
+
+**Chakra import sites: 143 at start -> 124.**
+
+**Remaining**: `MarketView` (722 lines, the biggest), Competitors, Market
+Definition, Watchlist, Products/Orders/Customers page bodies, Categories,
+Settings, Scraper Health, Onboarding, the 3 auth pages, plus
+`BulkImportDrawer`, `CompetitorsDrawer`, `RetentionPanel`,
+`MarketScopeBanner`, `DomainsManager`, `ReferralCard`, `AuthCard`,
+`OnboardingChecklist`, `DownloadReportButton`, `SellerAssistantWidget`.
+Then delete Chakra + the shims.
