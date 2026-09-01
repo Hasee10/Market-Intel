@@ -38,8 +38,12 @@ const ROWS = [
 
 export function ComparisonSection() {
   return (
-    <section className="font-manrope bg-white py-[70px] md:py-[100px] dark:bg-gray-950">
-      <div className="mx-auto max-w-[1000px] px-5 md:px-[30px]">
+    // No hardcoded bg here: this section inherits the page ground like every
+    // other one. It previously forced bg-white / dark:bg-gray-950, which cut a
+    // hard seam across the page between it and its neighbours. Padding follows
+    // the template's scale, matching the sections around it.
+    <section className="font-manrope w-full px-4 pt-24 sm:px-12 lg:px-24 xl:px-40">
+      <div className="mx-auto max-w-5xl">
         <Reveal>
           <div className="mb-10 text-center md:mb-14">
             <h2 className="text-[28px] font-medium tracking-[-0.02em] text-[#111C4E] md:text-4xl dark:text-white">
@@ -53,51 +57,62 @@ export function ComparisonSection() {
         </Reveal>
 
         <Reveal delay={80}>
-          {/* The right column carries a tinted, ring-outlined band running the
-              full height of the table. Both columns previously looked
-              identical, which buried the entire point of the comparison. */}
-          <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60 dark:border-gray-700 dark:bg-gray-900 dark:shadow-black/20">
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-0 right-0 w-1/3 bg-[#5044E5]/[0.04] ring-1 ring-inset ring-[#5044E5]/20 dark:bg-[#5044E5]/10"
-            />
+          {/* A real <table>, not a stack of grid rows. The previous version
+              painted the "With Ryvl" emphasis as an absolutely-positioned
+              w-1/3 band, which could never line up with the actual third
+              column once the rows carried horizontal padding - so the tint
+              sat slightly off and bled past the rounded corner.
 
-            <div className="relative grid grid-cols-3 border-b border-gray-200 px-4 py-4 md:px-7 dark:border-gray-700">
-              <span />
-              <span className="text-xs font-bold uppercase tracking-[0.08em] text-gray-400">
-                Without Ryvl
-              </span>
-              <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.08em] text-[#5044E5] dark:text-[#A594FF]">
-                With Ryvl
-              </span>
+              The highlight now lives on the cells themselves, so it is
+              exactly as wide as the column it belongs to, at any breakpoint. */}
+          <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl shadow-gray-200/60 dark:border-gray-700 dark:bg-gray-900 dark:shadow-black/20">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[640px] border-collapse text-left">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="w-1/3 px-5 py-4 md:px-7" />
+                    <th className="w-1/3 px-5 py-4 text-xs font-bold uppercase tracking-[0.08em] text-gray-400">
+                      Without Ryvl
+                    </th>
+                    <th className="w-1/3 bg-[#5044E5]/[0.05] px-5 py-4 text-xs font-bold uppercase tracking-[0.08em] text-[#5044E5] md:px-7 dark:bg-[#5044E5]/15 dark:text-[#A594FF]">
+                      With Ryvl
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ROWS.map((row, i) => (
+                    <tr
+                      key={row.label}
+                      className={i > 0 ? 'border-t border-gray-100 dark:border-gray-800' : ''}
+                    >
+                      <td className="px-5 py-5 align-top text-sm font-semibold text-[#111C4E] md:px-7 dark:text-white">
+                        {row.label}
+                      </td>
+
+                      <td className="px-5 py-5 align-top text-sm text-gray-400 dark:text-gray-500">
+                        <span className="flex items-start gap-2.5">
+                          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/15">
+                            <MdClose className="size-3.5 text-red-500" aria-hidden="true" />
+                          </span>
+                          <span className="line-through decoration-gray-300 dark:decoration-gray-600">
+                            {row.without}
+                          </span>
+                        </span>
+                      </td>
+
+                      <td className="bg-[#5044E5]/[0.05] px-5 py-5 align-top text-sm font-medium text-gray-800 md:px-7 dark:bg-[#5044E5]/15 dark:text-white">
+                        <span className="flex items-start gap-2.5">
+                          <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                            <MdCheck className="size-3.5" aria-hidden="true" />
+                          </span>
+                          {row.with}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-
-            {ROWS.map((row, i) => (
-              <div
-                key={row.label}
-                className={`relative grid grid-cols-3 items-start gap-4 px-4 py-5 md:px-7 ${
-                  i > 0 ? 'border-t border-gray-100 dark:border-gray-800' : ''
-                }`}
-              >
-                <span className="text-sm font-semibold text-[#111C4E] dark:text-white">
-                  {row.label}
-                </span>
-
-                <span className="flex items-start gap-2.5 text-sm text-gray-400 line-through decoration-gray-300 dark:text-gray-500">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-red-50 no-underline dark:bg-red-500/15">
-                    <MdClose className="size-3.5 text-red-500" aria-hidden="true" />
-                  </span>
-                  {row.without}
-                </span>
-
-                <span className="flex items-start gap-2.5 text-sm font-medium text-gray-800 dark:text-gray-100">
-                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
-                    <MdCheck className="size-3.5" aria-hidden="true" />
-                  </span>
-                  {row.with}
-                </span>
-              </div>
-            ))}
           </div>
         </Reveal>
       </div>

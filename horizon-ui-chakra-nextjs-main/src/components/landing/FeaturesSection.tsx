@@ -74,34 +74,36 @@ export function FeaturesSection() {
         desc="Your own store analytics, plus the market context that most sellers never get to see."
       />
 
-      {/* Template's 2-column card grid. The two `wide` differentiators keep
-          their emphasis via a gradient icon rather than a wider tile, since
-          the template's own grid is a plain 2-up. */}
-      <div className="grid w-full max-w-5xl grid-cols-1 items-stretch md:grid-cols-2">
+      {/* items-start, NOT items-stretch. Stretching every card to the tallest
+          in its row left the two-line ones with three lines of dead space
+          under the text - the descriptions here vary from 2 to 4 lines, which
+          the template's own uniformly-truncated copy never had to deal with.
+          Cards now hug their content; a one-line difference in height reads
+          as natural, a three-line void reads as broken.
+
+          gap on the grid rather than margins on each Reveal, so the columns
+          stay even and nothing overflows the container. */}
+      <div className="grid w-full max-w-5xl grid-cols-1 items-start gap-5 md:grid-cols-2">
         {FEATURES.map((feature, index) => {
           const Icon = feature.icon;
           return (
-            <Reveal key={feature.title} delay={index * 120} className="m-2 h-full sm:m-4">
-              <GlowCard className="h-full">
-                {/* items-start, not items-center: descriptions here run two to
-                    four lines, so centring the icon against a variable-height
-                    text block left it floating at a different height in every
-                    card. Aligned to the title it reads as one row. */}
-                <div className="flex h-full items-start gap-5">
+            <Reveal key={feature.title} delay={index * 120}>
+              <GlowCard>
+                <div className="flex items-start gap-4">
                   <div
-                    className={`flex size-14 shrink-0 items-center justify-center rounded-full ${
+                    className={`flex size-12 shrink-0 items-center justify-center rounded-full ${
                       feature.wide
                         ? 'bg-gradient-to-br from-[#5044E5] to-[#7592FF] text-white shadow-lg shadow-[#5044E5]/25'
-                        : 'bg-[#EEF0FF] text-[#5044E5] dark:bg-gray-800 dark:text-[#A594FF]'
+                        : 'bg-[#EEF0FF] text-[#5044E5] dark:bg-white/10 dark:text-[#A594FF]'
                     }`}
                   >
-                    <Icon className="size-6" aria-hidden="true" />
+                    <Icon className="size-[22px]" aria-hidden="true" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-[17px] font-bold leading-tight text-gray-900 dark:text-white">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-[17px] font-bold leading-snug text-gray-900 dark:text-white">
                       {feature.title}
                     </h3>
-                    <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-white/70">
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-600 dark:text-white/65">
                       {feature.description}
                     </p>
                   </div>

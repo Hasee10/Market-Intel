@@ -42,7 +42,10 @@ export function GlowCard({
           visible ? 'opacity-70' : 'opacity-0'
         }`}
       />
-      <div className="relative z-10 h-full rounded-[10px] bg-white p-8 transition-all hover:m-0.5 hover:p-[1.875rem] dark:bg-gray-900">
+      {/* p-6, not the template's p-8: their card holds one truncated line,
+          ours holds up to four, so the same padding read as a huge empty
+          margin. The hover padding-shift keeps the same 2px delta. */}
+      <div className="relative z-10 h-full rounded-[10px] bg-white p-6 transition-all hover:m-0.5 hover:p-[1.375rem] dark:bg-gray-900">
         {children}
       </div>
     </div>
