@@ -4,7 +4,7 @@ import NextLink from 'next/link';
 import { useState } from 'react';
 
 import { RyvlMark } from 'components/icons/RyvlMark';
-import { ThemeToggleMenu } from '@/components/navbar/ThemeToggleMenu';
+import { ThemeToggleButton } from '@/components/landing/ThemeToggleButton';
 import { PATH_AUTH } from '@/lib/paths';
 
 // "#features" is prefixed with `/` so it still resolves correctly from pages
@@ -49,7 +49,7 @@ export function LandingHeader() {
         </nav>
 
         <div className="flex items-center gap-3 justify-self-end">
-          <ThemeToggleMenu />
+          <ThemeToggleButton />
           <NextLink
             href={PATH_AUTH.signin}
             className="hidden rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800 sm:inline-flex"
