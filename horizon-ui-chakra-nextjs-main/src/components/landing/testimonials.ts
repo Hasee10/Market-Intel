@@ -15,6 +15,14 @@ export type Testimonial = {
   name: string;
   quote: string;
   imageUrl?: string;
+  /**
+   * Role and/or store, e.g. "Founder, Karachi Coffee Co." Optional and left
+   * unset for everyone below on purpose: the source CSV carries only names,
+   * and attributing a job title nobody supplied would be inventing the part
+   * of a testimonial that makes it checkable. Fill these in as they're
+   * confirmed - the card renders the line only when it exists.
+   */
+  role?: string;
 };
 
 export const TESTIMONIALS: Testimonial[] = [
