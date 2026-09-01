@@ -129,11 +129,35 @@ export default function MarketView({
   const tooltipTextColor = useColorModeValue('#1B2559', '#FFFFFF');
   const tooltipMuted = useColorModeValue('#707EAE', '#A3AED0');
 
+  // The dash on "Sellers in domain" is not the same statement as the zeros
+  // beside it, and flattening it to 0 would be a lie: the count is withheld
+  // until three sellers opt in (migration 026's sample-size guard), so it
+  // means "not published", where the others mean "none". Each therefore gets
+  // a caption saying which it is - the inconsistency read as a bug only
+  // because nothing explained it.
   const domainStats = [
     { title: 'Your domain', value: domain?.categoryName ?? 'Not set', icon: 'chart-line', color: 'blue' },
-    { title: 'Sellers in domain', value: sellersInDomain != null ? String(sellersInDomain) : '—', icon: 'users', color: 'teal' },
-    { title: 'Peers visible to you', value: String(peers.length), icon: 'users', color: 'violet' },
-    { title: 'Benchmarks tracked', value: String(benchmarks.length), icon: 'chart-line', color: 'pink' },
+    {
+      title: 'Sellers in domain',
+      value: sellersInDomain != null ? String(sellersInDomain) : '—',
+      period: sellersInDomain == null ? 'Not published until 3 sellers opt in' : undefined,
+      icon: 'users',
+      color: 'teal',
+    },
+    {
+      title: 'Peers visible to you',
+      value: String(peers.length),
+      period: peers.length === 0 ? 'No peer has opted in yet' : undefined,
+      icon: 'users',
+      color: 'violet',
+    },
+    {
+      title: 'Benchmarks tracked',
+      value: String(benchmarks.length),
+      period: benchmarks.length === 0 ? 'Starts once the domain has enough sellers' : undefined,
+      icon: 'chart-line',
+      color: 'pink',
+    },
   ];
 
   // Instant-insight strip (same pattern as Overview's InsightBanner, see
@@ -715,30 +739,36 @@ export default function MarketView({
         <Card
           className="mb-5"
           title="Peers in your domain"
-          action={
-            domain && peers.length === 0 ? (
-              <Pill>No peers have opted in to be visible yet</Pill>
-            ) : undefined
-          }
         >
-          <Table minWidth={640}>
-            <THead>
-              <TH>Seller</TH>
-              <TH>Shares rating</TH>
-              <TH>Shares price positioning</TH>
-              <TH>Shares category rank</TH>
-            </THead>
-            <TBody>
-              {peers.map((peer) => (
-                <TR key={peer.sellerId}>
-                  <TD strong>{peer.displayName ?? 'Anonymous seller'}</TD>
-                  <TD>{peer.showRating ? 'Yes' : 'No'}</TD>
-                  <TD>{peer.showPricePosition ? 'Yes' : 'No'}</TD>
-                  <TD>{peer.showCategoryRank ? 'Yes' : 'No'}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          {/* Four column headings over nothing is not an empty state, it is a
+              table that looks broken - and the Pill that used to carry this
+              sentence sat in the header, away from the space it was
+              explaining. One line, where the rows would have been. */}
+          {peers.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              No peers have opted in to be visible yet. Sellers choose this for themselves, so this
+              fills in as more of your domain opts in - there is nothing for you to do.
+            </p>
+          ) : (
+            <Table minWidth={640}>
+              <THead>
+                <TH>Seller</TH>
+                <TH>Shares rating</TH>
+                <TH>Shares price positioning</TH>
+                <TH>Shares category rank</TH>
+              </THead>
+              <TBody>
+                {peers.map((peer) => (
+                  <TR key={peer.sellerId}>
+                    <TD strong>{peer.displayName ?? 'Anonymous seller'}</TD>
+                    <TD>{peer.showRating ? 'Yes' : 'No'}</TD>
+                    <TD>{peer.showPricePosition ? 'Yes' : 'No'}</TD>
+                    <TD>{peer.showCategoryRank ? 'Yes' : 'No'}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          )}
         </Card>
       </UpgradeGate>
 
