@@ -1,6 +1,7 @@
 'use client';
 
-import { Badge, Box, Button, Flex, Grid, HStack, Icon, Progress, Table, Tbody, Td, Text, Th, Thead, Tooltip, Tr, useColorModeValue } from '@chakra-ui/react';
+import { Card } from '@/components/ui/Card';
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { useMemo } from 'react';
 import {
   MdOutlineStorefront,
@@ -11,7 +12,6 @@ import {
   MdOutlineCheckCircle,
 } from 'react-icons/md';
 
-import Card from 'components/card/Card';
 import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import type {
@@ -145,25 +145,8 @@ export default function CompetitorScorecardsPanel({
   matchedListings,
   exportFilePrefix,
 }: CompetitorScorecardsPanelProps) {
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
   const formatCurrency = (value: number | null) =>
     value == null ? '—' : formatCurrencyAs(value, reportingCurrency);
-
-  // Small icon chips on the three headline stats, same "scan by colour"
-  // goal as StatsGrid's per-KPI icon/colour on Overview/Market - three
-  // fixed, always-called useColorModeValue pairs, not per-row (unlike
-  // StatsGrid, this isn't inside a .map() over variable-length data).
-  const statIconBg = {
-    blue: useColorModeValue('#EBF3FF', 'rgba(66, 133, 244, 0.12)'),
-    teal: useColorModeValue('#E6FBF6', 'rgba(5, 205, 153, 0.12)'),
-    violet: useColorModeValue('#F1EEFF', 'rgba(139, 92, 246, 0.14)'),
-  };
-  const statIconColor = {
-    blue: useColorModeValue('#2563EB', '#7DA9FF'),
-    teal: useColorModeValue('#05966B', '#3DDC97'),
-    violet: useColorModeValue('#6D28D9', '#B79CFF'),
-  };
 
   const overlapByCompetitor = useMemo(() => new Map(overlap.map((row) => [row.externalId, row])), [overlap]);
 
@@ -226,269 +209,237 @@ export default function CompetitorScorecardsPanel({
 
   if (scorecards.length === 0) {
     return (
-      <Card p="24px">
-        <Text fontWeight="700" color={textColor} mb="6px">
+      <Card>
+        <p className="mb-1.5 font-bold text-gray-900 dark:text-white">
           No named competitors in {scopeLabel} yet
-        </Text>
-        <Text fontSize="sm" color={mutedColor} mb="10px">
-          A competitor scorecard needs a listing that names the merchant behind it. Most of the sources we
-          track are single retailers — on those, the retailer <em>is</em> the seller, so there is nobody to
-          name. Daraz is the marketplace in your market that carries merchant identity.
-        </Text>
-        <Text fontSize="sm" color={mutedColor}>
+        </p>
+        <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
+          A competitor scorecard needs a listing that names the merchant behind it. Most of the
+          sources we track are single retailers — on those, the retailer <em>is</em> the seller, so
+          there is nobody to name. Daraz is the marketplace in your market that carries merchant
+          identity.
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">
           {landscape && landscape.anonymousSkuCount > 0
             ? `${landscape.anonymousSkuCount.toLocaleString()} listings in your market carry no seller identity, which is why this page is empty rather than showing them as one anonymous competitor. Those listings still feed every other figure on the Market page.`
             : 'Once a marketplace source returns listings inside your market definition, the competitors behind them appear here.'}
-        </Text>
+        </p>
       </Card>
     );
   }
+
+  const summaryTiles = [
+    {
+      icon: MdOutlineStorefront,
+      chip: 'bg-brand-50 text-brand-600 dark:bg-gray-800 dark:text-brand-400',
+      label: 'Named competitors',
+      value: String(scorecards.length),
+      caption: `across ${landscape?.platformsWithIdentity.join(', ') || '—'}`,
+    },
+    {
+      icon: MdOutlineListAlt,
+      chip: 'bg-success-50 text-success-700 dark:bg-gray-800 dark:text-success-500',
+      label: 'Listings with a named seller',
+      value: (landscape?.identifiedSkuCount ?? 0).toLocaleString(),
+      caption: `${(landscape?.anonymousSkuCount ?? 0).toLocaleString()} more have no seller to attribute`,
+    },
+    {
+      icon: MdOutlineAttachMoney,
+      chip: 'bg-brand-50 text-brand-700 dark:bg-gray-800 dark:text-brand-400',
+      label: 'Your market median',
+      value: formatCurrency(landscape?.marketMedianPrice ?? null),
+      caption: 'every price index below is measured against this',
+    },
+  ];
 
   return (
     <>
       <InsightStrip insight={computeCompetitorInsight(landscape!, scopeLabel)} />
 
-      <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="20px" mb="20px">
-        <Card p="20px">
-          <Flex align="center" gap="10px" mb="4px">
-            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.blue}>
-              <Icon as={MdOutlineStorefront} w="16px" h="16px" color={statIconColor.blue} />
-            </Flex>
-            <Text fontSize="sm" color={mutedColor}>
-              Named competitors
-            </Text>
-          </Flex>
-          <Text fontSize="28px" fontWeight="700" color={textColor}>
-            {scorecards.length}
-          </Text>
-          <Text fontSize="xs" color={mutedColor}>
-            across {landscape?.platformsWithIdentity.join(', ') || '—'}
-          </Text>
-        </Card>
-        <Card p="20px">
-          <Flex align="center" gap="10px" mb="4px">
-            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.teal}>
-              <Icon as={MdOutlineListAlt} w="16px" h="16px" color={statIconColor.teal} />
-            </Flex>
-            <Text fontSize="sm" color={mutedColor}>
-              Listings with a named seller
-            </Text>
-          </Flex>
-          <Text fontSize="28px" fontWeight="700" color={textColor}>
-            {(landscape?.identifiedSkuCount ?? 0).toLocaleString()}
-          </Text>
-          <Text fontSize="xs" color={mutedColor}>
-            {(landscape?.anonymousSkuCount ?? 0).toLocaleString()} more have no seller to attribute
-          </Text>
-        </Card>
-        <Card p="20px">
-          <Flex align="center" gap="10px" mb="4px">
-            <Flex align="center" justify="center" w="32px" h="32px" borderRadius="10px" bg={statIconBg.violet}>
-              <Icon as={MdOutlineAttachMoney} w="16px" h="16px" color={statIconColor.violet} />
-            </Flex>
-            <Text fontSize="sm" color={mutedColor}>
-              Your market median
-            </Text>
-          </Flex>
-          <Text fontSize="28px" fontWeight="700" color={textColor}>
-            {formatCurrency(landscape?.marketMedianPrice ?? null)}
-          </Text>
-          <Text fontSize="xs" color={mutedColor}>
-            every price index below is measured against this
-          </Text>
-        </Card>
-      </Grid>
+      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
+        {summaryTiles.map((tile) => {
+          const Icon = tile.icon;
+          return (
+            <Card key={tile.label}>
+              <div className="mb-1 flex items-center gap-2.5">
+                <span
+                  className={`flex size-8 items-center justify-center rounded-[10px] ${tile.chip}`}
+                >
+                  <Icon className="size-4" aria-hidden="true" />
+                </span>
+                <span className="text-sm text-gray-500 dark:text-gray-400">{tile.label}</span>
+              </div>
+              <p className="text-[28px] font-bold text-gray-900 tabular-nums dark:text-white">
+                {tile.value}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tile.caption}</p>
+            </Card>
+          );
+        })}
+      </div>
 
-      <Card p="0" overflowX="auto" mb="20px">
-        <Flex p="20px" pb="8px" justify="space-between" align="flex-start" wrap="wrap" gap="10px">
-          <Box>
-            <Text fontWeight="700" color={textColor}>
-              Scorecards
-            </Text>
-            <Text fontSize="sm" color={mutedColor}>
-              Ranked by assortment size inside your market definition, not overall — a seller with 40,000
-              listings elsewhere counts here only for what they list against you. Repricing is measured over
-              the last {landscape?.lookbackDays ?? 30} days.
-            </Text>
-          </Box>
-          <HStack spacing="8px">
-            <Button size="sm" variant="outline" onClick={exportScorecardsCsv}>
+      <Card className="mb-6">
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-2.5">
+          <div>
+            <p className="font-bold text-gray-900 dark:text-white">Scorecards</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              Ranked by assortment size inside your market definition, not overall — a seller with
+              40,000 listings elsewhere counts here only for what they list against you. Repricing is
+              measured over the last {landscape?.lookbackDays ?? 30} days.
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <button
+              type="button"
+              onClick={exportScorecardsCsv}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+            >
               Export scorecards CSV
-            </Button>
-            <Button size="sm" variant="outline" onClick={exportMatchedListingsCsv} isDisabled={matchedListings.length === 0}>
+            </button>
+            <button
+              type="button"
+              onClick={exportMatchedListingsCsv}
+              disabled={matchedListings.length === 0}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300"
+            >
               Export matched listings CSV
-            </Button>
-          </HStack>
-        </Flex>
-        <Table variant="simple" size="sm">
-          <Thead>
-            <Tr>
-              <Th>Competitor</Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.assortment} hasArrow>
-                  <span>Assortment</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>Median price</Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.priceIndex} hasArrow>
-                  <span>vs market</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.repricing} hasArrow>
-                  <span>Repricing</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.stock} hasArrow>
-                  <span>In stock</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.sold} hasArrow>
-                  <span>Units sold*</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.overlap} hasArrow>
-                  <span>Overlap / you cheaper</span>
-                </Tooltip>
-              </Th>
-              <Th isNumeric>
-                <Tooltip label={COLUMN_HELP.trackedMatches} hasArrow>
-                  <span>Your tracked matches</span>
-                </Tooltip>
-              </Th>
-            </Tr>
-          </Thead>
-          <Tbody>
+            </button>
+          </div>
+        </div>
+        <Table minWidth={1040}>
+          <THead>
+              <TH>Competitor</TH>
+              <TH numeric title={COLUMN_HELP.assortment}>Assortment</TH>
+              <TH numeric>Median price</TH>
+              <TH numeric title={COLUMN_HELP.priceIndex}>vs market</TH>
+              <TH numeric title={COLUMN_HELP.repricing}>Repricing</TH>
+              <TH numeric title={COLUMN_HELP.stock}>In stock</TH>
+              <TH numeric title={COLUMN_HELP.sold}>Units sold*</TH>
+              <TH numeric title={COLUMN_HELP.overlap}>Overlap / you cheaper</TH>
+              <TH numeric title={COLUMN_HELP.trackedMatches}>Your tracked matches</TH>
+            </THead>
+          <TBody>
             {scorecards.map((competitor) => {
               const head2head = overlapByCompetitor.get(competitor.externalId);
               const trackedMatches = matchCountsByCompetitor.get(competitor.externalId);
               const tenure = monthsSince(competitor.firstSeenAt);
               return (
-                <Tr key={competitor.externalId}>
-                  <Td>
-                    <Text fontWeight="600" color={textColor}>
-                      {competitor.name}
-                    </Text>
-                    <Flex gap="6px" align="center" wrap="wrap" mt="2px">
-                      <Badge colorScheme="purple" variant="subtle" fontSize="10px" textTransform="none">
-                        {competitor.platformName}
-                      </Badge>
-                      <Text fontSize="xs" color={mutedColor}>
+                <TR key={competitor.externalId}>
+                  <TD strong>
+                    {competitor.name}
+                    <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
+                      <Pill tone="brand">{competitor.platformName}</Pill>
+                      <span className="text-xs font-normal text-gray-500 dark:text-gray-400">
                         {competitor.brandCount} {competitor.brandCount === 1 ? 'brand' : 'brands'}
                         {tenure != null && tenure < 2 ? ' · new to this market' : ''}
-                      </Text>
-                    </Flex>
-                  </Td>
-                  <Td isNumeric>
-                    <Text fontSize="sm" color={textColor}>
+                      </span>
+                    </span>
+                  </TD>
+                  <TD numeric>
+                    <span className="block text-sm text-gray-900 dark:text-white">
                       {competitor.skuCount.toLocaleString()}
-                    </Text>
-                    <Progress
-                      value={competitor.assortmentShare * 100}
-                      size="xs"
-                      colorScheme="brand"
-                      borderRadius="4px"
-                      mt="4px"
-                    />
-                    <Text fontSize="xs" color={mutedColor}>
+                    </span>
+                    {/* Assortment share as a bar as well as a number - the
+                        relative size is the point, and 12 rows of bare
+                        percentages don't compare at a glance. */}
+                    <span className="mt-1 block h-1 w-full overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                      <span
+                        className="block h-full rounded bg-brand-500"
+                        style={{ width: `${Math.min(100, competitor.assortmentShare * 100)}%` }}
+                      />
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500 dark:text-gray-400">
                       {formatPercent(competitor.assortmentShare, 1)} of named supply
-                    </Text>
-                  </Td>
-                  <Td isNumeric>{formatCurrency(competitor.medianPrice)}</Td>
-                  <Td isNumeric>
-                    <Text
-                      fontSize="sm"
-                      color={
+                    </span>
+                  </TD>
+                  <TD numeric>{formatCurrency(competitor.medianPrice)}</TD>
+                  <TD numeric>
+                    <span
+                      className={`text-sm ${
                         competitor.priceIndex == null
-                          ? mutedColor
+                          ? 'text-gray-500 dark:text-gray-400'
                           : competitor.priceIndex < 0
-                            ? 'red.500'
-                            : 'green.500'
-                      }
+                            ? 'text-error-600 dark:text-error-500'
+                            : 'text-success-600 dark:text-success-500'
+                      }`}
                     >
                       {formatSignedPercent(competitor.priceIndex)}
-                    </Text>
-                  </Td>
-                  <Td isNumeric>
+                    </span>
+                  </TD>
+                  <TD numeric>
                     {competitor.priceChangeRate == null ? (
-                      <Text fontSize="xs" color={mutedColor}>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         not yet observed
-                      </Text>
+                      </span>
                     ) : (
                       <>
-                        <Text fontSize="sm" color={textColor}>
+                        <span className="block text-sm text-gray-900 dark:text-white">
                           {formatPercent(competitor.priceChangeRate, 1)}
-                        </Text>
-                        <Text fontSize="xs" color={mutedColor}>
+                        </span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
                           {competitor.observedSkuCount} SKUs tracked
-                        </Text>
+                        </span>
                       </>
                     )}
-                  </Td>
-                  <Td isNumeric>{formatPercent(competitor.inStockRate)}</Td>
-                  <Td isNumeric>{competitor.soldUnits > 0 ? competitor.soldUnits.toLocaleString() : '—'}</Td>
-                  <Td isNumeric>
+                  </TD>
+                  <TD numeric>{formatPercent(competitor.inStockRate)}</TD>
+                  <TD numeric>
+                    {competitor.soldUnits > 0 ? competitor.soldUnits.toLocaleString() : '—'}
+                  </TD>
+                  <TD numeric>
                     {!head2head || head2head.overlapCount === 0 ? (
-                      <Text fontSize="xs" color={mutedColor}>
-                        no match found
-                      </Text>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">no match found</span>
                     ) : (
                       <>
-                        <Text fontSize="sm" color={textColor}>
+                        <span className="block text-sm text-gray-900 dark:text-white">
                           {head2head.winCount}/{head2head.overlapCount}
-                        </Text>
-                        <Text fontSize="xs" color={mutedColor}>
+                        </span>
+                        <span className="block text-xs text-gray-500 dark:text-gray-400">
                           you are {formatSignedPercent(head2head.priceGap)} on median
-                        </Text>
+                        </span>
                       </>
                     )}
-                  </Td>
-                  <Td isNumeric>
+                  </TD>
+                  <TD numeric>
                     {!trackedMatches || trackedMatches.matchedProductCount === 0 ? (
-                      <Text fontSize="xs" color={mutedColor}>
-                        not yet tracked
-                      </Text>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">not yet tracked</span>
                     ) : (
-                      <Badge colorScheme="teal" variant="subtle" fontSize="11px">
-                        {trackedMatches.matchedProductCount} {trackedMatches.matchedProductCount === 1 ? 'product' : 'products'}
-                      </Badge>
+                      <Pill tone="success">
+                        {trackedMatches.matchedProductCount}{' '}
+                        {trackedMatches.matchedProductCount === 1 ? 'product' : 'products'}
+                      </Pill>
                     )}
-                  </Td>
-                </Tr>
+                  </TD>
+                </TR>
               );
             })}
-          </Tbody>
+          </TBody>
         </Table>
       </Card>
 
-      <Card p="20px">
-        <Text fontWeight="700" color={textColor} mb="6px">
-          How to read this
-        </Text>
-        <Text fontSize="sm" color={mutedColor} mb="6px">
-          *Units sold is reported by the platform and rounded by it (&quot;1.2K sold&quot;). It is the only
-          demand-side signal any source we track exposes, and it is a proxy — never treat it as your
-          competitor&apos;s revenue.
-        </Text>
-        <Text fontSize="sm" color={mutedColor} mb="6px">
-          Overlap and the cheaper-than count are computed by comparing product titles, over your 60 most
-          recently updated active products. They point you at the right competitor to look at; they are not
-          a reconciled catalog match.
-        </Text>
-        <Text fontSize="sm" color={mutedColor} mb="6px">
-          &quot;Your tracked matches&quot; is different from overlap above: it only counts products where you
-          actually opened the Competitors drawer and a match was saved, so it accumulates over time rather
-          than recalculating on every visit. Treat a zero here as &quot;not reviewed yet,&quot; not &quot;no
-          match exists.&quot;
-        </Text>
-        <Text fontSize="sm" color={mutedColor}>
-          Every figure is confined to your market definition. Change the segments, price band or platforms
-          and this list changes with it.
-        </Text>
+      <Card title="How to read this">
+        <div className="flex flex-col gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+          <p>
+            *Units sold is reported by the platform and rounded by it (&quot;1.2K sold&quot;). It is
+            the only demand-side signal any source we track exposes, and it is a proxy — never treat
+            it as your competitor&apos;s revenue.
+          </p>
+          <p>
+            Overlap and the cheaper-than count are computed by comparing product titles, over your 60
+            most recently updated active products. They point you at the right competitor to look at;
+            they are not a reconciled catalog match.
+          </p>
+          <p>
+            &quot;Your tracked matches&quot; is different from overlap above: it only counts products
+            where you actually opened the Competitors drawer and a match was saved, so it accumulates
+            over time rather than recalculating on every visit. Treat a zero here as &quot;not
+            reviewed yet,&quot; not &quot;no match exists.&quot;
+          </p>
+          <p>
+            Every figure is confined to your market definition. Change the segments, price band or
+            platforms and this list changes with it.
+          </p>
+        </div>
       </Card>
     </>
   );
