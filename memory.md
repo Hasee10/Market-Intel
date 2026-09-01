@@ -2784,12 +2784,20 @@ frontend folder is coming to be implemented wholesale, replacing any
 further incremental restyling.** Both revamp commits were reverted via
 `git revert --no-edit ba61cb3 9d8516a` (non-destructive - both original
 commits remain in history, just their effects undone), verified clean
-(`tsc`, 196/196 tests), and pushed as `5d0ee1d`/`d3f2ebe`. **Before the
-new frontend goes in, a `FEATURES.md` complete feature inventory is being
-built** (2 parallel Explore agents covering every page's UI capabilities
-and every API route/backend capability) specifically so nothing
-functional silently drops when the frontend layer gets replaced - this
-is the standing task as of this entry, not yet complete.
+(`tsc`, 196/196 tests), and pushed as `5d0ee1d`/`d3f2ebe`.
+
+**`FEATURES.md` shipped (`309fd92`)** - a complete feature inventory at
+the repo root, built from 2 parallel Explore agents (one covering every
+page's UI capabilities, one covering every API route + backend
+capability: AI features, reports, entitlements, onboarding,
+notifications, market-intel core logic), merged into one reference doc.
+**This is the standing reference for the incoming frontend rebuild - read
+it before implementing the new frontend folder, and treat anything listed
+there as something that needs a home in the new design, not something
+that can be dropped by not knowing it existed.** Not yet reconciled
+against the actual new-frontend folder, since that folder had not been
+provided as of this entry - that reconciliation is the next real step
+once it arrives.
 
 **Standing takeaways for any future UI work on this app:**
 1. The sidebar/navbar are the highest-leverage, most-visible elements on
