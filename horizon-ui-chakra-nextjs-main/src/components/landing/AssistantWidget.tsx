@@ -1,15 +1,5 @@
 'use client';
 
-import {
-  Box,
-  Button,
-  Flex,
-  IconButton,
-  Input,
-  Text,
-  useColorModeValue,
-  useDisclosure,
-} from '@chakra-ui/react';
 import { MdChatBubble, MdClose, MdSend } from 'react-icons/md';
 import { useEffect, useRef, useState } from 'react';
 
@@ -31,19 +21,11 @@ const GREETING: ChatMessage = {
 // same facts already published on Pricing/Trust/How it works, not the
 // model's general knowledge. See marketing-assistant.ts for the prompt.
 export function AssistantWidget() {
-  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([GREETING]);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  const panelBg = useColorModeValue('white', 'navy.800');
-  const panelBorder = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const heading = useColorModeValue('#111C4E', 'white');
-  const body = useColorModeValue('gray.600', 'secondaryGray.400');
-  const bubbleUserBg = 'linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)';
-  const bubbleAssistantBg = useColorModeValue('gray.50', 'whiteAlpha.100');
-  const inputBg = useColorModeValue('white', 'navy.900');
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -71,7 +53,7 @@ export function AssistantWidget() {
         ...prev,
         {
           role: 'assistant',
-          content: "Something went wrong reaching the assistant - please try again in a moment.",
+          content: 'Something went wrong reaching the assistant - please try again in a moment.',
         },
       ]);
     } finally {
@@ -80,148 +62,105 @@ export function AssistantWidget() {
   }
 
   return (
-    <Box position="fixed" bottom={{ base: '20px', md: '28px' }} right={{ base: '20px', md: '28px' }} zIndex="40">
+    <div className="font-manrope fixed bottom-5 right-5 z-40 md:bottom-7 md:right-7">
       {isOpen && (
         <Reveal duration={250}>
-          <Flex
-            direction="column"
-            w={{ base: 'calc(100vw - 40px)', md: '360px' }}
-            maxW="360px"
-            h="480px"
-            maxH="70vh"
-            bg={panelBg}
-            border="1px solid"
-            borderColor={panelBorder}
-            borderRadius="20px"
-            boxShadow="0px 24px 48px rgba(17, 28, 78, 0.18)"
-            mb="16px"
-            overflow="hidden"
-          >
-            <Flex
-              align="center"
-              justify="space-between"
-              px="20px"
-              py="16px"
-              bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
-            >
-              <Box>
-                <Text fontWeight="700" fontSize="sm" color="white">
-                  Ryvl Assistant
-                </Text>
-                <Text fontSize="xs" color="whiteAlpha.700">
-                  Grounded in Ryvl&apos;s published product info
-                </Text>
-              </Box>
-              <IconButton
+          <div className="mb-4 flex h-[480px] max-h-[70vh] w-[calc(100vw-40px)] max-w-[360px] flex-col overflow-hidden rounded-[20px] border border-gray-100 bg-white shadow-[0_24px_48px_rgba(17,28,78,0.18)] dark:border-white/10 dark:bg-gray-900">
+            <div className="flex items-center justify-between bg-gradient-to-br from-[#4318FF] to-[#7B61FF] px-5 py-4">
+              <div>
+                <p className="text-sm font-bold text-white">Ryvl Assistant</p>
+                <p className="text-xs text-white/70">Grounded in Ryvl&apos;s published product info</p>
+              </div>
+              <button
+                type="button"
                 aria-label="Close assistant"
-                icon={<MdClose />}
-                size="sm"
-                variant="ghost"
-                color="white"
-                _hover={{ bg: 'whiteAlpha.200' }}
-                onClick={onClose}
-              />
-            </Flex>
+                onClick={() => setIsOpen(false)}
+                className="flex size-8 items-center justify-center rounded-lg text-white transition-colors hover:bg-white/20"
+              >
+                <MdClose className="size-[18px]" />
+              </button>
+            </div>
 
-            <Flex direction="column" flex="1" overflowY="auto" px="16px" py="16px" gap="12px" ref={scrollRef}>
+            <div ref={scrollRef} className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4">
               {messages.map((m, i) => (
-                <Flex key={i} justify={m.role === 'user' ? 'flex-end' : 'flex-start'}>
-                  <Box
-                    maxW="85%"
-                    px="14px"
-                    py="10px"
-                    borderRadius="14px"
-                    bg={m.role === 'user' ? bubbleUserBg : bubbleAssistantBg}
-                    color={m.role === 'user' ? 'white' : heading}
-                    fontSize="sm"
-                    lineHeight="1.5"
-                    whiteSpace="pre-wrap"
+                <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                  {/* whitespace-pre-wrap is load-bearing, not cosmetic: the model
+                      is told to separate list items with real newlines, and the
+                      CSS default (normal) collapses every one of them into a
+                      run-on paragraph. */}
+                  <div
+                    className={`max-w-[85%] whitespace-pre-wrap rounded-[14px] px-3.5 py-2.5 text-sm leading-normal ${
+                      m.role === 'user'
+                        ? 'bg-gradient-to-br from-[#4318FF] to-[#7B61FF] text-white'
+                        : 'bg-gray-50 text-[#111C4E] dark:bg-white/10 dark:text-white'
+                    }`}
                   >
                     {m.content}
-                  </Box>
-                </Flex>
+                  </div>
+                </div>
               ))}
+
               {isSending && (
-                <Flex justify="flex-start">
-                  <Box px="14px" py="10px" borderRadius="14px" bg={bubbleAssistantBg} color={body} fontSize="sm">
-                    Thinking…
-                  </Box>
-                </Flex>
+                <div className="flex justify-start">
+                  <div className="rounded-[14px] bg-gray-50 px-3.5 py-2.5 text-sm text-gray-600 dark:bg-white/10 dark:text-gray-400">
+                    Thinking&hellip;
+                  </div>
+                </div>
               )}
+
               {messages.length === 1 && (
-                <Flex direction="column" gap="8px" mt="4px">
+                <div className="mt-1 flex flex-col gap-2">
                   {STARTER_QUESTIONS.map((q) => (
-                    <Button
+                    <button
                       key={q}
-                      size="sm"
-                      variant="outline"
-                      justifyContent="flex-start"
-                      fontWeight="500"
-                      fontSize="xs"
-                      whiteSpace="normal"
-                      textAlign="left"
-                      h="auto"
-                      py="8px"
+                      type="button"
                       onClick={() => sendMessage(q)}
+                      className="rounded-lg border border-gray-200 px-3 py-2 text-left text-xs font-medium text-gray-700 transition-colors hover:border-[#4318FF] hover:text-[#4318FF] dark:border-gray-700 dark:text-gray-300"
                     >
                       {q}
-                    </Button>
+                    </button>
                   ))}
-                </Flex>
+                </div>
               )}
-            </Flex>
+            </div>
 
-            <Flex
-              as="form"
+            <form
               onSubmit={(e) => {
                 e.preventDefault();
                 sendMessage(input);
               }}
-              px="12px"
-              py="12px"
-              borderTop="1px solid"
-              borderColor={panelBorder}
-              gap="8px"
-              bg={inputBg}
+              className="flex gap-2 border-t border-gray-100 bg-white px-3 py-3 dark:border-white/10 dark:bg-gray-950"
             >
-              <Input
-                size="sm"
+              <input
+                type="text"
                 placeholder="Ask a question…"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                borderRadius="12px"
-                isDisabled={isSending}
+                disabled={isSending}
+                className="h-9 flex-1 rounded-xl border border-gray-200 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#4318FF] focus:outline-none focus:ring-2 focus:ring-[#4318FF]/20 disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
               />
-              <IconButton
-                aria-label="Send"
-                icon={<MdSend />}
-                size="sm"
+              <button
                 type="submit"
-                variant="brand"
-                borderRadius="12px"
-                isDisabled={isSending || !input.trim()}
-              />
-            </Flex>
-          </Flex>
+                aria-label="Send"
+                disabled={isSending || !input.trim()}
+                className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#4318FF] text-white transition-colors hover:bg-[#3812DB] disabled:opacity-40"
+              >
+                <MdSend className="size-[18px]" />
+              </button>
+            </form>
+          </div>
         </Reveal>
       )}
 
-      <IconButton
+      <button
+        type="button"
         aria-label={isOpen ? 'Close assistant' : 'Open assistant'}
-        icon={isOpen ? <MdClose size="24px" /> : <MdChatBubble size="24px" />}
-        onClick={isOpen ? onClose : onOpen}
-        w="60px"
-        h="60px"
-        borderRadius="full"
-        bg="linear-gradient(135deg, #868CFF 0%, #4318FF 100%)"
-        color="white"
-        border="1px solid"
-        borderColor="#6A53FF"
-        boxShadow="0px 12px 24px rgba(67, 24, 255, 0.35)"
-        _hover={{ transform: 'translateY(-2px)', boxShadow: '0px 16px 32px rgba(67, 24, 255, 0.45)' }}
-        transition="all 0.2s ease"
-      />
-    </Box>
+        onClick={() => setIsOpen((v) => !v)}
+        className="flex size-[60px] items-center justify-center rounded-full border border-[#6A53FF] bg-gradient-to-br from-[#868CFF] to-[#4318FF] text-white shadow-[0_12px_24px_rgba(67,24,255,0.35)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_rgba(67,24,255,0.45)]"
+      >
+        {isOpen ? <MdClose size={24} /> : <MdChatBubble size={24} />}
+      </button>
+    </div>
   );
 }
 
