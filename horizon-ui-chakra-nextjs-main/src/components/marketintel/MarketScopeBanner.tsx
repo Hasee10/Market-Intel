@@ -1,6 +1,5 @@
 'use client';
 
-import { Badge, Box, Flex, Icon, Link as ChakraLink, Text, Tooltip, useColorModeValue } from '@chakra-ui/react';
 import Link from 'next/link';
 import { MdOutlineTune, MdOutlineWarningAmber } from 'react-icons/md';
 
@@ -39,107 +38,97 @@ function priceBandLabel(summary: MarketScopeSummary): string | null {
   return `under ${formatMoney(priceMax as number, priceCurrency)}`;
 }
 
-export function MarketScopeBanner({ summary }: { summary: MarketScopeSummary }) {
-  const border = useColorModeValue('secondaryGray.300', 'whiteAlpha.200');
-  const bg = useColorModeValue('white', 'navy.800');
-  const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
-  const warnColor = useColorModeValue('orange.500', 'orange.300');
+const chip =
+  'rounded-md px-2 py-0.5 text-[10px] font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300';
 
+export function MarketScopeBanner({ summary }: { summary: MarketScopeSummary }) {
   const total = summary.productCount + summary.listingCount;
   const band = priceBandLabel(summary);
   const empty = total === 0;
 
   const facets: { label: string; value: string }[] = [];
-  if (summary.segmentLabels.length > 0 && summary.segmentLabels.length < summary.totalSegmentCount) {
+  if (
+    summary.segmentLabels.length > 0 &&
+    summary.segmentLabels.length < summary.totalSegmentCount
+  ) {
     facets.push({ label: 'Segments', value: summary.segmentLabels.join(', ') });
   }
   if (band) facets.push({ label: 'Price band', value: band });
   if (summary.brands.length > 0) facets.push({ label: 'Brands', value: summary.brands.join(', ') });
   if (summary.cities.length > 0) facets.push({ label: 'Cities', value: summary.cities.join(', ') });
 
+  const Icon = empty ? MdOutlineWarningAmber : MdOutlineTune;
+
   return (
-    <Box
-      bg={bg}
-      border="1px solid"
-      borderColor={empty ? warnColor : border}
-      borderRadius="16px"
-      px="20px"
-      py="14px"
-      mb="20px"
+    <div
+      className={`font-outfit mb-5 rounded-2xl border bg-white px-5 py-3.5 dark:bg-gray-900 ${
+        empty ? 'border-orange-400 dark:border-orange-500' : 'border-gray-200 dark:border-gray-800'
+      }`}
     >
-      <Flex direction={{ base: 'column', md: 'row' }} align={{ base: 'flex-start', md: 'center' }} gap="10px">
+      <div className="flex flex-col items-start gap-2.5 md:flex-row md:items-center">
         <Icon
-          as={empty ? MdOutlineWarningAmber : MdOutlineTune}
-          w="20px"
-          h="20px"
-          color={empty ? warnColor : mutedColor}
-          flexShrink={0}
+          className={`size-5 shrink-0 ${
+            empty ? 'text-orange-500 dark:text-orange-400' : 'text-gray-500 dark:text-gray-400'
+          }`}
+          aria-hidden="true"
         />
 
-        <Box flex="1">
+        <div className="min-w-0 flex-1">
           {empty ? (
-            <Text fontSize="sm" color={textColor} fontWeight="600">
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">
               No scraped listings match your market definition yet.
-            </Text>
+            </p>
           ) : (
-            <Text fontSize="sm" color={textColor}>
-              <Text as="span" fontWeight="700">
-                {total.toLocaleString()}
-              </Text>{' '}
+            <p className="text-sm text-gray-900 dark:text-white">
+              <strong className="font-bold">{total.toLocaleString()}</strong>{' '}
               {total === 1 ? 'listing' : 'listings'} across{' '}
-              <Text as="span" fontWeight="700">
-                {summary.platformNames.length}
-              </Text>{' '}
-              {summary.platformNames.length === 1 ? 'platform' : 'platforms'} match your definition of{' '}
-              <Text as="span" fontWeight="700">
-                {summary.categoryName}
-              </Text>
-              .
-            </Text>
+              <strong className="font-bold">{summary.platformNames.length}</strong>{' '}
+              {summary.platformNames.length === 1 ? 'platform' : 'platforms'} match your definition
+              of <strong className="font-bold">{summary.categoryName}</strong>.
+            </p>
           )}
 
           {empty ? (
-            <Text fontSize="xs" color={mutedColor} mt="4px">
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
               {summary.hasTaxonomy
                 ? 'The categories mapped to this market have no live scraped rows right now — either your filters are too narrow, or the sources covering them have not returned data yet. Every figure below will be blank until that changes.'
                 : 'No scraped source covers this category yet, so there is nothing to compare against. This is a data-coverage gap, not a filter you can widen.'}
-            </Text>
+            </p>
           ) : (
-            <Flex wrap="wrap" gap="6px" mt="6px" align="center">
-              <Tooltip label={summary.platformNames.join(', ')} placement="top">
-                <Badge colorScheme="brand" variant="subtle" fontSize="10px" textTransform="none">
-                  {summary.platformNames.slice(0, 3).join(', ')}
-                  {summary.platformNames.length > 3 ? ` +${summary.platformNames.length - 3}` : ''}
-                </Badge>
-              </Tooltip>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              {/* title= rather than a Tooltip component: the full platform list
+                  is a nice-to-have on hover, not worth a JS popover. */}
+              <span
+                title={summary.platformNames.join(', ')}
+                className="rounded-md bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-gray-800 dark:text-brand-400"
+              >
+                {summary.platformNames.slice(0, 3).join(', ')}
+                {summary.platformNames.length > 3
+                  ? ` +${summary.platformNames.length - 3}`
+                  : ''}
+              </span>
               {facets.map((facet) => (
-                <Badge key={facet.label} colorScheme="gray" variant="subtle" fontSize="10px" textTransform="none">
+                <span key={facet.label} className={chip}>
                   {facet.label}: {facet.value}
-                </Badge>
+                </span>
               ))}
               {summary.isDefault && facets.length === 0 && (
-                <Text fontSize="xs" color={mutedColor}>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
                   Using the default scope — every mapped segment, no price band.
-                </Text>
+                </span>
               )}
-            </Flex>
+            </div>
           )}
-        </Box>
+        </div>
 
-        <ChakraLink
-          as={Link}
+        <Link
           href={PATH_DASHBOARD.marketDefinition}
-          fontSize="sm"
-          fontWeight="600"
-          color="brand.500"
-          flexShrink={0}
-          _hover={{ textDecoration: 'underline' }}
+          className="shrink-0 text-sm font-semibold text-brand-500 hover:underline dark:text-brand-400"
         >
           {summary.isDefault ? 'Define your market' : 'Edit definition'}
-        </ChakraLink>
-      </Flex>
-    </Box>
+        </Link>
+      </div>
+    </div>
   );
 }
 

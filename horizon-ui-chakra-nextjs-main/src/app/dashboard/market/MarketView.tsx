@@ -1,16 +1,15 @@
 'use client';
 
+// Chakra still used by the not-yet-ported lower half of this page (the
+// paid/premium tables and the explainer cards). Removed as those blocks
+// convert.
 import {
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
   Badge,
   Box,
   Button,
   Flex,
   Grid,
-  Table,
+  Table as ChakraTable,
   Tbody,
   Td,
   Text,
@@ -27,8 +26,10 @@ import {
   MdOutlineCheckCircle,
 } from 'react-icons/md';
 
-import Card from 'components/card/Card';
 import LineChart from '@/components/charts/LineChart';
+import { Alert } from '@/components/ui/Alert';
+import { Card } from '@/components/ui/Card';
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
@@ -177,18 +178,24 @@ export default function MarketView({
         };
 
   return (
-    <Box>
+    <div className="font-outfit">
       <PageHeader
         title="Market"
         actionButton={
-          <Flex gap="8px">
-            <Button as={Link} href={PATH_DASHBOARD.competitors} variant="brand" size="sm">
+          <div className="flex gap-2">
+            <Link
+              href={PATH_DASHBOARD.competitors}
+              className="rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+            >
               Competitors
-            </Button>
-            <Button as={Link} href={PATH_DASHBOARD.marketDefinition} variant="outline" size="sm">
+            </Link>
+            <Link
+              href={PATH_DASHBOARD.marketDefinition}
+              className="rounded-lg border border-gray-200 px-3.5 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+            >
               Market definition
-            </Button>
-          </Flex>
+            </Link>
+          </div>
         }
       />
 
@@ -200,149 +207,133 @@ export default function MarketView({
       {marketInsight && <InsightStrip insight={marketInsight} />}
 
       {freshness.length > 0 && (
-        <Flex wrap="wrap" gap="8px" mb="16px">
+        <div className="mb-4 flex flex-wrap gap-2">
           {freshness.map((f) => (
-            <Badge key={f.platformName} colorScheme="gray" borderRadius="8px" px="8px" py="2px">
+            <span
+              key={f.platformName}
+              className="rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+            >
               {f.platformName}: scraped {formatRelativeTime(f.lastScrapedAt)}
-            </Badge>
+            </span>
           ))}
-        </Flex>
+        </div>
       )}
 
-      <Alert status="info" borderRadius="16px" mb="20px">
-        <AlertIcon />
-        <Box>
-          <AlertTitle>Peer benchmarking, not surveillance</AlertTitle>
-          <AlertDescription>
-            You only see aggregate or seller-opted-in fields for other sellers in your domain
-            (e.g. rating, price positioning, response time). Nothing private about a
-            competitor&apos;s business is ever shown.
-          </AlertDescription>
-        </Box>
+      <Alert status="info" title="Peer benchmarking, not surveillance" className="mb-5">
+        You only see aggregate or seller-opted-in fields for other sellers in your domain (e.g.
+        rating, price positioning, response time). Nothing private about a competitor&apos;s
+        business is ever shown.
       </Alert>
 
       {!domain && (
-        <Alert status="warning" borderRadius="16px" mb="20px">
-          <AlertIcon />
-          <Flex justify="space-between" align="center" w="100%">
-            <Text fontSize="sm">
-              You haven&apos;t set a domain yet, so we can&apos;t show you peer benchmarks.
-            </Text>
-            <Button as={Link} href={PATH_ONBOARDING} size="sm" variant="brand">
+        <Alert status="warning" className="mb-5">
+          <div className="flex w-full flex-wrap items-center justify-between gap-3">
+            <span>You haven&apos;t set a domain yet, so we can&apos;t show you peer benchmarks.</span>
+            <Link
+              href={PATH_ONBOARDING}
+              className="shrink-0 rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600"
+            >
               Choose domain
-            </Button>
-          </Flex>
+            </Link>
+          </div>
         </Alert>
       )}
 
       <StatsGrid data={domainStats} columns={4} />
 
       <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Domain benchmarks">
-        <Card mb="20px">
-          <Flex justify="space-between" align="center" mb="12px">
-            <Text fontSize="lg" fontWeight="600" color={textColor}>
-              Domain benchmarks
-            </Text>
-          </Flex>
+        <Card className="mb-5" title="Domain benchmarks">
           {/* Benchmarks stay empty until MIN_SAMPLE_SIZE (3) sellers in this
               category have opted in - see benchmarks-job.ts. That's a real
               anonymity floor, not a bug, but an unexplained blank table reads
               as broken software, so say why rather than showing an empty
               grid. */}
           {benchmarks.length === 0 ? (
-            <Alert status="info" borderRadius="12px">
-              <AlertIcon />
-              <Box>
-                <AlertTitle fontSize="sm">Not enough sellers in your domain yet</AlertTitle>
-                <AlertDescription fontSize="sm">
-                  Peer benchmarks need at least 3 opted-in sellers in a category before we publish
-                  them, so no single seller&apos;s numbers can be reverse-engineered from the
-                  aggregate. We&apos;ll turn this on for your domain automatically once it reaches
-                  that threshold — nothing for you to do. Everything else on this page is drawn from
-                  scraped market data and works today.
-                </AlertDescription>
-              </Box>
+            <Alert status="info" title="Not enough sellers in your domain yet">
+              Peer benchmarks need at least 3 opted-in sellers in a category before we publish them,
+              so no single seller&apos;s numbers can be reverse-engineered from the aggregate.
+              We&apos;ll turn this on for your domain automatically once it reaches that threshold —
+              nothing for you to do. Everything else on this page is drawn from scraped market data
+              and works today.
             </Alert>
           ) : (
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Metric</Th>
-                    <Th>P25</Th>
-                    <Th>Median</Th>
-                    <Th>P75</Th>
-                    <Th>Sample size</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {benchmarks.map((row) => (
-                    <Tr key={row.metricName}>
-                      <Td>{formatMetric(row.metricName)}</Td>
-                      <Td>{row.p25 ?? '—'}</Td>
-                      <Td>{row.median ?? '—'}</Td>
-                      <Td>{row.p75 ?? '—'}</Td>
-                      <Td>{row.sampleSize}</Td>
-                    </Tr>
-                  ))}
-                </Tbody>
-              </Table>
-            </Box>
+            <Table minWidth={520}>
+              <THead>
+                <TH>Metric</TH>
+                <TH numeric>P25</TH>
+                <TH numeric>Median</TH>
+                <TH numeric>P75</TH>
+                <TH numeric>Sample size</TH>
+              </THead>
+              <TBody>
+                {benchmarks.map((row) => (
+                  <TR key={row.metricName}>
+                    <TD strong>{formatMetric(row.metricName)}</TD>
+                    <TD numeric>{row.p25 ?? '—'}</TD>
+                    <TD numeric>{row.median ?? '—'}</TD>
+                    <TD numeric>{row.p75 ?? '—'}</TD>
+                    <TD numeric>{row.sampleSize}</TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
           )}
         </Card>
       </UpgradeGate>
 
-      <Card mb="20px">
-        <Flex justify="space-between" align="center" mb="12px">
-          <Text fontSize="lg" fontWeight="600" color={textColor}>
-            Category pricing (market-wide)
-          </Text>
-          {domain && !categoryPricing && (
-            <Badge colorScheme="gray">No market pricing data for this category yet</Badge>
-          )}
-        </Flex>
+      <Card
+        className="mb-5"
+        title="Category pricing (market-wide)"
+        action={
+          domain && !categoryPricing ? (
+            <Pill>No market pricing data for this category yet</Pill>
+          ) : undefined
+        }
+      >
         {categoryPricing ? (
           <>
-            <Box overflowX="auto">
-              <Table variant="simple">
-                <Thead>
-                  <Tr>
-                    <Th>Min</Th>
-                    <Th>P25</Th>
-                    <Th>Median</Th>
-                    <Th>P75</Th>
-                    <Th>Max</Th>
-                    <Th>Average</Th>
-                    <Th>Listings tracked</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  <Tr>
-                    <Td>{formatCurrency(categoryPricing.minPrice)}</Td>
-                    {/* p25/p75 are null below migration 026's sample-size threshold inside
-                        market_scope_price_stats - showing "-" here instead of coercing
-                        through formatCurrency(null), which Intl.NumberFormat would
-                        silently render as a misleading "Rs 0". */}
-                    <Td>{categoryPricing.p25 != null ? formatCurrency(categoryPricing.p25) : '—'}</Td>
-                    <Td>{formatCurrency(categoryPricing.median)}</Td>
-                    <Td>{categoryPricing.p75 != null ? formatCurrency(categoryPricing.p75) : '—'}</Td>
-                    <Td>{formatCurrency(categoryPricing.maxPrice)}</Td>
-                    <Td>{formatCurrency(categoryPricing.avgPrice)}</Td>
-                    <Td>{categoryPricing.count}</Td>
-                  </Tr>
-                </Tbody>
-              </Table>
-            </Box>
-            <Text fontSize="xs" color="secondaryGray.600" mt="8px">
+            <Table minWidth={640}>
+              <THead>
+                <TH numeric>Min</TH>
+                <TH numeric>P25</TH>
+                <TH numeric>Median</TH>
+                <TH numeric>P75</TH>
+                <TH numeric>Max</TH>
+                <TH numeric>Average</TH>
+                <TH numeric>Listings tracked</TH>
+              </THead>
+              <TBody>
+                <TR>
+                  <TD numeric>{formatCurrency(categoryPricing.minPrice)}</TD>
+                  {/* p25/p75 are null below migration 026's sample-size threshold inside
+                      market_scope_price_stats - showing "-" here instead of coercing
+                      through formatCurrency(null), which Intl.NumberFormat would
+                      silently render as a misleading "Rs 0". */}
+                  <TD numeric>
+                    {categoryPricing.p25 != null ? formatCurrency(categoryPricing.p25) : '—'}
+                  </TD>
+                  <TD numeric strong>
+                    {formatCurrency(categoryPricing.median)}
+                  </TD>
+                  <TD numeric>
+                    {categoryPricing.p75 != null ? formatCurrency(categoryPricing.p75) : '—'}
+                  </TD>
+                  <TD numeric>{formatCurrency(categoryPricing.maxPrice)}</TD>
+                  <TD numeric>{formatCurrency(categoryPricing.avgPrice)}</TD>
+                  <TD numeric>{categoryPricing.count}</TD>
+                </TR>
+              </TBody>
+            </Table>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
               Scraped from {categoryPricing.samplePlatforms.join(', ')} - refreshed automatically
               every 2 days.
-            </Text>
+            </p>
           </>
         ) : (
-          <Text fontSize="sm" color="secondaryGray.600">
-            We haven&apos;t scraped competitor pricing for this category yet. Coverage is
-            expanding source by source.
-          </Text>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            We haven&apos;t scraped competitor pricing for this category yet. Coverage is expanding
+            source by source.
+          </p>
         )}
       </Card>
 
@@ -464,7 +455,7 @@ export default function MarketView({
         </Card>
       </Grid>
 
-      <Card mb="20px">
+      <Card className="mb-5">
         <Text fontSize="lg" fontWeight="600" color={textColor} mb="12px">
           Competitor stock-outs
         </Text>
@@ -474,7 +465,7 @@ export default function MarketView({
           </Text>
         ) : (
           <Box overflowX="auto">
-            <Table variant="simple">
+            <ChakraTable variant="simple">
               <Thead>
                 <Tr>
                   <Th>Product</Th>
@@ -495,7 +486,7 @@ export default function MarketView({
                   </Tr>
                 ))}
               </Tbody>
-            </Table>
+            </ChakraTable>
           </Box>
         )}
       </Card>
@@ -505,7 +496,7 @@ export default function MarketView({
         requiredPlanLabel="Paid"
         featureName="Closest competitor match per product"
       >
-        <Card mb="20px">
+        <Card className="mb-5">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Closest competitor match per product
@@ -519,7 +510,7 @@ export default function MarketView({
             </Text>
           ) : (
             <Box overflowX="auto">
-              <Table variant="simple">
+              <ChakraTable variant="simple">
                 <Thead>
                   <Tr>
                     <Th>Your product</Th>
@@ -545,7 +536,7 @@ export default function MarketView({
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
+              </ChakraTable>
             </Box>
           )}
         </Card>
@@ -556,7 +547,7 @@ export default function MarketView({
         requiredPlanLabel="Paid"
         featureName="Pricing recommendations"
       >
-        <Card mb="20px">
+        <Card className="mb-5">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Pricing recommendations
@@ -570,7 +561,7 @@ export default function MarketView({
             </Text>
           ) : (
             <Box overflowX="auto">
-              <Table variant="simple">
+              <ChakraTable variant="simple">
                 <Thead>
                   <Tr>
                     <Th>Product</Th>
@@ -606,7 +597,7 @@ export default function MarketView({
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
+              </ChakraTable>
             </Box>
           )}
         </Card>
@@ -617,7 +608,7 @@ export default function MarketView({
         requiredPlanLabel="Premium"
         featureName="Competitor price anomalies"
       >
-        <Card mb="20px">
+        <Card className="mb-5">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Competitor price anomalies
@@ -630,7 +621,7 @@ export default function MarketView({
             </Text>
           ) : (
             <Box overflowX="auto">
-              <Table variant="simple">
+              <ChakraTable variant="simple">
                 <Thead>
                   <Tr>
                     <Th>Product</Th>
@@ -656,14 +647,14 @@ export default function MarketView({
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
+              </ChakraTable>
             </Box>
           )}
         </Card>
       </UpgradeGate>
 
       <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Peers in your domain">
-        <Card mb="20px">
+        <Card className="mb-5">
           <Flex justify="space-between" align="center" mb="12px">
             <Text fontSize="lg" fontWeight="600" color={textColor}>
               Peers in your domain
@@ -673,7 +664,7 @@ export default function MarketView({
             )}
           </Flex>
           <Box overflowX="auto">
-            <Table variant="simple">
+            <ChakraTable variant="simple">
               <Thead>
                 <Tr>
                   <Th>Seller</Th>
@@ -692,7 +683,7 @@ export default function MarketView({
                   </Tr>
                 ))}
               </Tbody>
-            </Table>
+            </ChakraTable>
           </Box>
         </Card>
       </UpgradeGate>
@@ -717,6 +708,6 @@ export default function MarketView({
           </Text>
         </Card>
       </Grid>
-    </Box>
+    </div>
   );
 }

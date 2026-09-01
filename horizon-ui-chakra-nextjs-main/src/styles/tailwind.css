@@ -20,7 +20,26 @@
 @layer theme, base, components, utilities;
 
 @import 'tailwindcss/theme.css' layer(theme);
-@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* NOT `layer(utilities)`, deliberately, and this is load-bearing.
+ *
+ * Per the cascade, an UNLAYERED rule beats a layered one no matter its
+ * specificity. Chakra's CSSReset injects unlayered global element styles
+ * (h1, h2, p, a, button, ...) through Emotion, so with utilities in a layer
+ * every heading collapsed to body size and every <a> styled as a button lost
+ * its background - Chakra's bare `h1`/`a` rules outranked `.text-6xl` and
+ * `.bg-brand-500`. That is invisible on div/span-heavy markup like the
+ * dashboard shell and obvious on the landing page, which is all real
+ * semantic elements.
+ *
+ * Unlayered, normal specificity applies: a Tailwind class (0,1,0) beats
+ * Chakra's element selectors (0,0,1), so migrated markup renders correctly.
+ * Chakra's *component* styles are Emotion classes - also (0,1,0), but
+ * injected into <head> at runtime after this stylesheet, so they still win
+ * on any element carrying both. That is the ordering the migration needs:
+ * new markup styles correctly, un-migrated Chakra components are untouched.
+ */
+@import 'tailwindcss/utilities.css';
 
 /* Class-based dark mode, same declaration TailAdmin uses. Chakra's own
  * colour mode stays the single source of truth - AdminShell mirrors it onto
