@@ -39,6 +39,9 @@
   /* Resolves to the next/font-hosted family declared in app/layout.tsx, so
    * this never hits the Google Fonts CDN at request time. */
   --font-outfit: var(--font-outfit-src, Outfit), ui-sans-serif, system-ui, sans-serif;
+  /* The landing template's face - see app/layout.tsx. Same -src indirection
+   * for the same reason: @theme owns --font-manrope here. */
+  --font-manrope: var(--font-manrope-src, Manrope), ui-sans-serif, system-ui, sans-serif;
 
   --breakpoint-2xsm: 375px;
   --breakpoint-xsm: 425px;

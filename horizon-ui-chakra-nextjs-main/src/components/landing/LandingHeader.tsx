@@ -1,7 +1,7 @@
 'use client';
 
-import { Box, Button, Flex, Grid, HStack, Link as ChakraLink, Text, useColorModeValue } from '@chakra-ui/react';
 import NextLink from 'next/link';
+import { useState } from 'react';
 
 import { RyvlMark } from 'components/icons/RyvlMark';
 import { ThemeToggleMenu } from '@/components/navbar/ThemeToggleMenu';
@@ -18,74 +18,76 @@ const NAV_LINKS = [
 ];
 
 export function LandingHeader() {
-  const bg = useColorModeValue('white', 'navy.900');
-  const borderColor = useColorModeValue('gray.100', 'whiteAlpha.100');
-  const logoColor = useColorModeValue('#111C4E', 'white');
-  const linkColor = useColorModeValue('gray.600', 'secondaryGray.400');
+  const [open, setOpen] = useState(false);
 
   return (
-    <Box as="header" position="sticky" top="0" zIndex="20" bg={bg} borderBottom="1px solid" borderColor={borderColor}>
-      {/* 3-column grid (not a space-between Flex) so the nav links center
-          on the header's true midpoint, independent of how wide the logo
-          or the button group happen to be - space-between only centers
-          content when the two outer items are equal width, which they
-          weren't here. */}
-      <Grid
-        templateColumns={{ base: '1fr auto', md: '1fr auto 1fr' }}
-        maxW="1200px"
-        mx="auto"
-        px={{ base: '20px', md: '30px' }}
-        h="72px"
-        alignItems="center"
-      >
-        <Flex as={NextLink} href="/" align="center" gap="8px" justifySelf="start">
+    <header className="font-manrope sticky top-0 z-20 border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-950">
+      {/* 3-column grid (not space-between) so the nav centres on the header's
+          true midpoint regardless of how wide the logo or button group are. */}
+      <div className="mx-auto grid h-[72px] max-w-[1200px] grid-cols-[1fr_auto] items-center px-5 md:grid-cols-[1fr_auto_1fr] md:px-[30px]">
+        <NextLink href="/" className="flex items-center gap-2 justify-self-start">
           <RyvlMark size={26} />
-          <Text fontWeight="bold" fontSize="20px" color={logoColor}>
-            Ryvl
-          </Text>
-        </Flex>
+          <span className="text-xl font-bold text-[#111C4E] dark:text-white">Ryvl</span>
+        </NextLink>
 
-        <HStack spacing="32px" display={{ base: 'none', md: 'flex' }} justifySelf="center">
+        <nav className="hidden justify-self-center md:flex md:gap-8">
           {NAV_LINKS.map((link) => (
-            <ChakraLink
+            <NextLink
               key={link.href}
               href={link.href}
-              position="relative"
-              fontSize="sm"
-              fontWeight="500"
-              color={linkColor}
-              _hover={{ color: '#4318FF', textDecoration: 'none' }}
-              sx={{
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 0,
-                  right: '100%',
-                  bottom: '-4px',
-                  h: '2px',
-                  borderRadius: 'full',
-                  bg: '#4318FF',
-                  transition: 'right 0.2s ease',
-                },
-                '&:hover::after': { right: 0 },
-              }}
+              // Underline grows left-to-right on hover, same effect the Chakra
+              // version built with a ::after pseudo-element.
+              className="group relative text-sm font-medium text-gray-600 transition-colors hover:text-[#4318FF] dark:text-gray-400 dark:hover:text-[#A594FF]"
             >
               {link.label}
-            </ChakraLink>
+              <span className="absolute -bottom-1 left-0 h-0.5 w-0 rounded-full bg-[#4318FF] transition-all duration-200 group-hover:w-full dark:bg-[#A594FF]" />
+            </NextLink>
           ))}
-        </HStack>
+        </nav>
 
-        <HStack spacing="16px" justifySelf="end">
+        <div className="flex items-center gap-3 justify-self-end">
           <ThemeToggleMenu />
-          <Button as={NextLink} href={PATH_AUTH.signin} variant="ghost" size="sm" display={{ base: 'none', sm: 'inline-flex' }}>
+          <NextLink
+            href={PATH_AUTH.signin}
+            className="hidden rounded-full px-4 py-2 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800 sm:inline-flex"
+          >
             Sign in
-          </Button>
-          <Button as={NextLink} href={PATH_AUTH.signup} variant="brand" size="sm">
+          </NextLink>
+          <NextLink
+            href={PATH_AUTH.signup}
+            className="rounded-full bg-[#4318FF] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#3812DB]"
+          >
             Get started free
-          </Button>
-        </HStack>
-      </Grid>
-    </Box>
+          </NextLink>
+          <button
+            type="button"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Toggle menu"
+            aria-expanded={open}
+            className="flex size-9 items-center justify-center rounded-lg text-gray-600 md:hidden dark:text-gray-300"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="size-5">
+              {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <nav className="border-t border-gray-100 px-5 py-3 md:hidden dark:border-gray-800">
+          {NAV_LINKS.map((link) => (
+            <NextLink
+              key={link.href}
+              href={link.href}
+              onClick={() => setOpen(false)}
+              className="block rounded-lg px-2 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              {link.label}
+            </NextLink>
+          ))}
+        </nav>
+      )}
+    </header>
   );
 }
 

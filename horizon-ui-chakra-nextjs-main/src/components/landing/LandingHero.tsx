@@ -1,147 +1,111 @@
 'use client';
 
-import { Badge, Box, Button, Container, Flex, Heading, Icon, Stack, Text, useColorModeValue } from '@chakra-ui/react';
-import { MdCheckCircle } from 'react-icons/md';
 import NextLink from 'next/link';
+import { MdCheckCircle } from 'react-icons/md';
 
 import { PATH_AUTH } from '@/lib/paths';
 import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 import { Reveal } from 'components/reactbits/Reveal';
 
+// Rebuilt to follow the agency.ai landing template's hero: single centred
+// column, oversized medium-weight headline with one gradient-filled word,
+// pill badge above, and the product visual below the copy rather than beside
+// it. The previous two-column split was Horizon's layout, not the template's.
+//
+// Entrance animation uses this repo's existing Reveal rather than the
+// template's framer-motion `whileInView` - that prop landed in framer-motion
+// 6, and this app is pinned to 4.x because Chakra 2.6 peer-depends on it.
+// Same staggered fade-and-rise, no dependency risk.
+
 // Organic blurred blob shapes behind the illustration - the illustration
-// itself has a transparent canvas (see public/assets/README via
-// ryvl-hero-assets), so these show through and give the composition depth
-// instead of the artwork floating on flat white.
+// itself has a transparent canvas, so these show through and give the
+// composition depth instead of the artwork floating on flat white.
 function DecorativeBlobs() {
   return (
     <>
-      <Box
-        position="absolute"
-        top="-60px"
-        right="-40px"
-        w="360px"
-        h="360px"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(67,24,255,0.16) 0%, rgba(67,24,255,0) 70%)"
-        filter="blur(2px)"
-        zIndex={0}
-      />
-      <Box
-        position="absolute"
-        bottom="-40px"
-        left="-30px"
-        w="220px"
-        h="220px"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(5,205,153,0.16) 0%, rgba(5,205,153,0) 70%)"
-        zIndex={0}
-      />
-      <Box
-        position="absolute"
-        top="30%"
-        right="-10px"
-        w="140px"
-        h="140px"
-        borderRadius="full"
-        bg="radial-gradient(circle, rgba(255,181,71,0.18) 0%, rgba(255,181,71,0) 70%)"
-        zIndex={0}
-      />
+      <div className="pointer-events-none absolute -top-16 right-0 size-[360px] rounded-full bg-[radial-gradient(circle,rgba(67,24,255,0.16)_0%,rgba(67,24,255,0)_70%)] blur-[2px] lg:-right-10" />
+      <div className="pointer-events-none absolute -bottom-10 left-0 size-[220px] rounded-full bg-[radial-gradient(circle,rgba(5,205,153,0.16)_0%,rgba(5,205,153,0)_70%)] lg:-left-8" />
     </>
   );
 }
 
-export function LandingHero() {
-  const heroBg = useColorModeValue(
-    'linear-gradient(180deg, #F7F8FF 0%, #FFFFFF 100%)',
-    'linear-gradient(180deg, #111C4E 0%, #0B1437 100%)',
-  );
-  const badgeBg = useColorModeValue('#F4F1FF', 'whiteAlpha.100');
-  const badgeBorder = useColorModeValue('#E4DBFF', 'whiteAlpha.200');
-  const badgeColor = useColorModeValue('#4318FF', '#A594FF');
-  const headingColor = useColorModeValue('#111C4E', 'white');
-  const bodyColor = useColorModeValue('gray.600', 'secondaryGray.400');
-  const trustColor = useColorModeValue('gray.500', 'secondaryGray.500');
+const TRUST_LINES = ['Free on your own store data', 'No credit card required'];
 
+export function LandingHero() {
   return (
-    <Box bg={heroBg} pt={{ base: '60px', md: '90px' }} pb={{ base: '80px', md: '110px' }} overflow="hidden">
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Flex direction={{ base: 'column', lg: 'row' }} align="center" gap={{ base: '50px', lg: '60px' }}>
-          <Reveal flex="1">
-            <Box>
-              <Badge
-                borderRadius="full"
-                px="14px"
-                py="6px"
-                mb="24px"
-                fontSize="xs"
-                fontWeight="700"
-                letterSpacing="0.04em"
-                bg={badgeBg}
-                color={badgeColor}
-                border="1px solid"
-                borderColor={badgeBorder}
-                textTransform="uppercase"
-              >
-                For online sellers
-              </Badge>
-              <Heading
-                as="h1"
-                fontFamily="var(--font-merriweather), serif"
-                fontSize={{ base: '36px', md: '52px' }}
-                lineHeight="1.1"
-                color={headingColor}
-                mb="20px"
-              >
-                See your market.
-                <br />
-                Not just your store.
-              </Heading>
-              <Text fontSize={{ base: 'md', md: 'lg' }} color={bodyColor} mb="32px" maxW="480px">
-                Ryvl tracks competitor pricing across {MARKETPLACE_COUNT} marketplaces, benchmarks you
-                against anonymized peers in your category, and tells you when to act — pricing
-                recommendations, stock-out signals, and price alerts included.
-              </Text>
-              <Stack direction={{ base: 'column', sm: 'row' }} spacing="16px" mb="20px">
-                <Button as={NextLink} href={PATH_AUTH.signup} variant="brand" size="lg" px="32px">
-                  Start free
-                </Button>
-                <Button as={NextLink} href="/#features" variant="outline" size="lg" px="32px">
-                  See how it works
-                </Button>
-              </Stack>
-              <Stack direction={{ base: 'column', sm: 'row' }} spacing={{ base: '6px', sm: '20px' }}>
-                {['Free on your own store data', 'No credit card required'].map((line) => (
-                  <Flex key={line} align="center" gap="6px">
-                    <Icon as={MdCheckCircle} boxSize="14px" color="green.400" />
-                    <Text fontSize="xs" color={trustColor} fontWeight="500">
-                      {line}
-                    </Text>
-                  </Flex>
-                ))}
-              </Stack>
-            </Box>
-          </Reveal>
-          <Reveal delay={150} flex="1">
-            <Flex justify="center" position="relative" mt={{ base: '10px', lg: '0' }}>
-              <DecorativeBlobs />
-              <Box position="relative" zIndex={1} maxW="560px" w="100%">
-                {/* Plain <img>, not next/image - it refuses local SVGs unless
-                    images.dangerouslyAllowSVG is set in next.config.js, which
-                    isn't worth adding config surface for one trusted local
-                    asset that doesn't need srcset/lazy-loading anyway. */}
-                <img
-                  src="/assets/ryvl-hero-illustration-vector.svg"
-                  alt="Seller comparing their store's pricing against market benchmarks on Ryvl"
-                  width={1500}
-                  height={1000}
-                  style={{ width: '100%', height: 'auto' }}
-                />
-              </Box>
-            </Flex>
-          </Reveal>
-        </Flex>
-      </Container>
-    </Box>
+    <section className="font-manrope w-full overflow-hidden px-4 py-20 text-center sm:px-12 lg:px-24 xl:px-40">
+      <Reveal>
+        <span className="inline-flex items-center gap-2 rounded-full border border-gray-300 py-1.5 pl-1.5 pr-4 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
+          <span className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#3641F5] dark:bg-gray-800 dark:text-[#A594FF]">
+            For online sellers
+          </span>
+          Now tracking {MARKETPLACE_COUNT} marketplaces
+        </span>
+      </Reveal>
+
+      <Reveal delay={80}>
+        <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-medium leading-tight tracking-[-0.03em] text-gray-800 sm:text-5xl md:text-6xl xl:text-[76px] xl:leading-[1.05] dark:text-white">
+          See your market. Not just your{' '}
+          <span className="bg-gradient-to-r from-[#4318FF] to-[#7592FF] bg-clip-text text-transparent">
+            store
+          </span>
+          .
+        </h1>
+      </Reveal>
+
+      <Reveal delay={160}>
+        <p className="mx-auto mt-6 max-w-2xl text-sm font-medium text-gray-500 sm:text-lg dark:text-white/75">
+          Ryvl tracks competitor pricing across {MARKETPLACE_COUNT} marketplaces, benchmarks you
+          against anonymized peers in your category, and tells you when to act &mdash; pricing
+          recommendations, stock-out signals, and price alerts included.
+        </p>
+      </Reveal>
+
+      <Reveal delay={240}>
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+          <NextLink
+            href={PATH_AUTH.signup}
+            className="rounded-full bg-[#4318FF] px-8 py-3.5 text-base font-medium text-white transition-colors hover:bg-[#3812DB]"
+          >
+            Start free
+          </NextLink>
+          <NextLink
+            href="/#features"
+            className="rounded-full border border-gray-300 px-8 py-3.5 text-base font-medium text-gray-700 transition-colors hover:border-[#4318FF] hover:text-[#4318FF] dark:border-gray-700 dark:text-gray-200"
+          >
+            See how it works
+          </NextLink>
+        </div>
+      </Reveal>
+
+      <Reveal delay={300}>
+        <div className="mt-5 flex flex-col items-center justify-center gap-1.5 sm:flex-row sm:gap-6">
+          {TRUST_LINES.map((line) => (
+            <span key={line} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
+              <MdCheckCircle className="size-3.5 text-green-400" aria-hidden="true" />
+              {line}
+            </span>
+          ))}
+        </div>
+      </Reveal>
+
+      <Reveal delay={380}>
+        <div className="relative mx-auto mt-12 max-w-4xl">
+          <DecorativeBlobs />
+          {/* Plain <img>, not next/image - it refuses local SVGs unless
+              images.dangerouslyAllowSVG is set in next.config.js, which isn't
+              worth adding config surface for one trusted local asset that
+              doesn't need srcset/lazy-loading anyway. */}
+          <img
+            src="/assets/ryvl-hero-illustration-vector.svg"
+            alt="Seller comparing their store's pricing against market benchmarks on Ryvl"
+            width={1500}
+            height={1000}
+            className="relative z-10 h-auto w-full"
+          />
+        </div>
+      </Reveal>
+    </section>
   );
 }
 

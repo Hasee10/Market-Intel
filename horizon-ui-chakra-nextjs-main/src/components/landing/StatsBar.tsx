@@ -1,20 +1,14 @@
 'use client';
 
-import { Box, Container, Divider, Flex, Icon, SimpleGrid, Text } from '@chakra-ui/react';
 import { MdStorefront, MdCategory, MdSchedule, MdShield } from 'react-icons/md';
+
 import { CountUp } from 'components/reactbits/CountUp';
 import { Reveal } from 'components/reactbits/Reveal';
 import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
 
-// Real, product-descriptive numbers (scraper coverage, refresh cadence) -
-// deliberately not fake customer/user counts, since this product has no
-// public user base to cite yet. Overstating traction here would be the
-// kind of thing that erodes trust the moment someone checks.
-//
 // Seller category count (12) is deliberately NOT seller_categories' row
 // count (13) - the 13th row, 'other', is a catch-all fallback with zero
-// rows in market_category_map anywhere, so it has no real scraped coverage
-// behind it. Counting it here would overclaim, not fix an undercount.
+// real coverage, so counting it would overstate what we actually track.
 const STATS = [
   { icon: MdStorefront, value: String(MARKETPLACE_COUNT), label: 'Marketplaces tracked live' },
   { icon: MdCategory, value: '12', label: 'Seller categories supported' },
@@ -24,75 +18,33 @@ const STATS = [
 
 export function StatsBar() {
   return (
-    <Box position="relative" py={{ base: '0', md: '20px' }}>
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Box
-          position="relative"
-          overflow="hidden"
-          borderRadius="24px"
-          bg="linear-gradient(135deg, #4318FF 0%, #7B61FF 100%)"
-          px={{ base: '24px', md: '48px' }}
-          py={{ base: '40px', md: '48px' }}
-        >
-          {/* Subtle decorative glow, not a flat dead block */}
-          <Box
-            position="absolute"
-            top="-80px"
-            right="-60px"
-            w="240px"
-            h="240px"
-            borderRadius="full"
-            bg="radial-gradient(circle, rgba(255,255,255,0.25) 0%, rgba(255,255,255,0) 70%)"
-          />
-          <Box
-            position="absolute"
-            bottom="-100px"
-            left="10%"
-            w="200px"
-            h="200px"
-            borderRadius="full"
-            bg="radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%)"
-          />
-
-          <SimpleGrid columns={{ base: 2, md: 4 }} spacing={{ base: '32px', md: '16px' }} position="relative">
-            {STATS.map((stat, i) => (
-              <Reveal key={stat.label} delay={i * 80}>
-                <Flex direction="column" align={{ base: 'flex-start', md: 'center' }} textAlign={{ base: 'left', md: 'center' }} position="relative">
-                  {i > 0 && (
-                    <Divider
-                      orientation="vertical"
-                      position="absolute"
-                      left={{ base: 'auto', md: '-8px' }}
-                      h="70%"
-                      top="15%"
-                      borderColor="whiteAlpha.300"
-                      display={{ base: 'none', md: 'block' }}
+    <div className="font-manrope relative py-0 md:py-5">
+      <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
+        <div className="rounded-3xl border border-gray-100 bg-white px-6 py-10 md:px-12 md:py-12 dark:border-gray-800 dark:bg-gray-900">
+          <div className="grid grid-cols-2 gap-8 md:grid-cols-4 md:gap-4">
+            {STATS.map((stat, i) => {
+              const Icon = stat.icon;
+              return (
+                <Reveal key={stat.label} delay={i * 80}>
+                  <div className="flex flex-col items-start text-left md:items-center md:text-center">
+                    <Icon
+                      className="mb-3 size-6 text-[#4318FF] dark:text-[#A594FF]"
+                      aria-hidden="true"
                     />
-                  )}
-                  <Flex
-                    w="40px"
-                    h="40px"
-                    borderRadius="10px"
-                    bg="whiteAlpha.200"
-                    align="center"
-                    justify="center"
-                    mb="12px"
-                  >
-                    <Icon as={stat.icon} boxSize="20px" color="white" />
-                  </Flex>
-                  <Text fontSize={{ base: '26px', md: '34px' }} fontWeight="800" color="white" lineHeight="1">
-                    <CountUp value={stat.value} />
-                  </Text>
-                  <Text fontSize="sm" color="whiteAlpha.700" mt="6px" maxW="160px">
-                    {stat.label}
-                  </Text>
-                </Flex>
-              </Reveal>
-            ))}
-          </SimpleGrid>
-        </Box>
-      </Container>
-    </Box>
+                    <p className="text-[32px] font-semibold tracking-[-0.03em] text-[#111C4E] tabular-nums md:text-4xl dark:text-white">
+                      <CountUp value={stat.value} />
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-snug text-gray-500 dark:text-gray-400">
+                      {stat.label}
+                    </p>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

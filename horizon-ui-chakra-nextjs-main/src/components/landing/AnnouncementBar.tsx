@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 
-import { Box, Container, Flex, Icon, Link as ChakraLink, Text } from '@chakra-ui/react';
-import { MdClose } from 'react-icons/md';
 import NextLink from 'next/link';
+import { MdClose } from 'react-icons/md';
 
 // Thin top banner above the header (Atlassian/Astra-style promo strip) -
 // ties to the real referral mechanic (see lib/market-intel/referrals.ts),
@@ -14,28 +13,24 @@ export function AnnouncementBar() {
   if (dismissed) return null;
 
   return (
-    <Box bg="linear-gradient(90deg, #4318FF 0%, #6A47FF 100%)" py="10px">
-      <Container maxW="1200px" px={{ base: '20px', md: '30px' }}>
-        <Flex align="center" justify="center" gap="8px" position="relative">
-          <Text fontSize="sm" color="white" textAlign="center">
-            🚀 Invite 3 sellers and unlock the Paid plan free -{' '}
-            <ChakraLink as={NextLink} href="/pricing" textDecoration="underline" fontWeight="600">
-              see how it works
-            </ChakraLink>
-          </Text>
-          <Icon
-            as={MdClose}
-            position="absolute"
-            right="0"
-            boxSize="18px"
-            color="whiteAlpha.800"
-            cursor="pointer"
-            onClick={() => setDismissed(true)}
-            aria-label="Dismiss"
-          />
-        </Flex>
-      </Container>
-    </Box>
+    <div className="font-manrope bg-gradient-to-r from-[#4318FF] to-[#6A47FF] py-2.5">
+      <div className="relative mx-auto flex max-w-[1200px] items-center justify-center gap-2 px-5 md:px-[30px]">
+        <p className="text-center text-sm text-white">
+          🚀 Invite 3 sellers and unlock the Paid plan free -{' '}
+          <NextLink href="/pricing" className="font-semibold underline">
+            see how it works
+          </NextLink>
+        </p>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss announcement"
+          className="absolute right-0 text-white/80 transition-colors hover:text-white"
+        >
+          <MdClose className="size-[18px]" />
+        </button>
+      </div>
+    </div>
   );
 }
 

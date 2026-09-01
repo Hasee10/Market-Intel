@@ -1,6 +1,6 @@
 import { Box } from '@chakra-ui/react';
 import type { Metadata, Viewport } from 'next';
-import { Inter, Merriweather, Outfit } from 'next/font/google';
+import { Inter, Manrope, Merriweather, Outfit } from 'next/font/google';
 import React, { ReactNode } from 'react';
 import AppWrappers from './AppWrappers';
 
@@ -24,6 +24,12 @@ const merriweather = Merriweather({
 // the `font-outfit` utility exist) and both land on the same element, so
 // reusing the name would have one silently overwrite the other.
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit-src', display: 'swap' });
+// Manrope is the agency.ai landing template's own typeface, kept because the
+// brief was to follow that template strictly. It is scoped to the public
+// marketing pages via the font-manrope utility - the authenticated app stays
+// on Outfit (TailAdmin's face), so the two surfaces each match the template
+// they were built from.
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope-src', display: 'swap' });
 
 // Real metadata via Next's App Router API - replaces app/head.tsx (deleted:
 // that special-file convention was dropped after Next 13.3, so it never
@@ -48,7 +54,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${merriweather.variable} ${outfit.variable}`}>
+    <html
+      lang="en"
+      className={`${inter.variable} ${merriweather.variable} ${outfit.variable} ${manrope.variable}`}
+    >
       <body id={'root'}>
         <AppWrappers>{children}</AppWrappers>
       </body>
