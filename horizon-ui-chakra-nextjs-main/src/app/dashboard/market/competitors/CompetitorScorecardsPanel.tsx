@@ -14,6 +14,7 @@ import {
 
 import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 import type {
   CompetitorLandscape,
   CompetitorScorecard,
@@ -155,7 +156,44 @@ export default function CompetitorScorecardsPanel({
     [matchCounts],
   );
 
-  const scorecards = landscape?.scorecards ?? [];
+  const scorecards = useMemo(() => landscape?.scorecards ?? [], [landscape]);
+
+  const scorecardsPage = usePagination(scorecards, 10);
+
+  // Assortment concentration: top 5 by share plus one "Others" bucket, so the
+  // bar list stays readable regardless of whether a market has 6 named
+  // competitors or the full MAX_COMPETITORS=25. Reuses assortmentShare, which
+  // the table already renders per-row - never a second calculation that could
+  // disagree with it.
+  const concentration = useMemo(() => {
+    const sorted = [...scorecards].sort((a, b) => b.assortmentShare - a.assortmentShare);
+    const top = sorted.slice(0, 5).map((c) => ({ name: c.name, share: c.assortmentShare }));
+    const othersShare = sorted.slice(5).reduce((sum, c) => sum + c.assortmentShare, 0);
+    return othersShare > 0.001 ? [...top, { name: 'Others', share: othersShare }] : top;
+  }, [scorecards]);
+
+  // Some Daraz sellers put a city in parentheses at the end of their display
+  // name ("Y.M Traders (Karachi)") - a self-reported convention, not a
+  // structured field (market_products carries no city column at all, see
+  // migration 040's header). Parsed defensively and always shown next to a
+  // coverage count, so this reads as "what a few sellers told us" rather than
+  // a claim about where every competitor actually operates.
+  const cityBreakdown = useMemo(() => {
+    const CITY_SUFFIX = /\(([^()]+)\)\s*$/;
+    const counts = new Map<string, number>();
+    let withCity = 0;
+    for (const c of scorecards) {
+      const match = c.name.match(CITY_SUFFIX);
+      if (!match) continue;
+      withCity += 1;
+      const city = match[1].trim();
+      counts.set(city, (counts.get(city) ?? 0) + 1);
+    }
+    const cities = [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .map(([city, count]) => ({ city, count }));
+    return { cities, withCity, total: scorecards.length };
+  }, [scorecards]);
 
   const exportScorecardsCsv = () => {
     const csv = objectsToCsv(
@@ -278,6 +316,68 @@ export default function CompetitorScorecardsPanel({
         })}
       </div>
 
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
+        <Card
+          className="lg:col-span-2"
+          title="Assortment concentration"
+          action={
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              share of named supply
+            </span>
+          }
+        >
+          <div className="flex flex-col gap-3">
+            {concentration.map((row) => (
+              <div key={row.name}>
+                <div className="mb-1 flex items-baseline justify-between gap-2">
+                  <span
+                    className={`truncate text-sm ${row.name === 'Others' ? 'text-gray-500 italic dark:text-gray-400' : 'font-medium text-gray-900 dark:text-white'}`}
+                  >
+                    {row.name}
+                  </span>
+                  <span className="shrink-0 text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                    {formatPercent(row.share, 1)}
+                  </span>
+                </div>
+                <span className="block h-2 w-full overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                  <span
+                    className={`block h-full rounded ${row.name === 'Others' ? 'bg-gray-300 dark:bg-gray-600' : 'bg-brand-500'}`}
+                    style={{ width: `${Math.min(100, row.share * 100)}%` }}
+                  />
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        <Card title="Seller locations">
+          {cityBreakdown.withCity === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              None of your {cityBreakdown.total} named competitors state a city in their seller
+              name. We have no structured location field to fall back on for this market.
+            </p>
+          ) : (
+            <>
+              <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
+                Self-reported by the seller in their Daraz display name — {cityBreakdown.withCity} of{' '}
+                {cityBreakdown.total} named competitors state one. Not a structured field, and not
+                every seller who operates from a city says so.
+              </p>
+              <div className="flex flex-col gap-2">
+                {cityBreakdown.cities.map(({ city, count }) => (
+                  <div key={city} className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate text-gray-700 dark:text-gray-300">{city}</span>
+                    <Pill tone="brand">
+                      {count} {count === 1 ? 'seller' : 'sellers'}
+                    </Pill>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </Card>
+      </div>
+
       <Card className="mb-6">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-2.5">
           <div>
@@ -319,7 +419,7 @@ export default function CompetitorScorecardsPanel({
               <TH numeric title={COLUMN_HELP.trackedMatches}>Your tracked matches</TH>
             </THead>
           <TBody>
-            {scorecards.map((competitor) => {
+            {scorecardsPage.visible.map((competitor) => {
               const head2head = overlapByCompetitor.get(competitor.externalId);
               const trackedMatches = matchCountsByCompetitor.get(competitor.externalId);
               const tenure = monthsSince(competitor.firstSeenAt);
@@ -415,6 +515,15 @@ export default function CompetitorScorecardsPanel({
             })}
           </TBody>
         </Table>
+        <Pagination
+          page={scorecardsPage.page}
+          pageCount={scorecardsPage.pageCount}
+          onPageChange={scorecardsPage.setPage}
+          rangeStart={scorecardsPage.rangeStart}
+          rangeEnd={scorecardsPage.rangeEnd}
+          total={scorecardsPage.total}
+          label="competitors"
+        />
       </Card>
 
       <Card title="How to read this">
