@@ -2,32 +2,10 @@
 
 import { Fragment, useEffect, useState } from 'react';
 
-import {
-  Badge,
-  Box,
-  Drawer,
-  DrawerBody,
-  DrawerCloseButton,
-  DrawerContent,
-  DrawerHeader,
-  DrawerOverlay,
-  Flex,
-  Icon,
-  Link,
-  Skeleton,
-  Stack,
-  Table,
-  Tbody,
-  Td,
-  Text,
-  Th,
-  Thead,
-  Tooltip,
-  Tr,
-  useColorModeValue,
-} from '@chakra-ui/react';
 import { MdOutlineOpenInNew, MdOutlineStar, MdExpandMore, MdExpandLess } from 'react-icons/md';
 
+import { Drawer } from '@/components/ui/Drawer';
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -79,10 +57,6 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
   const [error, setError] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
-  const rowHoverBg = useColorModeValue('#FAFAFF', 'whiteAlpha.50');
-  const mutedColor = useColorModeValue('secondaryGray.600', 'secondaryGray.500');
-  const reviewBg = useColorModeValue('gray.50', 'whiteAlpha.50');
-
   const toggleExpanded = (i: number) => {
     setExpandedRows((prev) => {
       const next = new Set(prev);
@@ -123,162 +97,154 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
   }, [isOpen, product]);
 
   return (
-    <Drawer isOpen={isOpen} placement="right" onClose={onClose} size="lg">
-      <DrawerOverlay />
-      <DrawerContent>
-        <DrawerCloseButton />
-        <DrawerHeader>Competitor listings{product ? ` — ${product.title}` : ''}</DrawerHeader>
-        <DrawerBody>
-          <Text fontSize="sm" color={mutedColor} mb="16px">
-            Listings below are in the same category and closely match this product&apos;s title - price isn&apos;t
-            used to decide what counts as a match, only shown here for comparison. Daraz listings are other marketplace
-            sellers; listings from other platforms are individual retailers stocking a comparable item, not
-            competing sellers on the same marketplace.
-          </Text>
+    <Drawer
+      isOpen={isOpen}
+      onClose={onClose}
+      // xl, where the Chakra original was lg: this is the only drawer in the
+      // app carrying a six-column table, and lg made every column scroll.
+      size="xl"
+      title={`Competitor listings${product ? ` — ${product.title}` : ''}`}
+    >
+      <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
+        Listings below are in the same category and closely match this product&apos;s title - price isn&apos;t
+        used to decide what counts as a match, only shown here for comparison. Daraz listings are other marketplace
+        sellers; listings from other platforms are individual retailers stocking a comparable item, not
+        competing sellers on the same marketplace.
+      </p>
 
-          {loading && (
-            <Stack spacing="12px">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={`competitor-loading-${i}`} height="20px" />
-              ))}
-            </Stack>
-          )}
+      {loading && (
+        <div className="flex flex-col gap-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={`competitor-loading-${i}`}
+              className="h-5 animate-pulse rounded bg-gray-100 dark:bg-gray-800"
+            />
+          ))}
+        </div>
+      )}
 
-          {!loading && error && (
-            <Text color="red.500" fontSize="sm">
-              {error}
-            </Text>
-          )}
+      {!loading && error && <p className="text-sm text-error-600 dark:text-error-500">{error}</p>}
 
-          {!loading && !error && listings.length === 0 && (
-            <Text color={mutedColor} fontSize="sm">
-              No comparable listings found for this product yet.
-            </Text>
-          )}
+      {!loading && !error && listings.length === 0 && (
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          No comparable listings found for this product yet.
+        </p>
+      )}
 
-          {!loading && !error && listings.length > 0 && (
-            <Box overflowX="auto">
-              <Table variant="simple" size="sm">
-                <Thead>
-                  <Tr>
-                    <Th>Listing</Th>
-                    <Th>Platform</Th>
-                    <Th isNumeric>Price</Th>
-                    <Th isNumeric>Rating</Th>
-                    <Th isNumeric>
-                      <Tooltip label="Demand proxy (platform-reported), not verified sales">
-                        <span>Sold</span>
-                      </Tooltip>
-                    </Th>
-                    <Th>Reviews</Th>
-                  </Tr>
-                </Thead>
-                <Tbody>
-                  {listings.map((listing, i) => {
-                    const title = decodeHtmlEntities(listing.matchedTitle);
-                    const isExpanded = expandedRows.has(i);
-                    return (
-                      <Fragment key={`${listing.matchedUrl}-${i}`}>
-                      <Tr _hover={{ bg: rowHoverBg }}>
-                        <Td maxW="240px">
-                          <Tooltip label={title} openDelay={400}>
-                            <Link
-                              href={listing.matchedUrl}
-                              isExternal
-                              fontSize="sm"
-                              fontWeight="500"
-                              display="flex"
-                              alignItems="center"
-                              gap="6px"
-                              _hover={{ color: 'brand.500', textDecoration: 'none' }}
-                            >
-                              <Text as="span" noOfLines={2}>
-                                {title}
-                              </Text>
-                              <Icon as={MdOutlineOpenInNew} boxSize="12px" flexShrink={0} color={mutedColor} />
-                            </Link>
-                          </Tooltip>
-                        </Td>
-                        <Td fontSize="sm">
-                          {listing.matchedPlatformName ? (
-                            <Badge colorScheme="brand" variant="subtle" fontSize="10px" borderRadius="6px" px="8px" py="2px">
-                              {listing.matchedPlatformName}
-                            </Badge>
-                          ) : (
-                            '—'
-                          )}
-                        </Td>
-                        <Td isNumeric fontSize="sm" fontWeight="600">
-                          {formatCurrency(listing.matchedPrice, reportingCurrency)}
-                        </Td>
-                        <Td isNumeric fontSize="sm">
-                          {listing.rating != null ? (
-                            <Flex align="center" justify="flex-end" gap="4px">
-                              <Icon as={MdOutlineStar} boxSize="12px" color="yellow.400" />
-                              <Text as="span">{formatRating(listing.rating, listing.ratingCount)}</Text>
-                            </Flex>
-                          ) : (
-                            '—'
-                          )}
-                        </Td>
-                        <Td isNumeric fontSize="sm" color={mutedColor}>
-                          {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
-                        </Td>
-                        <Td fontSize="sm">
-                          {listing.reviewCount > 0 ? (
-                            <Flex
-                              as="button"
-                              align="center"
-                              gap="2px"
-                              color="brand.500"
-                              cursor="pointer"
-                              onClick={() => toggleExpanded(i)}
-                            >
-                              <Text as="span">{listing.reviewCount} review{listing.reviewCount === 1 ? '' : 's'}</Text>
-                              <Icon as={isExpanded ? MdExpandLess : MdExpandMore} boxSize="14px" />
-                            </Flex>
-                          ) : (
-                            <Text as="span" color={mutedColor}>
-                              —
-                            </Text>
-                          )}
-                        </Td>
-                      </Tr>
-                      {isExpanded && listing.topReviews.length > 0 && (
-                        <Tr>
-                          <Td colSpan={6} bg={reviewBg} py="10px">
-                            <Stack spacing="8px">
-                              {listing.topReviews.map((review, ri) => (
-                                <Box key={ri}>
-                                  <Flex align="center" gap="6px" mb="2px">
-                                    {review.rating != null && (
-                                      <Flex align="center" gap="2px">
-                                        <Icon as={MdOutlineStar} boxSize="11px" color="yellow.400" />
-                                        <Text as="span" fontSize="xs" fontWeight="600">
-                                          {review.rating.toFixed(1)}
-                                        </Text>
-                                      </Flex>
-                                    )}
-                                    <Text as="span" fontSize="xs" color={mutedColor}>
-                                      {review.author ?? 'Anonymous'}
-                                    </Text>
-                                  </Flex>
-                                  <Text fontSize="sm">{decodeHtmlEntities(review.text)}</Text>
-                                </Box>
-                              ))}
-                            </Stack>
-                          </Td>
-                        </Tr>
+      {!loading && !error && listings.length > 0 && (
+        <Table minWidth={680}>
+          <THead>
+            <TH>Listing</TH>
+            <TH>Platform</TH>
+            <TH numeric>Price</TH>
+            <TH numeric>Rating</TH>
+            {/* Native title attribute rather than a Tooltip component, the
+                same way the Competitors page annotates its column headers. */}
+            <TH numeric title="Demand proxy (platform-reported), not verified sales">
+              Sold
+            </TH>
+            <TH>Reviews</TH>
+          </THead>
+          <TBody>
+            {listings.map((listing, i) => {
+              const title = decodeHtmlEntities(listing.matchedTitle);
+              const isExpanded = expandedRows.has(i);
+              return (
+                <Fragment key={`${listing.matchedUrl}-${i}`}>
+                  <TR>
+                    <TD strong className="max-w-[240px]">
+                      <a
+                        href={listing.matchedUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={title}
+                        className="flex items-center gap-1.5 hover:text-brand-500 hover:underline"
+                      >
+                        <span className="line-clamp-2">{title}</span>
+                        <MdOutlineOpenInNew
+                          className="size-3 shrink-0 text-gray-400"
+                          aria-hidden="true"
+                        />
+                      </a>
+                    </TD>
+                    <TD>
+                      {listing.matchedPlatformName ? (
+                        <Pill tone="brand">{listing.matchedPlatformName}</Pill>
+                      ) : (
+                        '—'
                       )}
-                      </Fragment>
-                    );
-                  })}
-                </Tbody>
-              </Table>
-            </Box>
-          )}
-        </DrawerBody>
-      </DrawerContent>
+                    </TD>
+                    <TD numeric strong>
+                      {formatCurrency(listing.matchedPrice, reportingCurrency)}
+                    </TD>
+                    <TD numeric>
+                      {listing.rating != null ? (
+                        <span className="flex items-center justify-end gap-1">
+                          <MdOutlineStar className="size-3 text-yellow-400" aria-hidden="true" />
+                          {formatRating(listing.rating, listing.ratingCount)}
+                        </span>
+                      ) : (
+                        '—'
+                      )}
+                    </TD>
+                    <TD numeric>
+                      {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
+                    </TD>
+                    <TD>
+                      {listing.reviewCount > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(i)}
+                          aria-expanded={isExpanded}
+                          className="flex items-center gap-0.5 text-brand-500 transition-colors hover:text-brand-600 dark:text-brand-400"
+                        >
+                          {listing.reviewCount} review{listing.reviewCount === 1 ? '' : 's'}
+                          {isExpanded ? (
+                            <MdExpandLess className="size-3.5" aria-hidden="true" />
+                          ) : (
+                            <MdExpandMore className="size-3.5" aria-hidden="true" />
+                          )}
+                        </button>
+                      ) : (
+                        '—'
+                      )}
+                    </TD>
+                  </TR>
+                  {isExpanded && listing.topReviews.length > 0 && (
+                    <TR className="hover:bg-transparent dark:hover:bg-transparent">
+                      <TD colSpan={6} className="bg-gray-50 dark:bg-gray-800">
+                        <div className="flex flex-col gap-2">
+                          {listing.topReviews.map((review, ri) => (
+                            <div key={ri}>
+                              <div className="mb-0.5 flex items-center gap-1.5">
+                                {review.rating != null && (
+                                  <span className="flex items-center gap-0.5 text-xs font-semibold text-gray-700 dark:text-gray-200">
+                                    <MdOutlineStar
+                                      className="size-3 text-yellow-400"
+                                      aria-hidden="true"
+                                    />
+                                    {review.rating.toFixed(1)}
+                                  </span>
+                                )}
+                                <span className="text-xs text-gray-500 dark:text-gray-400">
+                                  {review.author ?? 'Anonymous'}
+                                </span>
+                              </div>
+                              <p className="text-sm text-gray-600 dark:text-gray-300">
+                                {decodeHtmlEntities(review.text)}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </TD>
+                    </TR>
+                  )}
+                </Fragment>
+              );
+            })}
+          </TBody>
+        </Table>
+      )}
     </Drawer>
   );
 }
