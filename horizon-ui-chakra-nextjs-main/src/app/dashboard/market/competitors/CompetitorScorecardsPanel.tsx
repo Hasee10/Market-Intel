@@ -2,7 +2,7 @@
 
 import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   MdOutlineStorefront,
   MdOutlineListAlt,
@@ -20,7 +20,6 @@ import type {
   CompetitorScorecard,
   CompetitorMatchStats,
   CompetitorOverlap,
-  MatchedListing,
 } from '@/lib/market-intel/competitors';
 
 export type CompetitorScorecardsPanelProps = {
@@ -30,9 +29,12 @@ export type CompetitorScorecardsPanelProps = {
   landscape: CompetitorLandscape | null;
   overlap: CompetitorOverlap[];
   matchCounts: CompetitorMatchStats[];
-  matchedListings: MatchedListing[];
-  /** File-name prefix for the two CSV exports, e.g. "primary-domain" or "all-products". */
-  exportFilePrefix: string;
+  /**
+   * Which scope the matched-listings export covers. Sent to
+   * /api/competitors/matched-listings, which builds the CSV on demand - the
+   * rows are no longer shipped with the page just in case someone clicks.
+   */
+  exportScope: 'primary' | 'all';
 };
 
 function formatCurrencyAs(value: number, currency: string) {
@@ -143,9 +145,10 @@ export default function CompetitorScorecardsPanel({
   landscape,
   overlap,
   matchCounts,
-  matchedListings,
-  exportFilePrefix,
+  exportScope,
 }: CompetitorScorecardsPanelProps) {
+  const [exportingListings, setExportingListings] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
   const formatCurrency = (value: number | null) =>
     value == null ? '—' : formatCurrencyAs(value, reportingCurrency);
 
@@ -218,31 +221,37 @@ export default function CompetitorScorecardsPanel({
         { key: 'soldUnits', label: 'Units sold*' },
       ],
     );
-    triggerCsvDownload(csv, `${exportFilePrefix}-competitor-scorecards-${dateStamp()}.csv`);
+    triggerCsvDownload(csv, `${exportScope === 'all' ? 'all-products' : 'primary-domain'}-competitor-scorecards-${dateStamp()}.csv`);
   };
 
-  const exportMatchedListingsCsv = () => {
-    const csv = objectsToCsv(
-      matchedListings.map((m) => ({
-        sellerProductTitle: m.sellerProductTitle,
-        matchedTitle: m.matchedTitle,
-        platform: m.matchedPlatformName ?? '',
-        price: m.matchedPrice ?? '',
-        currency: m.matchedCurrency ?? '',
-        confidence: m.confidence,
-        url: m.matchedUrl,
-      })),
-      [
-        { key: 'sellerProductTitle', label: 'Your product' },
-        { key: 'matchedTitle', label: 'Matched listing' },
-        { key: 'platform', label: 'Platform' },
-        { key: 'price', label: 'Price' },
-        { key: 'currency', label: 'Currency' },
-        { key: 'confidence', label: 'Match confidence' },
-        { key: 'url', label: 'URL' },
-      ],
-    );
-    triggerCsvDownload(csv, `${exportFilePrefix}-matched-listings-${dateStamp()}.csv`);
+  // Fetches the CSV instead of formatting an array the page already
+  // carried: the rows now cross the wire only when this is clicked. 204
+  // means the query found nothing, which is a message rather than a file.
+  const exportMatchedListingsCsv = async () => {
+    setExportingListings(true);
+    setExportError(null);
+    try {
+      const response = await fetch(`/api/competitors/matched-listings?scope=${exportScope}`);
+
+      if (response.status === 204) {
+        setExportError('No matched listings to export yet.');
+        return;
+      }
+      if (!response.ok) {
+        setExportError('Could not build the export. Please try again.');
+        return;
+      }
+
+      const csv = await response.text();
+      triggerCsvDownload(
+        csv,
+        `${exportScope === 'all' ? 'all-products' : 'primary-domain'}-matched-listings-${dateStamp()}.csv`,
+      );
+    } catch {
+      setExportError('Could not build the export. Please try again.');
+    } finally {
+      setExportingListings(false);
+    }
   };
 
   if (scorecards.length === 0) {
@@ -399,13 +408,16 @@ export default function CompetitorScorecardsPanel({
             <button
               type="button"
               onClick={exportMatchedListingsCsv}
-              disabled={matchedListings.length === 0}
+              disabled={exportingListings}
               className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300"
             >
-              Export matched listings CSV
+              {exportingListings ? 'Building CSV…' : 'Export matched listings CSV'}
             </button>
           </div>
         </div>
+        {exportError && (
+          <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">{exportError}</p>
+        )}
         <Table minWidth={1040}>
           <THead>
               <TH>Competitor</TH>

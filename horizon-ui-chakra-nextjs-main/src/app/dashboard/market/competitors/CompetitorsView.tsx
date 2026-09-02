@@ -10,7 +10,6 @@ import type {
   CompetitorLandscape,
   CompetitorMatchStats,
   CompetitorOverlap,
-  MatchedListing,
 } from '@/lib/market-intel/competitors';
 import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
 import { PATH_DASHBOARD } from '@/lib/paths';
@@ -25,12 +24,10 @@ type Props = {
   landscape: CompetitorLandscape | null;
   overlap: CompetitorOverlap[];
   matchCounts: CompetitorMatchStats[];
-  matchedListings: MatchedListing[];
   scopeSummary: MarketScopeSummary | null;
   allLandscape: CompetitorLandscape | null;
   allOverlap: CompetitorOverlap[];
   allMatchCounts: CompetitorMatchStats[];
-  allMatchedListings: MatchedListing[];
 };
 
 export default function CompetitorsView({
@@ -41,12 +38,10 @@ export default function CompetitorsView({
   landscape,
   overlap,
   matchCounts,
-  matchedListings,
   scopeSummary,
   allLandscape,
   allOverlap,
   allMatchCounts,
-  allMatchedListings,
 }: Props) {
   return (
     <div className="font-outfit">
@@ -90,8 +85,7 @@ export default function CompetitorsView({
                     landscape={allLandscape}
                     overlap={allOverlap}
                     matchCounts={allMatchCounts}
-                    matchedListings={allMatchedListings}
-                    exportFilePrefix="all-products"
+                    exportScope="all"
                   />
                 </>
               ),
@@ -107,8 +101,7 @@ export default function CompetitorsView({
                     landscape={landscape}
                     overlap={overlap}
                     matchCounts={matchCounts}
-                    matchedListings={matchedListings}
-                    exportFilePrefix="primary-domain"
+                    exportScope="primary"
                   />
                 </>
               ),

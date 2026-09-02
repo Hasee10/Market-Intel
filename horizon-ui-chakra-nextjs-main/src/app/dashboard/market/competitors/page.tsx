@@ -5,10 +5,9 @@ import {
   getCompetitorMatchCountsAllDomains,
   getCompetitorOverlap,
   getCompetitorOverlapAllDomains,
-  getMatchedListingsForExport,
 } from '@/lib/market-intel/competitors';
 import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getMarketScope, getMarketScopeForAllDomains, getMarketScopeSummary } from '@/lib/market-intel/market-definition';
+import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
 import { getCurrentSeller, getPrimaryDomain, listSellerDomainSlugs } from '@/lib/market-intel/seller';
 
 import CompetitorsView from './CompetitorsView';
@@ -30,27 +29,20 @@ export default async function CompetitorsPage() {
   // but as a pair, not one after the other. Everything that doesn't depend
   // on them rides along in the same round.
   //
-  // CSV export payloads are computed here (not client-side) since they need
-  // the same server-only Supabase access every other fetch on this page
-  // uses. Both are small enough to hand to the client whole rather than
-  // wiring a dedicated export API route.
-  const [trackedDomainCount, landscape, allLandscape, scopeSummary, primaryMatchedListings, allMatchedListings] =
-    await Promise.all([
-      seller ? listSellerDomainSlugs(seller.id).then((slugs) => slugs.length) : 0,
-      domain && seller && hasAccess
-        ? getCompetitorLandscape(domain.categorySlug, reportingCurrency, seller.id)
-        : null,
-      seller && hasAccess ? getCompetitorLandscapeAllDomains(seller.id, reportingCurrency) : null,
-      domain && seller ? getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null,
-      domain && seller && hasAccess
-        ? getMarketScope(domain.categorySlug, seller.id).then((scope) =>
-            getMatchedListingsForExport(seller.id, scope),
-          )
-        : [],
-      seller && hasAccess
-        ? getMarketScopeForAllDomains(seller.id).then((scope) => getMatchedListingsForExport(seller.id, scope))
-        : [],
-    ]);
+  // The matched-listings CSV payloads used to be computed here too - both
+  // tabs' worth, up to MAX_MATCH_ROWS (2000) rows each - and passed to the
+  // client as props so two export buttons could exist. That put two queries
+  // in front of every render and up to 4000 rows into every page payload for
+  // a file most visits never download. They now live behind
+  // GET /api/competitors/matched-listings, fetched on click.
+  const [trackedDomainCount, landscape, allLandscape, scopeSummary] = await Promise.all([
+    seller ? listSellerDomainSlugs(seller.id).then((slugs) => slugs.length) : 0,
+    domain && seller && hasAccess
+      ? getCompetitorLandscape(domain.categorySlug, reportingCurrency, seller.id)
+      : null,
+    seller && hasAccess ? getCompetitorLandscapeAllDomains(seller.id, reportingCurrency) : null,
+    domain && seller ? getMarketScopeSummary(domain.categorySlug, domain.categoryName, seller.id) : null,
+  ]);
 
   // Overlap is the expensive half (in-process title matching), so it is only
   // computed once the landscape has found someone to compare against. Match
@@ -81,12 +73,10 @@ export default async function CompetitorsPage() {
       landscape={landscape}
       overlap={overlap}
       matchCounts={matchCounts}
-      matchedListings={primaryMatchedListings}
       scopeSummary={scopeSummary}
       allLandscape={allLandscape}
       allOverlap={allOverlap}
       allMatchCounts={allMatchCounts}
-      allMatchedListings={allMatchedListings}
     />
   );
 }
