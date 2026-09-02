@@ -11,6 +11,12 @@ import { useToast } from '@chakra-ui/react';
 import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { ProductThumb } from '@/components/ui/ProductThumb';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
+import {
+  relativeTime,
+  NOTIFICATION_TYPE_DOT,
+  NOTIFICATION_TYPE_LABEL,
+} from '@/lib/relative-time';
 import {
   MdDelete,
   MdAdd,
@@ -100,6 +106,12 @@ export default function WatchlistView({
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
 
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // 5 per page: the feed is capped at 20 by the page's own query, and the
+  // alerts card sat above the watchlists themselves - twenty rows pushed the
+  // thing the page is named after below the fold.
+  const alertPage = usePagination(notifications, 5);
+
   async function handleCreateWatchlist() {
     if (!newName.trim()) return;
     setCreating(true);
@@ -155,6 +167,16 @@ export default function WatchlistView({
     setNotifications((prev) => prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n)));
   }
 
+  async function handleMarkAllRead() {
+    const response = await fetch('/api/notifications/read-all', { method: 'POST' });
+    const result = await response.json();
+    if (!response.ok || !result.succeeded) {
+      toast({ status: 'error', title: result.errors?.join(', ') || 'Failed to mark alerts read' });
+      return;
+    }
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  }
+
   return (
     <div className="font-outfit">
       <PageHeader title="Watchlist" />
@@ -164,37 +186,87 @@ export default function WatchlistView({
           without a page reload. */}
       <InsightStrip insight={computeWatchlistInsight(notifications, watchlists)} />
 
-      <Card className="mb-5" title="Recent alerts">
+      <Card
+        className="mb-5"
+        title="Recent alerts"
+        action={
+          unreadCount > 0 ? (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="shrink-0 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+            >
+              Mark all read ({unreadCount})
+            </button>
+          ) : null
+        }
+      >
         {notifications.length === 0 ? (
           <p className="text-sm text-gray-500 dark:text-gray-400">
             No price or stock alerts yet. Add a competitor product to a watchlist below to start
             tracking it.
           </p>
         ) : (
-          <div className="flex flex-col gap-2.5">
-            {notifications.map((n) => (
-              <div
-                key={n.id}
-                className={`flex items-center justify-between gap-3 rounded-xl p-2.5 ${
-                  n.isRead ? '' : 'bg-gray-50 dark:bg-gray-800'
-                }`}
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">{n.title}</p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">{n.message}</p>
+          <>
+            <div className="flex flex-col gap-2.5">
+              {alertPage.visible.map((n) => (
+                <div
+                  key={n.id}
+                  className={`flex items-center justify-between gap-3 rounded-xl p-2.5 ${
+                    n.isRead ? '' : 'bg-gray-50 dark:bg-gray-800'
+                  }`}
+                >
+                  <div className="flex min-w-0 items-start gap-2.5">
+                    {/* Type dot: low_stock is about the seller's own product,
+                        price_alert about a competitor's, and both land in
+                        this one feed with nothing else separating them. */}
+                    <span
+                      aria-hidden="true"
+                      className={`mt-1.5 size-2 shrink-0 rounded-full ${
+                        NOTIFICATION_TYPE_DOT[n.type] ?? 'bg-gray-400'
+                      }`}
+                    />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        {n.title}
+                        <span className="ml-2 text-xs font-normal text-gray-400 dark:text-gray-500">
+                          {NOTIFICATION_TYPE_LABEL[n.type] ?? n.type}
+                        </span>
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{n.message}</p>
+                      {/* The reason this is here: low-stock re-alerts fire at
+                          most once a day per product, so a product sitting
+                          under the threshold for a week produces several
+                          identical messages. Without a timestamp they read as
+                          the same alert duplicated rather than as what they
+                          are - the same problem, still unfixed, days apart. */}
+                      <p className="mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                        {relativeTime(n.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  {!n.isRead && (
+                    <button
+                      type="button"
+                      onClick={() => handleMarkRead(n.id)}
+                      className="shrink-0 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
+                    >
+                      Mark read
+                    </button>
+                  )}
                 </div>
-                {!n.isRead && (
-                  <button
-                    type="button"
-                    onClick={() => handleMarkRead(n.id)}
-                    className="shrink-0 rounded-lg border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 dark:border-gray-700 dark:text-gray-300"
-                  >
-                    Mark read
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            <Pagination
+              page={alertPage.page}
+              pageCount={alertPage.pageCount}
+              onPageChange={alertPage.setPage}
+              rangeStart={alertPage.rangeStart}
+              rangeEnd={alertPage.rangeEnd}
+              total={alertPage.total}
+              label="alerts"
+            />
+          </>
         )}
       </Card>
 
@@ -264,6 +336,11 @@ function WatchlistCard({
   // initial state, which reads as a broken search.
   const [hasSearched, setHasSearched] = useState(false);
 
+  // A watchlist has no size limit, and several of them render stacked on one
+  // page, so an unpaged table here is the same scrolling problem the Market
+  // and Competitors tables already fixed.
+  const itemPage = usePagination(watchlist.items, 8);
+
   const trimmed = query.trim();
 
   // Live search: debounce keystrokes so every character doesn't fire a query,
@@ -329,14 +406,32 @@ function WatchlistCard({
       className="mb-5"
       title={watchlist.name}
       action={
-        <button
-          type="button"
-          aria-label="Delete watchlist"
-          onClick={onDelete}
-          className="flex size-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
-        >
-          <MdDelete className="size-4" />
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {watchlist.items.length} tracked
+          </span>
+          {/* Deleting a watchlist takes every tracked product with it and
+              there is no undo, so it asks first - the icon sits one click
+              away from the remove-item button on every row. */}
+          <button
+            type="button"
+            aria-label="Delete watchlist"
+            onClick={() => {
+              if (
+                window.confirm(
+                  watchlist.items.length > 0
+                    ? `Delete "${watchlist.name}" and stop tracking its ${watchlist.items.length} product${watchlist.items.length === 1 ? '' : 's'}? This cannot be undone.`
+                    : `Delete "${watchlist.name}"? This cannot be undone.`,
+                )
+              ) {
+                onDelete();
+              }
+            }}
+            className="flex size-8 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-error-50 hover:text-error-600 dark:text-gray-400 dark:hover:bg-gray-800"
+          >
+            <MdDelete className="size-4" />
+          </button>
+        </div>
       }
     >
       <div className="relative mb-3">
@@ -412,7 +507,7 @@ function WatchlistCard({
             <TH />
           </THead>
           <TBody>
-            {watchlist.items.map((item) => (
+            {itemPage.visible.map((item) => (
               <TR key={item.id}>
                 <TD strong>
                   {/* categoryName is null on purpose: market_products carries
@@ -452,6 +547,17 @@ function WatchlistCard({
             ))}
           </TBody>
         </Table>
+      )}
+      {watchlist.items.length > 0 && (
+        <Pagination
+          page={itemPage.page}
+          pageCount={itemPage.pageCount}
+          onPageChange={itemPage.setPage}
+          rangeStart={itemPage.rangeStart}
+          rangeEnd={itemPage.rangeEnd}
+          total={itemPage.total}
+          label="products"
+        />
       )}
     </Card>
   );

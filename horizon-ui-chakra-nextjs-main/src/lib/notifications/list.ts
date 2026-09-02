@@ -47,3 +47,19 @@ export async function markNotificationRead(notificationId: string) {
 
   if (error) throw new Error(error.message);
 }
+
+// Clearing a feed one row at a time is N round trips for what is one
+// UPDATE. Scoped by seller_id as well as is_read: RLS
+// (seller_notifications_select_own, 014) already confines this to the
+// caller, but an unfiltered update is the kind of thing that only stays
+// safe as long as the policy does.
+export async function markAllNotificationsRead(sellerId: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from('seller_notifications')
+    .update({ is_read: true })
+    .eq('seller_id', sellerId)
+    .eq('is_read', false);
+
+  if (error) throw new Error(error.message);
+}

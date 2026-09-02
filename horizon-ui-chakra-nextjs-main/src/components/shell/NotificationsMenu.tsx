@@ -13,6 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useFetch } from '@/lib/hooks/useApi';
+import { relativeTime, NOTIFICATION_TYPE_DOT } from '@/lib/relative-time';
 import type { IApiResponse } from '@/types/api-response';
 
 type Notification = {
@@ -24,22 +25,10 @@ type Notification = {
   createdAt: string;
 };
 
-const TYPE_DOT: Record<string, string> = {
-  price_alert: 'bg-brand-500',
-  low_stock: 'bg-orange-500',
-  churn_risk: 'bg-error-500',
-};
-
-function relativeTime(iso: string): string {
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return '';
-  const mins = Math.round((Date.now() - then) / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.round(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
+// Both of these moved to lib/relative-time.ts when the Watchlist's alert
+// feed needed the same formatting and the same per-type colour - one alert
+// must not look like two different things in two places.
+const TYPE_DOT = NOTIFICATION_TYPE_DOT;
 
 export function NotificationsMenu({ buttonClassName }: { buttonClassName: string }) {
   const { data } = useFetch<IApiResponse<Notification[]>>('/api/notifications');
