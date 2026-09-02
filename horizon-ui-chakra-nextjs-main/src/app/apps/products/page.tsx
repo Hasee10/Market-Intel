@@ -16,6 +16,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 import { Reveal } from 'components/reactbits/Reveal';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
@@ -147,6 +148,13 @@ function ProductsPageContent() {
     refetch: refetchProducts,
   } = useFetch<IApiResponse<IProduct[]>>(apiUrl);
 
+  // Both views below rendered every product the API returned, and
+  // /api/products has no limit - a seller who CSV-imports a catalogue gets
+  // the whole thing in one grid or one table. One page state shared by both
+  // views, so switching between them keeps your place instead of jumping.
+  const products = useMemo(() => productsData?.data ?? [], [productsData]);
+  const productPage = usePagination(products, 12);
+
   const { data: profileData } = useProfile();
   const sellerCountry = profileData?.data?.country;
   const sellerReportingCurrency = profileData?.data?.reportingCurrency ?? 'PKR';
@@ -225,23 +233,38 @@ function ProductsPageContent() {
       );
     }
 
-    return viewMode === 'grid' ? (
-      <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
-        {productsData.data.map((p, i) => (
-          <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
-            <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
-          </Reveal>
-        ))}
-      </div>
-    ) : (
-      <Card>
-        <ProductsTable
-            data={productsData.data}
-            loading={false}
-            onEdit={handleEditProduct}
-            onViewCompetitors={handleViewCompetitors}
-          />
-        </Card>
+    return (
+      <>
+        {viewMode === 'grid' ? (
+          <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
+            {productPage.visible.map((p, i) => (
+              <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
+                <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
+              </Reveal>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <ProductsTable
+              data={productPage.visible}
+              loading={false}
+              onEdit={handleEditProduct}
+              onViewCompetitors={handleViewCompetitors}
+            />
+          </Card>
+        )}
+        {/* Outside the view switch, so grid and table share one control and
+            one page number rather than each carrying a copy. */}
+        <Pagination
+          page={productPage.page}
+          pageCount={productPage.pageCount}
+          onPageChange={productPage.setPage}
+          rangeStart={productPage.rangeStart}
+          rangeEnd={productPage.rangeEnd}
+          total={productPage.total}
+          label="products"
+        />
+      </>
     );
   };
 
