@@ -21,6 +21,9 @@ function mapProduct(row: any, reportingCurrency: string, fxRates: FxRates) {
     id: row.id,
     title: row.title,
     sku: row.sku,
+    // seller_products.image_url (migration 049). Nullable - ProductThumb
+    // falls back to the category tile, same as the Products page.
+    imageUrl: row.image_url ?? null,
     category: category?.name ?? 'Uncategorized',
     sellPrice,
     costPrice:
@@ -45,7 +48,7 @@ export async function GET() {
     supabase
       .from('seller_products')
       .select(
-        'id, sku, title, cost_price, sell_price, currency, stock_qty, is_active, seller_categories(name)',
+        'id, sku, title, cost_price, sell_price, currency, stock_qty, is_active, image_url, seller_categories(name)',
       )
       .eq('seller_id', seller.id)
       .eq('is_active', true),

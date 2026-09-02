@@ -17,6 +17,8 @@ import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeading } from '@/components/ui/SectionHeading';
 import { StatsGrid, StatItem } from '@/components/ui/StatsGrid';
+import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
@@ -51,6 +53,7 @@ type TopProductRow = {
   id: string;
   title: string;
   sku: string | null;
+  imageUrl: string | null;
   category: string;
   sellPrice: number;
   stockQty: number;
@@ -693,57 +696,40 @@ export default function OverviewPage() {
             />
           ) : (
             <>
-              {/* Scrolls within its own container so the page body never
-                  scrolls sideways on a narrow viewport. */}
-              <div className="-mx-1 overflow-x-auto px-1">
-                <table className="w-full min-w-[560px] border-collapse">
-                  <thead>
-                    <tr className="border-b border-gray-200 dark:border-gray-800">
-                      <th className="pb-3 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
-                        Title
-                      </th>
-                      <th className="pb-3 text-left text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
-                        Category
-                      </th>
-                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
-                        Sell price
-                      </th>
-                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
-                        Stock
-                      </th>
-                      <th className="pb-3 text-right text-[11px] font-medium uppercase tracking-[0.04em] text-gray-400">
-                        Inventory value
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {topProducts.map((p) => (
-                      <tr
-                        key={p.id}
-                        className="border-b border-gray-100 transition-colors last:border-b-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800"
-                      >
-                        <td className="py-3 pr-3 text-sm font-medium text-gray-900 dark:text-white">
-                          {p.title}
-                        </td>
-                        <td className="py-3 pr-3">
-                          <span className="whitespace-nowrap rounded-md bg-brand-50 px-2 py-1 text-[11px] font-medium text-brand-700 dark:bg-gray-800 dark:text-brand-400">
-                            {p.category}
-                          </span>
-                        </td>
-                        <td className="py-3 text-right text-sm text-gray-600 tabular-nums dark:text-gray-400">
-                          {formatCurrency(p.sellPrice, p.currency)}
-                        </td>
-                        <td className="py-3 text-right text-sm text-gray-600 tabular-nums dark:text-gray-400">
-                          {p.stockQty}
-                        </td>
-                        <td className="py-3 text-right text-sm font-semibold text-gray-900 tabular-nums dark:text-white">
-                          {formatCurrency(p.inventoryValue, p.currency)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              {/* The shared Table primitives, not a hand-rolled <table>:
+                  this was the last table in the dashboard still carrying its
+                  own header/border/hover classes, which is how it drifted
+                  from the ones on Market, Competitors and Watchlist. Table
+                  also owns the horizontal-scroll container. */}
+              <Table minWidth={620}>
+                <THead>
+                  <TH>Product</TH>
+                  <TH>Category</TH>
+                  <TH numeric>Sell price</TH>
+                  <TH numeric>Stock</TH>
+                  <TH numeric>Inventory value</TH>
+                </THead>
+                <TBody>
+                  {topProducts.map((p) => (
+                    <TR key={p.id}>
+                      <TD strong>
+                        <span className="flex items-center gap-3">
+                          <ProductThumb src={p.imageUrl} alt="" categoryName={p.category} />
+                          <span className="min-w-0">{p.title}</span>
+                        </span>
+                      </TD>
+                      <TD>
+                        <Pill tone="brand">{p.category}</Pill>
+                      </TD>
+                      <TD numeric>{formatCurrency(p.sellPrice, p.currency)}</TD>
+                      <TD numeric>{p.stockQty.toLocaleString()}</TD>
+                      <TD numeric strong>
+                        {formatCurrency(p.inventoryValue, p.currency)}
+                      </TD>
+                    </TR>
+                  ))}
+                </TBody>
+              </Table>
               {dedupedProducts.length > topProducts.length && (
                 <div className="mt-3 flex justify-end">
                   <NextLink
