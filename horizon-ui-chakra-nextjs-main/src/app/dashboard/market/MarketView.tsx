@@ -16,6 +16,7 @@ import { Alert } from '@/components/ui/Alert';
 import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
@@ -117,6 +118,15 @@ export default function MarketView({
   // stock-outs are shorter but the same shape of problem.
   const recPage = usePagination(pricingRecommendations, 10);
   const stockOutPage = usePagination(stockOuts, 8);
+  // The other two tables on this page were left unpaged when the ones above
+  // were done. Anomalies is the one that matters: detectCompetitorPriceAnomalies
+  // takes no limit and its query has none either, so it returns every IQR
+  // outlier in the window - on a market the size of the one in the scope
+  // banner that is a table with no upper bound at all. Matches is capped at
+  // MAX_SELLER_PRODUCTS (20), which is still twenty rows in front of the
+  // sections below it.
+  const anomalyPage = usePagination(priceAnomalies, 10);
+  const matchPage = usePagination(productMatches, 10);
   const formatCurrency = (value: number) => formatCurrencyAs(value, reportingCurrency);
   // Same custom-tooltip fix as Overview (app/dashboard/overview/page.tsx) -
   // these two charts had no tooltip styling at all, so they fell through to
@@ -341,7 +351,7 @@ export default function MarketView({
                   </TD>
                   <TD numeric>{formatCurrency(categoryPricing.maxPrice)}</TD>
                   <TD numeric>{formatCurrency(categoryPricing.avgPrice)}</TD>
-                  <TD numeric>{categoryPricing.count}</TD>
+                  <TD numeric>{categoryPricing.count.toLocaleString()}</TD>
                 </TR>
               </TBody>
             </Table>
@@ -486,12 +496,12 @@ export default function MarketView({
           <div className="flex flex-col gap-2">
               <p className="text-sm text-gray-500 dark:text-gray-400">Active listings</p>
               <p className="text-2xl font-bold text-gray-900 tabular-nums dark:text-white">
-                {demandSignal.activeListings}
+                {demandSignal.activeListings.toLocaleString()}
               </p>
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                {demandSignal.newListingsLast7Days} new in the last 7 days
+                {demandSignal.newListingsLast7Days.toLocaleString()} new in the last 7 days
                 {demandSignal.newListingsPrior7Days > 0 &&
-                  ` (vs ${demandSignal.newListingsPrior7Days} the week before)`}
+                  ` (vs ${demandSignal.newListingsPrior7Days.toLocaleString()} the week before)`}
               </p>
           </div>
         </Card>
@@ -514,14 +524,20 @@ export default function MarketView({
               {stockOutPage.visible.map((product) => (
                 <TR key={product.id}>
                   <TD strong>
-                    <a
-                      href={product.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="hover:text-brand-500 hover:underline"
-                    >
-                      {product.title}
-                    </a>
+                    {/* categoryName is null deliberately: market_products
+                        stores the scraped platform's own slug, not a seller
+                        category, so there is no tile colour to look up. */}
+                    <span className="flex items-center gap-3">
+                      <ProductThumb src={product.imageUrl} alt="" categoryName={null} />
+                      <a
+                        href={product.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="min-w-0 hover:text-brand-500 hover:underline"
+                      >
+                        {product.title}
+                      </a>
+                    </span>
                   </TD>
                   <TD>{product.platformName ?? '—'}</TD>
                   <TD numeric>{product.price != null ? formatCurrency(product.price) : '—'}</TD>
@@ -566,7 +582,7 @@ export default function MarketView({
                 <TH numeric>Confidence</TH>
               </THead>
               <TBody>
-                {productMatches.map((match) => (
+                {matchPage.visible.map((match) => (
                   <TR key={match.sellerProductId}>
                     <TD strong>{match.sellerProductTitle}</TD>
                     <TD numeric>
@@ -592,6 +608,15 @@ export default function MarketView({
               </TBody>
             </Table>
           )}
+          <Pagination
+            page={matchPage.page}
+            pageCount={matchPage.pageCount}
+            onPageChange={matchPage.setPage}
+            rangeStart={matchPage.rangeStart}
+            rangeEnd={matchPage.rangeEnd}
+            total={matchPage.total}
+            label="matches"
+          />
         </Card>
       </UpgradeGate>
 
@@ -711,9 +736,14 @@ export default function MarketView({
                 <TH numeric>Change</TH>
               </THead>
               <TBody>
-                {priceAnomalies.map((a) => (
+                {anomalyPage.visible.map((a) => (
                   <TR key={a.productId}>
-                    <TD strong>{a.title}</TD>
+                    <TD strong>
+                      <span className="flex items-center gap-3">
+                        <ProductThumb src={a.imageUrl} alt="" categoryName={null} />
+                        <span className="min-w-0">{a.title}</span>
+                      </span>
+                    </TD>
                     <TD>{a.platformName ?? '—'}</TD>
                     <TD numeric>{formatCurrency(a.oldPrice)}</TD>
                     <TD numeric>{formatCurrency(a.newPrice)}</TD>
@@ -732,6 +762,15 @@ export default function MarketView({
               </TBody>
             </Table>
           )}
+          <Pagination
+            page={anomalyPage.page}
+            pageCount={anomalyPage.pageCount}
+            onPageChange={anomalyPage.setPage}
+            rangeStart={anomalyPage.rangeStart}
+            rangeEnd={anomalyPage.rangeEnd}
+            total={anomalyPage.total}
+            label="anomalies"
+          />
         </Card>
       </UpgradeGate>
 

@@ -133,12 +133,20 @@ export type CompetitorPriceAnomaly = {
   productId: string;
   title: string;
   platformName: string | null;
+  /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
+  imageUrl: string | null;
   oldPrice: number;
   newPrice: number;
   pctChange: number;
 };
 
 const PRICE_HISTORY_LOOKBACK_DAYS = 7;
+
+// Ceiling on how many outliers detectCompetitorPriceAnomalies returns.
+// Generous enough that the Market page's 10-per-page table has real depth
+// to page through, small enough that a volatile week in a large market
+// cannot turn one card into an unbounded list.
+const MAX_PRICE_ANOMALIES = 50;
 
 type PctChange = { productId: string; pctChange: number };
 
@@ -196,6 +204,13 @@ export function computePctChanges(
 export async function detectCompetitorPriceAnomalies(
   categorySlug: string,
   reportingCurrency = 'PKR',
+  // Every outlier in the window used to come back, uncapped, and the whole
+  // list was serialised into the page payload and rendered as one table.
+  // The result is already sorted by |pctChange|, so the tail is the least
+  // anomalous end of it - nobody acts on the 400th biggest price move.
+  // A cap here, not just pagination in the UI, because the rows the seller
+  // will never page to still cost a query, a transfer and a render.
+  limit = MAX_PRICE_ANOMALIES,
 ): Promise<CompetitorPriceAnomaly[]> {
   const scope = await getMarketScope(categorySlug);
   if (scope.categorySlugs.length === 0) return [];
@@ -208,7 +223,7 @@ export async function detectCompetitorPriceAnomalies(
 
   const { data: products, error: productsError } = await supabase
     .from('market_products')
-    .select('id, title, category_slug, price, currency, market_platforms(name)')
+    .select('id, title, category_slug, price, currency, image_url, market_platforms(name)')
     .eq('is_active', true)
     .not('price', 'is', null)
     .in('category_slug', scope.categorySlugs)
@@ -282,10 +297,12 @@ export async function detectCompetitorPriceAnomalies(
         productId: c.product.id,
         title: c.product.title,
         platformName: platform?.name ?? null,
+        imageUrl: c.product.image_url ?? null,
         oldPrice: c.oldPrice,
         newPrice: c.newPrice,
         pctChange: Number(c.pctChange.toFixed(1)),
       };
     })
-    .sort((a, b) => Math.abs(b.pctChange) - Math.abs(a.pctChange));
+    .sort((a, b) => Math.abs(b.pctChange) - Math.abs(a.pctChange))
+    .slice(0, limit);
 }

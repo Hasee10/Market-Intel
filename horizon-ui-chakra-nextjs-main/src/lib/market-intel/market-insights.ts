@@ -45,6 +45,8 @@ export type StockOutProduct = {
   platformName: string | null;
   price: number | null;
   url: string;
+  /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
+  imageUrl: string | null;
   lastSeenAt: string;
 };
 
@@ -59,7 +61,7 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
   const [{ data, error }, fxRates] = await Promise.all([
     supabase
       .from('market_products')
-      .select('id, title, price, currency, url, category_slug, last_seen_at, market_platforms(name)')
+      .select('id, title, price, currency, url, image_url, category_slug, last_seen_at, market_platforms(name)')
       .eq('is_active', true)
       .eq('in_stock', false)
       .in('category_slug', scope.categorySlugs)
@@ -78,6 +80,7 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
       return {
         id: row.id,
         title: row.title,
+        imageUrl: row.image_url ?? null,
         platformName: platform?.name ?? null,
         price: row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null,
         url: row.url,
