@@ -10,6 +10,7 @@ import { useToast } from '@chakra-ui/react';
 
 import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import {
   MdDelete,
   MdAdd,
@@ -365,9 +366,12 @@ function WatchlistCard({
               key={r.id}
               className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 p-2 dark:bg-gray-800"
             >
-              <span className="min-w-0 truncate text-sm text-gray-700 dark:text-gray-300">
-                {r.title} {r.platformName ? `· ${r.platformName}` : ''} ·{' '}
-                {formatPrice(r.price, reportingCurrency)}
+              <span className="flex min-w-0 items-center gap-2.5">
+                <ProductThumb src={r.imageUrl} alt="" categoryName={null} />
+                <span className="min-w-0 truncate text-sm text-gray-700 dark:text-gray-300">
+                  {r.title} {r.platformName ? `· ${r.platformName}` : ''} ·{' '}
+                  {formatPrice(r.price, reportingCurrency)}
+                </span>
               </span>
               <button
                 type="button"
@@ -411,14 +415,21 @@ function WatchlistCard({
             {watchlist.items.map((item) => (
               <TR key={item.id}>
                 <TD strong>
-                  <a
-                    href={item.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:text-brand-500 hover:underline"
-                  >
-                    {item.title}
-                  </a>
+                  {/* categoryName is null on purpose: market_products carries
+                      the scraped platform's own slug ("smartphones"), not a
+                      seller category, so there is no tile colour to look up -
+                      ProductThumb's neutral fallback is the honest option. */}
+                  <span className="flex items-center gap-3">
+                    <ProductThumb src={item.imageUrl} alt="" categoryName={null} />
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="min-w-0 hover:text-brand-500 hover:underline"
+                    >
+                      {item.title}
+                    </a>
+                  </span>
                 </TD>
                 <TD>{item.platformName ?? '—'}</TD>
                 <TD numeric>{formatPrice(item.price, reportingCurrency)}</TD>

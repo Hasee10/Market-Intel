@@ -9,6 +9,13 @@ export type WatchlistItem = {
   title: string;
   platformName: string | null;
   url: string;
+  /**
+   * Scraped listing image. market_products.image_url has existed since
+   * migration 001 and most sources populate it (daraz, shophive, priceoye,
+   * naheed, telemart, the shopify/woo adapters...), but it is nullable and
+   * points at a third-party host, so ProductThumb falls back to a tile.
+   */
+  imageUrl: string | null;
   price: number | null;
   inStock: boolean | null;
   lastAlertedPrice: number | null;
@@ -34,6 +41,7 @@ function mapItem(row: any): WatchlistItem {
     title: product?.title ?? 'Unknown product',
     platformName: platform?.name ?? null,
     url: product?.url ?? '#',
+    imageUrl: product?.image_url ?? null,
     price: product?.price ?? null,
     inStock: product?.in_stock ?? null,
     lastAlertedPrice: row.last_alerted_price,
@@ -50,7 +58,7 @@ export async function listWatchlists(sellerId: string): Promise<Watchlist[]> {
   const { data, error } = await supabase
     .from('seller_watchlists')
     .select(
-      'id, name, created_at, seller_watchlist_items(id, market_product_id, last_alerted_price, created_at, market_products(title, url, price, in_stock, market_platforms(name)))',
+      'id, name, created_at, seller_watchlist_items(id, market_product_id, last_alerted_price, created_at, market_products(title, url, image_url, price, in_stock, market_platforms(name)))',
     )
     .eq('seller_id', sellerId)
     .order('created_at', { ascending: false });
@@ -91,7 +99,7 @@ export async function addWatchlistItem(watchlistId: string, marketProductId: str
   const { data, error } = await supabase
     .from('seller_watchlist_items')
     .insert({ watchlist_id: watchlistId, market_product_id: marketProductId })
-    .select('id, market_product_id, last_alerted_price, created_at, market_products(title, url, price, in_stock, market_platforms(name))')
+    .select('id, market_product_id, last_alerted_price, created_at, market_products(title, url, image_url, price, in_stock, market_platforms(name))')
     .single();
 
   if (error || !data) throw new Error(error?.message ?? 'Failed to add item');
@@ -109,6 +117,9 @@ export type ProductSearchResult = {
   id: string;
   title: string;
   platformName: string | null;
+  /** Same nullable scraped image as WatchlistItem - the picker shows the
+   *  thumbnail the row will get once added, so the two agree. */
+  imageUrl: string | null;
   price: number | null;
   inStock: boolean | null;
   url: string;
@@ -133,7 +144,7 @@ export async function searchMarketProducts(
 
   let builder = supabase
     .from('market_products')
-    .select('id, title, price, in_stock, url, market_platforms(name)')
+    .select('id, title, image_url, price, in_stock, url, market_platforms(name)')
     .ilike('title', `%${query}%`)
     .eq('is_active', true)
     .limit(20);
@@ -157,6 +168,7 @@ export async function searchMarketProducts(
       id: row.id,
       title: row.title,
       platformName: platform?.name ?? null,
+      imageUrl: row.image_url ?? null,
       price: row.price,
       inStock: row.in_stock,
       url: row.url,
