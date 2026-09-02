@@ -126,6 +126,9 @@ export default function OverviewPage() {
   // were removed rather than left dangling.
   const cardBg = useColorModeValue('white', 'navy.700');
   const PALETTE = useColorModeValue(PALETTE_LIGHT, PALETTE_DARK);
+  // Grey for the "Other" aggregate bar - theme-aware for the same reason the
+  // palette is: one value cannot sit legibly on both card backgrounds.
+  const OTHER_BAR_COLOR = useColorModeValue('#98A2B3', '#667085');
   const donutLabelColor = useColorModeValue('#1B2559', '#FFFFFF');
   const donutTotalColor = useColorModeValue('#A3AED0', '#A3AED0');
   // Recessive hairline, one shade off the surface, in both modes.
@@ -369,15 +372,41 @@ export default function OverviewPage() {
   const categoryBarOptions = {
     chart: { toolbar: { show: false } },
     plotOptions: {
-      bar: { horizontal: true, borderRadius: 4, borderRadiusApplication: 'end' as const, barHeight: '62%' },
+      bar: {
+        horizontal: true,
+        borderRadius: 4,
+        borderRadiusApplication: 'end' as const,
+        barHeight: '62%',
+        // `distributed` so the Other bucket can be tinted differently below.
+        distributed: true,
+        // THE FIX. Without an explicit position ApexCharts draws horizontal
+        // bar labels INSIDE the bar, and textAnchor/offsetX then anchor from
+        // there - which is fine on the one long bar and unreadable on every
+        // short one, where the label starts inside a sliver and its leading
+        // characters are swallowed by the fill ("PKR 1.1M" rendering as
+        // "R 1.1M"). For a horizontal bar, position 'top' means the end of
+        // the bar, so with textAnchor 'start' the label sits just past it,
+        // on the card background, at full contrast regardless of bar length.
+        dataLabels: { position: 'top' as const },
+      },
     },
-    colors: [PALETTE[0]],
+    // One colour for the real categories - length already encodes value, so
+    // a hue per category would only re-state it. Other is the exception and
+    // the difference is semantic, not decorative: it is an aggregate of the
+    // remaining categories, not a category, and it can legitimately outrank
+    // named bars below it (1.9M against 723K here). Tinting it grey is what
+    // stops that reading as a chart sorted wrongly.
+    colors: chartCategories.map((c) => (c.category === 'Other' ? OTHER_BAR_COLOR : PALETTE[0])),
     dataLabels: {
       enabled: true,
       textAnchor: 'start' as const,
       offsetX: 8,
       formatter: (v: number) => compactCurrency(Number(v), reportingCurrency),
-      style: { fontSize: '11px', fontWeight: 600, colors: [tooltipMuted] },
+      // Full text colour, not the muted axis grey: these labels now sit on
+      // the card background rather than on the fill, and they are the only
+      // place an exact value is readable without hovering - the comment
+      // above about the palette's contrast WARN depends on them being legible.
+      style: { fontSize: '11px', fontWeight: 600, colors: [tooltipText] },
     },
     xaxis: {
       categories: chartCategories.map((c) => c.category),
@@ -386,7 +415,10 @@ export default function OverviewPage() {
       axisTicks: { show: false },
     },
     yaxis: { labels: { style: { colors: tooltipMuted, fontSize: '11px' } } },
-    grid: { show: false, padding: { right: 48 } },
+    // The longest bar spans the full plot width and its label now sits
+    // outside the end of it, so the plot has to give that label room -
+    // 48 was sized for labels drawn inside the bar.
+    grid: { show: false, padding: { right: 96 } },
     legend: { show: false },
     tooltip: {
       custom: ({ dataPointIndex }: { dataPointIndex: number }) => {
