@@ -37,6 +37,7 @@ import type { ProductMatch } from '@/lib/market-intel/product-matching';
 import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
 import type { SellerDomain } from '@/lib/market-intel/seller';
 import { PATH_DASHBOARD, PATH_ONBOARDING } from '@/lib/paths';
+import { coarseRelativeTime } from '@/lib/relative-time';
 
 function formatMetric(metricName: string) {
   return metricName.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -62,13 +63,6 @@ function formatAxisCurrency(value: number, currency: string) {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(value);
-}
-
-function formatRelativeTime(iso: string) {
-  const hours = Math.round((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));
-  if (hours < 1) return 'less than an hour ago';
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
 }
 
 type MarketViewProps = {
@@ -240,7 +234,7 @@ export default function MarketView({
               key={f.platformName}
               className="rounded-lg bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
             >
-              {f.platformName}: scraped {formatRelativeTime(f.lastScrapedAt)}
+              {f.platformName}: scraped {coarseRelativeTime(f.lastScrapedAt)}
             </span>
           ))}
         </div>

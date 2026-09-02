@@ -1,11 +1,11 @@
-// One relative-time formatter, shared.
+// Every relative-time formatter in the app, in one place.
 //
 // This existed three times over before: NotificationsMenu had a
 // minute-granular copy, MarketView and ScraperHealthView an hour-granular
-// one that was byte-identical between them. The finer version is the one
-// worth keeping - a notifications feed where everything says "less than an
-// hour ago" cannot distinguish two alerts that arrived hours apart, which is
-// exactly the confusion this is here to fix on the Watchlist page.
+// one that was byte-identical between them. Both granularities survive as
+// named exports below because the wording difference is user-visible and
+// each surface wants a different one - but there is now one definition of
+// each rather than three copies between them.
 //
 // Deliberately not Intl.RelativeTimeFormat: it renders "1 day ago" style
 // prose, where every surface using this wants the compact "3d ago" form that
@@ -19,6 +19,24 @@ export function relativeTime(iso: string): string {
   if (mins < 60) return `${mins}m ago`;
 
   const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+
+  return `${Math.round(hours / 24)}d ago`;
+}
+
+// The same shape, one notch coarser, for scrape freshness - the Market page's
+// "scraped {x}" badges and the Data Health table behind them.
+//
+// Those two want the blunt "less than an hour ago" where relativeTime would
+// say "12m ago": scrapes run on a daily cron, so a minute-level age claims a
+// precision the pipeline does not have, and the only question the badge
+// answers is whether the data is fresh, stale, or a day gone.
+export function coarseRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return '';
+
+  const hours = Math.round((Date.now() - then) / (60 * 60 * 1000));
+  if (hours < 1) return 'less than an hour ago';
   if (hours < 24) return `${hours}h ago`;
 
   return `${Math.round(hours / 24)}d ago`;

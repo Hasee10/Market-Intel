@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { relativeTime, NOTIFICATION_TYPE_DOT, NOTIFICATION_TYPE_LABEL } from './relative-time';
+import {
+  relativeTime,
+  coarseRelativeTime,
+  NOTIFICATION_TYPE_DOT,
+  NOTIFICATION_TYPE_LABEL,
+} from './relative-time';
 
 // Frozen clock: every assertion below is relative to "now", so a real clock
 // makes the boundary cases (59m vs 60m) flake depending on execution speed.
@@ -37,6 +42,40 @@ describe('relativeTime', () => {
     expect(at(ago(1 * DAY))).toBe('1d ago');
     expect(at(ago(2 * DAY))).toBe('2d ago');
     expect(at(ago(3 * DAY))).toBe('3d ago');
+  });
+
+  it('returns an empty string for an unparseable date rather than "NaN ago"', () => {
+    expect(at('not a date')).toBe('');
+    expect(at('')).toBe('');
+  });
+});
+
+describe('coarseRelativeTime', () => {
+  afterEach(() => vi.useRealTimers());
+
+  const at = (iso: string) => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+    return coarseRelativeTime(iso);
+  };
+
+  // The whole reason this exists alongside relativeTime: the Market page
+  // renders "scraped {x}", and a daily cron cannot honestly claim "12m ago".
+  it('collapses everything under an hour to "less than an hour ago"', () => {
+    expect(at(ago(0))).toBe('less than an hour ago');
+    expect(at(ago(12 * MINUTE))).toBe('less than an hour ago');
+    expect(at(ago(29 * MINUTE))).toBe('less than an hour ago');
+  });
+
+  it('agrees with relativeTime once past the hour mark', () => {
+    for (const age of [3 * HOUR, 23 * HOUR, 2 * DAY, 30 * DAY]) {
+      expect(at(ago(age))).toBe(relativeTime(ago(age)));
+    }
+  });
+
+  it('reports hours, then days', () => {
+    expect(at(ago(3 * HOUR))).toBe('3h ago');
+    expect(at(ago(2 * DAY))).toBe('2d ago');
   });
 
   it('returns an empty string for an unparseable date rather than "NaN ago"', () => {

@@ -6,13 +6,7 @@ import Card from 'components/card/Card';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import type { PlatformHealth } from '@/lib/market-intel/scraper-health';
-
-function formatRelativeTime(iso: string) {
-  const hours = Math.round((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));
-  if (hours < 1) return 'less than an hour ago';
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.round(hours / 24)}d ago`;
-}
+import { coarseRelativeTime } from '@/lib/relative-time';
 
 function healthColor(failureRatePct: number) {
   if (failureRatePct === 0) return 'green';
@@ -53,7 +47,7 @@ export default function ScraperHealthView({ platforms }: { platforms: PlatformHe
                 {platforms.map((p) => (
                   <Tr key={p.platformSlug}>
                     <Td>{p.platformSlug}</Td>
-                    <Td>{formatRelativeTime(p.lastRunAt)}</Td>
+                    <Td>{coarseRelativeTime(p.lastRunAt)}</Td>
                     <Td isNumeric>{p.lastRunProductCount}</Td>
                     <Td isNumeric>
                       <Badge colorScheme={healthColor(p.failureRatePct)}>{p.failureRatePct}%</Badge>
