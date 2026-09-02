@@ -111,7 +111,7 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
         <span className="text-xl font-bold text-[#111C4E] dark:text-white">Ryvl</span>
       </NextLink>
 
-      <div className="grid min-h-screen lg:grid-cols-2">
+      <div className="grid min-h-screen split:grid-cols-2">
         <FormCell active={!isSignin} title="Welcome!" subtitle="Create your seller account to continue">
           <SignUpForm onSwitch={() => switchTo('signin')} />
         </FormCell>
@@ -136,7 +136,7 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
           nothing collapses through zero mid-travel the way scaleX(-1) would.
           That is also what frees the shape from being centred on a
           half-width panel, which is the constraint that was flattening it. */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden lg:block">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden overflow-hidden split:block">
         <div
           style={{ transform: `translateX(${isSignin ? '0vw' : `${SLIDE_VW}vw`})`, transition }}
           className="absolute top-[-104vh] left-[calc(-6.7vw-104vh)] size-[209vh] overflow-hidden rounded-full bg-gradient-to-br from-[#5A4AE3] via-[#4A38D6] to-[#3A2AB8] dark:from-[#2A2270] dark:via-[#221B5E] dark:to-[#1A1443]"
@@ -162,7 +162,7 @@ export function AuthSlider({ initialMode }: { initialMode: AuthMode }) {
           they opened. */}
       <div
         style={{ transform: `translateX(${isSignin ? '0vw' : `${CONTENT_SLIDE_VW}vw`})`, transition }}
-        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[38vw] lg:block"
+        className="pointer-events-none absolute inset-y-0 left-0 hidden w-[38vw] split:block"
       >
         <PanelDecor />
 
@@ -278,7 +278,7 @@ function FormCell({
   return (
     <div
       aria-hidden={!active}
-      className={`${active ? 'flex' : 'hidden pointer-events-none opacity-0 lg:flex'} items-center justify-center px-6 py-24 transition-opacity duration-500`}
+      className={`${active ? 'flex' : 'hidden pointer-events-none opacity-0 split:flex'} items-center justify-center px-6 py-24 transition-opacity duration-500`}
     >
       <div className="w-full max-w-[420px]">
         <div className="mb-6 text-center">

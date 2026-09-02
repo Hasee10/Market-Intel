@@ -48,6 +48,23 @@
  */
 @custom-variant dark (&:is(.dark *));
 
+/* The auth split-screen gate (app/auth/_components/AuthSlider.tsx).
+ *
+ * That layout's panel is one quadrant of a circle whose radius is measured
+ * in vh (~104vh - it has to exceed the viewport's diagonal from a centre on
+ * the top edge, or the fill stops short of the bottom-left corner). Its
+ * horizontal reach is therefore `104.5vh - 6.7vw`, which is a fraction of
+ * the WIDTH only if the viewport is wide relative to its height: ~52% at
+ * 16:9, but ~98% on a square window, where the panel covers the sign-in
+ * form completely.
+ *
+ * So the two-column treatment can't be gated on width alone. 3/2 is the
+ * shallowest ratio at which the arc still clears the right-hand form at the
+ * height the form actually occupies; below it the page falls back to the
+ * stacked single-column layout it already uses on phones.
+ */
+@custom-variant split (@media (min-width: 64rem) and (min-aspect-ratio: 3/2));
+
 /* Logo marquee track (components/landing/LogoMarquee.tsx). Defined here
  * rather than as an Emotion keyframes object, which is what the Chakra
  * version used. -50% is the loop point because the track renders its items
