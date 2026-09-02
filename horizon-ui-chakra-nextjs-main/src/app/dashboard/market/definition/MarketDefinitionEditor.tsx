@@ -60,12 +60,15 @@ function ChipInput({
   placeholder,
   values,
   onChange,
+  isDisabled = false,
 }: {
   label: string;
   helper: string;
   placeholder: string;
   values: string[];
   onChange: (next: string[]) => void;
+  /** For a filter that provably cannot narrow anything - see the Cities usage. */
+  isDisabled?: boolean;
 }) {
   const [draft, setDraft] = useState('');
 
@@ -77,7 +80,7 @@ function ChipInput({
   };
 
   return (
-    <FormControl>
+    <FormControl isDisabled={isDisabled}>
       <FormLabel fontSize="sm" fontWeight="600" mb="4px">
         {label}
       </FormLabel>
@@ -236,15 +239,35 @@ export default function MarketDefinitionEditor({
           </Text>
         </Card>
       ) : (
-        <Grid templateColumns={{ base: '1fr', lg: '1.15fr 1fr' }} gap="20px">
+        /* alignItems="start" so each column is only as tall as its own
+           content. Grid's default `stretch` made the left card match the
+           three stacked cards on the right, which on a category with one
+           segment and eight platforms left roughly 300px of empty card
+           below the last checkbox. */
+        <Grid templateColumns={{ base: '1fr', lg: '1.15fr 1fr' }} gap="20px" alignItems="start">
           <Card p="24px">
             <Text fontWeight="700" color={textColor} mb="4px">
               What you sell
             </Text>
+            {/* The plural copy ("They are not one market... turn off the ones
+                you do not compete in") is nonsense at one segment, where the
+                only two states are "on" and the blocking empty-market warning.
+                Say what is actually true instead of pluralising a noun inside
+                a sentence that stays plural either way. */}
             <Text fontSize="sm" color={mutedColor} mb="16px">
-              {categoryName} spans {allSegments.length} distinct {allSegments.length === 1 ? 'segment' : 'segments'} in
-              the data we scrape. They are not one market: leaving them all on means your median is computed across
-              every one of them. Turn off the ones you do not compete in.
+              {allSegments.length === 1 ? (
+                <>
+                  {categoryName} resolves to a single segment in the data we scrape, so there is nothing to narrow
+                  here yet — unticking it leaves your market empty. It stays visible because coverage grows: as we map
+                  more of this category, the new segments appear here for you to opt out of.
+                </>
+              ) : (
+                <>
+                  {categoryName} spans {allSegments.length} distinct segments in the data we scrape. They are not one
+                  market: leaving them all on means your median is computed across every one of them. Turn off the
+                  ones you do not compete in.
+                </>
+              )}
             </Text>
 
             <Flex direction="column" gap="12px">
@@ -341,9 +364,20 @@ export default function MarketDefinitionEditor({
                   values={brands}
                   onChange={setBrands}
                 />
+                {/* Only classifieds carry a location, so with zero classified
+                    listings in scope this filter has nothing it could ever
+                    exclude - an input that silently does nothing is worse
+                    than one that says why. Guarded on cities.length so a
+                    seller whose own city filter is what emptied the classified
+                    count can still edit their way back out of it. */}
                 <ChipInput
                   label="Cities"
-                  helper="Classifieds only — retailer listings have no location and are never excluded by this."
+                  isDisabled={cities.length === 0 && coverage.listingCount === 0}
+                  helper={
+                    cities.length === 0 && coverage.listingCount === 0
+                      ? 'No classified listings in your market, so a city filter has nothing to narrow. Only classifieds carry a location; retailer listings never do.'
+                      : 'Classifieds only — retailer listings have no location and are never excluded by this.'
+                  }
                   placeholder="e.g. Karachi"
                   values={cities}
                   onChange={setCities}
