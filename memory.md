@@ -3867,3 +3867,108 @@ project.
   (`product-matching.ts:259`), so platform rotation outranks relevance; and
   `sellerPrice`/`priceDiff` are computed then destructured away at
   `:276`, so the drawer can never show "you are 7% under the median".
+
+## 2026-09-03: Multi-domain phase 1 + pre-launch category browser
+
+Two user asks, scoped together in Plan Mode and shipped in one pass.
+Priority was explicitly "land clients in an immediate manner", so this
+favoured visible, demo-able surfaces over exhaustive backend coverage.
+**No new migrations — both features run entirely on existing schema.**
+
+**Session started with local `main` 86 commits behind `origin/main`** (the
+pull also introduced `zod`, which broke `tsc` until `npm install` ran).
+Worth doing `git fetch && git rev-list --left-right --count
+origin/main...HEAD` at the start of a session here, not just `git status`
+— the tree was clean and looked fine while being badly stale.
+
+### Feature B — pre-launch category browser (`/dashboard/market/explore`)
+
+Lets a seller preview competitor pricing/ratings/demand for **any** of the
+12 taxonomy categories, including ones they don't track, before deciding
+to launch a product there. Purely additive: new route + nav entry, no
+existing page's behaviour changed.
+
+**The load-bearing discovery: this needed almost no new code.**
+`getCompetitorLandscape(slug, currency, sellerId?)` and
+`getMarketScopeSummary(slug, name, sellerId?)` have **always** taken an
+optional `sellerId` — omitting it yields the default market scope (every
+mapped segment, no price band), which is exactly right for a category the
+seller has no market definition for. `market_products` has open SELECT for
+anon+authenticated (migration 042), so nothing blocks the read.
+`listCategories()` already returned the full taxonomy. The page is a thin
+server component over functions that already did the work.
+
+`CompetitorScorecardsPanel` is reused wholesale, with one new optional
+prop: `showMatchedListingsExport` (defaults `true`, so both existing
+Competitors tabs are untouched). That export is the *seller's own* matched
+listings and is meaningless with no seller context. `overlap` and
+`matchCounts` are passed as `[]` for the same reason — the panel already
+renders "no match found"/"not yet tracked" for empty maps, so no new UI
+branch was needed.
+
+Category selection is a query param (`?category=<slug>`) driving a server
+re-fetch, matching the app's fetch-in-page/render-in-client convention,
+and making the view shareable. There's a "Track this category" CTA calling
+the existing `POST /api/domains`.
+
+### Feature A — multi-domain phase 1
+
+Context: "domain" = a seller-tracked category (`seller_domains`, already
+many-to-many since migration 011). Aggregation infra already existed
+(`getCompetitorLandscapeAllDomains` etc.) but only the Competitors page's
+"All My Products" tab used it.
+
+- **A1**: `POST /api/domains` no longer inlines the free-first/
+  premium-rest rule — it delegates to `autoAssignDomainsForCategories`,
+  which already implemented that logic identically (its own comment said
+  it "mirrors api/domains/route.ts's POST handler exactly") and already
+  had 8 tests. The plan called for extracting a *new* shared helper;
+  reusing the existing one was strictly better. One behavioural nuance
+  worth knowing: `autoAssign` silently skips already-tracked categories,
+  so `added: []` + `skippedNeedsPremium: []` now means "already tracked" →
+  returned as idempotent success, matching the old upsert's behaviour.
+- **A2**: onboarding takes 1-3 domains instead of exactly one.
+  `setPrimaryDomain` is gone, replaced by `completeOnboarding(categoryIds,
+  country)`. **The real risk here was redirect ordering** — the old action
+  called `redirect()` (which throws) immediately after a single upsert, so
+  a naive loop would have redirected before later domains were written.
+  The new action deletes stale `seller_domains` rows, hands the whole
+  batch to `autoAssign` in ONE call (it needs the full batch to decide
+  which id is primary — do not "simplify" this into a per-id loop), then
+  updates country/onboarded_at and redirects exactly once at the end.
+  Covered by 5 new tests in `src/app/onboarding/actions.test.ts` that mock
+  `redirect` as throwing, specifically to assert it fires once and last.
+- **A3**: `components/shell/DomainSwitcher.tsx`, mounted in `AppHeader`.
+  **Selection is a query param (`?domain=<slug>`), never a DB write** — it
+  does not touch `is_primary`, so Settings/DomainsManager stay the single
+  source of truth for "primary". Renders `null` entirely when the seller
+  has ≤1 domain, so nothing changes for the common case today.
+- **A4**: Overview (`dashboard/market/page.tsx`) accepts
+  `searchParams.domain` and resolves it **against `listSellerDomains(seller.id)`**
+  — a seller-scoped list, not a raw slug lookup — so editing the URL
+  cannot land you on another seller's category. Falls back to primary for
+  an absent or no-longer-tracked slug. `listSellerDomains` was widened to
+  select `slug` alongside `name` (backward-compatible; every caller just
+  spreads the shape).
+
+**Deliberately NOT built, and this matters if someone revisits it:** an
+"All My Products" aggregate tab on Overview. It looks like a copy-paste of
+the Competitors pattern and is not. Overview's ~12 fetches
+(`getDomainBenchmarks`, `getCategoryPricing`, `getPriceTrend`,
+`getCategoryPriceForecast`, `detectCompetitorPriceAnomalies`, …) have **no
+existing AllDomains equivalents** — real aggregates would mean 6-8 new
+backend functions. Switching between single domains (A3+A4) is the whole
+phase-1 scope. The cheap version, if wanted later, is looping per-domain
+and stacking sections, not a merged view.
+
+**Verification:** `tsc --noEmit` clean, **217/217 tests pass** (33 files, 5
+new), production build succeeds and registers
+`ƒ /dashboard/market/explore`. Per the standing no-browser-automation
+rule, **none of this is visually confirmed** — Explore's render, onboarding
+with 2-3 domains, and the switcher all still need a human in a browser.
+
+**Still true:** `DEMO_ALL_FEATURES_UNLOCKED = true` in `entitlements.ts`,
+so every gate added here (the `competitor_intel` gate on Explore, the
+"Premium: track more domains" badge in onboarding) is open regardless of
+plan tier. Good for demos; the badge won't actually block anything until
+that flag flips.
