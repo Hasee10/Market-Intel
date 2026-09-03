@@ -299,4 +299,62 @@ describe('findCompetitorsForProduct', () => {
 
     expect(result[0].priceDeltaPct).toBeNull();
   });
+
+  // The reported bug, end to end: a candidate pool fetched for a Samsung
+  // phone is full of Samsung phones, so "samsung" and "galaxy" carry no
+  // information inside it - yet plain overlap counts them the same as the
+  // model number. A listing sharing only the brand prefix outranked one
+  // sharing the actual model. All candidates sit on one platform so the
+  // round-robin cannot influence the order being asserted.
+  describe('IDF-weighted ranking', () => {
+    const samsungPool = [
+      'Samsung Galaxy S24 Ultra',
+      'Samsung Galaxy S23',
+      'Samsung Galaxy Z Fold',
+      'Samsung Galaxy Z Flip',
+      'Samsung Galaxy A54',
+      'Samsung Galaxy A34',
+      'Samsung Galaxy M14',
+    ];
+
+    beforeEach(() => {
+      sellerProductRow = { id: 'sp1', title: 'Samsung Galaxy A15', sell_price: 60000, currency: 'PKR' };
+      samsungPool.forEach((title, i) =>
+        marketRows.push(marketRow({ id: `mp-${i}`, title, price: 60000, url: `brand-only-${i}` })),
+      );
+      // Shares the model number but not the brand boilerplate. Plain jaccard
+      // scores this 0.25 against the S24 Ultra's 0.4, so it ranked below.
+      marketRows.push(
+        marketRow({ id: 'mp-real', title: 'A15 Smartphone', price: 60000, url: 'same-model' }),
+      );
+    });
+
+    it('ranks the listing sharing the model number above ones sharing only the brand', async () => {
+      const result = await findCompetitorsForProduct('seller1', 'sp1', 'mobiles');
+
+      expect(result[0].matchedUrl).toBe('same-model');
+      // ...and it genuinely was the lower plain-confidence row, so this is
+      // the weighting doing the work rather than the old ordering agreeing.
+      const sameModel = result.find((r) => r.matchedUrl === 'same-model')!;
+      const brandOnly = result.find((r) => r.matchedUrl === 'brand-only-0')!;
+      expect(sameModel.confidence).toBeLessThan(brandOnly.confidence);
+    });
+
+    it('still includes the brand-prefix matches rather than filtering them out', async () => {
+      const result = await findCompetitorsForProduct('seller1', 'sp1', 'mobiles');
+
+      // Inclusion is deliberately unchanged - IDF re-ranks, it does not gate.
+      expect(result).toHaveLength(samsungPool.length + 1);
+    });
+
+    it('bands the model match above the brand-only ones so a seller can see the difference', async () => {
+      const result = await findCompetitorsForProduct('seller1', 'sp1', 'mobiles');
+
+      const sameModel = result.find((r) => r.matchedUrl === 'same-model')!;
+      const brandOnly = result.find((r) => r.matchedUrl === 'brand-only-0')!;
+
+      expect(sameModel.matchStrength).not.toBe('loose');
+      expect(brandOnly.matchStrength).toBe('loose');
+    });
+  });
 });

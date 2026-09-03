@@ -5,7 +5,16 @@ import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import { findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/candidate-search';
-import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
+import {
+  tokenize,
+  jaccard,
+  buildIdf,
+  idfCosine,
+  matchStrength,
+  type MatchStrength,
+  MIN_CONFIDENCE,
+  MIN_COMPETITOR_CONFIDENCE,
+} from '@/lib/market-intel/similarity';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
 // titles. market_product_matches (009_product_matches.sql) already models
@@ -87,16 +96,31 @@ export async function findTopProductMatches(
   sellerProductsRes.data.forEach((sellerProduct, index) => {
     const sellerTokens = tokenize(sellerProduct.title);
     const candidates = perProductCandidates[index];
+    const candidateTokens = candidates.map((candidate) => tokenize(candidate.title));
+    const idf = buildIdf([sellerTokens, ...candidateTokens]);
+
+    // Two-step on purpose, and the order matters. Qualifying is still plain
+    // unweighted Jaccard against MIN_CONFIDENCE, so exactly the same set of
+    // seller products ends up with a match as before - picking by the IDF
+    // score first could otherwise select a candidate that then failed the
+    // gate and drop a product that previously had a perfectly good match.
+    // Among those that qualify, the most distinctive title wins rather than
+    // the one sharing the most brand boilerplate.
     let best: (typeof candidates)[number] | null = null;
     let bestScore = 0;
+    let bestRelevance = -1;
 
-    for (const candidate of candidates) {
-      const score = jaccard(sellerTokens, tokenize(candidate.title));
-      if (score > bestScore) {
+    candidates.forEach((candidate, candidateIndex) => {
+      const score = jaccard(sellerTokens, candidateTokens[candidateIndex]);
+      if (score < MIN_CONFIDENCE) return;
+
+      const relevance = idfCosine(sellerTokens, candidateTokens[candidateIndex], idf);
+      if (relevance > bestRelevance) {
+        bestRelevance = relevance;
         bestScore = score;
         best = candidate;
       }
-    }
+    });
 
     if (best && bestScore >= MIN_CONFIDENCE) {
       matches.push({
@@ -169,6 +193,15 @@ export type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  /**
+   * How much of the *distinctive* vocabulary the two titles share, banded
+   * (see similarity.ts). `confidence` above counts every token equally, so
+   * two phones from one family score high on brand prefix alone; this is
+   * the number that separates them, and it is banded rather than shown raw
+   * because the underlying value is only meaningful relative to the other
+   * candidates for this same product.
+   */
+  matchStrength: MatchStrength;
   /**
    * The seller's own price for the product being compared, in
    * reportingCurrency - the same number on every row, carried per-listing so
@@ -245,10 +278,17 @@ export async function findCompetitorsForProduct(
       ? convertCurrency(Number(sellerProductRes.data.sell_price), sellerProductRes.data.currency ?? 'PKR', reportingCurrency, fxRates)
       : null;
 
+  // Document frequency over this product's own candidate pool plus the
+  // seller's title - see similarity.ts's IDF section for why that is the
+  // right corpus and why it stays out of the inclusion decision below.
+  const candidateTokens = candidates.map((row) => tokenize(row.title));
+  const idf = buildIdf([sellerTokens, ...candidateTokens]);
+
   const scored = candidates
-    .map((row) => {
+    .map((row, index) => {
       const matchedPrice =
         row.price != null ? convertCurrency(row.price, row.currency ?? 'PKR', reportingCurrency, fxRates) : null;
+      const tokens = candidateTokens[index];
       return {
         marketProductId: row.id,
         matchedTitle: row.title,
@@ -258,7 +298,13 @@ export async function findCompetitorsForProduct(
         rating: row.rating,
         ratingCount: row.ratingCount,
         soldCount: row.soldCount,
-        confidence: Number(jaccard(sellerTokens, tokenize(row.title)).toFixed(2)),
+        // Unweighted, and rounded for display/persistence - this is still
+        // the number the inclusion gate reads and the number written to
+        // seller_product_competitor_matches, so its meaning is unchanged.
+        confidence: Number(jaccard(sellerTokens, tokens).toFixed(2)),
+        // IDF-weighted, ordering only. Never rounded: it is compared, not
+        // shown.
+        relevance: idfCosine(sellerTokens, tokens, idf),
         priceDiff: sellerPrice != null && matchedPrice != null ? Math.abs(matchedPrice - sellerPrice) : null,
         sellerPrice,
         // Signed, and divided by the listing's price rather than the
@@ -272,7 +318,9 @@ export async function findCompetitorsForProduct(
     // Title similarity is the only hard filter now - price is never used to
     // exclude a candidate, only to break ties below among equally-confident
     // matches (see the header comment above for why this replaced the old
-    // price-bracket filter).
+    // price-bracket filter). Deliberately still plain jaccard: moving this
+    // onto the IDF score would discard fungible-goods matches whose only
+    // shared token is the category word.
     .filter((listing) => listing.confidence >= MIN_COMPETITOR_CONFIDENCE);
   sortByRelevance(scored);
 
@@ -302,9 +350,11 @@ export async function findCompetitorsForProduct(
 
   // priceDiff (absolute, unsigned) stays internal - it exists to break ties
   // in sortByRelevance. priceDeltaPct is the signed, display-facing version
-  // and is returned.
-  return top.map(({ priceDiff, marketProductId, ...listing }) => ({
+  // and is returned. relevance likewise stays internal: the raw weighted
+  // number means nothing to a seller, so it is surfaced only as a band.
+  return top.map(({ priceDiff, relevance, marketProductId, ...listing }) => ({
     ...listing,
+    matchStrength: matchStrength(relevance),
     reviewCount: reviewsByProduct.get(marketProductId)?.count ?? 0,
     topReviews: reviewsByProduct.get(marketProductId)?.snippets ?? [],
   }));
@@ -346,15 +396,19 @@ async function fetchReviewSnippets(
   return result;
 }
 
-// The one ranking rule for competitor listings: closest title match first,
-// then (among equally-confident ones) the closest price. Applied twice - to
+// The one ranking rule for competitor listings: most relevant title first,
+// then (among equally relevant ones) the closest price. Applied twice - to
 // the full candidate list before diversity selection, and again to the
 // selected set before returning - so both "which listings" and "in what
 // order" answer to the same definition of relevance. Sorts in place and
 // returns the same array, so it can be used either way at the call site.
-function sortByRelevance<T extends { confidence: number; priceDiff: number | null }>(listings: T[]): T[] {
+//
+// Ranks on the IDF-weighted score, not the unweighted confidence: a shared
+// brand prefix is most of what unweighted overlap measures, so ordering by
+// it put "Samsung Galaxy Z Fold" above the actual A15 listing.
+function sortByRelevance<T extends { relevance: number; priceDiff: number | null }>(listings: T[]): T[] {
   return listings.sort((a, b) => {
-    if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+    if (b.relevance !== a.relevance) return b.relevance - a.relevance;
     if (a.priceDiff == null || b.priceDiff == null) return 0;
     return a.priceDiff - b.priceDiff;
   });

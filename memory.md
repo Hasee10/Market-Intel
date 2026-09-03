@@ -4009,3 +4009,68 @@ and after the fix, so they proved nothing about either bug. The new
 ordering test was **run against the pre-fix implementation and confirmed to
 fail** before the fix was restored. A regression test that has never been
 seen red is not evidence.
+
+## 2026-09-03: IDF-weighted match ranking — the long-deferred similarity fix
+
+The "Samsung Galaxy A15 matched against a Z Fold at 12x the price" bug,
+diagnosed in an earlier session, started, reverted at the user's request,
+and left with a design note. Now built to that note.
+
+**The constraint from that note, honoured exactly:** plain Jaccard still
+decides *inclusion*; IDF only re-ranks and bands what already qualified.
+This is not stylistic — for fungible goods the shared category word IS the
+signal ("Bona Papa Super Diapers" vs "Pampers Baby Dry Diapers" overlap
+only on "diapers"), and IDF down-weights precisely that token. **Do not
+move the inclusion gate onto the weighted score.**
+
+**Corpus = the candidate pool itself**, built per request from rows already
+in memory. No new infra, and it is also the *correct* corpus: inside a pool
+fetched for a Samsung phone, "samsung" genuinely does not discriminate.
+
+### Cosine, not weighted Jaccard — and the measurement that forced it
+
+First implementation was IDF-weighted Jaccard (sum weights instead of
+counting tokens). **It failed the end-to-end test**, and the reason is
+worth keeping: weighted Jaccard sums linearly, so two low-information
+tokens still out-total one high-information one. For "Samsung Galaxy A15"
+vs "Samsung Galaxy S23" in a Samsung-dominated pool, samsung+galaxy summed
+to **2.21** against a15's **2.20** — the wrong listing still won, by a
+hair. Weighting narrowed the gap (0.50 vs 0.25 → 0.3147 vs 0.3138) without
+flipping it.
+
+**Cosine over binary TF-IDF vectors squares the weights**, so one rare
+shared token genuinely dominates several ubiquitous ones. Same pair:
+**0.53** for the real model match vs **0.30** for the brand-prefix one.
+Length normalisation comes free and stops a long bundle listing scoring
+highly just for containing the seller's tokens among many others.
+Clamped to 1 — the two square roots round independently and identical
+titles came out at 1.0000000000000002.
+
+**`confidence` is unchanged and still unweighted** — it is what the
+inclusion gate reads, what `seller_product_competitor_matches` persists,
+and what the Market page renders as a percentage. Changing it would have
+silently altered the meaning of stored history and a displayed number.
+The weighted score is internal; sellers see it only as a `matchStrength`
+band (strong/likely/loose) in a new drawer column. Band cut points (0.6 /
+0.35) are **uncalibrated guesses** set so exact reads strong and
+brand-prefix-only reads loose — exported so they can be tuned in one place
+once there is real labelled data.
+
+**`findTopProductMatches` got the same treatment but two-step**: qualify on
+plain Jaccard first, *then* pick the most distinctive among survivors. Order
+matters — picking by IDF first could select a candidate that then failed
+the gate, dropping a seller product that previously had a fine match. The
+invariant across both functions is **inclusion is byte-identical; only
+selection-among-included and ordering changed.**
+
+**Left alone deliberately:** `getCompetitorOverlap` (competitors.ts) —
+there Jaccard decides inclusion for a *count*, so weighting it would change
+what "overlap" means; and `seller-assistant-context.ts` — matching a chat
+message to the seller's own products is a different problem with a tiny
+corpus.
+
+**Method note, again:** the first implementation passed unit tests and
+failed the realistic end-to-end one. Both regression tests here were **run
+red against the previous implementation** before being accepted. The
+earlier ordering test in the same file was too — a green regression test
+that has never been seen red is not evidence.

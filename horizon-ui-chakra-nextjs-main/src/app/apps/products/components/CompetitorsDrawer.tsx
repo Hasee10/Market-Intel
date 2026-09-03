@@ -18,6 +18,7 @@ type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  matchStrength: 'strong' | 'likely' | 'loose';
   sellerPrice: number | null;
   /** Signed fraction: -0.07 = you are 7% cheaper than this listing. */
   priceDeltaPct: number | null;
@@ -47,6 +48,21 @@ const formatPriceDelta = (pct: number) => {
   const rounded = pct * 100;
   if (Math.abs(rounded) < 0.5) return 'same price';
   return `${rounded > 0 ? '+' : ''}${rounded.toFixed(0)}%`;
+};
+
+// Word-overlap matching cannot tell two phones in one family apart on brand
+// prefix alone, so a "loose" row is a real and expected outcome rather than
+// a failure - saying so is what stops a seller repricing against the wrong
+// product. Tones follow the app's existing semantics: neutral for good,
+// warning for "check this one".
+const MATCH_STRENGTH_LABEL: Record<CompetitorListing['matchStrength'], { label: string; tone: 'success' | 'brand' | 'warning'; help: string }> = {
+  strong: { label: 'Strong', tone: 'success', help: 'Titles share nearly all of their distinctive words.' },
+  likely: { label: 'Likely', tone: 'brand', help: 'Clear overlap beyond generic or brand words.' },
+  loose: {
+    label: 'Loose',
+    tone: 'warning',
+    help: 'Overlaps mostly on brand or category words. Check it is the same product before repricing against it.',
+  },
 };
 
 // Scraped titles occasionally carry un-decoded HTML entities (e.g.
@@ -143,9 +159,12 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
       )}
 
       {!loading && !error && listings.length > 0 && (
-        <Table minWidth={780}>
+        <Table minWidth={860}>
           <THead>
             <TH>Listing</TH>
+            <TH title="How much of the two titles' distinctive wording overlaps - brand and category words count for less.">
+              Match
+            </TH>
             <TH>Platform</TH>
             <TH numeric>Price</TH>
             <TH numeric title="Your price against this listing's. Negative means you are cheaper.">
@@ -180,6 +199,13 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                           aria-hidden="true"
                         />
                       </a>
+                    </TD>
+                    <TD>
+                      <span title={MATCH_STRENGTH_LABEL[listing.matchStrength].help}>
+                        <Pill tone={MATCH_STRENGTH_LABEL[listing.matchStrength].tone}>
+                          {MATCH_STRENGTH_LABEL[listing.matchStrength].label}
+                        </Pill>
+                      </span>
                     </TD>
                     <TD>
                       {listing.matchedPlatformName ? (
@@ -243,7 +269,7 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                   </TR>
                   {isExpanded && listing.topReviews.length > 0 && (
                     <TR className="hover:bg-transparent dark:hover:bg-transparent">
-                      <TD colSpan={7} className="bg-gray-50 dark:bg-gray-800">
+                      <TD colSpan={8} className="bg-gray-50 dark:bg-gray-800">
                         <div className="flex flex-col gap-2">
                           {listing.topReviews.map((review, ri) => (
                             <div key={ri}>

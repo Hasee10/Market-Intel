@@ -55,3 +55,122 @@ export function jaccard(a: Set<string>, b: Set<string>): number {
   const union = a.size + b.size - intersection;
   return union === 0 ? 0 : intersection / union;
 }
+
+// --- IDF-weighted ranking -------------------------------------------------
+//
+// Plain jaccard() above weights every token equally, which is the right
+// call for deciding *inclusion* but the wrong one for deciding *order*.
+// "Samsung Galaxy A15" against "Samsung Galaxy Z Fold 5" shares two of
+// three tokens on brand prefix alone and scores 0.5 - comfortably over
+// MIN_COMPETITOR_CONFIDENCE - so every phone in a family matched every
+// other, at any price. The distinguishing token ("a15") counted for
+// exactly as much as "samsung", which nearly every candidate carries.
+//
+// The fix is additive and deliberately scoped: **plain Jaccard still
+// decides what counts as a match.** IDF only re-ranks and bands what
+// already qualified. That boundary is not stylistic - for genuinely
+// fungible goods the shared category word IS the signal ("Bona Papa Super
+// Diapers" vs "Pampers Baby Dry Diapers" overlap only on "diapers"), and
+// IDF would down-weight exactly that token and throw the match away. Do
+// not move the inclusion gate onto these functions.
+//
+// No corpus infrastructure: document frequency is computed per request
+// over the candidate pool already in memory. That is also the *correct*
+// corpus for this question - within a pool of candidates fetched for a
+// Samsung product, "samsung" genuinely does not discriminate, and its low
+// weight here is a fact about this comparison rather than about English.
+
+/**
+ * Smoothed IDF over already-tokenized titles. Smoothing (+1 both terms,
+ * +1 to the result) keeps every weight positive, so a token appearing in
+ * every document is merely uninformative rather than worthless - which
+ * matters because with a single-candidate pool every token has df == n and
+ * an unsmoothed idf of 0 would make every score 0/0.
+ */
+export function buildIdf(documents: Set<string>[]): Map<string, number> {
+  const documentFrequency = new Map<string, number>();
+  for (const tokens of documents) {
+    for (const token of tokens) {
+      documentFrequency.set(token, (documentFrequency.get(token) ?? 0) + 1);
+    }
+  }
+
+  const total = documents.length;
+  const idf = new Map<string, number>();
+  for (const [token, frequency] of documentFrequency) {
+    idf.set(token, Math.log((total + 1) / (frequency + 1)) + 1);
+  }
+  return idf;
+}
+
+// A token absent from the corpus is maximally distinctive by definition,
+// but scoring it that way would let a typo dominate. Weighting it the same
+// as a token in every document is the conservative choice.
+const UNKNOWN_TOKEN_WEIGHT = 1;
+
+/**
+ * Cosine similarity between the two titles as binary TF-IDF vectors.
+ *
+ * Cosine rather than an IDF-weighted Jaccard, and the difference is not
+ * cosmetic - it is the whole fix. Weighted Jaccard sums weights linearly,
+ * so two low-information tokens still out-total one high-information one:
+ * for "Samsung Galaxy A15" against "Samsung Galaxy S23" in a pool of
+ * Samsung phones, samsung + galaxy summed to 2.21 against a15's 2.20 and
+ * the wrong listing still won by a hair. Cosine squares the weights, so a
+ * single rare shared token genuinely dominates several ubiquitous ones -
+ * the same pair scores 0.53 for the real model match against 0.30 for the
+ * brand-prefix one.
+ *
+ * Length normalisation comes free with cosine and is worth having: it
+ * stops a long bundle listing ("... Case Cover Screen Protector ...") from
+ * scoring highly just because it happens to contain the seller's tokens
+ * among many others.
+ *
+ * Identical titles score exactly 1, since numerator and denominator are
+ * then the same sum of squares.
+ */
+export function idfCosine(a: Set<string>, b: Set<string>, idf: Map<string, number>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+
+  const weightOf = (token: string) => idf.get(token) ?? UNKNOWN_TOKEN_WEIGHT;
+
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (const token of a) {
+    const weight = weightOf(token);
+    normA += weight * weight;
+    if (b.has(token)) dot += weight * weight;
+  }
+  for (const token of b) {
+    const weight = weightOf(token);
+    normB += weight * weight;
+  }
+
+  if (normA === 0 || normB === 0) return 0;
+  // Clamped because the two square roots round independently: identical
+  // titles come out at 1.0000000000000002, and this function's contract
+  // (and matchStrength's bands) assume 0..1.
+  return Math.min(1, dot / (Math.sqrt(normA) * Math.sqrt(normB)));
+}
+
+export type MatchStrength = 'strong' | 'likely' | 'loose';
+
+// Cut points on the idfCosine scale, where an identical title is 1.
+// **These are initial values, not calibrated against labelled data** - they
+// are set so that an exact or near-exact title reads "strong" and a match
+// carrying only a shared brand prefix reads "loose", which is the failure
+// this banding exists to make visible. For reference, the worked example in
+// idfCosine's comment lands the real model match at ~0.53 and the
+// brand-prefix one at ~0.30. Revisit against real listings before treating
+// these as meaningful thresholds; they are exported so that happens in one
+// place.
+export const STRONG_MATCH_RELEVANCE = 0.6;
+export const LIKELY_MATCH_RELEVANCE = 0.35;
+
+export function matchStrength(relevance: number): MatchStrength {
+  if (relevance >= STRONG_MATCH_RELEVANCE) return 'strong';
+  if (relevance >= LIKELY_MATCH_RELEVANCE) return 'likely';
+  return 'loose';
+}
