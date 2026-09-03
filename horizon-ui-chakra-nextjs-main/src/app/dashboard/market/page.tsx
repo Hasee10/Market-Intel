@@ -12,7 +12,7 @@ import {
 } from '@/lib/market-intel/market-insights';
 import { getPricingRecommendations } from '@/lib/market-intel/pricing-recommendation';
 import { findTopProductMatches } from '@/lib/market-intel/product-matching';
-import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
+import { getCurrentSeller, getPrimaryDomain, listSellerDomains, type SellerDomain } from '@/lib/market-intel/seller';
 
 import MarketView from './MarketView';
 
@@ -20,9 +20,34 @@ import MarketView from './MarketView';
 // client MarketView for rendering - keeps data-fetching and rendering
 // split the same way the rest of this app's pages do (fetch in the page,
 // render in a 'use client' component).
-export default async function MarketPage() {
+export default async function MarketPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ domain?: string }>;
+}) {
+  const { domain: domainSlug } = await searchParams;
   const seller = await getCurrentSeller();
-  const domain = seller ? await getPrimaryDomain(seller.id) : null;
+  const primaryDomain = seller ? await getPrimaryDomain(seller.id) : null;
+
+  // ?domain=<slug> comes from the header's DomainSwitcher (phase 1: only
+  // Overview reads it). Resolved against this seller's own tracked domains
+  // - not a raw lookup by slug - so a seller can never land on another
+  // seller's category by editing the URL. Falls back to primary when the
+  // param is absent, or points at a domain the seller no longer tracks
+  // (stale bookmark).
+  let domain: SellerDomain | null = primaryDomain;
+  if (domainSlug && seller && domainSlug !== primaryDomain?.categorySlug) {
+    const domains = await listSellerDomains(seller.id);
+    const matched = domains.find((d) => d.categorySlug === domainSlug);
+    if (matched) {
+      domain = {
+        categoryId: matched.categoryId,
+        categorySlug: matched.categorySlug,
+        categoryName: matched.categoryName,
+      };
+    }
+  }
+
   const planTier = seller?.planTier ?? 'free';
 
   const entitlements = {

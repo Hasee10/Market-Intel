@@ -10,6 +10,7 @@ import {
   MdOutlineTune,
   MdStorefront,
   MdReceiptLong,
+  MdOutlineExplore,
 } from 'react-icons/md';
 
 import { IRoute } from 'types/navigation';
@@ -46,6 +47,13 @@ const routes: IRoute[] = [
     path: '/dashboard/market/competitors',
     section: 'Market Intelligence',
     icon: <Icon as={MdStorefront} width="20px" height="20px" color="inherit" />,
+  },
+  {
+    name: 'Explore',
+    layout: '',
+    path: '/dashboard/market/explore',
+    section: 'Market Intelligence',
+    icon: <Icon as={MdOutlineExplore} width="20px" height="20px" color="inherit" />,
   },
   {
     name: 'Market Definition',

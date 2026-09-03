@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getCurrentSeller, listCategories, listSellerDomains } from '@/lib/market-intel/seller';
-import { createClient } from '@/lib/supabase/server';
+import {
+  autoAssignDomainsForCategories,
+  getCurrentSeller,
+  listCategories,
+  listSellerDomains,
+} from '@/lib/market-intel/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();
@@ -40,15 +43,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const supabase = await createClient();
+  // Same free-first/premium-rest rule onboarding's completeOnboarding uses
+  // for domains 2-3 - one implementation, not two copies of the plan check.
+  const result = await autoAssignDomainsForCategories(seller, [body.categoryId]);
 
-  const { data: existingDomains } = await supabase
-    .from('seller_domains')
-    .select('id')
-    .eq('seller_id', seller.id);
-  const isFirstDomain = !existingDomains || existingDomains.length === 0;
-
-  if (!isFirstDomain && !hasFeature(seller.planTier, 'multi_domain')) {
+  if (result.skippedNeedsPremium.length > 0) {
     return NextResponse.json(
       {
         succeeded: false,
@@ -60,20 +59,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { error } = await supabase
-    .from('seller_domains')
-    .upsert(
-      { seller_id: seller.id, category_id: body.categoryId, is_primary: isFirstDomain },
-      { onConflict: 'seller_id,category_id' },
-    );
-
-  if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to add domain' },
-      { status: 400 },
-    );
-  }
-
+  // Both arrays empty means the category was already tracked (autoAssign
+  // silently skips it) - idempotent success, not an error, matching the
+  // upsert-based behaviour this replaced.
   const domains = await listSellerDomains(seller.id);
   return NextResponse.json({ succeeded: true, data: domains, errors: [], message: 'Domain added successfully' });
 }

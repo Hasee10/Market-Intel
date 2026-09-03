@@ -20,6 +20,7 @@ import { SidebarContext } from 'contexts/SidebarContext';
 import { createClient } from '@/lib/supabase/client';
 import { useSellerSession } from '@/lib/supabase/useSellerSession';
 
+import { DomainSwitcher } from './DomainSwitcher';
 import { NotificationsMenu } from './NotificationsMenu';
 
 const iconButton =
@@ -127,6 +128,8 @@ export function AppHeader({ breadcrumb }: { breadcrumb: string }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2.5 md:ml-0">
+        <DomainSwitcher />
+
         <button
           type="button"
           onClick={toggleColorMode}

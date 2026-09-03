@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
+import { hasFeature } from '@/lib/market-intel/entitlements';
 import { getCurrentSeller, getPrimaryDomain, listCategories } from '@/lib/market-intel/seller';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
@@ -20,6 +21,7 @@ export default async function OnboardingPage() {
   }
 
   const categories = await listCategories();
+  const allowMultipleDomains = hasFeature(seller.planTier, 'multi_domain');
 
   return (
     <div>
@@ -31,7 +33,7 @@ export default async function OnboardingPage() {
           fine because they're their own 'use client' components. */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '32px', alignItems: 'center' }}>
         <div style={{ flex: '1 1 360px' }}>
-          <CategoryPicker categories={categories} />
+          <CategoryPicker categories={categories} allowMultipleDomains={allowMultipleDomains} />
         </div>
         <div style={{ flex: '1 1 320px', maxWidth: '420px', display: 'flex', justifyContent: 'center' }}>
           {/* next/image works fine in a Server Component (unlike Chakra, per

@@ -3,12 +3,18 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
+import { autoAssignDomainsForCategories } from '@/lib/market-intel/seller';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
 
 const VALID_COUNTRY_CODES = new Set<string>(SUPPORTED_COUNTRIES.map((c) => c.code));
+const MAX_ONBOARDING_DOMAINS = 3;
 
-export async function setPrimaryDomain(categoryId: string, country: string) {
+// Replaces the old single-domain setPrimaryDomain. Takes 1-3 category picks
+// (the picker caps the UI at 3) and applies the same free-first/premium-rest
+// rule the manual "Add domain" flow uses (autoAssignDomainsForCategories),
+// rather than a second copy of that check living here.
+export async function completeOnboarding(categoryIds: string[], country: string) {
   const supabase = await createClient();
 
   const {
@@ -21,7 +27,7 @@ export async function setPrimaryDomain(categoryId: string, country: string) {
 
   const { data: seller, error: sellerError } = await supabase
     .from('sellers')
-    .select('id')
+    .select('id, plan_tier')
     .eq('user_id', user.id)
     .single();
 
@@ -29,26 +35,29 @@ export async function setPrimaryDomain(categoryId: string, country: string) {
     return { error: 'Could not find your seller account. Try signing in again.' };
   }
 
-  // Only one primary domain per seller for now - clear any previous pick
-  // before setting the new one so re-running onboarding doesn't leave two.
-  await supabase
-    .from('seller_domains')
-    .update({ is_primary: false })
-    .eq('seller_id', seller.id);
+  const uniqueCategoryIds = [...new Set(categoryIds)].slice(0, MAX_ONBOARDING_DOMAINS);
+  if (uniqueCategoryIds.length === 0) {
+    return { error: 'Pick at least one category to continue' };
+  }
 
-  const { error: domainError } = await supabase
-    .from('seller_domains')
-    .upsert(
-      { seller_id: seller.id, category_id: categoryId, is_primary: true },
-      { onConflict: 'seller_id,category_id' },
-    );
+  // This page only renders while the seller has no primary domain (see
+  // page.tsx's redirect), so any seller_domains rows here are leftovers
+  // from an abandoned attempt - clear them so "first domain is free"
+  // applies to this submission, not a stale one, and re-running onboarding
+  // doesn't layer duplicate/stale picks on top.
+  await supabase.from('seller_domains').delete().eq('seller_id', seller.id);
 
-  if (domainError) {
+  const result = await autoAssignDomainsForCategories(
+    { id: seller.id, planTier: seller.plan_tier },
+    uniqueCategoryIds,
+  );
+
+  if (result.added.length === 0) {
     return { error: 'Could not save your domain. Please try again.' };
   }
 
   // Onboarding stays a single round-trip: country and onboarded_at land in
-  // the same update as the domain pick, not a separate Settings visit.
+  // the same submission as the domain picks, not a separate Settings visit.
   // An invalid/unmapped code silently keeps the column's own 'PK' default
   // rather than erroring the whole flow over a cosmetic field.
   await supabase

@@ -35,6 +35,13 @@ export type CompetitorScorecardsPanelProps = {
    * rows are no longer shipped with the page just in case someone clicks.
    */
   exportScope: 'primary' | 'all';
+  /**
+   * Matched listings are always the current seller's own primary/all-domain
+   * matches (see /api/competitors/matched-listings) - meaningless on a page
+   * browsing a category with no seller context, like Explore. Defaults to
+   * true so the two existing Competitors tabs render unchanged.
+   */
+  showMatchedListingsExport?: boolean;
 };
 
 function formatCurrencyAs(value: number, currency: string) {
@@ -146,6 +153,7 @@ export default function CompetitorScorecardsPanel({
   overlap,
   matchCounts,
   exportScope,
+  showMatchedListingsExport = true,
 }: CompetitorScorecardsPanelProps) {
   const [exportingListings, setExportingListings] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -405,14 +413,16 @@ export default function CompetitorScorecardsPanel({
             >
               Export scorecards CSV
             </button>
-            <button
-              type="button"
-              onClick={exportMatchedListingsCsv}
-              disabled={exportingListings}
-              className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300"
-            >
-              {exportingListings ? 'Building CSV…' : 'Export matched listings CSV'}
-            </button>
+            {showMatchedListingsExport && (
+              <button
+                type="button"
+                onClick={exportMatchedListingsCsv}
+                disabled={exportingListings}
+                className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:border-brand-300 hover:text-brand-600 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:text-gray-300"
+              >
+                {exportingListings ? 'Building CSV…' : 'Export matched listings CSV'}
+              </button>
+            )}
           </div>
         </div>
         {exportError && (

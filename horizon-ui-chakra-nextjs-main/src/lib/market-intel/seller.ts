@@ -155,6 +155,7 @@ export async function listCategories() {
 export type SellerDomainRow = {
   id: string;
   categoryId: string;
+  categorySlug: string;
   categoryName: string;
   isPrimary: boolean;
 };
@@ -162,13 +163,16 @@ export type SellerDomainRow = {
 // All of a seller's category links, not just the primary one -
 // seller_domains has always supported many-to-many (see
 // 011_create_seller_platform_tables.sql's unique(seller_id, category_id)),
-// only the onboarding flow ever surfaced a single "primary" pick.
+// only the onboarding flow ever surfaced a single "primary" pick. Selects
+// slug alongside name (widened for the domain switcher / Overview's
+// searchParams-driven domain resolution) - one-line, backward-compatible,
+// every existing caller already just spreads this shape.
 export async function listSellerDomains(sellerId: string): Promise<SellerDomainRow[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .from('seller_domains')
-    .select('id, category_id, is_primary, seller_categories(name)')
+    .select('id, category_id, is_primary, seller_categories(slug, name)')
     .eq('seller_id', sellerId)
     .order('is_primary', { ascending: false });
 
@@ -179,6 +183,7 @@ export async function listSellerDomains(sellerId: string): Promise<SellerDomainR
     return {
       id: row.id,
       categoryId: row.category_id,
+      categorySlug: category?.slug ?? '',
       categoryName: category?.name ?? 'Unknown',
       isPrimary: row.is_primary,
     };
