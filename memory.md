@@ -3972,3 +3972,40 @@ so every gate added here (the `competitor_intel` gate on Explore, the
 "Premium: track more domains" badge in onboarding) is open regardless of
 plan tier. Good for demos; the badge won't actually block anything until
 that flag flips.
+
+### Same day: the two logged-but-unfixed drawer bugs, now fixed (`be6c793`)
+
+Both were sitting in this file as "found, not yet fixed" from the
+matching-fix session. Confirmed still live, then fixed together since they
+share a function.
+
+**1. Diversity was deciding render order.** `selectDiverseTopN` round-robins
+across platforms so one dense candidate pool can't crowd the others out —
+correct, and it stays. But its output was used *directly* as the display
+order, so the interleave put the second platform's weakest survivor above
+the first platform's best: a 0.25-confidence listing outranking an exact
+title match. **Selection and ordering were never the same decision.** The
+comparator is now extracted to `sortByRelevance` and applied twice — to
+the candidate list before selection, and to the selected set before
+returning. If you touch this again: keep them separate. Re-sorting after
+selection does not weaken the diversity guarantee, because selection has
+already happened by then.
+
+**2. The price comparison was computed and thrown away.** `sellerPrice` and
+`priceDiff` were built in the same `.map()` and then destructured out of
+the return at what was line 276, so `CompetitorListing` carried the
+competitor's price with nothing to compare it to — the drawer rendered two
+numbers and left the arithmetic to the seller. The type now has
+`sellerPrice` and `priceDeltaPct` (signed fraction *of the listing's
+price*, so -0.07 reads "7% below what they charge"), and the drawer has a
+"vs yours" column, green under / red over, matching the Competitors page's
+existing price-index colouring. **`priceDiff` deliberately stays internal
+and unsigned** — it is the sort tiebreak, a different quantity from the
+display value. Null (never a guess) when the seller has no `sell_price`,
+the listing has no price, or the listing is priced 0.
+
+**Method note worth repeating:** the existing 10 tests passed both before
+and after the fix, so they proved nothing about either bug. The new
+ordering test was **run against the pre-fix implementation and confirmed to
+fail** before the fix was restored. A regression test that has never been
+seen red is not evidence.
