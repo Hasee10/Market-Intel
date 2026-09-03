@@ -233,4 +233,70 @@ describe('findCompetitorsForProduct', () => {
     expect(result[0].reviewCount).toBe(0);
     expect(result[0].topReviews).toEqual([]);
   });
+
+  // Regression: selectDiverseTopN's round-robin output used to BE the render
+  // order, so platform rotation outranked title relevance - the second
+  // platform's weakest match could sit above the first platform's best.
+  // Diversity must still decide which listings survive; it must not decide
+  // what order they appear in.
+  it('orders results by confidence, not by the platform round-robin that selected them', async () => {
+    marketRows.push(
+      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-exact', market_platforms: { name: 'Daraz' } }),
+      marketRow({
+        title: 'RTX 4070 GPU Extra Words Diluting The Match',
+        price: 100000,
+        url: 'shopperspk-weak',
+        market_platforms: { name: 'ShoppersPK' },
+      }),
+      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-exact-2', market_platforms: { name: 'Daraz' } }),
+    );
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    // Both platforms still represented - diversity is intact.
+    expect(result.map((r) => r.matchedPlatformName)).toContain('ShoppersPK');
+    // ...but the weaker ShoppersPK match must not outrank an exact Daraz one.
+    const confidences = result.map((r) => r.confidence);
+    expect(confidences).toEqual([...confidences].sort((a, b) => b - a));
+    expect(result[0].matchedUrl).not.toBe('shopperspk-weak');
+  });
+
+  // Regression: sellerPrice/priceDiff were computed and then destructured
+  // away in the return, so the drawer received two prices and no comparison
+  // and could never say "you are 7% under".
+  it('returns the seller price and a signed delta so the drawer can show the comparison', async () => {
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 125000, url: 'pricier-competitor' }));
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].sellerPrice).toBe(100000);
+    // Seller at 100k vs listing at 125k = 20% below them.
+    expect(result[0].priceDeltaPct).toBeCloseTo(-0.2, 5);
+  });
+
+  it('reports a positive delta when the seller is the more expensive one', async () => {
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 80000, url: 'cheaper-competitor' }));
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].priceDeltaPct).toBeCloseTo(0.25, 5);
+  });
+
+  it('leaves the delta null rather than guessing when the seller has no price set', async () => {
+    sellerProductRow = { id: 'sp1', title: 'RTX 4070 GPU', sell_price: null, currency: 'PKR' };
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'no-seller-price' }));
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].sellerPrice).toBeNull();
+    expect(result[0].priceDeltaPct).toBeNull();
+  });
+
+  it('leaves the delta null when the listing price is zero rather than dividing by it', async () => {
+    marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 0, url: 'zero-price' }));
+
+    const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus');
+
+    expect(result[0].priceDeltaPct).toBeNull();
+  });
 });

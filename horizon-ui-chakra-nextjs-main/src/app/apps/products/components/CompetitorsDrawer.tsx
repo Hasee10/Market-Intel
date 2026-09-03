@@ -18,6 +18,9 @@ type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  sellerPrice: number | null;
+  /** Signed fraction: -0.07 = you are 7% cheaper than this listing. */
+  priceDeltaPct: number | null;
   reviewCount: number;
   topReviews: { author: string | null; rating: number | null; text: string }[];
 };
@@ -36,6 +39,14 @@ const formatCurrency = (amount: number | null, currency: string) =>
 const formatRating = (rating: number | null, ratingCount: number | null) => {
   if (rating == null) return '—';
   return ratingCount != null ? `${rating.toFixed(1)} (${ratingCount})` : rating.toFixed(1);
+};
+
+// Signed on purpose, and phrased from the seller's side: they are reading
+// this to decide whether to move their own price, so "you" is the subject.
+const formatPriceDelta = (pct: number) => {
+  const rounded = pct * 100;
+  if (Math.abs(rounded) < 0.5) return 'same price';
+  return `${rounded > 0 ? '+' : ''}${rounded.toFixed(0)}%`;
 };
 
 // Scraped titles occasionally carry un-decoded HTML entities (e.g.
@@ -101,7 +112,7 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
       isOpen={isOpen}
       onClose={onClose}
       // xl, where the Chakra original was lg: this is the only drawer in the
-      // app carrying a six-column table, and lg made every column scroll.
+      // app carrying a seven-column table, and lg made every column scroll.
       size="xl"
       title={`Competitor listings${product ? ` — ${product.title}` : ''}`}
     >
@@ -132,11 +143,14 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
       )}
 
       {!loading && !error && listings.length > 0 && (
-        <Table minWidth={680}>
+        <Table minWidth={780}>
           <THead>
             <TH>Listing</TH>
             <TH>Platform</TH>
             <TH numeric>Price</TH>
+            <TH numeric title="Your price against this listing's. Negative means you are cheaper.">
+              vs yours
+            </TH>
             <TH numeric>Rating</TH>
             {/* Native title attribute rather than a Tooltip component, the
                 same way the Competitors page annotates its column headers. */}
@@ -178,6 +192,23 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                       {formatCurrency(listing.matchedPrice, reportingCurrency)}
                     </TD>
                     <TD numeric>
+                      {listing.priceDeltaPct == null ? (
+                        <span className="text-xs text-gray-500 dark:text-gray-400">—</span>
+                      ) : (
+                        <span
+                          className={`text-sm ${
+                            Math.abs(listing.priceDeltaPct) < 0.005
+                              ? 'text-gray-500 dark:text-gray-400'
+                              : listing.priceDeltaPct < 0
+                                ? 'text-success-600 dark:text-success-500'
+                                : 'text-error-600 dark:text-error-500'
+                          }`}
+                        >
+                          {formatPriceDelta(listing.priceDeltaPct)}
+                        </span>
+                      )}
+                    </TD>
+                    <TD numeric>
                       {listing.rating != null ? (
                         <span className="flex items-center justify-end gap-1">
                           <MdOutlineStar className="size-3 text-yellow-400" aria-hidden="true" />
@@ -212,7 +243,7 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                   </TR>
                   {isExpanded && listing.topReviews.length > 0 && (
                     <TR className="hover:bg-transparent dark:hover:bg-transparent">
-                      <TD colSpan={6} className="bg-gray-50 dark:bg-gray-800">
+                      <TD colSpan={7} className="bg-gray-50 dark:bg-gray-800">
                         <div className="flex flex-col gap-2">
                           {listing.topReviews.map((review, ri) => (
                             <div key={ri}>

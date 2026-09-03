@@ -169,6 +169,23 @@ export type CompetitorListing = {
   ratingCount: number | null;
   soldCount: number | null;
   confidence: number;
+  /**
+   * The seller's own price for the product being compared, in
+   * reportingCurrency - the same number on every row, carried per-listing so
+   * the drawer can show the comparison without a second fetch. Null when the
+   * seller's product has no sell_price set.
+   */
+  sellerPrice: number | null;
+  /**
+   * How the seller's price compares to this listing, as a signed fraction of
+   * the listing's price: -0.07 means the seller is 7% cheaper, +0.12 that
+   * they are 12% pricier. Null when either side has no price, or when the
+   * listing's price is 0 (no meaningful ratio). This is the "am I under or
+   * over on this one" read the drawer exists to answer - it was computed and
+   * then discarded before, so the drawer could only ever show two prices
+   * side by side and leave the arithmetic to the seller.
+   */
+  priceDeltaPct: number | null;
   // Populated only for products a separate review-scraper job has already
   // visited (currently PriceOye only - see migrations/031). reviewCount is
   // the true total, not just topReviews.length; 0 means "none scraped yet
@@ -243,20 +260,30 @@ export async function findCompetitorsForProduct(
         soldCount: row.soldCount,
         confidence: Number(jaccard(sellerTokens, tokenize(row.title)).toFixed(2)),
         priceDiff: sellerPrice != null && matchedPrice != null ? Math.abs(matchedPrice - sellerPrice) : null,
+        sellerPrice,
+        // Signed, and divided by the listing's price rather than the
+        // seller's, so "-7%" reads as "7% below what they charge".
+        priceDeltaPct:
+          sellerPrice != null && matchedPrice != null && matchedPrice !== 0
+            ? (sellerPrice - matchedPrice) / matchedPrice
+            : null,
       };
     })
     // Title similarity is the only hard filter now - price is never used to
     // exclude a candidate, only to break ties below among equally-confident
     // matches (see the header comment above for why this replaced the old
     // price-bracket filter).
-    .filter((listing) => listing.confidence >= MIN_COMPETITOR_CONFIDENCE)
-    .sort((a, b) => {
-      if (b.confidence !== a.confidence) return b.confidence - a.confidence;
-      if (a.priceDiff == null || b.priceDiff == null) return 0;
-      return a.priceDiff - b.priceDiff;
-    });
+    .filter((listing) => listing.confidence >= MIN_COMPETITOR_CONFIDENCE);
+  sortByRelevance(scored);
 
-  const top = selectDiverseTopN(scored, limit);
+  // selectDiverseTopN decides *which* listings survive (round-robin across
+  // platforms, so one dense platform can't crowd the rest out). It must not
+  // decide what order they render in: its output interleaves platforms, so
+  // an 0.25-confidence listing from the second platform landed above a
+  // 0.9-confidence one from the first. Re-sorting on the same keys the
+  // candidate list was ranked by puts relevance back in charge of the
+  // display while leaving the diversity guarantee intact.
+  const top = sortByRelevance(selectDiverseTopN(scored, limit));
 
   // Deferred via after() rather than awaited: this only feeds a price/
   // decommission history feature (see the function's own comment below),
@@ -273,6 +300,9 @@ export async function findCompetitorsForProduct(
     top.map((t) => t.marketProductId),
   );
 
+  // priceDiff (absolute, unsigned) stays internal - it exists to break ties
+  // in sortByRelevance. priceDeltaPct is the signed, display-facing version
+  // and is returned.
   return top.map(({ priceDiff, marketProductId, ...listing }) => ({
     ...listing,
     reviewCount: reviewsByProduct.get(marketProductId)?.count ?? 0,
@@ -314,6 +344,20 @@ async function fetchReviewSnippets(
     result.set(row.product_id, entry);
   }
   return result;
+}
+
+// The one ranking rule for competitor listings: closest title match first,
+// then (among equally-confident ones) the closest price. Applied twice - to
+// the full candidate list before diversity selection, and again to the
+// selected set before returning - so both "which listings" and "in what
+// order" answer to the same definition of relevance. Sorts in place and
+// returns the same array, so it can be used either way at the call site.
+function sortByRelevance<T extends { confidence: number; priceDiff: number | null }>(listings: T[]): T[] {
+  return listings.sort((a, b) => {
+    if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+    if (a.priceDiff == null || b.priceDiff == null) return 0;
+    return a.priceDiff - b.priceDiff;
+  });
 }
 
 // Round-robins across platforms instead of a flat top-N slice, so a single
