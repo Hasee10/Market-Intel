@@ -12,7 +12,7 @@ import {
 } from '@/lib/market-intel/market/market-insights';
 import { getPricingRecommendations } from '@/lib/market-intel/seller/pricing-recommendation';
 import { findTopProductMatches } from '@/lib/market-intel/market/product-matching';
-import { getCurrentSeller, getPrimaryDomain, listSellerDomains, type SellerDomain } from '@/lib/market-intel/seller/seller';
+import { getCurrentSeller, resolveSelectedDomain } from '@/lib/market-intel/seller/seller';
 
 import MarketView from './MarketView';
 
@@ -27,26 +27,9 @@ export default async function MarketPage({
 }) {
   const { domain: domainSlug } = await searchParams;
   const seller = await getCurrentSeller();
-  const primaryDomain = seller ? await getPrimaryDomain(seller.id) : null;
-
-  // ?domain=<slug> comes from the header's DomainSwitcher (phase 1: only
-  // Overview reads it). Resolved against this seller's own tracked domains
-  // - not a raw lookup by slug - so a seller can never land on another
-  // seller's category by editing the URL. Falls back to primary when the
-  // param is absent, or points at a domain the seller no longer tracks
-  // (stale bookmark).
-  let domain: SellerDomain | null = primaryDomain;
-  if (domainSlug && seller && domainSlug !== primaryDomain?.categorySlug) {
-    const domains = await listSellerDomains(seller.id);
-    const matched = domains.find((d) => d.categorySlug === domainSlug);
-    if (matched) {
-      domain = {
-        categoryId: matched.categoryId,
-        categorySlug: matched.categorySlug,
-        categoryName: matched.categoryName,
-      };
-    }
-  }
+  // ?domain=<slug> comes from the header's DomainSwitcher; see
+  // resolveSelectedDomain for how a missing/stale/foreign slug is handled.
+  const domain = seller ? await resolveSelectedDomain(seller.id, domainSlug) : null;
 
   const planTier = seller?.planTier ?? 'free';
 

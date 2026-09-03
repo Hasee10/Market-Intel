@@ -8,7 +8,7 @@ import {
 } from '@/lib/market-intel/market/competitors';
 import { hasFeature } from '@/lib/market-intel/core/entitlements';
 import { getMarketScopeSummary } from '@/lib/market-intel/market/market-definition';
-import { getCurrentSeller, getPrimaryDomain, listSellerDomainSlugs } from '@/lib/market-intel/seller/seller';
+import { getCurrentSeller, resolveSelectedDomain, listSellerDomainSlugs } from '@/lib/market-intel/seller/seller';
 
 import CompetitorsView from './CompetitorsView';
 
@@ -18,9 +18,16 @@ import CompetitorsView from './CompetitorsView';
 // across every tracked domain) up front, so switching tabs client-side needs
 // no extra round-trip - matches this page's existing fetch-then-render
 // pattern rather than introducing a new API route.
-export default async function CompetitorsPage() {
+export default async function CompetitorsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ domain?: string }>;
+}) {
+  const { domain: domainSlug } = await searchParams;
   const seller = await getCurrentSeller();
-  const domain = seller ? await getPrimaryDomain(seller.id) : null;
+  // The single-domain tab follows the header switcher; the All My Products
+  // tab is unaffected by design, since it aggregates every tracked domain.
+  const domain = seller ? await resolveSelectedDomain(seller.id, domainSlug) : null;
   const planTier = seller?.planTier ?? 'free';
   const hasAccess = hasFeature(planTier, 'competitor_intel');
   const reportingCurrency = seller?.reportingCurrency ?? 'PKR';
@@ -68,6 +75,7 @@ export default async function CompetitorsPage() {
     <CompetitorsView
       hasAccess={hasAccess}
       categoryName={domain?.categoryName ?? null}
+      selectedDomainSlug={domain?.categorySlug ?? null}
       trackedDomainCount={trackedDomainCount}
       reportingCurrency={reportingCurrency}
       landscape={landscape}

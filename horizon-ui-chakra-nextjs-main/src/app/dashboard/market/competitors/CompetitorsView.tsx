@@ -19,6 +19,13 @@ import CompetitorScorecardsPanel from './CompetitorScorecardsPanel';
 type Props = {
   hasAccess: boolean;
   categoryName: string | null;
+  /**
+   * Slug of the domain the single-domain tab is showing. Threaded to the
+   * CSV export so the file matches what is on screen - without it the
+   * export always covered the primary domain, which is silently the wrong
+   * data once the header switcher has been used.
+   */
+  selectedDomainSlug: string | null;
   trackedDomainCount: number;
   reportingCurrency: string;
   landscape: CompetitorLandscape | null;
@@ -33,6 +40,7 @@ type Props = {
 export default function CompetitorsView({
   hasAccess,
   categoryName,
+  selectedDomainSlug,
   trackedDomainCount,
   reportingCurrency,
   landscape,
@@ -91,7 +99,10 @@ export default function CompetitorsView({
               ),
             },
             {
-              label: `Primary Domain${categoryName ? ` (${categoryName})` : ''}`,
+              // The category name rather than "Primary Domain": with the
+              // header switcher this tab is whichever domain is selected,
+              // which is not necessarily the primary one.
+              label: categoryName ?? 'Primary Domain',
               content: (
                 <>
                   {scopeSummary && <MarketScopeBanner summary={scopeSummary} />}
@@ -102,6 +113,7 @@ export default function CompetitorsView({
                     overlap={overlap}
                     matchCounts={matchCounts}
                     exportScope="primary"
+                    exportDomainSlug={selectedDomainSlug}
                   />
                 </>
               ),

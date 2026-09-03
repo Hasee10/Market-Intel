@@ -4,7 +4,7 @@ import { objectsToCsv } from '@/lib/csv';
 import { getMatchedListingsForExport } from '@/lib/market-intel/market/competitors';
 import { hasFeature } from '@/lib/market-intel/core/entitlements';
 import { getMarketScope, getMarketScopeForAllDomains } from '@/lib/market-intel/market/market-definition';
-import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller/seller';
+import { getCurrentSeller, resolveSelectedDomain } from '@/lib/market-intel/seller/seller';
 
 // The matched-listings CSV, built on demand.
 //
@@ -42,7 +42,11 @@ export async function GET(request: NextRequest) {
   if (allDomains) {
     scope = await getMarketScopeForAllDomains(seller.id);
   } else {
-    const domain = await getPrimaryDomain(seller.id);
+    // Mirrors the page's own resolution (header switcher writes ?domain=),
+    // so the file matches the table it was exported from rather than
+    // always covering the primary domain. Resolution is seller-scoped, so
+    // a slug for someone else's category falls back to primary.
+    const domain = await resolveSelectedDomain(seller.id, request.nextUrl.searchParams.get('domain'));
     if (!domain) {
       return NextResponse.json(
         { succeeded: false, data: null, errors: ['No primary domain'], message: 'No primary domain' },

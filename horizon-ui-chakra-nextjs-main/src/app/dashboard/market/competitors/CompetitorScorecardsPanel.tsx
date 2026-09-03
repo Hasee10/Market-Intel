@@ -36,6 +36,12 @@ export type CompetitorScorecardsPanelProps = {
    */
   exportScope: 'primary' | 'all';
   /**
+   * Which single domain the export covers, when exportScope is 'primary'.
+   * Null means "whatever the seller's primary domain is", the behaviour
+   * before the header switcher existed. Ignored for exportScope 'all'.
+   */
+  exportDomainSlug?: string | null;
+  /**
    * Matched listings are always the current seller's own primary/all-domain
    * matches (see /api/competitors/matched-listings) - meaningless on a page
    * browsing a category with no seller context, like Explore. Defaults to
@@ -153,6 +159,7 @@ export default function CompetitorScorecardsPanel({
   overlap,
   matchCounts,
   exportScope,
+  exportDomainSlug = null,
   showMatchedListingsExport = true,
 }: CompetitorScorecardsPanelProps) {
   const [exportingListings, setExportingListings] = useState(false);
@@ -239,7 +246,9 @@ export default function CompetitorScorecardsPanel({
     setExportingListings(true);
     setExportError(null);
     try {
-      const response = await fetch(`/api/competitors/matched-listings?scope=${exportScope}`);
+      const params = new URLSearchParams({ scope: exportScope });
+      if (exportScope === 'primary' && exportDomainSlug) params.set('domain', exportDomainSlug);
+      const response = await fetch(`/api/competitors/matched-listings?${params.toString()}`);
 
       if (response.status === 204) {
         setExportError('No matched listings to export yet.');

@@ -3,21 +3,34 @@
 // Lets a seller with more than one tracked domain (category) pick which
 // one most of the dashboard shows. Distinct from the Competitors page's
 // "All My Products" aggregate tab - this is "switch which single domain
-// I'm looking at" for pages (starting with Overview) that aren't
-// aggregate-aware.
+// I'm looking at" for the pages listed in DOMAIN_AWARE_PATHS below.
 //
 // Selection is a query param (?domain=<categorySlug>) on the current path,
 // not a DB write - it doesn't touch seller_domains.is_primary, so
 // Settings' "Primary" badge stays the single source of truth for that.
 // Session-only by design: shareable/bookmarkable like the Explore page's
-// own param, and simpler than persisting a cross-navigation preference for
-// a phase-1 feature only Overview currently reads.
+// own param, and simpler than persisting a cross-navigation preference.
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 
 import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
+import { PATH_DASHBOARD } from '@/lib/paths';
+
+// Only the pages that actually resolve ?domain= (server-side, via
+// resolveSelectedDomain). Mounted in AppHeader, which renders on every
+// authenticated route, so without this the control appears on Products,
+// Orders and Settings and silently does nothing when used - worse than
+// not offering it. Explore is deliberately absent too: it has its own
+// category picker covering every category, tracked or not, and two
+// competing category controls in one header would be ambiguous.
+const DOMAIN_AWARE_PATHS: string[] = [
+  PATH_DASHBOARD.market,
+  PATH_DASHBOARD.competitors,
+  PATH_DASHBOARD.marketDefinition,
+  PATH_DASHBOARD.watchlist,
+];
 
 // Domains arrive as a prop from the layout's server-side fetch - this used
 // to GET /api/domains itself on every navigation, since the shell wraps every
@@ -48,6 +61,7 @@ export function DomainSwitcher({ domains }: { domains: SellerDomainRow[] }) {
 
   // Single-domain sellers (the common case today) see no change at all.
   if (domains.length <= 1) return null;
+  if (!DOMAIN_AWARE_PATHS.includes(pathname)) return null;
 
   const selectedSlug = searchParams.get('domain');
   const primary = domains.find((d) => d.isPrimary) ?? domains[0];

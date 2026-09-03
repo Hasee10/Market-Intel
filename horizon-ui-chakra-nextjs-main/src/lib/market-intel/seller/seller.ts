@@ -183,6 +183,38 @@ export const getPrimaryDomain = cache(async function getPrimaryDomain(
   };
 });
 
+// Which domain a page should render, given the ?domain=<categorySlug>
+// param the header's DomainSwitcher writes. Every domain-scoped page
+// resolves it through here rather than reading the param directly, so
+// there is one answer to "what happens when the slug is missing, stale, or
+// not mine" instead of four.
+//
+// Resolution is deliberately against the seller's OWN tracked domains
+// (listSellerDomains is seller-scoped) rather than a bare slug lookup, so
+// hand-editing the URL to another seller's category resolves to null and
+// falls back to primary instead of rendering someone else's market. The
+// same fallback covers a bookmarked link to a domain since removed.
+//
+// cache()d like its two dependencies, so a page calling this alongside
+// anything else that resolves a domain costs one round-trip, not two.
+export const resolveSelectedDomain = cache(async function resolveSelectedDomain(
+  sellerId: string,
+  slug?: string | null,
+): Promise<SellerDomain | null> {
+  const primary = await getPrimaryDomain(sellerId);
+  if (!slug || slug === primary?.categorySlug) return primary;
+
+  const domains = await listSellerDomains(sellerId);
+  const matched = domains.find((domain) => domain.categorySlug === slug);
+  if (!matched) return primary;
+
+  return {
+    categoryId: matched.categoryId,
+    categorySlug: matched.categorySlug,
+    categoryName: matched.categoryName,
+  };
+});
+
 export async function listCategories() {
   const supabase = await createClient();
 

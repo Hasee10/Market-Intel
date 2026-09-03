@@ -4074,3 +4074,56 @@ failed the realistic end-to-end one. Both regression tests here were **run
 red against the previous implementation** before being accepted. The
 earlier ordering test in the same file was too — a green regression test
 that has never been seen red is not evidence.
+
+## 2026-09-03: Multi-domain phase 2 — every domain-scoped page follows the switcher
+
+Phase 1 added the header `DomainSwitcher` but only Overview read its
+`?domain=` param. Phase 2 makes the rest honour it.
+
+**Correction to the phase-1 note's follow-up list: there is no separate
+Alerts or Forecasting page.** Forecasting is a section inside the Market
+page (so phase 1 already covered it) and price alerts are a cron job with
+no UI at all. The real remaining surfaces were Watchlist, Market
+Definition and Competitors. Don't go looking for the other two.
+
+**The genuinely broken one was Market Definition.**
+`seller_market_definitions` is keyed per category, but the editor only ever
+opened `getPrimaryDomain()`, so a seller tracking three categories could
+scope exactly one of them — the other two were permanently stuck on the
+default "everything" scope with no route to narrow them. That was a
+functional gap, not a polish item.
+
+**One resolver, not four.** `resolveSelectedDomain(sellerId, slug)` in
+`seller.ts` is now the single answer to "missing / stale / foreign slug".
+It resolves against `listSellerDomains` (seller-scoped) rather than a bare
+slug lookup, **so hand-editing `?domain=` to a category the seller doesn't
+track falls back to primary instead of rendering another seller's market**
+— same fallback covers a bookmark to a since-removed domain. `cache()`d
+like its two dependencies. Tested in its own file
+(`resolve-selected-domain.test.ts`) because it needs a different Supabase
+mock shape than `seller.test.ts` — it drives both `getPrimaryDomain`
+(`.eq().eq().maybeSingle()`) and `listSellerDomains` (`.eq().order()`) off
+one table.
+
+**Two consistency bugs phase 1 had introduced, both fixed here:**
+- The switcher rendered on *every* authenticated route (it is mounted in
+  `AppHeader`), so using it on Products/Orders/Settings silently did
+  nothing. Now gated to a `DOMAIN_AWARE_PATHS` allowlist. **Explore is
+  deliberately excluded** — it has its own category picker spanning every
+  category, tracked or not, and two competing category controls in one
+  header is ambiguous. If you add a domain-aware page, add it to that list
+  or the switcher will not appear on it.
+- The Competitors matched-listings CSV always exported the *primary*
+  domain regardless of which one was on screen. The slug is now threaded
+  through `exportDomainSlug` → `?domain=` and resolved by the route with
+  the same helper. Its tab label also changed from "Primary Domain (X)" to
+  just the category name, since it is no longer necessarily primary.
+
+**Deliberately left on primary, and these are decisions rather than
+oversights:** `collect-snapshot.ts` (reports) and
+`seller-assistant-context.ts`. "Which domain does a generated PDF cover"
+and "which domain should a chat answer assume" are distinct product
+questions — a report probably wants to be an explicit parameter or a
+multi-domain document, not to silently follow whatever the header happened
+to be set to when the button was pressed. `getCompetitorOverlap` also
+still uses plain Jaccard by design (see the IDF entry above).
