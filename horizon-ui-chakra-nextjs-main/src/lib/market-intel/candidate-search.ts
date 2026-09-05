@@ -18,6 +18,8 @@ export type SimilarCandidate = {
   price: number | null;
   currency: string;
   url: string;
+  /** Scraped listing image (market_products.image_url). Nullable. */
+  imageUrl: string | null;
   categorySlug: string;
   platformId: string;
   platformName: string | null;
@@ -33,6 +35,7 @@ type SimilarCandidateRow = {
   price: number | string | null;
   currency: string;
   url: string;
+  image_url: string | null;
   category_slug: string;
   platform_id: string;
   platform_name: string | null;
@@ -54,6 +57,7 @@ function mapRow(row: SimilarCandidateRow): SimilarCandidate {
     price: row.price != null ? Number(row.price) : null,
     currency: row.currency,
     url: row.url,
+    imageUrl: row.image_url ?? null,
     categorySlug: row.category_slug,
     platformId: row.platform_id,
     platformName: row.platform_name,

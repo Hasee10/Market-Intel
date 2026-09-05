@@ -189,6 +189,8 @@ export type CompetitorListing = {
   matchedPlatformName: string | null;
   matchedPrice: number | null;
   matchedUrl: string;
+  /** Scraped listing image (market_products.image_url via SimilarCandidate). Nullable. */
+  matchedImageUrl: string | null;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -295,6 +297,7 @@ export async function findCompetitorsForProduct(
         matchedPlatformName: row.platformName,
         matchedPrice,
         matchedUrl: row.url,
+        matchedImageUrl: row.imageUrl,
         rating: row.rating,
         ratingCount: row.ratingCount,
         soldCount: row.soldCount,

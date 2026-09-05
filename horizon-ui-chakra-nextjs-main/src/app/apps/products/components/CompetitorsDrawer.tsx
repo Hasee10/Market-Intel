@@ -6,6 +6,7 @@ import { MdOutlineOpenInNew, MdOutlineStar, MdExpandMore, MdExpandLess } from 'r
 
 import { Drawer } from '@/components/ui/Drawer';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
+import { ProductThumb } from '@/components/ui/ProductThumb';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -14,6 +15,8 @@ type CompetitorListing = {
   matchedPlatformName: string | null;
   matchedPrice: number | null;
   matchedUrl: string;
+  /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
+  matchedImageUrl: string | null;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -185,20 +188,30 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
               return (
                 <Fragment key={`${listing.matchedUrl}-${i}`}>
                   <TR>
-                    <TD strong className="max-w-[240px]">
-                      <a
-                        href={listing.matchedUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title={title}
-                        className="flex items-center gap-1.5 hover:text-brand-500 hover:underline"
-                      >
-                        <span className="line-clamp-2">{title}</span>
-                        <MdOutlineOpenInNew
-                          className="size-3 shrink-0 text-gray-400"
-                          aria-hidden="true"
-                        />
-                      </a>
+                    <TD strong className="max-w-[280px]">
+                      {/* categoryName is null deliberately: this row is a
+                          scraped market_products listing, not a seller
+                          product - it carries the platform's own category
+                          slug, not a seller category, so there is no tile
+                          colour to look up. The photo is the whole point
+                          here (credibility that this is a real, matched
+                          listing), so it comes before the title, not after. */}
+                      <span className="flex items-center gap-2.5">
+                        <ProductThumb src={listing.matchedImageUrl} alt="" categoryName={null} />
+                        <a
+                          href={listing.matchedUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          title={title}
+                          className="flex min-w-0 items-center gap-1.5 hover:text-brand-500 hover:underline"
+                        >
+                          <span className="line-clamp-2">{title}</span>
+                          <MdOutlineOpenInNew
+                            className="size-3 shrink-0 text-gray-400"
+                            aria-hidden="true"
+                          />
+                        </a>
+                      </span>
                     </TD>
                     <TD>
                       <span title={MATCH_STRENGTH_LABEL[listing.matchStrength].help}>
