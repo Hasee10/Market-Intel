@@ -6,6 +6,7 @@ import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdVie
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { CustomersTable } from '@/components/marketintel/CustomersTable';
@@ -49,6 +50,12 @@ export default function CustomersPage() {
     refetch: refetchCustomers,
   } = useCustomers();
 
+  // /api/customers has no limit either - both views below rendered the
+  // seller's whole customer list in one grid or one table. Same fix and
+  // same page size as Products, so switching grid/table keeps your place.
+  const customers = (customersData?.data as CustomerDto[] | undefined) ?? [];
+  const customerPage = usePagination(customers, 12);
+
   const handleCustomerCreated = useCallback(() => {
     refetchCustomers();
   }, [refetchCustomers]);
@@ -91,7 +98,7 @@ export default function CustomersPage() {
       );
     }
 
-    if (!customersData?.data?.length) {
+    if (!customers.length) {
       return (
         <Card>
           <div className="flex flex-col items-center gap-2 py-6 text-center">
@@ -112,20 +119,39 @@ export default function CustomersPage() {
       );
     }
 
+    // Can't share one Pagination placed after both branches: the table
+    // view has a Card wrapper with its own horizontal padding and the grid
+    // view doesn't (the cards themselves are the grid items), so a control
+    // sitting outside both inherits neither's padding and visibly hugs the
+    // bare page edge under the table instead of lining up with it - the same
+    // "pagination is at the very side" bug fixed on Products. Nested inside
+    // whichever container that view actually has.
+    const pagination = (
+      <Pagination
+        page={customerPage.page}
+        pageCount={customerPage.pageCount}
+        onPageChange={customerPage.setPage}
+        rangeStart={customerPage.rangeStart}
+        rangeEnd={customerPage.rangeEnd}
+        total={customerPage.total}
+        label="customers"
+      />
+    );
+
     return viewMode === 'grid' ? (
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-        {(customersData.data as CustomerDto[]).map((customer) => (
-          <CustomerCard key={customer.id} data={customer} onEdit={handleEditCustomer} />
-        ))}
-      </div>
+      <>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
+          {customerPage.visible.map((customer) => (
+            <CustomerCard key={customer.id} data={customer} onEdit={handleEditCustomer} />
+          ))}
+        </div>
+        {pagination}
+      </>
     ) : (
       <Card>
         {/* Table brings its own overflow-x container, so no wrapper needed. */}
-        <CustomersTable
-          data={customersData.data as CustomerDto[]}
-          loading={false}
-          onEdit={handleEditCustomer}
-        />
+        <CustomersTable data={customerPage.visible} loading={false} onEdit={handleEditCustomer} />
+        {pagination}
       </Card>
     );
   };
@@ -137,7 +163,7 @@ export default function CustomersPage() {
         breadcrumbItems={breadcrumbItems}
         actionButton={
           <div className="flex flex-wrap gap-2">
-            {customersData?.data && customersData.data.length > 0 && (
+            {customers.length > 0 && (
               // Segmented grid/table switch, matching the same control on
               // Products rather than two loose buttons.
               <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">

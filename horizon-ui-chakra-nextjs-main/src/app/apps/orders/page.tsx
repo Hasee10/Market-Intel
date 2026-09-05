@@ -12,6 +12,7 @@ import {
 
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { Pagination, usePagination } from '@/components/ui/Pagination';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
@@ -79,6 +80,12 @@ export default function OrdersPage() {
     refetch: refetchOrders,
   } = useFetch<IApiResponse<OrderDto[]>>('/api/orders');
 
+  // /api/orders has no limit and returns the seller's whole order history in
+  // one response - this was rendering all of it in one unbroken table, the
+  // same defect Products had before it was paginated.
+  const orders = ordersData?.data ?? [];
+  const orderPage = usePagination(orders, 12);
+
   const handleOrderChanged = useCallback(() => {
     refetchOrders();
   }, [refetchOrders]);
@@ -98,7 +105,7 @@ export default function OrdersPage() {
       );
     }
 
-    if (!ordersLoading && !ordersData?.data?.length) {
+    if (!ordersLoading && !orders.length) {
       return (
         <Card>
           <div className="flex flex-col items-center gap-2 py-6 text-center">
@@ -121,7 +128,16 @@ export default function OrdersPage() {
 
     return (
       <Card>
-        <OrdersTable data={ordersData?.data ?? []} loading={ordersLoading} onEdit={handleEditOrder} />
+        <OrdersTable data={orderPage.visible} loading={ordersLoading} onEdit={handleEditOrder} />
+        <Pagination
+          page={orderPage.page}
+          pageCount={orderPage.pageCount}
+          onPageChange={orderPage.setPage}
+          rangeStart={orderPage.rangeStart}
+          rangeEnd={orderPage.rangeEnd}
+          total={orderPage.total}
+          label="orders"
+        />
       </Card>
     );
   };
@@ -152,8 +168,8 @@ export default function OrdersPage() {
         }
       />
 
-      {!ordersLoading && ordersData?.succeeded && ordersData.data && ordersData.data.length > 0 && (
-        <InsightStrip insight={computeOrdersInsight(ordersData.data)} />
+      {!ordersLoading && ordersData?.succeeded && orders.length > 0 && (
+        <InsightStrip insight={computeOrdersInsight(orders)} />
       )}
 
       {renderContent()}

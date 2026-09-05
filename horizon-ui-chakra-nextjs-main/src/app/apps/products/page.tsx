@@ -233,38 +233,48 @@ function ProductsPageContent() {
       );
     }
 
-    return (
+    // One Pagination, shared by both views so switching keeps your page
+    // number - but it can't sit outside the switch as one shared element the
+    // way Customers does it: the table view has a Card wrapper (with its own
+    // horizontal padding) and the grid view does not (the cards themselves
+    // are the grid items), so a control placed after both would inherit
+    // neither's padding and visibly hug the bare page edge under the table -
+    // "the pagination is at the very side" - instead of lining up with the
+    // content above it. Rendered once, but nested wherever that view's own
+    // content is nested.
+    const pagination = (
+      <Pagination
+        page={productPage.page}
+        pageCount={productPage.pageCount}
+        onPageChange={productPage.setPage}
+        rangeStart={productPage.rangeStart}
+        rangeEnd={productPage.rangeEnd}
+        total={productPage.total}
+        label="products"
+      />
+    );
+
+    return viewMode === 'grid' ? (
       <>
-        {viewMode === 'grid' ? (
-          <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
-            {productPage.visible.map((p, i) => (
-              <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
-                <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
-              </Reveal>
-            ))}
-          </div>
-        ) : (
-          <Card>
-            <ProductsTable
-              data={productPage.visible}
-              loading={false}
-              onEdit={handleEditProduct}
-              onViewCompetitors={handleViewCompetitors}
-            />
-          </Card>
-        )}
-        {/* Outside the view switch, so grid and table share one control and
-            one page number rather than each carrying a copy. */}
-        <Pagination
-          page={productPage.page}
-          pageCount={productPage.pageCount}
-          onPageChange={productPage.setPage}
-          rangeStart={productPage.rangeStart}
-          rangeEnd={productPage.rangeEnd}
-          total={productPage.total}
-          label="products"
-        />
+        <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
+          {productPage.visible.map((p, i) => (
+            <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
+              <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
+            </Reveal>
+          ))}
+        </div>
+        {pagination}
       </>
+    ) : (
+      <Card>
+        <ProductsTable
+          data={productPage.visible}
+          loading={false}
+          onEdit={handleEditProduct}
+          onViewCompetitors={handleViewCompetitors}
+        />
+        {pagination}
+      </Card>
     );
   };
 
