@@ -13,6 +13,7 @@ import type { MarketScopeSummary } from '@/lib/market-intel/market/market-defini
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 import CompetitorScorecardsPanel from '../competitors/CompetitorScorecardsPanel';
+import { ProductPreLaunchPanel } from '@/components/marketintel/ProductPreLaunchPanel';
 
 type Category = { id: string; slug: string; name: string };
 
@@ -132,6 +133,18 @@ export default function ExploreView({
                 </button>
               </div>
             </div>
+
+            {/* The product-level answer the category picker above cannot
+                give on its own: not "what does this whole category look
+                like" but "what does THIS item sell for, and would my price
+                undercut the people already selling it". */}
+            <Card className="mb-6" title="Check a specific product before you stock it">
+              <ProductPreLaunchPanel
+                categorySlug={selectedCategorySlug}
+                categoryName={selectedCategoryName}
+                currency={reportingCurrency}
+              />
+            </Card>
 
             <CompetitorScorecardsPanel
               scopeLabel={selectedCategoryName ?? 'this market'}
