@@ -15,6 +15,15 @@ on:
     - cron: "0 4 * * *" # low-stock alerts - once daily
     - cron: "0 5 * * *" # churn/RFM snapshot - once daily
     - cron: "0 2 * * *" # fx-rates snapshot - once daily, before benchmarks/churn use it
+    # Push delivery for the mobile app. Three fixed times rather than
+    # "every 6 hours" because the recipients are phones in Pakistan
+    # (UTC+5): 03:30/09:30/15:30 UTC is 08:30/14:30/20:30 PKT, all waking
+    # hours. A */6 schedule would have buzzed sellers at 23:30 their time,
+    # which is how an app gets its notifications turned off permanently.
+    # Each run picks up whatever the alert jobs above wrote since the last
+    # one; the 18:00 price-alerts batch waits until the 03:30 run, well
+    # inside the job's own 24h staleness window.
+    - cron: "30 3,9,15 * * *" # push notifications - three times daily
   workflow_dispatch: {}
 
 permissions:
@@ -83,6 +92,18 @@ jobs:
           status=$(curl --silent --show-error --output response.json --write-out "%{http_code}" \
             -X POST "${{ secrets.APP_URL }}/api/cron/price-alerts" \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
+          cat response.json
+          echo "HTTP status: $status"
+          [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
+
+  push-notifications:
+    if: github.event.schedule == '30 3,9,15 * * *' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger push notification delivery
+        run: |
+          status=$(curl --silent --show-error --output response.json --write-out "%{http_code}"             -X POST "${{ secrets.APP_URL }}/api/cron/push-notifications"             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}")
           cat response.json
           echo "HTTP status: $status"
           [ "$status" -ge 200 ] && [ "$status" -lt 300 ]
