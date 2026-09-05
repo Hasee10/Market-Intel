@@ -4,7 +4,7 @@ import { cache } from 'react';
 
 import { redirect } from 'next/navigation';
 
-import { hasFeature } from '@/lib/market-intel/entitlements';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
 import { createBearerClient, createClient, getBearerToken } from '@/lib/supabase/server';
 
 export type Seller = {

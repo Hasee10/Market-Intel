@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, type FxRates } from '@/lib/market-intel/fx';
-import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/low-stock-job';
-import type { Seller } from '@/lib/market-intel/seller';
+import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/jobs/low-stock-job';
+import type { Seller } from '@/lib/market-intel/seller/seller';
 import { buildGrowthMetric } from '../metrics/growth';
 import { median } from '../metrics/statistics';
 import type { InventoryRiskSection, ProductPerformanceSection, RevenueSection } from '../schema';

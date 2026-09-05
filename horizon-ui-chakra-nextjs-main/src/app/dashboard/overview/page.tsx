@@ -22,8 +22,8 @@ import { ProductThumb } from '@/components/ui/ProductThumb';
 import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
-import type { OrderAnomaly } from '@/lib/market-intel/anomalies';
-import type { RevenueForecast } from '@/lib/market-intel/forecast';
+import type { OrderAnomaly } from '@/lib/market-intel/market/anomalies';
+import type { RevenueForecast } from '@/lib/market-intel/market/forecast';
 
 // Shared empty-state pattern: icon + reason + a single next action, not
 // just flat "No X yet" text with nowhere to go.

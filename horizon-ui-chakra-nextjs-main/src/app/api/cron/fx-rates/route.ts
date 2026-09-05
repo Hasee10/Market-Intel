@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { refreshFxRates } from '@/lib/market-intel/fx-job';
+import { refreshFxRates } from '@/lib/market-intel/jobs/fx-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
 
 async function run(request: NextRequest) {

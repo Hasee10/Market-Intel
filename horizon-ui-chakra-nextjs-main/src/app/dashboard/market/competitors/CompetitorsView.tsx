@@ -10,8 +10,8 @@ import type {
   CompetitorLandscape,
   CompetitorMatchStats,
   CompetitorOverlap,
-} from '@/lib/market-intel/competitors';
-import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
+} from '@/lib/market-intel/market/competitors';
+import type { MarketScopeSummary } from '@/lib/market-intel/market/market-definition';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 import CompetitorScorecardsPanel from './CompetitorScorecardsPanel';

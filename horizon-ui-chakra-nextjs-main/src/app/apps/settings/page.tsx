@@ -27,7 +27,7 @@ import { ReferralCard } from '@/components/marketintel/ReferralCard';
 import { useProfile } from '@/lib/hooks/useApi';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
-import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
 const breadcrumbItems = [
   { title: 'Dashboard', href: PATH_DASHBOARD.default },

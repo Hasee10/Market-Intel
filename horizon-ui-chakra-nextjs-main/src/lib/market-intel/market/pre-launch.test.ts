@@ -14,7 +14,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({
     categorySlugs: ['smartphones'],
     activePlatformIds: ['p1'],
@@ -32,7 +32,7 @@ vi.mock('@/lib/market-intel/fx', () => ({
 }));
 
 let categoryPricing: any = null;
-vi.mock('@/lib/market-intel/category-pricing', () => ({
+vi.mock('@/lib/market-intel/market/category-pricing', () => ({
   getCategoryPricing: async () => categoryPricing,
 }));
 

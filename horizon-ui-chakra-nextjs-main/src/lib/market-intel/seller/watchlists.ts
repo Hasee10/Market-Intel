@@ -1,6 +1,6 @@
 'server-only';
 
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { createClient } from '@/lib/supabase/server';
 
 export type WatchlistItem = {

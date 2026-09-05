@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { GroqNotConfiguredError, suggestCategoriesBatch } from '@/lib/ai/suggest-category';
 import { MAX_IMPORT_ROWS } from '@/lib/csv';
-import { getCountryProductConfig } from '@/lib/market-intel/countries';
-import { autoAssignDomainsForCategories, getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCountryProductConfig } from '@/lib/market-intel/core/countries';
+import { autoAssignDomainsForCategories, getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 

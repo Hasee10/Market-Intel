@@ -1,4 +1,4 @@
-import { getScraperHealth } from '@/lib/market-intel/scraper-health';
+import { getScraperHealth } from '@/lib/market-intel/market/scraper-health';
 
 import ScraperHealthView from './ScraperHealthView';
 

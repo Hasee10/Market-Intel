@@ -1,8 +1,8 @@
 'server-only';
 
-import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/category-pricing';
-import { findTopSimilarCandidates } from '@/lib/market-intel/candidate-search';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/market/category-pricing';
+import { findTopSimilarCandidates } from '@/lib/market-intel/market/candidate-search';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import {
   buildIdf,
@@ -12,7 +12,7 @@ import {
   tokenize,
   MIN_COMPETITOR_CONFIDENCE,
   type MatchStrength,
-} from '@/lib/market-intel/similarity';
+} from '@/lib/market-intel/core/similarity';
 import { createClient } from '@/lib/supabase/server';
 
 // "Should I stock this?" - the product-level counterpart to the Explore

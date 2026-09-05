@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'crypto';
 import { getLatestFxRates } from '@/lib/market-intel/fx';
-import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller';
+import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller/seller';
 import type { ReportSnapshot, ReportType, Recommendation, RoadmapPhase } from './schema';
 import { collectRevenueAndProducts } from './collectors/revenue-and-products';
 import { collectMarketplaceAndPricing } from './collectors/marketplace-and-pricing';

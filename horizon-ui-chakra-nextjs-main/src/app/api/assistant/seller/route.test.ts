@@ -5,7 +5,7 @@ let currentSeller: any = { id: 'seller1', businessName: 'Test Store', reportingC
 let rateLimited = false;
 const answerSellerQuestionMock = vi.fn(async (..._args: any[]) => 'Here is your answer.');
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getCurrentSeller: async () => currentSeller,
 }));
 

@@ -30,7 +30,7 @@ const SCOPE_DEFINITION = {
   isDefault: false,
 };
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({
     sellerCategorySlug: 'mobiles-and-electronics',
     definition: SCOPE_DEFINITION,

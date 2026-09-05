@@ -1,3 +1,45 @@
 {
-  "extends": "next/core-web-vitals"
+  "extends": "next/core-web-vitals",
+  "overrides": [
+    {
+      "files": ["src/lib/market-intel/core/**/*.ts"],
+      "excludedFiles": ["src/lib/market-intel/core/**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/lib/supabase/*",
+                  "@/lib/market-intel/market/*",
+                  "@/lib/market-intel/seller/*",
+                  "@/lib/market-intel/jobs/*",
+                  "next/*"
+                ],
+                "message": "lib/market-intel/core is the pure layer - no database, no framework, no other market-intel module. That is what makes it trivially unit-testable, and it erodes one convenient import at a time, so it is enforced rather than left to reviewer memory. Anything needing a database belongs in market/ or seller/. See docs/architecture.md."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/market-intel/market/**/*.ts", "src/lib/market-intel/seller/**/*.ts"],
+      "excludedFiles": ["src/lib/market-intel/**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["@/lib/market-intel/jobs/*"],
+                "message": "Read modules must not import a cron job. Jobs run with the service-role key and bypass RLS by design; a request-scoped module importing one is how that privilege escapes the boundary it was meant to stay inside. Only /api/cron/* route handlers should call them. See docs/architecture.md."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

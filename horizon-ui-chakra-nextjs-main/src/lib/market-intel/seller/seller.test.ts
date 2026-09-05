@@ -32,7 +32,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/entitlements', () => ({
+vi.mock('@/lib/market-intel/core/entitlements', () => ({
   hasFeature: () => hasFeatureResult,
 }));
 

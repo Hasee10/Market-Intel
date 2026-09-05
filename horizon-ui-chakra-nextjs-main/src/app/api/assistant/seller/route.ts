@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { answerSellerQuestion, GroqNotConfiguredError, type AssistantMessage } from '@/lib/ai/seller-assistant';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { isRateLimited } from '@/lib/rate-limit';
 
 const MAX_MESSAGES = 8;

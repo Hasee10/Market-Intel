@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { detectOwnRevenueAnomalies } from '@/lib/market-intel/anomalies';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { detectOwnRevenueAnomalies } from '@/lib/market-intel/market/anomalies';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();

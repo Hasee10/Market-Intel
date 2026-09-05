@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { computeDomainBenchmarks } from '@/lib/market-intel/benchmarks-job';
+import { computeDomainBenchmarks } from '@/lib/market-intel/jobs/benchmarks-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
 
 // Triggered on a schedule (see vercel.json's crons entry) to recompute

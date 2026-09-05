@@ -5,7 +5,7 @@ import {
   getCurrentSeller,
   listCategories,
   listSellerDomains,
-} from '@/lib/market-intel/seller';
+} from '@/lib/market-intel/seller/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();

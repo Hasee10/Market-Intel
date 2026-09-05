@@ -2,8 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 
-import { saveMarketDefinition, type MarketDefinitionInput } from '@/lib/market-intel/market-definition';
-import { requireSeller } from '@/lib/market-intel/seller';
+import { saveMarketDefinition, type MarketDefinitionInput } from '@/lib/market-intel/market/market-definition';
+import { requireSeller } from '@/lib/market-intel/seller/seller';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 // A flat shape rather than a discriminated union: server action return types

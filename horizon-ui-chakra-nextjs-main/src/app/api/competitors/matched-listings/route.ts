@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { objectsToCsv } from '@/lib/csv';
-import { getMatchedListingsForExport } from '@/lib/market-intel/competitors';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getMarketScope, getMarketScopeForAllDomains } from '@/lib/market-intel/market-definition';
-import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
+import { getMatchedListingsForExport } from '@/lib/market-intel/market/competitors';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getMarketScope, getMarketScopeForAllDomains } from '@/lib/market-intel/market/market-definition';
+import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller/seller';
 
 // The matched-listings CSV, built on demand.
 //

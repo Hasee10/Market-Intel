@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller, listSellerDomains } from '@/lib/market-intel/seller';
+import { getCurrentSeller, listSellerDomains } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 
 // Sets this domain as primary (and unsets any other) - the primary domain

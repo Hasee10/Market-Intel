@@ -12,7 +12,7 @@ import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 import { LandingHero } from '@/components/landing/LandingHero';
 import { MarketplaceLogoSlider } from '@/components/landing/MarketplaceLogoSlider';
-import { getShowcaseBrands, getShowcaseSellers } from '@/lib/market-intel/showcase';
+import { getShowcaseBrands, getShowcaseSellers } from '@/lib/market-intel/market/showcase';
 import { StatsBar } from '@/components/landing/StatsBar';
 
 // Public marketing page - `/` is not in middleware.ts's PROTECTED_PREFIXES,

@@ -23,20 +23,20 @@ import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
-import type { CompetitorPriceAnomaly } from '@/lib/market-intel/anomalies';
-import type { DomainBenchmark, DomainPeer } from '@/lib/market-intel/benchmarks';
-import type { CategoryPricing } from '@/lib/market-intel/category-pricing';
-import type { PriceForecast } from '@/lib/market-intel/forecast';
+import type { CompetitorPriceAnomaly } from '@/lib/market-intel/market/anomalies';
+import type { DomainBenchmark, DomainPeer } from '@/lib/market-intel/seller/benchmarks';
+import type { CategoryPricing } from '@/lib/market-intel/market/category-pricing';
+import type { PriceForecast } from '@/lib/market-intel/market/forecast';
 import type {
   DemandSignal,
   PlatformFreshness,
   PriceTrendPoint,
   StockOutProduct,
-} from '@/lib/market-intel/market-insights';
-import type { PricingRecommendation } from '@/lib/market-intel/pricing-recommendation';
-import type { ProductMatch } from '@/lib/market-intel/product-matching';
-import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
-import type { SellerDomain } from '@/lib/market-intel/seller';
+} from '@/lib/market-intel/market/market-insights';
+import type { PricingRecommendation } from '@/lib/market-intel/seller/pricing-recommendation';
+import type { ProductMatch } from '@/lib/market-intel/market/product-matching';
+import type { MarketScopeSummary } from '@/lib/market-intel/market/market-definition';
+import type { SellerDomain } from '@/lib/market-intel/seller/seller';
 import { PATH_DASHBOARD, PATH_ONBOARDING } from '@/lib/paths';
 
 function formatMetric(metricName: string) {

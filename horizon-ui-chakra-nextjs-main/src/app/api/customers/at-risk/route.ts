@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
-import { getAtRiskCustomers, getLatestChurnSnapshot } from '@/lib/market-intel/rfm';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
+import { getAtRiskCustomers, getLatestChurnSnapshot } from '@/lib/market-intel/seller/rfm';
 
 export async function GET() {
   const seller = await getCurrentSeller();

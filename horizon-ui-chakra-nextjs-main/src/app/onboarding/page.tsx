@@ -2,8 +2,8 @@ import Image from 'next/image';
 import { redirect } from 'next/navigation';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getCurrentSeller, getPrimaryDomain, listCategories } from '@/lib/market-intel/seller';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getCurrentSeller, getPrimaryDomain, listCategories } from '@/lib/market-intel/seller/seller';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 import { CategoryPicker } from './CategoryPicker';

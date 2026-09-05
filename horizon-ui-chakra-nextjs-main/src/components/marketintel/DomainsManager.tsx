@@ -19,7 +19,7 @@ import Card from 'components/card/Card';
 
 import { useFetch } from '@/lib/hooks/useApi';
 import { IApiResponse } from '@/types/api-response';
-import type { SellerDomainRow } from '@/lib/market-intel/seller';
+import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
 
 type Category = { id: string; slug: string; name: string };
 type DomainsData = { domains: SellerDomainRow[]; categories: Category[] };

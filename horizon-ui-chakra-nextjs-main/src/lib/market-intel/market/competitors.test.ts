@@ -101,7 +101,7 @@ vi.mock('@/lib/market-intel/fx', () => ({
   convertCurrency: (amount: number) => amount,
 }));
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({ categorySlugs: ['gpus'], activePlatformIds: ['p1', 'p2'] }),
   getMarketScopeForAllDomains: async () => ({
     categorySlugs: ['gpus', 'phones'],
@@ -324,7 +324,7 @@ describe('getCompetitorOverlap', () => {
 
 describe('getCompetitorMatchCounts (empty scope)', () => {
   it('returns an empty map without calling Supabase when categorySlugs is empty', async () => {
-    vi.doMock('@/lib/market-intel/market-definition', () => ({
+    vi.doMock('@/lib/market-intel/market/market-definition', () => ({
       getMarketScope: async () => ({ categorySlugs: [] as string[], activePlatformIds: [] as string[] }),
       getMarketScopeForAllDomains: async () => ({ categorySlugs: [] as string[], activePlatformIds: [] as string[] }),
     }));

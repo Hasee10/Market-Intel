@@ -2,9 +2,9 @@
 
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
-import { findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/candidate-search';
+import { findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/market/candidate-search';
 import {
   tokenize,
   jaccard,
@@ -14,7 +14,7 @@ import {
   type MatchStrength,
   MIN_CONFIDENCE,
   MIN_COMPETITOR_CONFIDENCE,
-} from '@/lib/market-intel/similarity';
+} from '@/lib/market-intel/core/similarity';
 
 // MVP-level matching: token-overlap (Jaccard) similarity on normalized
 // titles. market_product_matches (009_product_matches.sql) already models

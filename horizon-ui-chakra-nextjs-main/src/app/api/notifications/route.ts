@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { listNotifications } from '@/lib/notifications/list';
 
 export async function GET() {

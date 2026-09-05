@@ -11,7 +11,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 let domainSlugs: string[] = [];
 const taxonomyByCategory: Record<string, any[]> = {};
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getCurrentSeller: async (): Promise<null> => null,
   listSellerDomainSlugs: async (): Promise<string[]> => domainSlugs,
 }));

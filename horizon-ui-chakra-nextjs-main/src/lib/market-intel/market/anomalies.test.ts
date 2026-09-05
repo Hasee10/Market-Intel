@@ -62,7 +62,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({ categorySlugs: ['gpus'], activePlatformIds: ['p1'] }),
 }));
 

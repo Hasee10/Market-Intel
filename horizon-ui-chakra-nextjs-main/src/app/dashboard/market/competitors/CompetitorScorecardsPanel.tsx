@@ -20,7 +20,7 @@ import type {
   CompetitorScorecard,
   CompetitorMatchStats,
   CompetitorOverlap,
-} from '@/lib/market-intel/competitors';
+} from '@/lib/market-intel/market/competitors';
 
 export type CompetitorScorecardsPanelProps = {
   /** What to call the scope in the empty-state copy, e.g. "Mobiles & Electronics" or "your tracked categories". */

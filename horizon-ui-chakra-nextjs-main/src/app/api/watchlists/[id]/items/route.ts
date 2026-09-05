@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
-import { addWatchlistItem } from '@/lib/market-intel/watchlists';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
+import { addWatchlistItem } from '@/lib/market-intel/seller/watchlists';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const seller = await getCurrentSeller();

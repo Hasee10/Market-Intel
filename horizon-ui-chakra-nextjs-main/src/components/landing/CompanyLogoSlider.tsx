@@ -1,4 +1,4 @@
-import type { ShowcaseBrand, ShowcaseSeller } from '@/lib/market-intel/showcase';
+import type { ShowcaseBrand, ShowcaseSeller } from '@/lib/market-intel/market/showcase';
 import { LogoMarquee } from '@/components/landing/LogoMarquee';
 
 // Renders the sellers + brands fetched server-side by page.tsx (see

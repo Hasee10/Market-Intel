@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { MdOutlineTune, MdOutlineWarningAmber } from 'react-icons/md';
 
 import { PATH_DASHBOARD } from '@/lib/paths';
-import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
+import type { MarketScopeSummary } from '@/lib/market-intel/market/market-definition';
 
 // ROADMAP.md C2, Block 1 of the framework. Every number on an analysis page is
 // computed against *some* definition of "the market". Until now that definition

@@ -1,5 +1,5 @@
-import { getCompetitorLandscape } from '@/lib/market-intel/competitors';
-import { getPrimaryDomain } from '@/lib/market-intel/seller';
+import { getCompetitorLandscape } from '@/lib/market-intel/market/competitors';
+import { getPrimaryDomain } from '@/lib/market-intel/seller/seller';
 import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
 
 // The competitor snapshot: who is in this market and how they price.

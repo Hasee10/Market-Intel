@@ -7,7 +7,7 @@ import Card from 'components/card/Card';
 
 import { useFetch } from '@/lib/hooks/useApi';
 import { IApiResponse } from '@/types/api-response';
-import type { ReferralStats } from '@/lib/market-intel/referrals';
+import type { ReferralStats } from '@/lib/market-intel/seller/referrals';
 
 export function ReferralCard() {
   const toast = useToast();

@@ -1,9 +1,9 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/category-pricing';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
-import { findTopProductMatches } from '@/lib/market-intel/product-matching';
+import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/market/category-pricing';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
+import { findTopProductMatches } from '@/lib/market-intel/market/product-matching';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // Rule-based, not ML: with a handful of scraped competitor data points per

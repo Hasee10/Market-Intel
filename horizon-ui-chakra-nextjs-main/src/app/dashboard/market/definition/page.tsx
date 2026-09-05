@@ -3,8 +3,8 @@ import {
   getMarketScopeCoverage,
   getMarketScopeSummary,
   listTaxonomyPlatforms,
-} from '@/lib/market-intel/market-definition';
-import { getPrimaryDomain, requireOnboardedSeller } from '@/lib/market-intel/seller';
+} from '@/lib/market-intel/market/market-definition';
+import { getPrimaryDomain, requireOnboardedSeller } from '@/lib/market-intel/seller/seller';
 
 import MarketDefinitionEditor from './MarketDefinitionEditor';
 

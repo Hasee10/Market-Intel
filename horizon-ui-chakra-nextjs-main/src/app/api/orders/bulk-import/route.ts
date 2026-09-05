@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { MAX_IMPORT_ROWS } from '@/lib/csv';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 
 type ImportRow = {

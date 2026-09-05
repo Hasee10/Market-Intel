@@ -29,7 +29,7 @@ import {
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { PageHeader } from '@/components/marketintel/PageHeader';
-import type { Watchlist, WatchlistItem, ProductSearchResult } from '@/lib/market-intel/watchlists';
+import type { Watchlist, WatchlistItem, ProductSearchResult } from '@/lib/market-intel/seller/watchlists';
 import type { Notification } from '@/lib/notifications/list';
 
 // Same instant-insight pattern as Overview/Market (InsightStrip.tsx) - one

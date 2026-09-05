@@ -17,7 +17,7 @@ const autoAssignDomainsMock = vi.fn(async (...args: any[]) => ({
   skippedNeedsPremium: [] as string[],
 }));
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getCurrentSeller: async () => currentSeller,
   autoAssignDomainsForCategories: (...args: any[]) => autoAssignDomainsMock(...args),
 }));

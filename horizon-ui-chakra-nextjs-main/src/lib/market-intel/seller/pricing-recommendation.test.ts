@@ -35,15 +35,15 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/category-pricing', () => ({
+vi.mock('@/lib/market-intel/market/category-pricing', () => ({
   getCategoryPricing: async (slug: string) => pricingBySlug[slug] ?? null,
 }));
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({ categorySlugs: scopeSlugs, activePlatformIds: ['p1'] }),
 }));
 
-vi.mock('@/lib/market-intel/product-matching', () => ({
+vi.mock('@/lib/market-intel/market/product-matching', () => ({
   findTopProductMatches: async () => matches,
 }));
 

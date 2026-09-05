@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { sanitizeDomain } from '@/lib/domain';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
-import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
 function mapPublicProfile(row: any) {
   return {

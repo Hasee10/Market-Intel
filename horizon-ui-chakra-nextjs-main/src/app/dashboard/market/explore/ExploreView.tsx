@@ -8,8 +8,8 @@ import { Field, Select } from '@/components/ui/Field';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
-import type { CompetitorLandscape } from '@/lib/market-intel/competitors';
-import type { MarketScopeSummary } from '@/lib/market-intel/market-definition';
+import type { CompetitorLandscape } from '@/lib/market-intel/market/competitors';
+import type { MarketScopeSummary } from '@/lib/market-intel/market/market-definition';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 import CompetitorScorecardsPanel from '../competitors/CompetitorScorecardsPanel';

@@ -2,8 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server';
 import type { FxRates } from '@/lib/market-intel/fx';
-import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getCategoryPricing } from '@/lib/market-intel/market/category-pricing';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { safeRatio } from '../metrics/growth';
 import type { MarketplacePerformanceSection, PricePositioningSection } from '../schema';
 

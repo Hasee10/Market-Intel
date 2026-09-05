@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getPriceTrend } from '@/lib/market-intel/market-insights';
+import { getPriceTrend } from '@/lib/market-intel/market/market-insights';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 // Ordinary least squares on (dayIndex, value) - a straight-line trend, not

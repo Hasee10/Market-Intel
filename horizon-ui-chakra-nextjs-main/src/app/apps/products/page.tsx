@@ -25,7 +25,7 @@ import { InsightStrip, type Insight } from '@/components/marketintel/InsightStri
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { ProductsTable } from '@/components/marketintel/ProductsTable';
 import { useFetch, useProfile } from '@/lib/hooks/useApi';
-import { getCountryProductConfig } from '@/lib/market-intel/countries';
+import { getCountryProductConfig } from '@/lib/market-intel/core/countries';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import { IProduct } from '@/types/products';

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getRevenueForecast } from '@/lib/market-intel/forecast';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getRevenueForecast } from '@/lib/market-intel/market/forecast';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();

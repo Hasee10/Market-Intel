@@ -1,7 +1,7 @@
 'server-only';
 
 import type { FxRates } from '@/lib/market-intel/fx';
-import { getCompetitorLandscape } from '@/lib/market-intel/competitors';
+import { getCompetitorLandscape } from '@/lib/market-intel/market/competitors';
 import type { CompetitorBenchmarksSection } from '../schema';
 
 const MAX_SCORECARD_ROWS = 12;

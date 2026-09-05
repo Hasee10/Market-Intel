@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { computeChurnSnapshots } from '@/lib/market-intel/churn-job';
+import { computeChurnSnapshots } from '@/lib/market-intel/jobs/churn-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
 
 async function run(request: NextRequest) {

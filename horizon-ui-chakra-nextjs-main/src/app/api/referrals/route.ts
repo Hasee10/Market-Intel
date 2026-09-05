@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getReferralStats } from '@/lib/market-intel/referrals';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getReferralStats } from '@/lib/market-intel/seller/referrals';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();

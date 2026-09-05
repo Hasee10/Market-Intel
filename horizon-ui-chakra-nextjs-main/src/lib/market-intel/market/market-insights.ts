@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
 export type PriceTrendPoint = { date: string; medianPrice: number };

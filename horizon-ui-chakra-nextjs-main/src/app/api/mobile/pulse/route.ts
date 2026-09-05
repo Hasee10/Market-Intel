@@ -1,6 +1,6 @@
-import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/low-stock-job';
-import { getDataFreshness, getStockOuts } from '@/lib/market-intel/market-insights';
-import { getPrimaryDomain } from '@/lib/market-intel/seller';
+import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/jobs/low-stock-job';
+import { getDataFreshness, getStockOuts } from '@/lib/market-intel/market/market-insights';
+import { getPrimaryDomain } from '@/lib/market-intel/seller/seller';
 import { listNotifications } from '@/lib/notifications/list';
 import { createBearerClient, getBearerToken } from '@/lib/supabase/server';
 import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';

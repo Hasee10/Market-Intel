@@ -1,18 +1,18 @@
-import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/anomalies';
-import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/benchmarks';
-import { getCategoryPricing } from '@/lib/market-intel/category-pricing';
-import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getCategoryPriceForecast } from '@/lib/market-intel/forecast';
+import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/market/anomalies';
+import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/seller/benchmarks';
+import { getCategoryPricing } from '@/lib/market-intel/market/category-pricing';
+import { getMarketScopeSummary } from '@/lib/market-intel/market/market-definition';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getCategoryPriceForecast } from '@/lib/market-intel/market/forecast';
 import {
   getDataFreshness,
   getDemandSignal,
   getPriceTrend,
   getStockOuts,
-} from '@/lib/market-intel/market-insights';
-import { getPricingRecommendations } from '@/lib/market-intel/pricing-recommendation';
-import { findTopProductMatches } from '@/lib/market-intel/product-matching';
-import { getCurrentSeller, getPrimaryDomain, listSellerDomains, type SellerDomain } from '@/lib/market-intel/seller';
+} from '@/lib/market-intel/market/market-insights';
+import { getPricingRecommendations } from '@/lib/market-intel/seller/pricing-recommendation';
+import { findTopProductMatches } from '@/lib/market-intel/market/product-matching';
+import { getCurrentSeller, getPrimaryDomain, listSellerDomains, type SellerDomain } from '@/lib/market-intel/seller/seller';
 
 import MarketView from './MarketView';
 

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
-import { getOnboardingStatus } from '@/lib/market-intel/onboarding-status';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getOnboardingStatus } from '@/lib/market-intel/seller/onboarding-status';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
 export async function GET() {
   const seller = await getCurrentSeller();

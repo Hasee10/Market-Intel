@@ -61,7 +61,7 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   autoAssignDomainsForCategories: async (seller: any, categoryIds: string[]) => {
     assignCalls.push({ seller, categoryIds });
     return assignResult;

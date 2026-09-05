@@ -5,10 +5,10 @@ import {
   getCompetitorMatchCountsAllDomains,
   getCompetitorOverlap,
   getCompetitorOverlapAllDomains,
-} from '@/lib/market-intel/competitors';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
-import { getCurrentSeller, getPrimaryDomain, listSellerDomainSlugs } from '@/lib/market-intel/seller';
+} from '@/lib/market-intel/market/competitors';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getMarketScopeSummary } from '@/lib/market-intel/market/market-definition';
+import { getCurrentSeller, getPrimaryDomain, listSellerDomainSlugs } from '@/lib/market-intel/seller/seller';
 
 import CompetitorsView from './CompetitorsView';
 

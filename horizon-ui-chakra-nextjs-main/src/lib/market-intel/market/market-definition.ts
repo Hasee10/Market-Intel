@@ -3,7 +3,7 @@
 import { cache } from 'react';
 
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentSeller, listSellerDomainSlugs } from '@/lib/market-intel/seller';
+import { getCurrentSeller, listSellerDomainSlugs } from '@/lib/market-intel/seller/seller';
 import { getLatestFxRates } from '@/lib/market-intel/fx';
 
 // ROADMAP.md A3. This replaces category-keywords.ts, which mapped a seller's

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 
 const STATUS_COLORS: Record<string, string> = {

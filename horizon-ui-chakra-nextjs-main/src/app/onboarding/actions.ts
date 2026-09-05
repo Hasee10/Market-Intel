@@ -3,9 +3,9 @@
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
-import { autoAssignDomainsForCategories } from '@/lib/market-intel/seller';
+import { autoAssignDomainsForCategories } from '@/lib/market-intel/seller/seller';
 import { PATH_DASHBOARD } from '@/lib/paths';
-import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
 const VALID_COUNTRY_CODES = new Set<string>(SUPPORTED_COUNTRIES.map((c) => c.code));
 const MAX_ONBOARDING_DOMAINS = 3;

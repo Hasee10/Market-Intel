@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { markAllNotificationsRead } from '@/lib/notifications/list';
 
 // Counterpart to [id]/read for clearing the whole feed at once - the

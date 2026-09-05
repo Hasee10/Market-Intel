@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
-import { findCompetitorsForProduct } from '@/lib/market-intel/product-matching';
+import { findCompetitorsForProduct } from '@/lib/market-intel/market/product-matching';
 
 // Free for all sellers for now - intentionally not gated behind the
 // product_matching paid entitlement used by the Market page's "Similar

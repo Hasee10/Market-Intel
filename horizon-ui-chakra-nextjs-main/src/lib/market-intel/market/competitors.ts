@@ -2,9 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-intel/fx';
-import { getMarketScope, getMarketScopeForAllDomains, type MarketScope } from '@/lib/market-intel/market-definition';
-import { findTopSimilarCandidatesBatch } from '@/lib/market-intel/candidate-search';
-import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/similarity';
+import { getMarketScope, getMarketScopeForAllDomains, type MarketScope } from '@/lib/market-intel/market/market-definition';
+import { findTopSimilarCandidatesBatch } from '@/lib/market-intel/market/candidate-search';
+import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/lib/market-intel/core/similarity';
 
 // ROADMAP.md C1 - Block 4 of the framework, the competitor entity.
 //

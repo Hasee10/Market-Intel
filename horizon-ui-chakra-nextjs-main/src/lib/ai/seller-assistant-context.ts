@@ -1,12 +1,12 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller';
-import { getCompetitorLandscape } from '@/lib/market-intel/competitors';
-import { listWatchlists } from '@/lib/market-intel/watchlists';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
-import { findCompetitorsForProduct } from '@/lib/market-intel/product-matching';
-import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/similarity';
+import { getPrimaryDomain, type Seller } from '@/lib/market-intel/seller/seller';
+import { getCompetitorLandscape } from '@/lib/market-intel/market/competitors';
+import { listWatchlists } from '@/lib/market-intel/seller/watchlists';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
+import { findCompetitorsForProduct } from '@/lib/market-intel/market/product-matching';
+import { tokenize, jaccard, MIN_CONFIDENCE } from '@/lib/market-intel/core/similarity';
 
 // Grounds the seller assistant (seller-assistant.ts) in the seller's own
 // data. Each source is capped and pre-aggregated - never a raw table dump -

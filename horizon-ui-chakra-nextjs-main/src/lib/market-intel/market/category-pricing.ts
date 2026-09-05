@@ -1,7 +1,7 @@
 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
-import { getMarketScope } from '@/lib/market-intel/market-definition';
+import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { getLatestFxRates } from '@/lib/market-intel/fx';
 
 export type CategoryPricing = {

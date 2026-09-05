@@ -1,7 +1,7 @@
 'server-only';
 
 import type { FxRates } from '@/lib/market-intel/fx';
-import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/rfm';
+import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/seller/rfm';
 import { buildGrowthMetric } from '../metrics/growth';
 import type { CustomerHealthSection } from '../schema';
 

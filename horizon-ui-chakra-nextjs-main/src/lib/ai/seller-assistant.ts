@@ -2,7 +2,7 @@
 
 import { callGroqChat, GroqNotConfiguredError } from '@/lib/ai/groq-client';
 import { buildSellerContextBlock } from '@/lib/ai/seller-assistant-context';
-import type { Seller } from '@/lib/market-intel/seller';
+import type { Seller } from '@/lib/market-intel/seller/seller';
 
 export { GroqNotConfiguredError };
 

@@ -1,8 +1,8 @@
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
 import { PageHeader } from '@/components/marketintel/PageHeader';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller';
-import { listWatchlists } from '@/lib/market-intel/watchlists';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getCurrentSeller, getPrimaryDomain } from '@/lib/market-intel/seller/seller';
+import { listWatchlists } from '@/lib/market-intel/seller/watchlists';
 import { listNotifications } from '@/lib/notifications/list';
 
 import WatchlistView from './WatchlistView';

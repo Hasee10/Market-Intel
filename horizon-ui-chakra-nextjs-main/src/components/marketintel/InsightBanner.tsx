@@ -9,8 +9,8 @@ import {
 
 import { PATH_APPS } from '@/lib/paths';
 import type { StatItem } from '@/components/marketintel/StatsGrid';
-import type { OrderAnomaly } from '@/lib/market-intel/anomalies';
-import type { RevenueForecast } from '@/lib/market-intel/forecast';
+import type { OrderAnomaly } from '@/lib/market-intel/market/anomalies';
+import type { RevenueForecast } from '@/lib/market-intel/market/forecast';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 
 // Overview's own instant-insight rule + the component that renders it.

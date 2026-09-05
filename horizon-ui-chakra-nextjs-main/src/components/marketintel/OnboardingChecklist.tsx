@@ -16,7 +16,7 @@ import Card from 'components/card/Card';
 import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS, PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
-import type { OnboardingStatus } from '@/lib/market-intel/onboarding-status';
+import type { OnboardingStatus } from '@/lib/market-intel/seller/onboarding-status';
 
 // 'hasDomain' isn't a step here anymore - dashboard/apps layout.tsx now
 // redirects any seller without a category to /onboarding before they can

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { markNotificationRead } from '@/lib/notifications/list';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -34,7 +34,7 @@ import type {
   MarketScopeSummary,
   MarketSegment,
   TaxonomyPlatform,
-} from '@/lib/market-intel/market-definition';
+} from '@/lib/market-intel/market/market-definition';
 import { PATH_DASHBOARD } from '@/lib/paths';
 
 import { saveMarketDefinitionAction } from './actions';

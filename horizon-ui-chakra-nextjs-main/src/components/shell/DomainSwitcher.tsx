@@ -18,7 +18,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 
 import { useFetch } from '@/lib/hooks/useApi';
-import type { SellerDomainRow } from '@/lib/market-intel/seller';
+import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
 import { IApiResponse } from '@/types/api-response';
 
 type DomainsData = { domains: SellerDomainRow[] };

@@ -1,7 +1,7 @@
-import { getCompetitorLandscape } from '@/lib/market-intel/competitors';
-import { hasFeature } from '@/lib/market-intel/entitlements';
-import { getMarketScopeSummary } from '@/lib/market-intel/market-definition';
-import { getCurrentSeller, listCategories } from '@/lib/market-intel/seller';
+import { getCompetitorLandscape } from '@/lib/market-intel/market/competitors';
+import { hasFeature } from '@/lib/market-intel/core/entitlements';
+import { getMarketScopeSummary } from '@/lib/market-intel/market/market-definition';
+import { getCurrentSeller, listCategories } from '@/lib/market-intel/seller/seller';
 
 import ExploreView from './ExploreView';
 

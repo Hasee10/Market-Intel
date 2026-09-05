@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 
-import { getPreLaunchInsight } from '@/lib/market-intel/pre-launch';
-import { getPrimaryDomain, listCategories } from '@/lib/market-intel/seller';
+import { getPreLaunchInsight } from '@/lib/market-intel/market/pre-launch';
+import { getPrimaryDomain, listCategories } from '@/lib/market-intel/seller/seller';
 import { mobileError, mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
 
 // The quick action the mobile app exists for: "should I stock this, and at

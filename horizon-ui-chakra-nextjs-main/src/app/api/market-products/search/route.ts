@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getCurrentSeller } from '@/lib/market-intel/seller';
-import { searchMarketProducts } from '@/lib/market-intel/watchlists';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
+import { searchMarketProducts } from '@/lib/market-intel/seller/watchlists';
 
 export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();

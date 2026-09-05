@@ -2,8 +2,8 @@ import 'server-only';
 
 import { NextResponse } from 'next/server';
 
-import { hasFeature, type Feature } from '@/lib/market-intel/entitlements';
-import { getSellerFromRequest, type Seller } from '@/lib/market-intel/seller';
+import { hasFeature, type Feature } from '@/lib/market-intel/core/entitlements';
+import { getSellerFromRequest, type Seller } from '@/lib/market-intel/seller/seller';
 
 // Shared plumbing for /api/mobile/*.
 //

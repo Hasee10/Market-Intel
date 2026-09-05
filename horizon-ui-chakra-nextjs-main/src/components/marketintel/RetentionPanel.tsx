@@ -22,7 +22,7 @@ import { InsightStrip, type Insight } from '@/components/marketintel/InsightStri
 
 import { useFetch } from '@/lib/hooks/useApi';
 import { IApiResponse } from '@/types/api-response';
-import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/rfm';
+import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/seller/rfm';
 
 type RetentionData = {
   snapshot: ChurnSnapshot | null;

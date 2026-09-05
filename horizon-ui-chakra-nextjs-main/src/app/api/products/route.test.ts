@@ -9,7 +9,7 @@ const categoryRows = [
 let insertedRow: any = null;
 const suggestCategoryMock = vi.fn(async (..._args: any[]) => ({ categorySlug: 'mobiles-and-electronics', confidence: 'high' }));
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getCurrentSeller: async () => currentSeller,
 }));
 

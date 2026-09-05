@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { runPriceAlertsJob } from '@/lib/market-intel/price-alerts-job';
+import { runPriceAlertsJob } from '@/lib/market-intel/jobs/price-alerts-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
 
 async function run(request: NextRequest) {

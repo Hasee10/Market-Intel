@@ -39,23 +39,23 @@ vi.mock('@/lib/supabase/server', () => ({
   }),
 }));
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getPrimaryDomain: async () => primaryDomain,
 }));
 
-vi.mock('@/lib/market-intel/market-definition', () => ({
+vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => marketScopeImpl(),
 }));
 
-vi.mock('@/lib/market-intel/competitors', () => ({
+vi.mock('@/lib/market-intel/market/competitors', () => ({
   getCompetitorLandscape: async () => competitorLandscapeImpl(),
 }));
 
-vi.mock('@/lib/market-intel/watchlists', () => ({
+vi.mock('@/lib/market-intel/seller/watchlists', () => ({
   listWatchlists: async () => watchlistsImpl(),
 }));
 
-vi.mock('@/lib/market-intel/product-matching', () => ({
+vi.mock('@/lib/market-intel/market/product-matching', () => ({
   findCompetitorsForProduct: (...args: any[]) => findCompetitorsForProductMock(...args),
 }));
 

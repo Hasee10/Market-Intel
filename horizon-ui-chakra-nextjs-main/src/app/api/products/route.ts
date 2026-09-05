@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { suggestCategory } from '@/lib/ai/suggest-category';
 import { blankToNull, parseJsonBody } from '@/lib/api-validation';
-import { getCurrentSeller } from '@/lib/market-intel/seller';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { IProduct } from '@/types/products';
 

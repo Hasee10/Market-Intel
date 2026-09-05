@@ -20,7 +20,7 @@ import { MdClose } from 'react-icons/md';
 import Card from 'components/card/Card';
 
 import { completeOnboarding } from './actions';
-import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/countries';
+import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
 type Category = { id: string; slug: string; name: string };
 

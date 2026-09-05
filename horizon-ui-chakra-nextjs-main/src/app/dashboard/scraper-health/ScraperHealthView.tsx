@@ -5,7 +5,7 @@ import { Badge, Box, Table, Tbody, Td, Text, Th, Thead, Tr } from '@chakra-ui/re
 import Card from 'components/card/Card';
 
 import { PageHeader } from '@/components/marketintel/PageHeader';
-import type { PlatformHealth } from '@/lib/market-intel/scraper-health';
+import type { PlatformHealth } from '@/lib/market-intel/market/scraper-health';
 
 function formatRelativeTime(iso: string) {
   const hours = Math.round((Date.now() - new Date(iso).getTime()) / (60 * 60 * 1000));

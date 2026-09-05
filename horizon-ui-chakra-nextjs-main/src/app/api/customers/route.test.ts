@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 let currentSeller: any = { id: 'seller1' };
 let insertedRow: any = null;
 
-vi.mock('@/lib/market-intel/seller', () => ({
+vi.mock('@/lib/market-intel/seller/seller', () => ({
   getCurrentSeller: async () => currentSeller,
 }));
 
