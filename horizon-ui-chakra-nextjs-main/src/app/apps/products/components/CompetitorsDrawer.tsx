@@ -7,6 +7,7 @@ import { MdOutlineOpenInNew, MdOutlineStar, MdExpandMore, MdExpandLess } from 'r
 import { Drawer } from '@/components/ui/Drawer';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { ProductThumb } from '@/components/ui/ProductThumb';
+import { PricePositionStrip } from '@/components/marketintel/PricePositionStrip';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -159,6 +160,21 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
         <p className="text-sm text-gray-500 dark:text-gray-400">
           No comparable listings found for this product yet.
         </p>
+      )}
+
+      {/* The picture before the table. Fifteen rows of prices answer "am I
+          cheap or expensive here?" only if you hold all fifteen in your
+          head and find your own among them; the strip answers it at a
+          glance, and the table below is then the detail for whichever dot
+          the seller wants to chase. */}
+      {!loading && !error && listings.length > 0 && (
+        <div className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
+          <PricePositionStrip
+            listings={listings.map((l) => ({ price: l.matchedPrice, matchStrength: l.matchStrength }))}
+            sellerPrice={listings[0]?.sellerPrice ?? null}
+            currency={reportingCurrency}
+          />
+        </div>
       )}
 
       {!loading && !error && listings.length > 0 && (
