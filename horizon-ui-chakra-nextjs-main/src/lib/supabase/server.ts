@@ -46,6 +46,50 @@ export function isAuthorizedCronRequest(request: Request): boolean {
   return timingSafeEqual(expected, actual);
 }
 
+// Bearer-token client, for the mobile API (/api/mobile/*).
+//
+// createClient() below resolves the session exclusively from Next's
+// cookies(), which is correct for the web app and unusable from a native
+// one: a phone authenticates with Supabase's own mobile SDK and holds the
+// JWT itself, sending it as `Authorization: Bearer <token>`. That header is
+// invisible to the cookie helper, so every existing route reads as
+// unauthenticated when called from the app.
+//
+// This is the same anon key and the same JWT the browser would carry - only
+// the place it is read from differs - so RLS behaves identically. Nothing
+// here weakens the boundary: an absent or invalid token yields a client
+// whose auth.getUser() returns null, exactly as a missing cookie does.
+//
+// Deliberately a separate function rather than a branch inside
+// createClient(): the desktop path is the one thing that must not change
+// behaviour, and the surest way to guarantee that is to not touch it.
+export function createBearerClient(accessToken: string) {
+  return createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: { persistSession: false, autoRefreshToken: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    },
+  );
+}
+
+/**
+ * Pulls the bearer token out of a request's Authorization header.
+ * Returns null when the header is absent or isn't a Bearer scheme, so
+ * callers can fail closed without special-casing the shape.
+ */
+export function getBearerToken(request: Request): string | null {
+  const header = request.headers.get('authorization');
+  if (!header) return null;
+
+  const [scheme, ...rest] = header.split(' ');
+  if (scheme.toLowerCase() !== 'bearer') return null;
+
+  const token = rest.join(' ').trim();
+  return token.length > 0 ? token : null;
+}
+
 // Anonymous public-data client - no cookies, no session, just the anon key.
 // For reads that are meant to work identically for every visitor regardless
 // of whether they're signed in (the marketing homepage's company/brand

@@ -5,7 +5,7 @@ import { cache } from 'react';
 import { redirect } from 'next/navigation';
 
 import { hasFeature } from '@/lib/market-intel/entitlements';
-import { createClient } from '@/lib/supabase/server';
+import { createBearerClient, createClient, getBearerToken } from '@/lib/supabase/server';
 
 export type Seller = {
   id: string;
@@ -71,6 +71,50 @@ export const getCurrentSeller = cache(async function getCurrentSeller(): Promise
     country: data.country,
   };
 });
+
+// Bearer-token counterpart to getCurrentSeller(), for /api/mobile/*.
+//
+// Identical query and identical shape - the only difference is where the
+// session comes from, because a native client sends its JWT in a header
+// rather than a cookie. Kept as a separate function rather than a parameter
+// on getCurrentSeller(): that one is wrapped in React's cache() and called
+// from dozens of server components, and changing its signature to serve the
+// mobile API is exactly the kind of shared-path edit that turns a mobile
+// feature into a desktop regression.
+//
+// Not cached: cache() is keyed per-request-per-argument and these route
+// handlers resolve the seller once, so it would add indirection for nothing.
+export async function getSellerFromRequest(request: Request): Promise<Seller | null> {
+  const token = getBearerToken(request);
+  if (!token) return null;
+
+  const supabase = createBearerClient(token);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data, error } = await supabase
+    .from('sellers')
+    .select('id, user_id, business_name, email, plan_tier, onboarded_at, reporting_currency, country')
+    .eq('user_id', user.id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    userId: data.user_id,
+    businessName: data.business_name,
+    email: data.email,
+    planTier: data.plan_tier,
+    onboardedAt: data.onboarded_at,
+    reportingCurrency: data.reporting_currency,
+    country: data.country,
+  };
+}
 
 // Real server-side auth guard for the protected layouts (dashboard/apps/
 // onboarding). middleware.ts's redirect only checks whether a
