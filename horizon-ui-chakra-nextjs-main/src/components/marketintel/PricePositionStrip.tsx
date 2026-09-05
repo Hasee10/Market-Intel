@@ -82,6 +82,24 @@ export function PricePositionStrip({
   const sellerBand =
     sellerPrice != null ? bands.findIndex((b) => sellerPrice >= b.from && sellerPrice < b.to) : -1;
 
+  // The pack: the densest band, and the real spread of the listings inside
+  // it. Named explicitly because concentration is the normal case - on the
+  // data this was tuned against, 13 of 15 listings sat in one band - and
+  // making a reader infer "most of them are here" from bar lengths is the
+  // slowest part of reading a distribution.
+  const packIndex = bands.reduce((best, b, i) => (b.count > bands[best].count ? i : best), 0);
+  const pack = bands[packIndex];
+  const packPrices = prices.filter((p) => p >= pack.from && p < pack.to);
+  const packIsMajority = pack.count / prices.length >= 0.5;
+
+  // Empty bands are half the rows on a concentrated distribution and carry
+  // nothing. Dropped, except the seller's own - "no competitors in your
+  // band" is itself a finding. A gap marker keeps the remaining rows from
+  // implying an adjacency that isn't there.
+  const visibleBands = bands
+    .map((band, index) => ({ ...band, index }))
+    .filter((band) => band.count > 0 || band.index === sellerBand);
+
   const dearerThanSeller = sellerPrice != null ? prices.filter((p) => p > sellerPrice).length : 0;
   const atMarket =
     sellerPrice != null && median > 0 && Math.abs((sellerPrice - median) / median) < 0.05;
@@ -134,21 +152,42 @@ export function PricePositionStrip({
       </div>
 
       {sellerPrice != null && (
-        <p className="mb-3 text-sm text-gray-700 dark:text-gray-200">
-          {atMarket ? (
-            <>
-              You are priced <span className="font-semibold">at the market median</span>.
-            </>
-          ) : (
-            <>
-              You are{' '}
-              <span className={`font-semibold ${verdictText}`}>
-                {Math.abs(vsMedianPct).toFixed(0)}% {isCheaper ? 'below' : 'above'} the median
+        <>
+          {/* The one-line answer, sized so it is read before anything else
+              on the panel. */}
+          <p className="mb-1.5 text-[15px] leading-snug text-gray-900 dark:text-white">
+            {atMarket ? (
+              <>
+                You are priced <span className="font-semibold">at the market median</span>.
+              </>
+            ) : (
+              <>
+                You are{' '}
+                <span className={`text-lg font-semibold ${verdictText}`}>
+                  {Math.abs(vsMedianPct).toFixed(0)}% {isCheaper ? 'below' : 'above'}
+                </span>{' '}
+                the median, and only {dearerThanSeller} of {prices.length}{' '}
+                {dearerThanSeller === 1 ? 'listing costs' : 'listings cost'} more than you.
+              </>
+            )}
+          </p>
+
+          {/* Where the competition actually is. On a concentrated market
+              this is the sentence that does the work. */}
+          {packIsMajority && packPrices.length > 1 && (
+            <p className="mb-3 text-sm text-gray-600 dark:text-gray-400">
+              {pack.count} of {prices.length} listings are packed between{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {money(packPrices[0])}
+              </span>{' '}
+              and{' '}
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {money(packPrices[packPrices.length - 1])}
               </span>
-              , and {dearerThanSeller} of {prices.length} listings cost more than you.
-            </>
+              .
+            </p>
           )}
-        </p>
+        </>
       )}
 
       <p className="mb-2 text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
@@ -156,37 +195,64 @@ export function PricePositionStrip({
       </p>
 
       <div className="flex flex-col gap-1.5">
-        {bands.map((band, i) => {
-          const isSellerBand = i === sellerBand;
+        {visibleBands.map((band, i) => {
+          const isSellerBand = band.index === sellerBand;
+          const isPack = band.index === packIndex && band.count > 0;
+          // Bands were skipped between this row and the previous one, so the
+          // two are not actually adjacent on the price axis. Said out loud -
+          // silently closing the gap would misrepresent the spread.
+          const skipped = i > 0 ? band.index - visibleBands[i - 1].index - 1 : 0;
+
           return (
-            <div key={band.from} className="flex items-center gap-3">
-              <span className="w-[132px] shrink-0 text-right text-xs text-gray-600 tabular-nums dark:text-gray-300">
-                {money(band.from)}–{money(band.to)}
-              </span>
+            <div key={band.from}>
+              {skipped > 0 && (
+                <p className="py-0.5 pl-[144px] text-[11px] text-gray-400 dark:text-gray-500">
+                  nothing priced between
+                </p>
+              )}
 
-              <span className="relative h-5 min-w-0 flex-1 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+              <div className="flex items-center gap-3">
                 <span
-                  className={`block h-full rounded ${
-                    isSellerBand ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
+                  className={`w-[132px] shrink-0 text-right text-xs tabular-nums ${
+                    isPack
+                      ? 'font-semibold text-gray-900 dark:text-white'
+                      : 'text-gray-600 dark:text-gray-300'
                   }`}
-                  // Always a sliver for an empty band, so the row still
-                  // reads as a row rather than a gap in the list.
-                  style={{ width: band.count === 0 ? 2 : `${(band.count / busiest) * 100}%` }}
-                />
-              </span>
+                >
+                  {money(band.from)}–{money(band.to)}
+                </span>
 
-              <span className="w-[92px] shrink-0 text-xs text-gray-600 tabular-nums dark:text-gray-300">
-                {band.count === 0 ? (
-                  <span className="text-gray-400 dark:text-gray-500">none</span>
-                ) : (
-                  `${band.count} listing${band.count === 1 ? '' : 's'}`
-                )}
-                {isSellerBand && (
-                  <span className="ml-1.5 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                    you
-                  </span>
-                )}
-              </span>
+                <span className="relative h-5 min-w-0 flex-1 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
+                  <span
+                    className={`block h-full rounded ${
+                      isSellerBand
+                        ? 'bg-brand-500'
+                        : isPack
+                          ? 'bg-gray-400 dark:bg-gray-500'
+                          : 'bg-gray-300 dark:bg-gray-600'
+                    }`}
+                    style={{ width: band.count === 0 ? 0 : `${(band.count / busiest) * 100}%` }}
+                  />
+                </span>
+
+                <span className="flex w-[104px] shrink-0 items-center gap-1.5 text-xs text-gray-600 tabular-nums dark:text-gray-300">
+                  {band.count > 0 && (
+                    <span className={isPack ? 'font-semibold text-gray-900 dark:text-white' : ''}>
+                      {band.count}
+                    </span>
+                  )}
+                  {isSellerBand && (
+                    <span className="rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                      you
+                    </span>
+                  )}
+                  {/* An empty band the seller is alone in is not a blank
+                      row - being isolated above the market is the finding. */}
+                  {isSellerBand && band.count === 0 && (
+                    <span className="text-[11px] text-gray-400 dark:text-gray-500">only you</span>
+                  )}
+                </span>
+              </div>
             </div>
           );
         })}
