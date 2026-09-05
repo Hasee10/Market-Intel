@@ -57,20 +57,15 @@ export function CompetitorQualityPanel({
       maximumFractionDigits: 0,
     }).format(v);
 
-  // No rating coverage: say why, once, and stop. This is a property of which
-  // sites carry this market, not something the seller can fix.
-  if (!analysis.hasEnoughData) {
-    if (analysis.unratedCount === 0) return null;
-    return (
-      <div className={className}>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          No ratings published for these listings, so there is nothing to compare on quality —
-          only Daraz and PriceOye report review scores, and this product&apos;s competitors are on
-          sites that don&apos;t. Price is the only axis available here.
-        </p>
-      </div>
-    );
-  }
+  // No rating coverage: render nothing. This is a property of which sites
+  // carry this market - most sellers on this platform will see this
+  // section absent, always, because their competitors are single-retailer
+  // sites that never report a review score - and repeating that same
+  // explanation on every product with no rating data reads as a wall of
+  // identical placeholder boxes rather than as useful information. A
+  // section that is only ever empty for a given seller is better left out
+  // than explained every time.
+  if (!analysis.hasEnoughData) return null;
 
   const { classified, threats, ratingBar, unratedCount } = analysis;
 

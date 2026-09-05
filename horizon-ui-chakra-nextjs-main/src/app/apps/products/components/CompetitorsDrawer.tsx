@@ -222,9 +222,11 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
           Fetches on its own rather than waiting on the listings request
           above: it hits a different endpoint (price-vs-market, not
           competitors) and has nothing to gain from being serialised after
-          it. Renders nothing itself when there is no market coverage for
-          this category - see the component for why that differs from
-          "not enough band days", which IS shown. */}
+          it. Renders nothing itself both when there is no market coverage
+          for this category and when there are not yet enough overlapping
+          days to say anything - a placeholder explaining either case would
+          repeat on every product a seller opens until the data catches up,
+          which is a wall of identical boxes, not information. */}
       {product && (
         <PriceVsMarketChart
           className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800"

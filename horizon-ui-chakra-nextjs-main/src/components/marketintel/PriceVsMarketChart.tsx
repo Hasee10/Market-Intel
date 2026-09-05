@@ -75,12 +75,20 @@ export function PriceVsMarketChart({
     );
   }
 
-  // No market coverage for this category at all - not the same as "not
-  // enough band days", which is a real finding worth a chart. This is "the
-  // scrapers don't reach this category yet", which isn't.
+  // No market coverage for this category at all - render nothing.
   if (points.length === 0) return null;
 
   const summary = summarisePriceVsMarket(points);
+
+  // Not enough overlapping days between the seller's own price history and
+  // a market band to say anything real yet - render nothing rather than a
+  // box explaining that. This is a genuinely common state early on (the
+  // market side needs several days of scrape history to clear
+  // MIN_SAMPLE_FOR_BAND, migration 054), and a placeholder repeated on
+  // every product a seller opens is a wall of identical text, not
+  // information. Once real days accumulate this section starts rendering
+  // on its own - nothing else has to change for that to happen.
+  if (summary.daysWithBand === 0) return null;
 
   const bandData: ([number, number] | null)[] = points.map((p) =>
     p.marketP25 != null && p.marketP75 != null ? [p.marketP25, p.marketP75] : null,
@@ -89,60 +97,36 @@ export function PriceVsMarketChart({
   const sellerData = points.map((p) => p.sellerPrice);
   const categories = points.map((p) => p.date.slice(5));
 
-  const dominant =
-    summary.daysWithBand === 0
-      ? null
-      : summary.daysAbove >= summary.daysBelow && summary.daysAbove >= summary.daysInside
-        ? 'above'
-        : summary.daysBelow >= summary.daysInside
-          ? 'below'
-          : 'inside';
+  // Reaching here guarantees at least one comparable day, so
+  // currentPosition is never null - the early return above is what makes
+  // this safe to read unconditionally.
+  const currentPositionText =
+    summary.currentPosition === 'above' ? 'above it' : summary.currentPosition === 'below' ? 'below it' : 'inside it';
 
   return (
     <div className={className}>
-      {summary.daysWithBand === 0 ? (
-        <p className="mb-3 text-sm text-gray-500 dark:text-gray-400">
-          Not enough overlapping days yet to say where you have tracked against the market band -
-          check back once the scraper and your own price history cover more of the same period.
-        </p>
-      ) : (
-        <p className="mb-1.5 text-[15px] leading-snug text-gray-900 dark:text-white">
-          Over the last {summary.daysWithBand} comparable day{summary.daysWithBand === 1 ? '' : 's'},
-          you spent{' '}
-          {summary.daysAbove > 0 && (
-            <span className="font-semibold text-error-700 dark:text-error-500">
-              {summary.daysAbove} above
-            </span>
-          )}
-          {summary.daysAbove > 0 && (summary.daysBelow > 0 || summary.daysInside > 0) && ', '}
-          {summary.daysBelow > 0 && (
-            <span className="font-semibold text-success-700 dark:text-success-500">
-              {summary.daysBelow} below
-            </span>
-          )}
-          {summary.daysBelow > 0 && summary.daysInside > 0 && ', and '}
-          {summary.daysInside > 0 && (
-            <span className="font-semibold text-gray-700 dark:text-gray-300">
-              {summary.daysInside} inside
-            </span>
-          )}{' '}
-          the market band.
-          {dominant && (
-            <>
-              {' '}
-              You are currently{' '}
-              <span className="font-semibold">
-                {summary.currentPosition === 'above'
-                  ? 'above it'
-                  : summary.currentPosition === 'below'
-                    ? 'below it'
-                    : 'inside it'}
-              </span>
-              .
-            </>
-          )}
-        </p>
-      )}
+      <p className="mb-1.5 text-[15px] leading-snug text-gray-900 dark:text-white">
+        Over the last {summary.daysWithBand} comparable day{summary.daysWithBand === 1 ? '' : 's'},
+        you spent{' '}
+        {summary.daysAbove > 0 && (
+          <span className="font-semibold text-error-700 dark:text-error-500">
+            {summary.daysAbove} above
+          </span>
+        )}
+        {summary.daysAbove > 0 && (summary.daysBelow > 0 || summary.daysInside > 0) && ', '}
+        {summary.daysBelow > 0 && (
+          <span className="font-semibold text-success-700 dark:text-success-500">
+            {summary.daysBelow} below
+          </span>
+        )}
+        {summary.daysBelow > 0 && summary.daysInside > 0 && ', and '}
+        {summary.daysInside > 0 && (
+          <span className="font-semibold text-gray-700 dark:text-gray-300">
+            {summary.daysInside} inside
+          </span>
+        )}{' '}
+        the market band. You are currently <span className="font-semibold">{currentPositionText}</span>.
+      </p>
 
       <div className="h-[220px]">
         <LineChart
