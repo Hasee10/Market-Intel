@@ -8,6 +8,7 @@ import { Drawer } from '@/components/ui/Drawer';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { ProductThumb } from '@/components/ui/ProductThumb';
 import { PricePositionStrip } from '@/components/marketintel/PricePositionStrip';
+import { CompetitorQualityPanel } from '@/components/marketintel/CompetitorQualityPanel';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -130,6 +131,20 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
     };
   }, [isOpen, product]);
 
+  // Rating, sold count and reviews come from Daraz and PriceOye only. On a
+  // market served by single-retailer sites every one of those cells is a
+  // dash, and three dead columns are what push this table into horizontal
+  // scrolling - which then hides the listing name, the one column you need
+  // to make sense of the rest. Dropped when empty rather than rendered as
+  // a wall of em-dashes.
+  const hasRating = listings.some((l) => l.rating != null);
+  const hasSold = listings.some((l) => l.soldCount != null);
+  const hasReviews = listings.some((l) => l.reviewCount > 0);
+  const columnCount = 4 + (hasRating ? 1 : 0) + (hasSold ? 1 : 0) + (hasReviews ? 1 : 0);
+  // Only as wide as the columns actually shown, so a table that fits does
+  // not scroll for the sake of columns that are not there.
+  const tableMinWidth = 430 + (hasRating ? 110 : 0) + (hasSold ? 90 : 0) + (hasReviews ? 110 : 0);
+
   return (
     <Drawer
       isOpen={isOpen}
@@ -181,10 +196,40 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
         </div>
       )}
 
+      {/* Price says whether you are expensive; this says whether that
+          matters. Renders only where the sources publish ratings - it
+          returns null rather than drawing an empty chart when they don't. */}
       {!loading && !error && listings.length > 0 && (
-        <Table minWidth={860}>
+        <CompetitorQualityPanel
+          className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+          listings={listings.map((l) => ({
+            title: decodeHtmlEntities(l.matchedTitle),
+            platformName: l.matchedPlatformName,
+            // Per item, matching the price panel above, so the two cannot
+            // disagree about which listing is cheaper.
+            price: l.matchedPrice == null ? null : l.matchedPrice / Math.max(1, l.unitCount),
+            rating: l.rating,
+            ratingCount: l.ratingCount,
+            url: l.matchedUrl,
+          }))}
+          sellerPrice={
+            listings[0]?.sellerPrice == null
+              ? null
+              : listings[0].sellerPrice / Math.max(1, listings[0].sellerUnitCount)
+          }
+          perUnit={listings.some((l) => l.unitCount > 1) || (listings[0]?.sellerUnitCount ?? 1) > 1}
+          currency={reportingCurrency}
+        />
+      )}
+
+      {!loading && !error && listings.length > 0 && (
+        <Table minWidth={tableMinWidth}>
           <THead>
-            <TH>Listing</TH>
+            {/* Pinned. On a narrow drawer this table can still scroll
+                sideways, and scrolling used to carry the listing name away
+                with it - leaving a row of prices with nothing saying which
+                product each one belongs to. */}
+            <TH className="sticky left-0 z-10 bg-white dark:bg-gray-900">Listing</TH>
             <TH title="How much of the two titles' distinctive wording overlaps - brand and category words count for less.">
               Match
             </TH>
@@ -193,13 +238,15 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
             <TH numeric title="Your price against this listing's. Negative means you are cheaper.">
               vs yours
             </TH>
-            <TH numeric>Rating</TH>
+            {hasRating && <TH numeric>Rating</TH>}
             {/* Native title attribute rather than a Tooltip component, the
                 same way the Competitors page annotates its column headers. */}
-            <TH numeric title="Demand proxy (platform-reported), not verified sales">
-              Sold
-            </TH>
-            <TH>Reviews</TH>
+            {hasSold && (
+              <TH numeric title="Demand proxy (platform-reported), not verified sales">
+                Sold
+              </TH>
+            )}
+            {hasReviews && <TH>Reviews</TH>}
           </THead>
           <TBody>
             {listings.map((listing, i) => {
@@ -208,7 +255,7 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
               return (
                 <Fragment key={`${listing.matchedUrl}-${i}`}>
                   <TR>
-                    <TD strong className="max-w-[280px]">
+                    <TD strong className="sticky left-0 z-10 max-w-[280px] bg-white dark:bg-gray-900">
                       {/* categoryName is null deliberately: this row is a
                           scraped market_products listing, not a seller
                           product - it carries the platform's own category
@@ -283,19 +330,24 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                         </span>
                       )}
                     </TD>
-                    <TD numeric>
-                      {listing.rating != null ? (
-                        <span className="flex items-center justify-end gap-1">
-                          <MdOutlineStar className="size-3 text-yellow-400" aria-hidden="true" />
-                          {formatRating(listing.rating, listing.ratingCount)}
-                        </span>
-                      ) : (
-                        '—'
-                      )}
-                    </TD>
-                    <TD numeric>
-                      {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
-                    </TD>
+                    {hasRating && (
+                      <TD numeric>
+                        {listing.rating != null ? (
+                          <span className="flex items-center justify-end gap-1">
+                            <MdOutlineStar className="size-3 text-yellow-400" aria-hidden="true" />
+                            {formatRating(listing.rating, listing.ratingCount)}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </TD>
+                    )}
+                    {hasSold && (
+                      <TD numeric>
+                        {listing.soldCount == null ? '—' : listing.soldCount.toLocaleString()}
+                      </TD>
+                    )}
+                    {hasReviews && (
                     <TD>
                       {listing.reviewCount > 0 ? (
                         <button
@@ -315,10 +367,11 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                         '—'
                       )}
                     </TD>
+                    )}
                   </TR>
                   {isExpanded && listing.topReviews.length > 0 && (
                     <TR className="hover:bg-transparent dark:hover:bg-transparent">
-                      <TD colSpan={8} className="bg-gray-50 dark:bg-gray-800">
+                      <TD colSpan={columnCount} className="bg-gray-50 dark:bg-gray-800">
                         <div className="flex flex-col gap-2">
                           {listing.topReviews.map((review, ri) => (
                             <div key={ri}>
