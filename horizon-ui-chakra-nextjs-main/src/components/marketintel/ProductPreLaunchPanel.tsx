@@ -6,8 +6,11 @@ import { MdOutlineStar, MdOutlineSearch } from 'react-icons/md';
 import { Field, Input } from '@/components/ui/Field';
 import { ProductThumb } from '@/components/ui/ProductThumb';
 import { Pill } from '@/components/ui/Table';
+import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
 import type { PreLaunchInsight } from '@/lib/market-intel/market/pre-launch';
 import type { IApiResponse } from '@/types/api-response';
+
+const dateStamp = () => new Date().toISOString().slice(0, 10);
 
 // The product-level answer Explore's category picker cannot give on its
 // own: not "what does this whole category look like" but "what does THIS
@@ -72,6 +75,35 @@ export function ProductPreLaunchPanel({
     } finally {
       setLoading(false);
     }
+  };
+
+  // Exports exactly the sample shown, not the full matched set - the API
+  // caps `listings` at MAX_SAMPLE_LISTINGS server-side (see pre-launch.ts),
+  // same as what "Closest matches" already displays. matchCount above it
+  // already tells the seller how many more matched but aren't listed here.
+  const exportListingsCsv = (insight: PreLaunchInsight) => {
+    const csv = objectsToCsv(
+      insight.listings.map((listing) => ({
+        title: listing.title,
+        platform: listing.platformName ?? '',
+        price: listing.price ?? '',
+        matchStrength: MATCH_STRENGTH_LABEL[listing.matchStrength]?.label ?? listing.matchStrength,
+        rating: listing.rating ?? '',
+        soldCount: listing.soldCount ?? '',
+        url: listing.url,
+      })),
+      [
+        { key: 'title', label: 'Listing' },
+        { key: 'platform', label: 'Platform' },
+        { key: 'price', label: `Price (${insight.currency})` },
+        { key: 'matchStrength', label: 'Match strength' },
+        { key: 'rating', label: 'Rating' },
+        { key: 'soldCount', label: 'Sold' },
+        { key: 'url', label: 'URL' },
+      ],
+    );
+    const slug = insight.query.trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    triggerCsvDownload(csv, `pre-launch-check-${slug || 'product'}-${dateStamp()}.csv`);
   };
 
   return (
@@ -180,9 +212,18 @@ export function ProductPreLaunchPanel({
                 </p>
               )}
 
-              <p className="mb-2 text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
-                Closest matches
-              </p>
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
+                  Closest matches
+                </p>
+                <button
+                  type="button"
+                  onClick={() => exportListingsCsv(result)}
+                  className="text-xs font-medium text-brand-500 hover:underline"
+                >
+                  Export CSV
+                </button>
+              </div>
               <ul className="flex flex-col gap-2">
                 {result.listings.map((listing, i) => {
                   const strength = MATCH_STRENGTH_LABEL[listing.matchStrength];
