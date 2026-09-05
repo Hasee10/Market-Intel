@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
 import { ProductThumb } from '@/components/ui/ProductThumb';
+import { classifyStockOutUrgency, formatStockOutDuration } from '@/lib/market-intel/core/stock-out-duration';
 import { PortfolioPriceBandsPanel } from '@/components/marketintel/PortfolioPriceBandsPanel';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
@@ -526,37 +527,76 @@ export default function MarketView({
             No tracked competitor is currently showing out of stock in your category.
           </p>
         ) : (
-          <Table minWidth={520}>
-            <THead>
-              <TH>Product</TH>
-              <TH>Platform</TH>
-              <TH numeric>Last price</TH>
-            </THead>
-            <TBody>
-              {stockOutPage.visible.map((product) => (
-                <TR key={product.id}>
-                  <TD strong>
-                    {/* categoryName is null deliberately: market_products
-                        stores the scraped platform's own slug, not a seller
-                        category, so there is no tile colour to look up. */}
-                    <span className="flex items-center gap-3">
-                      <ProductThumb src={product.imageUrl} alt="" categoryName={null} />
-                      <a
-                        href={product.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="min-w-0 hover:text-brand-500 hover:underline"
-                      >
-                        {product.title}
-                      </a>
-                    </span>
-                  </TD>
-                  <TD>{product.platformName ?? '—'}</TD>
-                  <TD numeric>{product.price != null ? formatCurrency(product.price) : '—'}</TD>
-                </TR>
-              ))}
-            </TBody>
-          </Table>
+          <>
+            {(() => {
+              const extended = stockOuts.filter((p) => (p.duration?.days ?? 0) >= 14).length;
+              if (extended === 0) return null;
+              // The sentence this whole card exists to state: not "these
+              // are out of stock" but "these have been out long enough to
+              // actually act on" - a listing out for a few hours might
+              // restock before anyone can respond to it.
+              return (
+                <p className="mb-3 text-sm text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold text-success-700 dark:text-success-500">
+                    {extended} of {stockOuts.length}
+                  </span>{' '}
+                  {extended === 1 ? 'has' : 'have'} been out for two weeks or more - long enough
+                  that it is not a restock in progress.
+                </p>
+              );
+            })()}
+            <Table minWidth={620}>
+              <THead>
+                <TH>Product</TH>
+                <TH>Platform</TH>
+                <TH numeric>Last price</TH>
+                <TH title="How long since we last confirmed this listing in stock, not just when it was last scraped.">
+                  Out for
+                </TH>
+              </THead>
+              <TBody>
+                {stockOutPage.visible.map((product) => (
+                  <TR key={product.id}>
+                    <TD strong>
+                      {/* categoryName is null deliberately: market_products
+                          stores the scraped platform's own slug, not a seller
+                          category, so there is no tile colour to look up. */}
+                      <span className="flex items-center gap-3">
+                        <ProductThumb src={product.imageUrl} alt="" categoryName={null} />
+                        <a
+                          href={product.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="min-w-0 hover:text-brand-500 hover:underline"
+                        >
+                          {product.title}
+                        </a>
+                      </span>
+                    </TD>
+                    <TD>{product.platformName ?? '—'}</TD>
+                    <TD numeric>{product.price != null ? formatCurrency(product.price) : '—'}</TD>
+                    <TD>
+                      {product.duration == null ? (
+                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                      ) : (
+                        <Pill
+                          tone={
+                            classifyStockOutUrgency(product.duration.days) === 'extended'
+                              ? 'success'
+                              : classifyStockOutUrgency(product.duration.days) === 'notable'
+                                ? 'warning'
+                                : 'neutral'
+                          }
+                        >
+                          {formatStockOutDuration(product.duration)}
+                        </Pill>
+                      )}
+                    </TD>
+                  </TR>
+                ))}
+              </TBody>
+            </Table>
+          </>
         )}
         <Pagination
           page={stockOutPage.page}

@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
+import { computeStockOutDuration, type StockOutDuration } from '@/lib/market-intel/core/stock-out-duration';
 
 export type PriceTrendPoint = {
   date: string;
@@ -78,6 +79,13 @@ export type StockOutProduct = {
   /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
   imageUrl: string | null;
   lastSeenAt: string;
+  /**
+   * How long this has actually been out, not just when it was last
+   * scraped - see stock-out-duration.ts. Null only if
+   * market_stock_out_durations (055) has not been applied or found no
+   * history row at all for this product.
+   */
+  duration: StockOutDuration | null;
 };
 
 // Competitors currently showing as out of stock in this category - a signal
@@ -103,8 +111,23 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
 
   if (error || !data) return [];
 
+  // Duration for every candidate, not just the final page - the point of
+  // this whole function is "who has been out longest", so that ranking has
+  // to happen before the limit is applied, not after. The RPC's cost is
+  // bounded by this candidate list (200, unchanged from before), each
+  // product resolved by an index range scan (see migration 055) rather
+  // than a scan of market_price_history itself.
+  const { data: durationRows } = await supabase.rpc('market_stock_out_durations', {
+    p_product_ids: data.map((row) => row.id),
+  });
+
+  const durationById = new Map(
+    ((durationRows ?? []) as { product_id: string; last_confirmed_in_stock_at: string | null; earliest_observed_at: string | null }[]).map(
+      (row) => [row.product_id, computeStockOutDuration(row.last_confirmed_in_stock_at, row.earliest_observed_at)],
+    ),
+  );
+
   return data
-    .slice(0, limit)
     .map((row) => {
       const platform = Array.isArray(row.market_platforms) ? row.market_platforms[0] : row.market_platforms;
       return {
@@ -115,8 +138,16 @@ export async function getStockOuts(categorySlug: string, limit = 10, reportingCu
         price: row.price != null ? convertCurrency(Number(row.price), row.currency ?? 'PKR', reportingCurrency, fxRates) : null,
         url: row.url,
         lastSeenAt: row.last_seen_at,
+        duration: durationById.get(row.id) ?? null,
       };
-    });
+    })
+    // Longest-standing gap first - a listing that has survived several
+    // independent scrapes out of stock is a real, actionable opportunity;
+    // one out for a few hours might restock before a seller can act on it.
+    // A missing duration (RPC not applied yet, or no history at all) sorts
+    // last rather than first, so an unknown never outranks a confirmed one.
+    .sort((a, b) => (b.duration?.days ?? -1) - (a.duration?.days ?? -1))
+    .slice(0, limit);
 }
 
 export type PlatformFreshness = { platformName: string; lastScrapedAt: string };
