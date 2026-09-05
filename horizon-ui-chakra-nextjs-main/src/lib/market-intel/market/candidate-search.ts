@@ -27,6 +27,12 @@ export type SimilarCandidate = {
   ratingCount: number | null;
   soldCount: number | null;
   sellerExternalId: string | null;
+  /**
+   * How many scraped listings this row stands for after
+   * collapseDuplicateListings(). 1 for an untouched candidate; higher when
+   * a retailer lists one product many times.
+   */
+  duplicateCount?: number;
 };
 
 type SimilarCandidateRow = {
@@ -49,6 +55,57 @@ type SimilarCandidateRow = {
 type BatchCandidateRow = SimilarCandidateRow & { query_index: number | string };
 
 export const DEFAULT_CANDIDATE_LIMIT = 100;
+
+/**
+ * Collapses listings that are the same product listed repeatedly.
+ *
+ * Retailers routinely publish one product once per colour or size, at an
+ * identical price, on one platform. Fifteen "3 Piece - Printed Lawn Suit"
+ * rows at PKR 3,832 from one retailer are one competitor and one price,
+ * but counted raw they are fifteen - which drags a median toward whichever
+ * retailer happens to have the deepest variant catalogue, and tells a
+ * seller they are up against a crowd that does not exist.
+ *
+ * Keyed on platform + normalised title + exact price, deliberately
+ * conservative on that last part. Two listings of the same title at
+ * different prices are genuinely different offers a buyer could choose
+ * between, so they stay separate; only an exact price tie is unambiguous
+ * duplication.
+ *
+ * Same posture as dedupeCatalogueRows in pricing-recommendation.ts: this is
+ * a display-layer repair, the rows are still in the database, and the count
+ * travels with the survivor instead of being quietly swallowed - a seller
+ * who saw fifteen rows yesterday should be able to see where they went.
+ */
+export function collapseDuplicateListings(candidates: SimilarCandidate[]): SimilarCandidate[] {
+  const byKey = new Map<string, SimilarCandidate>();
+
+  for (const candidate of candidates) {
+    const title = candidate.title.trim().toLowerCase().replace(/\s+/g, ' ');
+    // Price is part of the key, so a null price cannot silently merge
+    // rows whose prices are simply unknown.
+    const price = candidate.price == null ? `no-price:${candidate.id}` : String(candidate.price);
+    const key = `${candidate.platformId}::${title}::${price}`;
+
+    const seen = byKey.get(key);
+    if (!seen) {
+      byKey.set(key, { ...candidate, duplicateCount: 1 });
+      continue;
+    }
+    seen.duplicateCount = (seen.duplicateCount ?? 1) + 1;
+    // Keep the best-evidenced copy: a variant carrying a rating and a sold
+    // count is more useful to look at than an identically-priced one with
+    // neither.
+    const seenEvidence = (seen.ratingCount ?? 0) + (seen.soldCount ?? 0);
+    const candidateEvidence = (candidate.ratingCount ?? 0) + (candidate.soldCount ?? 0);
+    if (candidateEvidence > seenEvidence) {
+      byKey.set(key, { ...candidate, duplicateCount: seen.duplicateCount });
+    }
+  }
+
+  return [...byKey.values()];
+}
+
 
 function mapRow(row: SimilarCandidateRow): SimilarCandidate {
   return {

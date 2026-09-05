@@ -1,7 +1,7 @@
 'server-only';
 
 import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/market/category-pricing';
-import { findTopSimilarCandidates } from '@/lib/market-intel/market/candidate-search';
+import { collapseDuplicateListings, findTopSimilarCandidates } from '@/lib/market-intel/market/candidate-search';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import {
@@ -130,11 +130,16 @@ export async function getPreLaunchInsight(
 
   const supabase = await createClient();
 
-  const [candidates, fxRates, categoryPricing] = await Promise.all([
+  const [rawCandidates, fxRates, categoryPricing] = await Promise.all([
     findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, title),
     getLatestFxRates(),
     getCategoryPricing(categorySlug, reportingCurrency),
   ]);
+
+  // Same collapse the Competitors drawer applies. Without it "14 listings
+  // from 6 sellers" can really be one retailer's variant catalogue, and
+  // the price band would be that one retailer's price repeated.
+  const candidates = collapseDuplicateListings(rawCandidates);
 
   if (candidates.length === 0) return { ...empty, categoryPricing };
 

@@ -18,6 +18,7 @@ type CompetitorListing = {
   matchedUrl: string;
   /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
   matchedImageUrl: string | null;
+  duplicateCount: number;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -222,6 +223,14 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                           className="flex min-w-0 items-center gap-1.5 hover:text-brand-500 hover:underline"
                         >
                           <span className="line-clamp-2">{title}</span>
+                        {listing.duplicateCount > 1 && (
+                          <span
+                            title={`This retailer lists ${listing.duplicateCount} of these at the same price — counted once.`}
+                            className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                          >
+                            ×{listing.duplicateCount}
+                          </span>
+                        )}
                           <MdOutlineOpenInNew
                             className="size-3 shrink-0 text-gray-400"
                             aria-hidden="true"

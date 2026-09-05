@@ -4,7 +4,7 @@ import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
-import { findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/market/candidate-search';
+import { collapseDuplicateListings, findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/market/candidate-search';
 import {
   tokenize,
   jaccard,
@@ -191,6 +191,12 @@ export type CompetitorListing = {
   matchedUrl: string;
   /** Scraped listing image (market_products.image_url via SimilarCandidate). Nullable. */
   matchedImageUrl: string | null;
+  /**
+   * Listings this row stands for. Above 1 when a retailer published the
+   * same product at the same price more than once - shown rather than
+   * hidden, so a collapsed row is visibly a collapsed row.
+   */
+  duplicateCount: number;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -266,11 +272,16 @@ export async function findCompetitorsForProduct(
 
   if (sellerProductRes.error || !sellerProductRes.data) return [];
 
-  const candidates = await findTopSimilarCandidates(
-    supabase,
-    scope.categorySlugs,
-    scope.activePlatformIds,
-    sellerProductRes.data.title,
+  // Collapsed before scoring: a retailer listing one suit in fifteen
+  // colours at one price is one competitor at one price, and counting it
+  // fifteen times drags every figure on the panel above this table.
+  const candidates = collapseDuplicateListings(
+    await findTopSimilarCandidates(
+      supabase,
+      scope.categorySlugs,
+      scope.activePlatformIds,
+      sellerProductRes.data.title,
+    ),
   );
   if (candidates.length === 0) return [];
 
@@ -298,6 +309,7 @@ export async function findCompetitorsForProduct(
         matchedPrice,
         matchedUrl: row.url,
         matchedImageUrl: row.imageUrl,
+        duplicateCount: row.duplicateCount ?? 1,
         rating: row.rating,
         ratingCount: row.ratingCount,
         soldCount: row.soldCount,

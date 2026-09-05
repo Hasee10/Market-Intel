@@ -185,8 +185,11 @@ describe('findCompetitorsForProduct', () => {
   });
 
   it('caps results at the given limit', async () => {
+    // Prices vary: ten byte-identical listings are one listing after
+    // collapseDuplicateListings, so an identical-price fixture would be
+    // testing the collapse rather than the limit.
     for (let i = 0; i < 10; i++) {
-      marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000, url: `listing-${i}` }));
+      marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000 + i, url: `listing-${i}` }));
     }
 
     const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus', 'PKR', 5);
@@ -195,12 +198,37 @@ describe('findCompetitorsForProduct', () => {
   });
 
   it('round-robins across platforms so a dense platform cannot crowd out a smaller one', async () => {
+    // platform_id varies with the name. marketRow defaults every row to
+    // 'p1', which cannot happen in production - platform_name is derived
+    // from platform_id - and would make these twelve rows one platform's
+    // duplicates to collapseDuplicateListings. Prices vary for the same
+    // reason as the limit test above.
     for (let i = 0; i < 10; i++) {
-      marketRows.push(marketRow({ title: 'RTX 4070 GPU', price: 100000, url: `shopperspk-${i}`, market_platforms: { name: 'ShoppersPK' } }));
+      marketRows.push(
+        marketRow({
+          title: 'RTX 4070 GPU',
+          price: 100000 + i,
+          url: `shopperspk-${i}`,
+          platform_id: 'p-shopperspk',
+          market_platforms: { name: 'ShoppersPK' },
+        }),
+      );
     }
     marketRows.push(
-      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-1', market_platforms: { name: 'Daraz' } }),
-      marketRow({ title: 'RTX 4070 GPU', price: 100000, url: 'daraz-2', market_platforms: { name: 'Daraz' } }),
+      marketRow({
+        title: 'RTX 4070 GPU',
+        price: 200000,
+        url: 'daraz-1',
+        platform_id: 'p-daraz',
+        market_platforms: { name: 'Daraz' },
+      }),
+      marketRow({
+        title: 'RTX 4070 GPU',
+        price: 200001,
+        url: 'daraz-2',
+        platform_id: 'p-daraz',
+        market_platforms: { name: 'Daraz' },
+      }),
     );
 
     const result = await findCompetitorsForProduct('seller1', 'sp1', 'gpus', 'PKR', 5);
