@@ -269,15 +269,15 @@ export default function CompetitorScorecardsPanel({
           No named competitors in {scopeLabel} yet
         </p>
         <p className="mb-2.5 text-sm text-gray-500 dark:text-gray-400">
-          A competitor scorecard needs a listing that names the merchant behind it. Most of the
-          sources we track are single retailers — on those, the retailer <em>is</em> the seller, so
-          there is nobody to name. Daraz is the marketplace in your market that carries merchant
-          identity.
+          A scorecard needs an identifiable competitor: either a named seller on a marketplace like
+          Daraz, or a single-retailer platform — where the retailer <em>is</em> the seller, so the
+          platform&apos;s own name identifies them completely. Both count here; this page is empty
+          because there are no active, in-scope listings from either kind yet.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
           {landscape && landscape.anonymousSkuCount > 0
-            ? `${landscape.anonymousSkuCount.toLocaleString()} listings in your market carry no seller identity, which is why this page is empty rather than showing them as one anonymous competitor. Those listings still feed every other figure on the Market page.`
-            : 'Once a marketplace source returns listings inside your market definition, the competitors behind them appear here.'}
+            ? `${landscape.anonymousSkuCount.toLocaleString()} listings in your market carry no attributed seller on a marketplace that otherwise names one — a genuine data gap, not a single-retailer source. Those listings still feed every other figure on the Market page.`
+            : 'Once a tracked source returns listings inside your market definition, the competitors behind them appear here.'}
         </p>
       </Card>
     );

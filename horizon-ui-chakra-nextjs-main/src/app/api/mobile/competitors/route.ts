@@ -52,9 +52,13 @@ export async function GET(request: Request) {
       // useful number on this screen.
       priceIndex: c.priceIndex,
     })),
-    // Only marketplaces carry seller identity; on single-retailer sources
-    // the platform is the seller. An empty list there is a property of the
-    // market, not a failure, and the app should say so.
+    // A single-retailer platform is now a named competitor in its own
+    // right (migration 056), same as a marketplace seller - so an empty
+    // list here means no in-scope, active listings from any tracked source
+    // at all, not "sellers exist but can't be named". Field name kept as
+    // no_named_sellers rather than renamed: it is already documented in the
+    // mobile API guide, and the trigger condition (scorecards.length === 0)
+    // is unchanged even though what causes it is now narrower.
     emptyReason: landscape.scorecards.length === 0 ? 'no_named_sellers' : null,
   });
 }

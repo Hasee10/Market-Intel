@@ -15,11 +15,14 @@ import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/
 //
 // Two honest limits, stated here because they must also be stated in the UI:
 //
-//   1. Only true marketplaces can populate this. On Priceoye, Telemart,
-//      Shophive, iShopping, Goto and SapphireOnline the platform *is* the
-//      seller, so there is no merchant to name; OLX posters are individuals,
-//      not competitors you can benchmark. Today that means Daraz, and D2 will
-//      not change it for the single-retailer sources - nothing to enrich.
+//   1. A competitor here is either a named marketplace seller (Daraz) or a
+//      whole single-retailer platform (Priceoye, Telemart, Shophive,
+//      iShopping, Goto, SapphireOnline, ...) treated as one competitor -
+//      migration 056, via market_single_retailer_platforms(). On those
+//      sites the platform IS the seller, so its own name identifies it
+//      completely; there was never anything to enrich, only a filter that
+//      excluded them. OLX posters are still excluded - individuals, not
+//      competitors you can benchmark.
 //   2. Overlap and win/loss are computed by title similarity (the same
 //      token-Jaccard matcher as product-matching.ts), not by a resolved
 //      catalog. It is directional and is labelled as such.
@@ -84,7 +87,13 @@ export type CompetitorLandscape = {
   scorecards: CompetitorScorecard[];
   /** Total in-scope SKUs carrying a seller identity — the share denominator. */
   identifiedSkuCount: number;
-  /** In-scope SKUs with no seller identity at all (single-retailer sources). */
+  /**
+   * In-scope SKUs with no seller identity AND on a platform that does
+   * attribute other listings to real sellers - a genuine attribution gap.
+   * A platform with no seller identity on ANY of its listings (migration
+   * 056) is no longer counted here at all: it gets its own competitor row,
+   * keyed on the platform itself, instead of being anonymous.
+   */
   anonymousSkuCount: number;
   marketMedianPrice: number | null;
   platformsWithIdentity: string[];
@@ -169,15 +178,19 @@ async function getCompetitorLandscapeFromScope(
     }),
     // Counted, not inferred from the scorecards: the difference between these
     // two numbers is the coverage caveat the page has to show. A seller
-    // looking at four named competitors deserves to know that 5,000 in-scope
+    // looking at four named competitors deserves to know that some in-scope
     // listings have no seller behind them at all.
-    supabase
-      .from('market_products')
-      .select('id', { count: 'exact', head: true })
-      .eq('is_active', true)
-      .is('seller_external_id', null)
-      .in('category_slug', scope.categorySlugs)
-      .in('platform_id', scope.activePlatformIds),
+    //
+    // An RPC rather than a plain PostgREST count (migration 056): this now
+    // has to exclude single-retailer platforms - their listings are
+    // identified via the platform-as-competitor row, not anonymous - and
+    // that classification lives in market_single_retailer_platforms(). A
+    // second, hand-written copy of that same logic here could silently
+    // drift from what market_competitor_scorecards() actually does.
+    supabase.rpc('market_anonymous_sku_count', {
+      p_category_slugs: scope.categorySlugs,
+      p_platform_ids: scope.activePlatformIds,
+    }),
   ]);
 
   if (scorecardsRes.error || !scorecardsRes.data) return empty;
@@ -228,7 +241,7 @@ async function getCompetitorLandscapeFromScope(
   return {
     scorecards,
     identifiedSkuCount,
-    anonymousSkuCount: anonymousRes.count ?? 0,
+    anonymousSkuCount: Number(anonymousRes.data ?? 0),
     marketMedianPrice,
     platformsWithIdentity: Array.from(new Set(scorecards.map((s) => s.platformName))).sort(),
     lookbackDays: REPRICING_LOOKBACK_DAYS,

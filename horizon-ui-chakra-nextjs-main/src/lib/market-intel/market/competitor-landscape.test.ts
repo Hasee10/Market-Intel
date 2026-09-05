@@ -73,23 +73,17 @@ vi.mock('@/lib/supabase/server', () => ({
       if (fn === 'market_scope_price_stats') {
         return { maybeSingle: async () => ({ data: { median: 105 }, error: null as null }) };
       }
-      throw new Error(`unexpected rpc ${fn}`);
-    },
-    from: (table: string) => {
-      if (table === 'market_products') {
-        return {
-          select: () => ({
-            eq: () => ({
-              is: () => ({
-                in: () => ({
-                  in: async () => ({ count: 40, error: null as null }),
-                }),
-              }),
-            }),
-          }),
-        };
+      // Migration 056: the anonymous-listing count moved from a plain
+      // PostgREST count into this RPC, since it now has to share
+      // market_single_retailer_platforms()'s classification rather than a
+      // second, hand-written copy of it in TypeScript.
+      if (fn === 'market_anonymous_sku_count') {
+        // A scalar-returning RPC, awaited directly in a Promise.all
+        // alongside market_competitor_scorecards - no .maybeSingle() chain,
+        // unlike market_scope_price_stats below.
+        return { data: 40, error: null as null };
       }
-      throw new Error(`unexpected table ${table}`);
+      throw new Error(`unexpected rpc ${fn}`);
     },
   }),
 }));
