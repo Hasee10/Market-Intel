@@ -72,7 +72,10 @@ function round2(value: number): number {
 // separate. This is deliberately a display-layer repair - it makes the advice
 // usable, but the duplicate rows are still there, which is why the count
 // travels with the result instead of being quietly swallowed.
-function dedupeCatalogueRows<T extends { title: string; cost_price: unknown }>(
+// Exported for portfolio-pricing.ts, which needs the identical collapse
+// over the same catalogue rows - one seller_products duplicate should read
+// as one product everywhere it shows up, not just here.
+export function dedupeCatalogueRows<T extends { title: string; cost_price: unknown }>(
   rows: T[],
   categoryOf: (row: T) => string | null,
 ): { product: T; duplicateEntries: number }[] {

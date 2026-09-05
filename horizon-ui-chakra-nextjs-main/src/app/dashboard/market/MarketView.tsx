@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
 import { ProductThumb } from '@/components/ui/ProductThumb';
+import { PortfolioPriceBandsPanel } from '@/components/marketintel/PortfolioPriceBandsPanel';
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
@@ -366,6 +367,17 @@ export default function MarketView({
             source by source.
           </p>
         )}
+      </Card>
+
+      {/* Additive to the page: fetches on its own via /api/portfolio/price-
+          positions rather than threading a new prop through page.tsx's
+          Promise.all, so this cannot affect the timing or the data of
+          anything already on the page. Not behind an UpgradeGate - it
+          reuses the same free-tier getCategoryPricing the card above
+          already shows, and gating one but not the other would be an
+          inconsistent paywall over identical data. */}
+      <Card className="mb-5" title="Price position across your catalogue">
+        <PortfolioPriceBandsPanel currency={reportingCurrency} />
       </Card>
 
       {/* Two columns only when there is actually a demand signal to put in
