@@ -16,6 +16,8 @@
 
 type Listing = {
   price: number | null;
+  /** Items in this listing. Defaults to 1 when the caller cannot say. */
+  unitCount?: number;
 };
 
 /** Target number of bands. Few enough to read at a glance, enough for shape. */
@@ -40,19 +42,37 @@ function niceStep(range: number): number {
 export function PricePositionStrip({
   listings,
   sellerPrice,
+  sellerUnitCount,
   currency,
   className = '',
 }: {
   listings: Listing[];
   /** The seller's own price. Null hides the marker and the verdict. */
   sellerPrice: number | null;
+  /** Items in the seller's own product. */
+  sellerUnitCount?: number;
   currency: string;
   className?: string;
 }) {
+  // Compare per item, not per listing, whenever the set is not all one pack
+  // size. A 3-pack against fifteen singles is not like-for-like, and
+  // reporting the raw gap produced a confident "164% above the median" that
+  // was wrong by a factor of three.
+  //
+  // Applied only when sizes actually differ, so the ordinary case - all
+  // single items - is untouched and the figures stay the prices a buyer
+  // would actually pay.
+  const sellerUnits = Math.max(1, sellerUnitCount ?? 1);
+  const packSizes = new Set([...listings.map((l) => Math.max(1, l.unitCount ?? 1)), sellerUnits]);
+  const perUnit = packSizes.size > 1;
+
   const prices = listings
-    .map((l) => l.price)
+    .map((l) => (l.price == null ? null : perUnit ? l.price / Math.max(1, l.unitCount ?? 1) : l.price))
     .filter((p): p is number => p != null && Number.isFinite(p) && p > 0)
     .sort((a, b) => a - b);
+
+  const comparablePrice =
+    sellerPrice == null ? null : perUnit ? sellerPrice / sellerUnits : sellerPrice;
 
   // Two prices are not a distribution; bands over them would imply a shape
   // that isn't there.
@@ -80,7 +100,9 @@ export function PricePositionStrip({
 
   const busiest = Math.max(...bands.map((b) => b.count), 1);
   const sellerBand =
-    sellerPrice != null ? bands.findIndex((b) => sellerPrice >= b.from && sellerPrice < b.to) : -1;
+    comparablePrice != null
+      ? bands.findIndex((b) => comparablePrice >= b.from && comparablePrice < b.to)
+      : -1;
 
   // The pack: the densest band, and the real spread of the listings inside
   // it. Named explicitly because concentration is the normal case - on the
@@ -100,16 +122,18 @@ export function PricePositionStrip({
     .map((band, index) => ({ ...band, index }))
     .filter((band) => band.count > 0 || band.index === sellerBand);
 
-  const dearerThanSeller = sellerPrice != null ? prices.filter((p) => p > sellerPrice).length : 0;
+  const dearerThanSeller =
+    comparablePrice != null ? prices.filter((p) => p > comparablePrice).length : 0;
   const atMarket =
-    sellerPrice != null && median > 0 && Math.abs((sellerPrice - median) / median) < 0.05;
-  const isCheaper = sellerPrice != null && sellerPrice < median;
-  const vsMedianPct = sellerPrice != null && median > 0 ? ((sellerPrice - median) / median) * 100 : 0;
+    comparablePrice != null && median > 0 && Math.abs((comparablePrice - median) / median) < 0.05;
+  const isCheaper = comparablePrice != null && comparablePrice < median;
+  const vsMedianPct =
+    comparablePrice != null && median > 0 ? ((comparablePrice - median) / median) * 100 : 0;
 
   // The next listing above the seller. This is the actionable number on the
   // whole panel: it is how much room there is to raise a price before
   // anyone else becomes the cheaper option.
-  const nextUp = sellerPrice != null ? prices.find((p) => p > sellerPrice) ?? null : null;
+  const nextUp = comparablePrice != null ? prices.find((p) => p > comparablePrice) ?? null : null;
 
   const money = (v: number) =>
     new Intl.NumberFormat('en-US', {
@@ -132,9 +156,21 @@ export function PricePositionStrip({
           came here to judge. */}
       <div className="mb-4 grid grid-cols-3 gap-3">
         {[
-          { label: 'Your price', value: sellerPrice, emphasis: true },
-          { label: 'Market median', value: median, emphasis: false },
-          { label: 'Cheapest here', value: cheapest, emphasis: false },
+          {
+            label: perUnit ? 'Your price, per item' : 'Your price',
+            value: comparablePrice,
+            emphasis: true,
+          },
+          {
+            label: perUnit ? 'Median, per item' : 'Market median',
+            value: median,
+            emphasis: false,
+          },
+          {
+            label: perUnit ? 'Cheapest, per item' : 'Cheapest here',
+            value: cheapest,
+            emphasis: false,
+          },
         ].map((stat) => (
           <div key={stat.label}>
             <p className="text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
@@ -151,7 +187,7 @@ export function PricePositionStrip({
         ))}
       </div>
 
-      {sellerPrice != null && (
+      {comparablePrice != null && (
         <>
           {/* The one-line answer, sized so it is read before anything else
               on the panel. */}
@@ -190,8 +226,17 @@ export function PricePositionStrip({
         </>
       )}
 
+      {perUnit && (
+        <p className="mb-3 rounded-lg bg-orange-50 px-3 py-2 text-xs text-orange-800 dark:bg-gray-800 dark:text-orange-400">
+          These listings are not all the same pack size, so every figure here
+          is <span className="font-semibold">per item</span> — otherwise a
+          multipack would look far dearer than the singles it is matched
+          against.
+        </p>
+      )}
+
       <p className="mb-2 text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
-        How the {prices.length} listings are priced
+        How the {prices.length} listings are priced{perUnit ? ', per item' : ''}
       </p>
 
       <div className="flex flex-col gap-1.5">
@@ -259,14 +304,14 @@ export function PricePositionStrip({
       </div>
 
       {/* The one number that turns this from a description into a decision. */}
-      {nextUp != null && sellerPrice != null && (
+      {nextUp != null && comparablePrice != null && (
         <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
           The next listing above you is{' '}
           <span className="font-semibold text-gray-900 dark:text-white">{money(nextUp)}</span> —{' '}
-          {money(nextUp - sellerPrice)} of headroom before you stop being the cheaper option.
+          {money(nextUp - comparablePrice)} of headroom before you stop being the cheaper option.
         </p>
       )}
-      {nextUp == null && sellerPrice != null && (
+      {nextUp == null && comparablePrice != null && (
         <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
           Nothing here is priced above you — you are the most expensive of the {prices.length}.
         </p>

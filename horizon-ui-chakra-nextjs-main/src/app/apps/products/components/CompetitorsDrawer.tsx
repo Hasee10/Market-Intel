@@ -19,6 +19,8 @@ type CompetitorListing = {
   /** Scraped listing image; nullable, and ProductThumb falls back to a tile. */
   matchedImageUrl: string | null;
   duplicateCount: number;
+  unitCount: number;
+  sellerUnitCount: number;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -171,8 +173,9 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
       {!loading && !error && listings.length > 0 && (
         <div className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
           <PricePositionStrip
-            listings={listings.map((l) => ({ price: l.matchedPrice }))}
+            listings={listings.map((l) => ({ price: l.matchedPrice, unitCount: l.unitCount }))}
             sellerPrice={listings[0]?.sellerPrice ?? null}
+            sellerUnitCount={listings[0]?.sellerUnitCount ?? 1}
             currency={reportingCurrency}
           />
         </div>
@@ -223,6 +226,14 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
                           className="flex min-w-0 items-center gap-1.5 hover:text-brand-500 hover:underline"
                         >
                           <span className="line-clamp-2">{title}</span>
+                        {listing.unitCount > 1 && (
+                          <span
+                            title={`This listing contains ${listing.unitCount} items. Prices in the panel above are compared per item.`}
+                            className="shrink-0 rounded bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-gray-800 dark:text-orange-400"
+                          >
+                            pack of {listing.unitCount}
+                          </span>
+                        )}
                         {listing.duplicateCount > 1 && (
                           <span
                             title={`This retailer lists ${listing.duplicateCount} of these at the same price — counted once.`}

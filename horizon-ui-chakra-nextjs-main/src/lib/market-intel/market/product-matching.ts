@@ -3,6 +3,7 @@
 import { after } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
+import { parsePackSize } from '@/lib/market-intel/core/pack-size';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import { collapseDuplicateListings, findTopSimilarCandidates, findTopSimilarCandidatesBatch } from '@/lib/market-intel/market/candidate-search';
 import {
@@ -197,6 +198,14 @@ export type CompetitorListing = {
    * hidden, so a collapsed row is visibly a collapsed row.
    */
   duplicateCount: number;
+  /**
+   * Items in this listing, parsed from its title (pack-size.ts). 1 when the
+   * title states no quantity, which is both the common case and the safe
+   * default.
+   */
+  unitCount: number;
+  /** The seller's own pack size, for the same comparison. */
+  sellerUnitCount: number;
   rating: number | null;
   ratingCount: number | null;
   soldCount: number | null;
@@ -286,6 +295,9 @@ export async function findCompetitorsForProduct(
   if (candidates.length === 0) return [];
 
   const sellerTokens = tokenize(sellerProductRes.data.title);
+  // Parsed once: it is the same product on every row, and the drawer needs
+  // it to tell a 3-pack-vs-singles comparison from a like-for-like one.
+  const sellerUnitCount = parsePackSize(sellerProductRes.data.title).units;
   const sellerPrice =
     sellerProductRes.data.sell_price != null
       ? convertCurrency(Number(sellerProductRes.data.sell_price), sellerProductRes.data.currency ?? 'PKR', reportingCurrency, fxRates)
@@ -310,6 +322,8 @@ export async function findCompetitorsForProduct(
         matchedUrl: row.url,
         matchedImageUrl: row.imageUrl,
         duplicateCount: row.duplicateCount ?? 1,
+        unitCount: parsePackSize(row.title).units,
+        sellerUnitCount,
         rating: row.rating,
         ratingCount: row.ratingCount,
         soldCount: row.soldCount,
