@@ -314,49 +314,49 @@ export default function MarketDefinitionEditor({
 
           <Flex direction="column" gap="20px">
             <Card p="24px">
-              <Text fontWeight="700" color={textColor} mb="4px">
-                Price band
-              </Text>
-              <Text fontSize="sm" color={mutedColor} mb="16px">
-                The single biggest source of a misleading median. Leave blank for no bound. Entered in {priceCurrency};
-                scraped listings are converted before comparison.
-              </Text>
-              <Grid templateColumns="1fr 1fr" gap="12px">
-                <FormControl>
-                  <FormLabel fontSize="sm" fontWeight="600" mb="4px">
-                    Minimum
-                  </FormLabel>
-                  <InputGroup>
-                    <InputLeftAddon fontSize="sm">{priceCurrency}</InputLeftAddon>
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder="Any"
-                      value={priceMin}
-                      onChange={(e) => setPriceMin(e.target.value)}
-                    />
-                  </InputGroup>
-                </FormControl>
-                <FormControl>
-                  <FormLabel fontSize="sm" fontWeight="600" mb="4px">
-                    Maximum
-                  </FormLabel>
-                  <InputGroup>
-                    <InputLeftAddon fontSize="sm">{priceCurrency}</InputLeftAddon>
-                    <Input
-                      type="number"
-                      min={0}
-                      placeholder="Any"
-                      value={priceMax}
-                      onChange={(e) => setPriceMax(e.target.value)}
-                    />
-                  </InputGroup>
-                </FormControl>
-              </Grid>
-            </Card>
-
-            <Card p="24px">
               <Flex direction="column" gap="20px">
+                <Box>
+                  <Text fontWeight="700" color={textColor} mb="4px">
+                    Price band
+                  </Text>
+                  <Text fontSize="sm" color={mutedColor} mb="16px">
+                    The single biggest source of a misleading median. Leave blank for no bound. Entered in{' '}
+                    {priceCurrency}; scraped listings are converted before comparison.
+                  </Text>
+                  <Grid templateColumns="1fr 1fr" gap="12px">
+                    <FormControl>
+                      <FormLabel fontSize="sm" fontWeight="600" mb="4px">
+                        Minimum
+                      </FormLabel>
+                      <InputGroup>
+                        <InputLeftAddon fontSize="sm">{priceCurrency}</InputLeftAddon>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Any"
+                          value={priceMin}
+                          onChange={(e) => setPriceMin(e.target.value)}
+                        />
+                      </InputGroup>
+                    </FormControl>
+                    <FormControl>
+                      <FormLabel fontSize="sm" fontWeight="600" mb="4px">
+                        Maximum
+                      </FormLabel>
+                      <InputGroup>
+                        <InputLeftAddon fontSize="sm">{priceCurrency}</InputLeftAddon>
+                        <Input
+                          type="number"
+                          min={0}
+                          placeholder="Any"
+                          value={priceMax}
+                          onChange={(e) => setPriceMax(e.target.value)}
+                        />
+                      </InputGroup>
+                    </FormControl>
+                  </Grid>
+                </Box>
+
                 <ChipInput
                   label="Brands"
                   helper="Leave empty to include every brand. Press Enter to add."

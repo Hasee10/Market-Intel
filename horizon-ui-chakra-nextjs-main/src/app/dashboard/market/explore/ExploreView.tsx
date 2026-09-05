@@ -81,27 +81,50 @@ export default function ExploreView({
       />
 
       <UpgradeGate hasAccess={hasAccess} requiredPlanLabel="Paid" featureName="Category explorer">
-        <Card className="mb-6">
-          <p className="mb-4 text-sm text-gray-500 dark:text-gray-400">
-            Preview competitor pricing, ratings and sales volume for any category before you launch
-            a product there — no need to already sell in it. This uses the default market scope
-            (every mapped segment, no price band), since there is no product of yours yet to narrow
-            it by.
+        <Card className="mb-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div className="sm:max-w-sm sm:flex-1">
+              <Field label="Category">
+                <Select
+                  value={selectedCategorySlug ?? ''}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                >
+                  <option value="">Pick a category to preview its market</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.slug}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </div>
+            {selectedCategorySlug && (
+              <div className="flex shrink-0 items-center gap-2.5">
+                {trackError && <span className="text-sm text-error-600 dark:text-error-500">{trackError}</span>}
+                <button
+                  type="button"
+                  onClick={handleTrackCategory}
+                  disabled={tracking || tracked}
+                  className="rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {tracked ? 'Tracking this category' : tracking ? 'Adding…' : 'Track this category'}
+                </button>
+              </div>
+            )}
+          </div>
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
+            {selectedCategorySlug ? (
+              <>
+                Browsing <strong className="font-semibold text-gray-900 dark:text-white">{selectedCategoryName}</strong> —
+                not yet one of your tracked categories.
+              </>
+            ) : (
+              <>
+                Preview competitor pricing, ratings and sales volume for any category before you
+                launch a product there — no need to already sell in it.
+              </>
+            )}
           </p>
-          <Field label="Category">
-            <Select
-              value={selectedCategorySlug ?? ''}
-              onChange={(e) => handleCategoryChange(e.target.value)}
-              className="max-w-sm"
-            >
-              <option value="">Pick a category to preview its market</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
         </Card>
 
         {!selectedCategorySlug ? (
@@ -115,24 +138,6 @@ export default function ExploreView({
         ) : (
           <>
             {scopeSummary && <MarketScopeBanner summary={scopeSummary} />}
-
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-2.5">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                Browsing <strong className="font-semibold text-gray-900 dark:text-white">{selectedCategoryName}</strong> —
-                not yet one of your tracked categories.
-              </p>
-              <div className="flex items-center gap-2.5">
-                {trackError && <span className="text-sm text-error-600 dark:text-error-500">{trackError}</span>}
-                <button
-                  type="button"
-                  onClick={handleTrackCategory}
-                  disabled={tracking || tracked}
-                  className="rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {tracked ? 'Tracking this category' : tracking ? 'Adding…' : 'Track this category'}
-                </button>
-              </div>
-            </div>
 
             {/* The product-level answer the category picker above cannot
                 give on its own: not "what does this whole category look

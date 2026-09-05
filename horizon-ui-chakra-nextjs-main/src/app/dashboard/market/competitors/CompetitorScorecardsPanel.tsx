@@ -311,27 +311,34 @@ export default function CompetitorScorecardsPanel({
     <>
       <InsightStrip insight={computeCompetitorInsight(landscape!, scopeLabel)} />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3 md:gap-6">
-        {summaryTiles.map((tile) => {
-          const Icon = tile.icon;
-          return (
-            <Card key={tile.label}>
-              <div className="mb-1 flex items-center gap-2.5">
-                <span
-                  className={`flex size-8 items-center justify-center rounded-[10px] ${tile.chip}`}
-                >
-                  <Icon className="size-4" aria-hidden="true" />
-                </span>
-                <span className="text-sm text-gray-500 dark:text-gray-400">{tile.label}</span>
+      <Card className="mb-6">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
+          {summaryTiles.map((tile, i) => {
+            const Icon = tile.icon;
+            return (
+              <div
+                key={tile.label}
+                className={
+                  i > 0 ? 'border-gray-100 pt-4 sm:border-t-0 sm:pt-0 sm:pl-5 sm:border-l dark:border-gray-800' : ''
+                }
+              >
+                <div className="mb-1 flex items-center gap-2.5">
+                  <span
+                    className={`flex size-8 items-center justify-center rounded-[10px] ${tile.chip}`}
+                  >
+                    <Icon className="size-4" aria-hidden="true" />
+                  </span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{tile.label}</span>
+                </div>
+                <p className="text-[28px] font-bold text-gray-900 tabular-nums dark:text-white">
+                  {tile.value}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{tile.caption}</p>
               </div>
-              <p className="text-[28px] font-bold text-gray-900 tabular-nums dark:text-white">
-                {tile.value}
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{tile.caption}</p>
-            </Card>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      </Card>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3 lg:gap-6">
         <Card
@@ -548,29 +555,37 @@ export default function CompetitorScorecardsPanel({
         />
       </Card>
 
-      <Card title="How to read this">
-        <div className="flex flex-col gap-1.5 text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            *Units sold is reported by the platform and rounded by it (&quot;1.2K sold&quot;). It is
-            the only demand-side signal any source we track exposes, and it is a proxy — never treat
-            it as your competitor&apos;s revenue.
-          </p>
-          <p>
-            Overlap and the cheaper-than count are computed by comparing product titles, over your 60
-            most recently updated active products. They point you at the right competitor to look at;
-            they are not a reconciled catalog match.
-          </p>
-          <p>
-            &quot;Your tracked matches&quot; is different from overlap above: it only counts products
-            where you actually opened the Competitors drawer and a match was saved, so it accumulates
-            over time rather than recalculating on every visit. Treat a zero here as &quot;not
-            reviewed yet,&quot; not &quot;no match exists.&quot;
-          </p>
-          <p>
-            Every figure is confined to your market definition. Change the segments, price band or
-            platforms and this list changes with it.
-          </p>
-        </div>
+      <Card>
+        <details className="group">
+          <summary className="cursor-pointer text-[15px] font-semibold text-gray-900 marker:content-none dark:text-white">
+            <span className="inline-flex items-center gap-1.5">
+              How to read this
+              <span className="text-xs text-gray-400 transition-transform group-open:rotate-90">▸</span>
+            </span>
+          </summary>
+          <div className="mt-3 flex flex-col gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+            <p>
+              *Units sold is reported by the platform and rounded by it (&quot;1.2K sold&quot;). It is
+              the only demand-side signal any source we track exposes, and it is a proxy — never treat
+              it as your competitor&apos;s revenue.
+            </p>
+            <p>
+              Overlap and the cheaper-than count are computed by comparing product titles, over your 60
+              most recently updated active products. They point you at the right competitor to look at;
+              they are not a reconciled catalog match.
+            </p>
+            <p>
+              &quot;Your tracked matches&quot; is different from overlap above: it only counts products
+              where you actually opened the Competitors drawer and a match was saved, so it accumulates
+              over time rather than recalculating on every visit. Treat a zero here as &quot;not
+              reviewed yet,&quot; not &quot;no match exists.&quot;
+            </p>
+            <p>
+              Every figure is confined to your market definition. Change the segments, price band or
+              platforms and this list changes with it.
+            </p>
+          </div>
+        </details>
       </Card>
     </>
   );
