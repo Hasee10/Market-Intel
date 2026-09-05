@@ -4,9 +4,21 @@ import { createClient } from '@/lib/supabase/server';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 
-export type PriceTrendPoint = { date: string; medianPrice: number };
+export type PriceTrendPoint = {
+  date: string;
+  medianPrice: number;
+  /** Null below MIN_SAMPLE_FOR_BAND (migration 054) - too thin a day to imply a band. */
+  p25: number | null;
+  p75: number | null;
+  /** Scraped observations behind this bucket, whether or not the band cleared the threshold. */
+  rowCount: number;
+};
 
 const TREND_LOOKBACK_DAYS = 30;
+
+// Mirrors market_scope_price_stats' own default (026) so a day's band and a
+// snapshot's band vanish under the identical rule.
+const MIN_SAMPLE_FOR_BAND = 15;
 
 // Daily median price across every scraped competitor product inside the
 // seller's market definition, over the last 30 days - market_price_history
@@ -30,13 +42,31 @@ export async function getPriceTrend(categorySlug: string, reportingCurrency = 'P
     p_target_currency: reportingCurrency,
     p_rates: fxRates,
     p_lookback_days: TREND_LOOKBACK_DAYS,
+    // Same threshold market_scope_price_stats already gates its own p25/p75
+    // on (026) - a band computed from a handful of same-day observations
+    // implies precision the sample cannot support.
+    p_min_sample_for_band: MIN_SAMPLE_FOR_BAND,
   });
 
   if (error || !data) return [];
 
-  return (data as { bucket_date: string; median_price: number | string | null }[])
+  return (
+    data as {
+      bucket_date: string;
+      median_price: number | string | null;
+      p25: number | string | null;
+      p75: number | string | null;
+      row_count: number | string;
+    }[]
+  )
     .filter((row) => row.median_price != null)
-    .map((row) => ({ date: row.bucket_date, medianPrice: Number(row.median_price) }));
+    .map((row) => ({
+      date: row.bucket_date,
+      medianPrice: Number(row.median_price),
+      p25: row.p25 != null ? Number(row.p25) : null,
+      p75: row.p75 != null ? Number(row.p75) : null,
+      rowCount: Number(row.row_count),
+    }));
 }
 
 export type StockOutProduct = {

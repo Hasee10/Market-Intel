@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
-import { getSellerPriceHistory } from '@/lib/market-intel/market/price-history';
+import { getSellerPriceHistory } from '@/lib/market-intel/seller/price-history';
 
 // Infrastructure for a later-stage seller-vs-competitor price comparison
 // feature (see memory.md, "Flagged: seller-vs-competitor price history has

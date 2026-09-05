@@ -9,6 +9,7 @@ import { Table, THead, TH, TBody, TR, TD, Pill } from '@/components/ui/Table';
 import { ProductThumb } from '@/components/ui/ProductThumb';
 import { PricePositionStrip } from '@/components/marketintel/PricePositionStrip';
 import { CompetitorQualityPanel } from '@/components/marketintel/CompetitorQualityPanel';
+import { PriceVsMarketChart } from '@/components/marketintel/PriceVsMarketChart';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -218,6 +219,22 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
               : listings[0].sellerPrice / Math.max(1, listings[0].sellerUnitCount)
           }
           perUnit={listings.some((l) => l.unitCount > 1) || (listings[0]?.sellerUnitCount ?? 1) > 1}
+          currency={reportingCurrency}
+        />
+      )}
+
+      {/* Where the two panels above are a snapshot, this is the trend - "am
+          I drifting out of the market, or is the market moving under me".
+          Fetches on its own rather than waiting on the listings request
+          above: it hits a different endpoint (price-vs-market, not
+          competitors) and has nothing to gain from being serialised after
+          it. Renders nothing itself when there is no market coverage for
+          this category - see the component for why that differs from
+          "not enough band days", which IS shown. */}
+      {product && (
+        <PriceVsMarketChart
+          className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+          sellerProductId={product.id}
           currency={reportingCurrency}
         />
       )}
