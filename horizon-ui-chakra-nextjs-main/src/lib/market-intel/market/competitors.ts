@@ -30,6 +30,32 @@ import { tokenize, jaccard, MIN_CONFIDENCE, MIN_COMPETITOR_CONFIDENCE } from '@/
 const REPRICING_LOOKBACK_DAYS = 30;
 const MAX_COMPETITORS = 25;
 
+/**
+ * Which of the given platforms are single-retailer (migration 056) - the
+ * platform IS the seller, so every one of its listings is the same
+ * competitor even though seller_external_id is null on all of them.
+ *
+ * Exported so any caller that groups scraped listings by seller (not just
+ * this module's own RPC-backed scorecards) can fold a single-retailer
+ * platform's anonymous rows into one identity instead of treating them as
+ * ungrouped or, worse, one competitor per row. Kept as one function so that
+ * definition can't drift from market_single_retailer_platforms() itself.
+ */
+export async function getSingleRetailerPlatformIds(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  platformIds: string[],
+): Promise<Set<string>> {
+  if (platformIds.length === 0) return new Set();
+
+  const { data, error } = await supabase.rpc('market_single_retailer_platforms');
+  if (error || !data) return new Set();
+
+  const inScope = new Set(platformIds);
+  return new Set(
+    (data as { platform_id: string }[]).map((row) => row.platform_id).filter((id) => inScope.has(id)),
+  );
+}
+
 export type CompetitorScorecard = {
   competitorId: string | null;
   externalId: string;

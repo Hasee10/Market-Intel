@@ -7,17 +7,25 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // thresholds rather than about Postgres.
 
 let candidateRows: any[] = [];
+let singleRetailerPlatformIds: string[] = [];
 
 vi.mock('@/lib/supabase/server', () => ({
   createClient: async () => ({
-    rpc: async (): Promise<{ data: any[]; error: null }> => ({ data: candidateRows, error: null }),
+    rpc: async (fn: string): Promise<{ data: any[]; error: null }> => {
+      if (fn === 'market_single_retailer_platforms') {
+        return { data: singleRetailerPlatformIds.map((platform_id) => ({ platform_id })), error: null };
+      }
+      return { data: candidateRows, error: null };
+    },
   }),
 }));
+
+let activePlatformIds: string[] = ['p1'];
 
 vi.mock('@/lib/market-intel/market/market-definition', () => ({
   getMarketScope: async () => ({
     categorySlugs: ['smartphones'],
-    activePlatformIds: ['p1'],
+    activePlatformIds,
     hasTaxonomy: true,
     definition: {},
     allSegments: [] as unknown[],
@@ -60,6 +68,8 @@ function candidate(title: string, price: number, overrides: Record<string, unkno
 beforeEach(() => {
   candidateRows = [];
   categoryPricing = null;
+  singleRetailerPlatformIds = [];
+  activePlatformIds = ['p1', 'p2', 'p3'];
 });
 
 describe('getPreLaunchInsight', () => {
@@ -98,6 +108,48 @@ describe('getPreLaunchInsight', () => {
     expect(result.matchCount).toBe(3);
     expect(result.competitorCount).toBe(2);
     expect(result.platformCount).toBe(2);
+  });
+
+  it('counts a single-retailer platform as one competitor even though its listings carry no seller id', async () => {
+    singleRetailerPlatformIds = ['p1'];
+    candidateRows = [
+      candidate('Espresso Coffee Machine 15 Bar', 40000, { seller_external_id: null, platform_id: 'p1' }),
+      candidate('Espresso Coffee Machine 15 Bar Steel', 41000, { seller_external_id: null, platform_id: 'p1' }),
+      candidate('Espresso Coffee Machine 15 Bar Black', 42000, { seller_external_id: 'b', platform_id: 'p2' }),
+    ];
+
+    const result = await getPreLaunchInsight('Espresso Coffee Machine 15 Bar', 'appliances', 'PKR');
+
+    expect(result.matchCount).toBe(3);
+    // p1's two anonymous listings collapse onto one competitor (the
+    // platform itself); p2's named seller is the other.
+    expect(result.competitorCount).toBe(2);
+    expect(result.platformCount).toBe(2);
+  });
+
+  it('does not fold two different single-retailer platforms onto the same competitor', async () => {
+    singleRetailerPlatformIds = ['p1', 'p3'];
+    candidateRows = [
+      candidate('Espresso Coffee Machine 15 Bar', 40000, { seller_external_id: null, platform_id: 'p1' }),
+      candidate('Espresso Coffee Machine 15 Bar Pro', 45000, { seller_external_id: null, platform_id: 'p3' }),
+    ];
+
+    const result = await getPreLaunchInsight('Espresso Coffee Machine 15 Bar', 'appliances', 'PKR');
+
+    expect(result.competitorCount).toBe(2);
+  });
+
+  it('still excludes a listing with a genuine attribution gap on a real marketplace platform', async () => {
+    singleRetailerPlatformIds = []; // p1 is a real marketplace here, not single-retailer
+    candidateRows = [
+      candidate('Espresso Coffee Machine 15 Bar', 40000, { seller_external_id: null, platform_id: 'p1' }),
+      candidate('Espresso Coffee Machine 15 Bar Pro', 45000, { seller_external_id: 'seller-a', platform_id: 'p1' }),
+    ];
+
+    const result = await getPreLaunchInsight('Espresso Coffee Machine 15 Bar', 'appliances', 'PKR');
+
+    expect(result.matchCount).toBe(2);
+    expect(result.competitorCount).toBe(1);
   });
 
   it('flags a thin market instead of presenting a confident read over a handful of rows', async () => {

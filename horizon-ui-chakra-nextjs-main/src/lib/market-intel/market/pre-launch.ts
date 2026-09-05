@@ -2,6 +2,7 @@
 
 import { getCategoryPricing, type CategoryPricing } from '@/lib/market-intel/market/category-pricing';
 import { collapseDuplicateListings, findTopSimilarCandidates } from '@/lib/market-intel/market/candidate-search';
+import { getSingleRetailerPlatformIds } from '@/lib/market-intel/market/competitors';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
 import { convertCurrency, getLatestFxRates } from '@/lib/market-intel/fx';
 import {
@@ -57,7 +58,11 @@ export type PreLaunchInsight = {
 
   /** How many scraped listings matched the title well enough to count. */
   matchCount: number;
-  /** Distinct named sellers across those matches - 0 on single-retailer-only markets. */
+  /**
+   * Distinct competitors across those matches. A single-retailer platform
+   * (migration 056) counts as one, even though its listings carry no
+   * seller_external_id - the platform itself is the identity there.
+   */
   competitorCount: number;
   /** Distinct platforms carrying a match. */
   platformCount: number;
@@ -130,10 +135,11 @@ export async function getPreLaunchInsight(
 
   const supabase = await createClient();
 
-  const [rawCandidates, fxRates, categoryPricing] = await Promise.all([
+  const [rawCandidates, fxRates, categoryPricing, singleRetailerPlatformIds] = await Promise.all([
     findTopSimilarCandidates(supabase, scope.categorySlugs, scope.activePlatformIds, title),
     getLatestFxRates(),
     getCategoryPricing(categorySlug, reportingCurrency),
+    getSingleRetailerPlatformIds(supabase, scope.activePlatformIds),
   ]);
 
   // Same collapse the Competitors drawer applies. Without it "14 listings
@@ -181,8 +187,20 @@ export async function getPreLaunchInsight(
         }
       : null;
 
+  // A marketplace listing's identity is its own sellerExternalId; a
+  // single-retailer platform's listing has none, but every one of them is
+  // the same competitor (the platform itself), so they key on platformId
+  // instead - same effective-identity idea as
+  // market_competitor_scorecards' coalesce(seller_external_id, '__self__'),
+  // just distinguished by platform here since two different single-retailer
+  // platforms must not collapse onto one shared sentinel.
   const competitorCount = new Set(
-    matched.map((m) => m.candidate.sellerExternalId).filter((id): id is string => Boolean(id)),
+    matched
+      .map((m) =>
+        m.candidate.sellerExternalId ??
+        (singleRetailerPlatformIds.has(m.candidate.platformId) ? `platform:${m.candidate.platformId}` : null),
+      )
+      .filter((id): id is string => Boolean(id)),
   ).size;
   const platformCount = new Set(matched.map((m) => m.candidate.platformId)).size;
 
