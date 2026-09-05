@@ -170,7 +170,7 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
       {!loading && !error && listings.length > 0 && (
         <div className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800">
           <PricePositionStrip
-            listings={listings.map((l) => ({ price: l.matchedPrice, matchStrength: l.matchStrength }))}
+            listings={listings.map((l) => ({ price: l.matchedPrice }))}
             sellerPrice={listings[0]?.sellerPrice ?? null}
             currency={reportingCurrency}
           />

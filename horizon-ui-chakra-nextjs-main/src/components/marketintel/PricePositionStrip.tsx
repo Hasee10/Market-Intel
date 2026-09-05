@@ -1,35 +1,41 @@
 'use client';
 
-// Where the seller sits in a set of competitor prices, as one picture.
+// Where the seller sits in a set of competitor prices.
 //
-// The Competitors drawer is a table of 15 rows: readable one line at a
-// time, and useless for the question a seller actually opens it to answer -
-// "am I cheap or expensive here?" Answering that from a table means holding
-// fifteen numbers in your head and finding your own among them. A dot per
-// listing on a shared price axis answers it before you have read anything.
+// This started as a dot plot on a price axis and that was the wrong form.
+// Unlabelled dots make the reader decode a position into a price by
+// interpolating between the two end labels, and a sparse row of identical
+// marks says nothing about where competition actually concentrates. It
+// looked like a chart without answering anything.
 //
-// A dot plot rather than a bar chart because the data is one dimensional -
-// a set of prices - and bars would invent a second axis that means nothing.
-// Overlapping prices stack vertically, so a cluster reads as a cluster
-// rather than as one dot hiding four others.
-//
-// Drawn with positioned elements instead of a chart library. The whole
-// thing is ~30 marks on a linear scale; ApexCharts would be several hundred
-// kB and a wrapper to fight for a picture this simple.
+// Labelled price bands with counts instead. Every row is a sentence a
+// person can read - "PKR 3,000-6,000: 5 listings" - and the bar lengths
+// give the shape for free. Same pattern as the Competitors page's
+// assortment concentration panel, so the app has one way of showing a
+// distribution rather than two.
 
 type Listing = {
   price: number | null;
-  matchStrength?: 'strong' | 'likely' | 'loose';
 };
 
-/** Dot columns across the width. More bins = finer positions, taller stacks. */
-const BIN_COUNT = 34;
-const DOT = 9;
-const STACK_GAP = 2;
-/** Floor for the plot, so a flat distribution still reads as a strip. */
-const MIN_PLOT_HEIGHT = 68;
-/** Ceiling, so one pathological cluster cannot push the table off screen. */
-const MAX_PLOT_HEIGHT = 132;
+/** Target number of bands. Few enough to read at a glance, enough for shape. */
+const TARGET_BANDS = 5;
+
+/**
+ * A round step covering the range in roughly TARGET_BANDS steps.
+ *
+ * Round numbers, not equal divisions of the actual range: "PKR 3,000-6,000"
+ * is a band a person can place a price into instantly, where an honest
+ * "PKR 3,180-5,260" makes them do arithmetic to use it.
+ */
+function niceStep(range: number): number {
+  const rough = range / TARGET_BANDS;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rough)));
+  const normalised = rough / magnitude;
+  // 1, 2, 2.5, 5, 10 - the steps that produce round band edges.
+  const nice = normalised <= 1 ? 1 : normalised <= 2 ? 2 : normalised <= 2.5 ? 2.5 : normalised <= 5 ? 5 : 10;
+  return nice * magnitude;
+}
 
 export function PricePositionStrip({
   listings,
@@ -48,177 +54,157 @@ export function PricePositionStrip({
     .filter((p): p is number => p != null && Number.isFinite(p) && p > 0)
     .sort((a, b) => a - b);
 
-  // One price and one seller is not a distribution - a strip drawn over it
-  // would imply a spread that isn't there.
-  if (prices.length < 2) return null;
+  // Two prices are not a distribution; bands over them would imply a shape
+  // that isn't there.
+  if (prices.length < 3) return null;
 
   const median = prices[Math.floor(prices.length / 2)];
+  const cheapest = prices[0];
+  const dearest = prices[prices.length - 1];
 
-  // The axis spans every mark it has to show, so the seller's own price can
-  // never fall outside the drawing when they are the cheapest or dearest.
-  const lo = Math.min(prices[0], sellerPrice ?? Infinity);
-  const hi = Math.max(prices[prices.length - 1], sellerPrice ?? -Infinity);
-  const span = hi - lo || 1;
-  const pct = (value: number) => ((value - lo) / span) * 100;
+  const step = niceStep(dearest - cheapest || cheapest || 1);
+  const start = Math.floor(cheapest / step) * step;
+  const end = Math.ceil((dearest + 1) / step) * step;
 
-  // Bin, then stack within the bin. Positions come from the bin's centre
-  // rather than the raw price so a stack sits as one column instead of a
-  // ragged diagonal.
-  const bins = new Map<number, { price: number; strength?: Listing['matchStrength'] }[]>();
-  for (const listing of listings) {
-    const price = listing.price;
-    if (price == null || !Number.isFinite(price) || price <= 0) continue;
-    const bin = Math.min(BIN_COUNT - 1, Math.floor(((price - lo) / span) * BIN_COUNT));
-    const column = bins.get(bin) ?? [];
-    column.push({ price, strength: listing.matchStrength });
-    bins.set(bin, column);
+  const bands: { from: number; to: number; count: number }[] = [];
+  for (let from = start; from < end; from += step) {
+    const to = from + step;
+    bands.push({
+      from,
+      to,
+      // Upper-exclusive, except the last band which has to include the
+      // dearest listing or it vanishes from its own chart.
+      count: prices.filter((p) => p >= from && (to >= end ? p <= to : p < to)).length,
+    });
   }
 
-  // Height follows the tallest stack rather than being fixed. Commodity
-  // goods cluster hard on price - fifteen listings within a few hundred
-  // rupees is normal - and a fixed height would silently clip the top of
-  // that column, which is exactly the case a seller most needs to see.
-  const tallestStack = Math.max(...[...bins.values()].map((c) => c.length), 1);
-  const neededHeight = 1 + (tallestStack - 1) * (DOT + STACK_GAP) + DOT + 14;
-  const plotHeight = Math.min(MAX_PLOT_HEIGHT, Math.max(MIN_PLOT_HEIGHT, neededHeight));
-  // Past the ceiling, a column is truncated and says so rather than
-  // overflowing into the median label.
-  const maxVisiblePerColumn = Math.floor((plotHeight - 14 - DOT) / (DOT + STACK_GAP)) + 1;
+  const busiest = Math.max(...bands.map((b) => b.count), 1);
+  const sellerBand =
+    sellerPrice != null ? bands.findIndex((b) => sellerPrice >= b.from && sellerPrice < b.to) : -1;
 
-  const cheaperThan = sellerPrice != null ? prices.filter((p) => p > sellerPrice).length : 0;
-  const isCheaper = sellerPrice != null && sellerPrice < median;
+  const dearerThanSeller = sellerPrice != null ? prices.filter((p) => p > sellerPrice).length : 0;
   const atMarket =
     sellerPrice != null && median > 0 && Math.abs((sellerPrice - median) / median) < 0.05;
+  const isCheaper = sellerPrice != null && sellerPrice < median;
+  const vsMedianPct = sellerPrice != null && median > 0 ? ((sellerPrice - median) / median) * 100 : 0;
+
+  // The next listing above the seller. This is the actionable number on the
+  // whole panel: it is how much room there is to raise a price before
+  // anyone else becomes the cheaper option.
+  const nextUp = sellerPrice != null ? prices.find((p) => p > sellerPrice) ?? null : null;
 
   const money = (v: number) =>
     new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       maximumFractionDigits: 0,
-      notation: v >= 100000 ? 'compact' : 'standard',
+      notation: v >= 1_000_000 ? 'compact' : 'standard',
     }).format(v);
 
-  // Semantic, matching the drawer's own vs-yours column: cheaper is good
-  // for the seller, dearer is the thing to look at.
-  const markerColor = atMarket
-    ? 'bg-gray-500 dark:bg-gray-400'
-    : isCheaper
-      ? 'bg-success-600 dark:bg-success-500'
-      : 'bg-error-600 dark:bg-error-500';
-  const markerText = atMarket
-    ? 'text-gray-600 dark:text-gray-300'
+  const verdictText = atMarket
+    ? 'text-gray-700 dark:text-gray-200'
     : isCheaper
       ? 'text-success-700 dark:text-success-500'
       : 'text-error-700 dark:text-error-500';
 
   return (
     <div className={className}>
+      {/* The three figures a seller compares, side by side and large enough
+          to read without hunting. Their own price first: it is the one they
+          came here to judge. */}
+      <div className="mb-4 grid grid-cols-3 gap-3">
+        {[
+          { label: 'Your price', value: sellerPrice, emphasis: true },
+          { label: 'Market median', value: median, emphasis: false },
+          { label: 'Cheapest here', value: cheapest, emphasis: false },
+        ].map((stat) => (
+          <div key={stat.label}>
+            <p className="text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
+              {stat.label}
+            </p>
+            <p
+              className={`text-lg font-semibold tabular-nums ${
+                stat.emphasis ? verdictText : 'text-gray-900 dark:text-white'
+              }`}
+            >
+              {stat.value != null ? money(stat.value) : '—'}
+            </p>
+          </div>
+        ))}
+      </div>
+
       {sellerPrice != null && (
-        <p className="mb-2 text-sm text-gray-700 dark:text-gray-200">
-          At <span className="font-semibold">{money(sellerPrice)}</span> you are{' '}
-          <span className={`font-semibold ${markerText}`}>
-            {atMarket
-              ? 'priced at the market median'
-              : `cheaper than ${cheaperThan} of ${prices.length} listings`}
-          </span>
-          {!atMarket && <span className="text-gray-500 dark:text-gray-400"> here</span>}.
+        <p className="mb-3 text-sm text-gray-700 dark:text-gray-200">
+          {atMarket ? (
+            <>
+              You are priced <span className="font-semibold">at the market median</span>.
+            </>
+          ) : (
+            <>
+              You are{' '}
+              <span className={`font-semibold ${verdictText}`}>
+                {Math.abs(vsMedianPct).toFixed(0)}% {isCheaper ? 'below' : 'above'} the median
+              </span>
+              , and {dearerThanSeller} of {prices.length} listings cost more than you.
+            </>
+          )}
         </p>
       )}
 
-      <div
-        className="relative w-full"
-        style={{ height: plotHeight }}
-        role="img"
-        aria-label={
-          sellerPrice != null
-            ? `Price distribution of ${prices.length} competitor listings from ${money(prices[0])} to ${money(prices[prices.length - 1])}, median ${money(median)}. Your price is ${money(sellerPrice)}, cheaper than ${cheaperThan} of them.`
-            : `Price distribution of ${prices.length} competitor listings from ${money(prices[0])} to ${money(prices[prices.length - 1])}, median ${money(median)}.`
-        }
-      >
-        {/* Median first, so dots and the seller marker sit over it. */}
-        <div
-          className="absolute top-0 bottom-0 w-px bg-gray-300 dark:bg-gray-600"
-          style={{ left: `${pct(median)}%` }}
-          aria-hidden="true"
-        />
-        <span
-          className="absolute top-0 -translate-x-1/2 text-[10px] whitespace-nowrap text-gray-400 dark:text-gray-500"
-          style={{ left: `${pct(median)}%` }}
-          aria-hidden="true"
-        >
-          median
-        </span>
+      <p className="mb-2 text-[11px] tracking-wide text-gray-500 uppercase dark:text-gray-400">
+        How the {prices.length} listings are priced
+      </p>
 
-        {/* Baseline the dots sit on. */}
-        <div
-          className="absolute right-0 left-0 h-px bg-gray-200 dark:bg-gray-700"
-          style={{ bottom: 0 }}
-          aria-hidden="true"
-        />
-
-        {[...bins.entries()].map(([bin, column]) => {
-          const shown = column.slice(0, maxVisiblePerColumn);
-          const hidden = column.length - shown.length;
-          const left = `${((bin + 0.5) / BIN_COUNT) * 100}%`;
+      <div className="flex flex-col gap-1.5">
+        {bands.map((band, i) => {
+          const isSellerBand = i === sellerBand;
           return (
-            <span key={bin}>
-              {shown.map((item, i) => (
+            <div key={band.from} className="flex items-center gap-3">
+              <span className="w-[132px] shrink-0 text-right text-xs text-gray-600 tabular-nums dark:text-gray-300">
+                {money(band.from)}–{money(band.to)}
+              </span>
+
+              <span className="relative h-5 min-w-0 flex-1 overflow-hidden rounded bg-gray-100 dark:bg-gray-800">
                 <span
-                  key={i}
-                  title={money(item.price)}
-                  aria-hidden="true"
-                  className={`absolute rounded-full ${
-                    // A loose match is a weaker claim that this is even the
-                    // same product, so it reads as a fainter dot rather than
-                    // carrying the same weight as a strong one.
-                    item.strength === 'loose'
-                      ? 'bg-brand-300 dark:bg-brand-500/50'
-                      : 'bg-brand-500 dark:bg-brand-400'
+                  className={`block h-full rounded ${
+                    isSellerBand ? 'bg-brand-500' : 'bg-gray-300 dark:bg-gray-600'
                   }`}
-                  style={{
-                    width: DOT,
-                    height: DOT,
-                    left,
-                    bottom: 1 + i * (DOT + STACK_GAP),
-                    transform: 'translateX(-50%)',
-                  }}
+                  // Always a sliver for an empty band, so the row still
+                  // reads as a row rather than a gap in the list.
+                  style={{ width: band.count === 0 ? 2 : `${(band.count / busiest) * 100}%` }}
                 />
-              ))}
-              {hidden > 0 && (
-                <span
-                  aria-hidden="true"
-                  className="absolute -translate-x-1/2 text-[9px] font-semibold text-brand-500 dark:text-brand-400"
-                  style={{ left, bottom: 1 + shown.length * (DOT + STACK_GAP) }}
-                >
-                  +{hidden}
-                </span>
-              )}
-            </span>
+              </span>
+
+              <span className="w-[92px] shrink-0 text-xs text-gray-600 tabular-nums dark:text-gray-300">
+                {band.count === 0 ? (
+                  <span className="text-gray-400 dark:text-gray-500">none</span>
+                ) : (
+                  `${band.count} listing${band.count === 1 ? '' : 's'}`
+                )}
+                {isSellerBand && (
+                  <span className="ml-1.5 rounded bg-brand-500 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                    you
+                  </span>
+                )}
+              </span>
+            </div>
           );
         })}
-
-        {/* The seller's own price: a full-height rule, so it reads as a
-            position on the axis rather than as one more competitor dot. */}
-        {sellerPrice != null && (
-          <div
-            className="absolute top-3 bottom-0"
-            style={{ left: `${pct(sellerPrice)}%` }}
-            aria-hidden="true"
-          >
-            <div className={`h-full w-0.5 -translate-x-1/2 ${markerColor}`} />
-            <span
-              className={`absolute -top-3 left-0 -translate-x-1/2 rounded px-1 text-[10px] font-semibold whitespace-nowrap text-white ${markerColor}`}
-            >
-              you
-            </span>
-          </div>
-        )}
       </div>
 
-      <div className="mt-1 flex justify-between text-[11px] text-gray-500 tabular-nums dark:text-gray-400">
-        <span>{money(prices[0])}</span>
-        <span>{money(prices[prices.length - 1])}</span>
-      </div>
+      {/* The one number that turns this from a description into a decision. */}
+      {nextUp != null && sellerPrice != null && (
+        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+          The next listing above you is{' '}
+          <span className="font-semibold text-gray-900 dark:text-white">{money(nextUp)}</span> —{' '}
+          {money(nextUp - sellerPrice)} of headroom before you stop being the cheaper option.
+        </p>
+      )}
+      {nextUp == null && sellerPrice != null && (
+        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">
+          Nothing here is priced above you — you are the most expensive of the {prices.length}.
+        </p>
+      )}
     </div>
   );
 }
