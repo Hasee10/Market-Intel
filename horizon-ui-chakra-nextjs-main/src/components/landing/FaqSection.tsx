@@ -61,81 +61,37 @@ export function FaqSection() {
         desc="Press a topic on the ring. Still stuck? The assistant bottom-right knows the same answers."
       />
 
-      {/* w-full on the Reveal is load-bearing, not cosmetic: this section is a
-          centred flex column, so its children size to their content. Every
-          node in the ring below is absolutely positioned and contributes no
-          intrinsic width, so without a definite width here the stage measures
-          0, and aspect-square then makes it 0 tall - the whole card collapses. */}
+      {/* Two columns at md+ (the same breakpoint the ring/list switch already
+          uses): the interactive card on the left, the supplied illustration
+          on the right, vertically centred against each other. Below md
+          there's exactly one column, so DOM order alone puts the FAQ card
+          first and the illustration second - no order-* classes needed.
+          max-w-6xl caps the pair on very wide screens; w-full on the Reveal
+          is still load-bearing for the same reason it always was - see the
+          ring stage's own comment below. */}
       <Reveal className="w-full">
-        <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-[28px] bg-white p-4 ring-1 ring-gray-200 sm:p-6 md:p-8 dark:bg-[#151E4A] dark:ring-white/10">
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-[radial-gradient(circle,rgba(123,97,255,0.16)_0%,rgba(123,97,255,0)_70%)] dark:bg-[radial-gradient(circle,rgba(123,97,255,0.22)_0%,rgba(123,97,255,0)_70%)]"
-          />
-          <div
-            aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.12)_0%,rgba(80,68,229,0)_70%)] dark:bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_70%)]"
-          />
-
-          {/* The ring. Hidden below md - ten nodes on a 375px circle is not a
-              readable layout at any font size, so small screens get the list
-              underneath instead. */}
-          <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] md:block">
-            {/* A circle inscribed in a square stage leaves its four corners
-                empty - visible as dead space in earlier passes of this
-                design. Tucks a quiet illustration into the bottom-left one
-                instead of leaving it bare: someone asking the question this
-                whole section answers. Drawn as flat markup in one silhouette
-                tone (not a stock photo, not full colour) so it reads as
-                background texture, not a second focal point competing with
-                the ring - same posture as every other illustration on this
-                site (ShowcaseSection's device frames, the pre-launch
-                mockups). First in the DOM so it paints behind the ring with
-                no z-index needed, and pointer-events-none so it can never
-                intercept a click meant for a node. */}
-            <svg
-              viewBox="0 0 100 118"
-              className="pointer-events-none absolute -bottom-[1%] -left-[1%] w-[13%] text-[#111C4E]/[0.07] dark:text-white/[0.14]"
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-8 md:grid-cols-2 md:gap-6 lg:gap-14">
+          <div className="relative w-full overflow-hidden rounded-[28px] bg-white p-4 ring-1 ring-gray-200 sm:p-6 md:p-8 dark:bg-[#151E4A] dark:ring-white/10">
+            <div
               aria-hidden="true"
-            >
-              {/* Hair, shoulders/top, neck and face - one silhouette fill. */}
-              <path
-                fill="currentColor"
-                d="M30 32 Q28 12 50 10 Q72 12 70 32 L70 34 Q70 26 50 24 Q30 26 30 34 Z
-                   M50 14 Q30 16 30 34 L30 52 Q30 60 38 60 L62 60 Q70 60 70 52 L70 34 Q70 16 50 14 Z
-                   M14 118 Q14 76 50 74 Q86 76 86 118 Z"
-              />
-              {/* Raised forearm, thinking pose - the hand rests near the jaw. */}
-              <path
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="9"
-                strokeLinecap="round"
-                d="M76 92 Q90 82 84 60 Q82 50 72 52"
-              />
-              <circle cx="62" cy="86" r="7" fill="currentColor" />
-              {/* The question, as an accent rather than the silhouette tone -
-                  the one spot of colour this illustration gets. */}
-              <circle cx="84" cy="18" r="13" className="fill-[#7B61FF]/70" />
-              <text
-                x="84"
-                y="23"
-                textAnchor="middle"
-                fontSize="15"
-                fontWeight="700"
-                className="fill-white"
-              >
-                ?
-              </text>
-            </svg>
+              className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-[radial-gradient(circle,rgba(123,97,255,0.16)_0%,rgba(123,97,255,0)_70%)] dark:bg-[radial-gradient(circle,rgba(123,97,255,0.22)_0%,rgba(123,97,255,0)_70%)]"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -bottom-32 -left-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.12)_0%,rgba(80,68,229,0)_70%)] dark:bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_70%)]"
+            />
 
-            <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden="true">
-              <defs>
-                <linearGradient id="faq-sweep" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0%" stopColor="#7B61FF" stopOpacity="0" />
-                  <stop offset="100%" stopColor="#A594FF" stopOpacity="0.85" />
-                </linearGradient>
-              </defs>
+            {/* The ring. Hidden below md - ten nodes on a 375px circle is not a
+                readable layout at any font size, so small screens get the list
+                underneath instead. */}
+            <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] md:block">
+              <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden="true">
+                <defs>
+                  <linearGradient id="faq-sweep" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#7B61FF" stopOpacity="0" />
+                    <stop offset="100%" stopColor="#A594FF" stopOpacity="0.85" />
+                  </linearGradient>
+                </defs>
 
               <circle
                 cx="50"
@@ -270,6 +226,30 @@ export function FaqSection() {
                 </div>
               );
             })}
+          </div>
+          </div>
+
+          {/* The supplied illustration, rendered as an image asset per the
+              brief - not rebuilt in markup like the rest of this file's
+              SVGs. Its own artwork already carries a soft shadow and a
+              lavender card mock (ryvl-faq-illustration.svg), so it sits
+              directly on the section's background rather than inside a
+              second bordered card, which would double-frame it. Sized down
+              at md (tablet) and back up at lg (desktop) per the brief;
+              mx-auto centres it under its own cap on every breakpoint where
+              that cap is narrower than the column. */}
+          <div className="relative mx-auto aspect-[1600/1000] w-full max-w-[360px] md:max-w-[300px] lg:max-w-[460px]">
+            {/* Plain <img>, not next/image - the optimizer refuses to serve
+                any SVG (local or remote) unless dangerouslyAllowSVG is set
+                globally in next.config.js, and that flag isn't worth
+                widening for one trusted local asset. Same escape hatch
+                LogoTile.tsx already uses for the same reason. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/assets/ryvl-faq-illustration.svg"
+              alt="A seller reviewing answers to frequently asked questions"
+              className="absolute inset-0 size-full object-contain"
+            />
           </div>
         </div>
       </Reveal>

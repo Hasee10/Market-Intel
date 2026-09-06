@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000" fill="none">
+<defs>
+  <linearGradient id="card" x1="930" y1="170" x2="1460" y2="850" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#FFFFFF"/>
+    <stop offset="1" stop-color="#F4F3FF"/>
+  </linearGradient>
+  <linearGradient id="shirt" x1="220" y1="540" x2="610" y2="900" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#7B6AF2"/>
+    <stop offset="1" stop-color="#5A4BE8"/>
+  </linearGradient>
+  <linearGradient id="bubble" x1="300" y1="150" x2="430" y2="300" gradientUnits="userSpaceOnUse">
+    <stop stop-color="#7568F2"/>
+    <stop offset="1" stop-color="#5143DD"/>
+  </linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+    <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#5143DD" flood-opacity=".13"/>
+  </filter>
+  <filter id="soft" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="18"/>
+  </filter>
+</defs>
+
+<!-- soft decorative shapes -->
+<ellipse cx="420" cy="870" rx="330" ry="55" fill="#6C5CEB" opacity=".10" filter="url(#soft)"/>
+<circle cx="270" cy="660" r="120" fill="#E9E7FF"/>
+<circle cx="650" cy="315" r="120" fill="#F0EEFF"/>
+<circle cx="1450" cy="160" r="100" fill="#EEEAFE"/>
+
+<!-- plant -->
+<path d="M155 846 C150 748 162 650 220 570" stroke="#3EAD8A" stroke-width="10" stroke-linecap="round"/>
+<path d="M176 735 C112 716 76 669 75 620 C125 616 174 653 176 735Z" fill="#46B995"/>
+<path d="M190 672 C194 599 235 547 285 535 C300 593 259 646 190 672Z" fill="#329B7C"/>
+<path d="M165 805 C104 798 66 760 55 713 C110 704 159 738 165 805Z" fill="#54C29F"/>
+<rect x="102" y="835" width="130" height="55" rx="14" fill="#E8E8F7"/>
+
+<!-- woman -->
+<path d="M206 887 C205 745 218 604 301 546 C363 502 468 497 531 554 C594 611 618 734 626 887Z" fill="url(#shirt)"/>
+<!-- hair back -->
+<path d="M235 595 C178 488 219 327 343 283 C473 237 583 315 594 438 C603 537 560 635 498 664 C432 696 355 654 321 602Z" fill="#24264D"/>
+<!-- neck -->
+<path d="M392 502 L393 579 C398 612 439 627 470 601 L469 518Z" fill="#F5A27F"/>
+<!-- face -->
+<path d="M322 345 C353 292 444 286 493 330 C532 365 531 460 494 507 C460 550 389 549 346 511 C312 480 299 390 322 345Z" fill="#F7AA87"/>
+<!-- hair front -->
+<path d="M308 395 C291 331 337 270 414 272 C480 274 520 311 524 370 C489 343 457 327 416 331 C388 334 354 354 308 395Z" fill="#24264D"/>
+<path d="M319 396 C313 454 324 509 356 536 C311 519 286 471 290 416 C294 352 329 304 374 286 C350 319 328 352 319 396Z" fill="#202347"/>
+<path d="M497 367 C530 404 538 463 509 514 C491 546 467 559 448 565 C491 524 501 481 497 428 C495 402 491 383 497 367Z" fill="#202347"/>
+<!-- ear -->
+<ellipse cx="319" cy="435" rx="27" ry="35" fill="#F5A27F"/>
+<!-- eyes -->
+<ellipse cx="388" cy="405" rx="10" ry="14" fill="#202347"/>
+<ellipse cx="456" cy="403" rx="10" ry="14" fill="#202347"/>
+<path d="M372 376 Q389 365 404 374" stroke="#202347" stroke-width="7" stroke-linecap="round"/>
+<path d="M442 373 Q457 364 472 374" stroke="#202347" stroke-width="7" stroke-linecap="round"/>
+<!-- nose + smile -->
+<path d="M420 408 Q411 438 424 443" stroke="#D77E69" stroke-width="5" stroke-linecap="round"/>
+<path d="M402 463 Q425 481 450 461" stroke="#B94D54" stroke-width="6" stroke-linecap="round"/>
+<!-- thinking hand -->
+<path d="M478 568 C470 531 466 507 478 484 C488 464 510 467 516 485 C522 504 508 523 497 539 L509 579Z" fill="#F7AA87"/>
+<path d="M493 482 C510 470 524 474 528 488 C532 501 519 511 506 519" stroke="#E58D75" stroke-width="5" stroke-linecap="round"/>
+<!-- arm -->
+<path d="M525 624 C580 655 605 713 594 778 L558 886 L390 886 C413 816 441 746 465 674Z" fill="url(#shirt)"/>
+<!-- laptop -->
+<path d="M352 744 Q357 727 379 727 L707 727 Q729 727 736 746 L692 878 L319 878Z" fill="#E7E8F6" stroke="#D4D6EB" stroke-width="5"/>
+<path d="M300 878 L742 878 L770 901 Q775 910 758 910 L278 910 Q264 910 271 898Z" fill="#C9CBE3"/>
+<circle cx="527" cy="804" r="24" fill="#B9BBDD"/>
+
+<!-- question bubble -->
+<g filter="url(#shadow)">
+  <path d="M360 205 C360 153 403 118 456 118 H490 C544 118 584 153 584 205 C584 257 544 291 490 291 H446 L415 323 V291 C382 282 360 249 360 205Z" fill="url(#bubble)"/>
+</g>
+<text x="472" y="244" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="92" font-weight="700" fill="white">?</text>
+<path d="M605 329 L580 359" stroke="#6C5CEB" stroke-width="13" stroke-linecap="round"/>
+<path d="M624 375 L593 383" stroke="#6C5CEB" stroke-width="13" stroke-linecap="round"/>
+
+<!-- FAQ card -->
+<g filter="url(#shadow)">
+  <rect x="720" y="150" width="760" height="700" rx="34" fill="url(#card)" stroke="#DDDDF4" stroke-width="3"/>
+  <rect x="752" y="184" width="696" height="106" rx="24" fill="#EFEEFF"/>
+</g>
+
+<!-- header icon -->
+<rect x="782" y="211" width="56" height="56" rx="15" fill="#5B4DE5"/>
+<text x="810" y="252" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="38" font-weight="800" fill="white">?</text>
+<text x="864" y="250" font-family="Inter,Arial,sans-serif" font-size="34" font-weight="750" fill="#202A52">Frequently Asked Questions</text>
+
+<!-- active FAQ -->
+<rect x="752" y="318" width="696" height="190" rx="25" fill="white" stroke="#CFCDF5" stroke-width="3"/>
+<circle cx="796" cy="364" r="25" fill="#6255E8"/>
+<text x="796" y="375" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="800" fill="white">Q</text>
+<text x="840" y="375" font-family="Inter,Arial,sans-serif" font-size="25" font-weight="650" fill="#202A52">How does pricing work?</text>
+<path d="M1390 374 L1401 362 L1412 374" stroke="#6255E8" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect x="780" y="410" width="620" height="12" rx="6" fill="#BFC3EA"/>
+<rect x="780" y="438" width="565" height="12" rx="6" fill="#BFC3EA"/>
+<rect x="780" y="466" width="310" height="12" rx="6" fill="#BFC3EA"/>
+
+<!-- collapsed FAQs -->
+<g>
+<rect x="752" y="530" width="696" height="78" rx="22" fill="white" stroke="#E1E1F1" stroke-width="2"/>
+<circle cx="796" cy="569" r="23" fill="#6970C9"/>
+<text x="796" y="578" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="white">Q</text>
+<text x="840" y="578" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#202A52">Can I cancel anytime?</text>
+<path d="M1390 563 L1401 575 L1412 563" stroke="#6255E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+<rect x="752" y="624" width="696" height="78" rx="22" fill="white" stroke="#E1E1F1" stroke-width="2"/>
+<circle cx="796" cy="663" r="23" fill="#6970C9"/>
+<text x="796" y="672" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="white">Q</text>
+<text x="840" y="672" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#202A52">What marketplaces do you support?</text>
+<path d="M1390 657 L1401 669 L1412 657" stroke="#6255E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+
+<rect x="752" y="718" width="696" height="78" rx="22" fill="white" stroke="#E1E1F1" stroke-width="2"/>
+<circle cx="796" cy="757" r="23" fill="#6970C9"/>
+<text x="796" y="766" text-anchor="middle" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800" fill="white">Q</text>
+<text x="840" y="766" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="600" fill="#202A52">Is there a free trial?</text>
+<path d="M1390 751 L1401 763 L1412 751" stroke="#6255E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+</svg>
