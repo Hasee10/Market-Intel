@@ -81,10 +81,18 @@ export function FaqSection() {
               className="pointer-events-none absolute -bottom-32 -left-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.12)_0%,rgba(80,68,229,0)_70%)] dark:bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_70%)]"
             />
 
-            {/* The ring. Hidden below md - ten nodes on a 375px circle is not a
-                readable layout at any font size, so small screens get the list
-                underneath instead. */}
-            <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] md:block">
+            {/* The ring. Hidden below lg, not md - the two-column grid this
+                card sits in (md:grid-cols-2) already halves the available
+                width at md, and measured in the browser at exactly 768px the
+                stage shrinks to ~252px, which has no room left for the
+                centre answer box to hold even a trimmed answer without
+                scrolling (verified: every one of the ten overflowed at that
+                size). lg is where a column is wide enough for the ring to
+                actually work; between md and lg, the list below stands in
+                for it - still a two-column "side by side" layout per the
+                brief, just with the list on the left instead of the ring
+                until there's room for one. */}
+            <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] lg:block">
               <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden="true">
                 <defs>
                   <linearGradient id="faq-sweep" x1="0" y1="0" x2="1" y2="1">
@@ -135,13 +143,23 @@ export function FaqSection() {
             </svg>
 
             {/* The container that appears when a topic is pressed. Sized to
-                its own content (not size-full of the 47% bounding box) - a
-                fixed square left a dead gap under every answer shorter than
-                the longest one. The bounding box still caps how big it can
-                get, so the longest answer scrolls instead of colliding with
-                the ring. */}
-            <div className="absolute left-1/2 top-1/2 flex size-[47%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-              <div className="max-h-full min-h-[110px] w-full overflow-y-auto rounded-2xl bg-brand-50 px-5 py-4 text-center ring-1 ring-[#7B61FF]/20 shadow-[0_14px_40px_rgba(10,16,45,0.12)] dark:bg-white/[0.08] dark:ring-[#7B61FF]/30 dark:shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
+                its own content (not size-full of the bounding box) - a fixed
+                square left a dead gap under every answer shorter than the
+                longest one. 58%, not the original 47%: even after trimming
+                every FAQS answer down (lib/ai/assistant-knowledge.ts), the
+                longest ones still needed more room than 47% gave at the
+                ring's smallest real size, verified by measuring
+                scrollHeight vs clientHeight for all ten topics in the
+                browser at 1024px (the lg breakpoint the ring now starts at -
+                see its own comment above). 58% still clears every node:
+                half-diagonal is ~41% of the stage vs the ring's own 40%
+                radius, and the nodes sit further out than their own centre
+                by roughly their half-width. No responsive step here (unlike
+                the topic buttons) - the ring only ever renders at lg+ now,
+                so a size tuned for anything narrower would never actually
+                be seen. */}
+            <div className="absolute left-1/2 top-1/2 flex size-[58%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
+              <div className="max-h-full min-h-[100px] w-full overflow-y-auto rounded-2xl bg-brand-50 px-5 py-4 text-center ring-1 ring-[#7B61FF]/20 shadow-[0_14px_40px_rgba(10,16,45,0.12)] dark:bg-white/[0.08] dark:ring-[#7B61FF]/30 dark:shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
                 {/* Keyed so the content remounts and replays its entrance
                     every time a different topic is pressed. */}
                 <div key={active} className="animate-[faq-pop_220ms_ease-out]">
@@ -174,8 +192,10 @@ export function FaqSection() {
             })}
           </div>
 
-          {/* Below md: the same ten, as a list. */}
-          <div className="flex flex-col gap-2.5 md:hidden">
+          {/* Below lg: the same ten, as a list - see the ring's own comment
+              above for why this now runs through the whole md..lg range,
+              not just below md. */}
+          <div className="flex flex-col gap-2.5 lg:hidden">
             {FAQS.map((item, i) => {
               const isOpen = i === active;
               return (

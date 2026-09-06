@@ -21,52 +21,52 @@ export const FAQS: { q: string; topic: string; a: string }[] = [
   {
     q: 'Which marketplaces do you actually track?',
     topic: 'Coverage',
-    a: `${MARKETPLACE_COUNT} sources today, spanning mobiles & electronics, fashion & apparel, beauty, grocery, home & kitchen, furniture, books & stationery, toys & baby, sports & outdoors, automotive, health & wellness, and pet supplies - the full list scrolls by on the homepage.`,
+    a: `${MARKETPLACE_COUNT} sources across 12 categories, from electronics to pet supplies.`,
   },
   {
     q: 'Can other sellers see my orders, customers, or revenue?',
     topic: 'Privacy',
-    a: 'No. Your private data never leaves your account. Peer benchmarks are computed as anonymized aggregates with a minimum sample size, and the only per-seller fields ever shown to peers are ones you explicitly opt in to share (like rating or price position) in Settings.',
+    a: 'No - benchmarks are anonymized. You choose what peers ever see.',
   },
   {
     q: 'How does the referral plan upgrade actually work?',
     topic: 'Referrals',
-    a: 'Every seller gets a unique invite link from Settings. When 3 sellers you referred sign up, your account is automatically upgraded from Free to Paid - no manual approval, no credit card.',
+    a: 'One invite link. Refer 3 sellers, upgrade to Paid automatically.',
   },
   {
     q: 'How fresh is the competitor pricing data?',
     topic: 'Freshness',
-    a: 'The scraper refreshes on a schedule (currently up to every 2 days depending on source), and each category on the Market page shows exactly when it was last scraped, so you always know how current the numbers are.',
+    a: 'Refreshed up to every 2 days. Each category shows exactly when it was last scraped.',
   },
   {
     q: 'Is this only for sellers in Pakistan?',
     topic: 'Regions',
-    a: `Today, yes - the ${MARKETPLACE_COUNT} tracked marketplaces are all Pakistani e-commerce sites. The underlying platform isn't region-locked, so this can expand to other markets as scraper coverage grows.`,
+    a: `Today, yes - all ${MARKETPLACE_COUNT} marketplaces are Pakistani. Not region-locked, so this can grow.`,
   },
   {
     q: 'What happens on the Free plan if I never upgrade?',
     topic: 'Free plan',
-    a: "You keep full access to your own store analytics forever - orders, products, customers, churn/retention insights, and bulk CSV import. Peer benchmarks, competitor watchlists, and the premium analytics (forecasting, pricing recommendations) are what's gated, not your own data.",
+    a: 'Full store analytics, forever. Only peer benchmarks and premium analytics are gated.',
   },
   {
     q: 'What is on the Paid plan?',
     topic: 'Paid plan',
-    a: 'Everything in Free, plus competitor scorecards, competitor product matching, pricing recommendations, and watchlists & price alerts. You can start it free, or unlock it automatically by referring 3 sellers.',
+    a: 'Scorecards, product matching, pricing recommendations, price alerts. Free via 3 referrals.',
   },
   {
     q: 'What is on the Premium plan?',
     topic: 'Premium plan',
-    a: 'Everything in Paid, plus price forecasting, revenue projection, anomaly detection, multiple domains, and peer benchmarking as your category fills up (benchmarks need enough opted-in sellers in a category before they compute anything).',
+    a: 'Price forecasting, revenue projection, anomaly detection, multiple domains, peer benchmarking.',
   },
   {
     q: 'How much does Ryvl cost?',
     topic: 'Cost',
-    a: "There isn't a public price list yet - billing isn't wired up. Free is free forever for your own store analytics; Paid and Premium are unlocked either by referring sellers or will have pricing announced when checkout goes live. See the Pricing page for the full tier breakdown.",
+    a: "No price list yet - billing isn't live. Free is free forever; Paid/Premium unlock via referrals.",
   },
   {
     q: 'How is this different from just checking competitor sites myself?',
     topic: 'Why not DIY',
-    a: `Manually checking prices is one seller, one product, one site, one point in time. Ryvl tracks pricing and stock automatically across ${MARKETPLACE_COUNT} marketplaces, benchmarks you against anonymized peers in your category, and turns that into pricing recommendations and price alerts - not just numbers to read.`,
+    a: `Manual checking is one site, one moment. Ryvl tracks all ${MARKETPLACE_COUNT}, automatically.`,
   },
 ];
 
