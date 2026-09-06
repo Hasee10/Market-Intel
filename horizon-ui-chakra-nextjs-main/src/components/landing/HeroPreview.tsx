@@ -18,7 +18,7 @@
 // every dashboard change, and weighs megabytes. This costs nothing, themes
 // itself, and can't drift out of date in the same way.
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { usePrefersReducedMotion } from '@/lib/hooks/usePrefersReducedMotion';
 
@@ -33,10 +33,11 @@ const STEPS = [
   { nav: 3, url: 'ryvl.app/dashboard/watchlist' },
 ];
 
-/** Beat length. The cursor travel + press below has to fit inside this. */
-const STEP_MS = 4200;
-const TRAVEL_MS = 850;
-const PRESS_MS = 300;
+/** Beat length. The cursor travel + press below has to fit inside this, with
+    enough left over to actually read the panel before it moves on. */
+const STEP_MS = 3000;
+const TRAVEL_MS = 620;
+const PRESS_MS = 260;
 
 const KPIS = [
   { label: 'Revenue (30d)', value: 'PKR 3.42M', delta: '+12.4%', up: true },
@@ -274,6 +275,9 @@ export function HeroPreview() {
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const navRefs = useRef<(HTMLDivElement | null)[]>([]);
+  // Read by positionCursor so it can stay identity-stable and be subscribed
+  // to a ResizeObserver once, instead of re-subscribing on every beat.
+  const stepRef = useRef(0);
   const [inView, setInView] = useState(false);
 
   // Only animate while the hero is actually on screen - no reason to run a
@@ -296,17 +300,23 @@ export function HeroPreview() {
     return () => clearInterval(timer);
   }, [running]);
 
+  // Cursor target is measured, not hardcoded, so it stays correct whatever the
+  // sidebar's rendered size is. Identity-stable (reads stepRef, not step) so
+  // the observer below subscribes once rather than on every beat.
+  const positionCursor = useCallback(() => {
+    const target = navRefs.current[STEPS[stepRef.current].nav];
+    const frame = frameRef.current;
+    if (!target || !frame) return;
+    const t = target.getBoundingClientRect();
+    const f = frame.getBoundingClientRect();
+    setCursor({ x: t.left - f.left + t.width * 0.55, y: t.top - f.top + t.height / 2 });
+  }, []);
+
   // Move the cursor to the step's nav item, then press, then swap the panel.
   useEffect(() => {
     if (!running) return;
-
-    const target = navRefs.current[STEPS[step].nav];
-    const frame = frameRef.current;
-    if (target && frame) {
-      const t = target.getBoundingClientRect();
-      const f = frame.getBoundingClientRect();
-      setCursor({ x: t.left - f.left + t.width * 0.55, y: t.top - f.top + t.height / 2 });
-    }
+    stepRef.current = step;
+    positionCursor();
 
     const press = setTimeout(() => {
       setPressing(true);
@@ -318,7 +328,24 @@ export function HeroPreview() {
       clearTimeout(press);
       clearTimeout(release);
     };
-  }, [step, running]);
+  }, [step, running, positionCursor]);
+
+  // Without this the cursor keeps a position measured at the old layout, so
+  // resizing the window (or a late-loading font reflowing the sidebar) leaves
+  // it pointing between items instead of at one.
+  useEffect(() => {
+    const frame = frameRef.current;
+    if (!running || !frame || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(() => positionCursor());
+    observer.observe(frame);
+    return () => observer.disconnect();
+  }, [running, positionCursor]);
+
+  // Leaving the viewport mid-press would otherwise strand the cursor in its
+  // pressed (scaled-down) state next time it's shown.
+  useEffect(() => {
+    if (!running) setPressing(false);
+  }, [running]);
 
   const activeNav = STEPS[landed].nav;
 
@@ -388,7 +415,7 @@ export function HeroPreview() {
               <div
                 key={i}
                 aria-hidden={i !== landed}
-                className={`[grid-area:1/1] transition-all duration-300 ease-out ${
+                className={`[grid-area:1/1] transition-[opacity,transform] duration-300 ease-out ${
                   i === landed
                     ? 'translate-y-0 opacity-100'
                     : 'pointer-events-none translate-y-1 opacity-0'
@@ -405,8 +432,12 @@ export function HeroPreview() {
         {running && cursor && (
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute left-0 top-0 z-10 transition-transform duration-[850ms] ease-[cubic-bezier(0.22,1,0.36,1)]"
-            style={{ transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)` }}
+            className="pointer-events-none absolute left-0 top-0 z-10 transition-transform ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{
+              transform: `translate3d(${cursor.x}px, ${cursor.y}px, 0)`,
+              transitionDuration: `${TRAVEL_MS}ms`,
+              willChange: 'transform',
+            }}
           >
             {/* Press ripple, fired when the cursor lands on a nav item. */}
             <span
