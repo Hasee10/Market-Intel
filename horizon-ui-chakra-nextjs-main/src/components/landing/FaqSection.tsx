@@ -108,9 +108,14 @@ export function FaqSection() {
               />
             </svg>
 
-            {/* The container that appears when a topic is pressed. */}
+            {/* The container that appears when a topic is pressed. Sized to
+                its own content (not size-full of the 47% bounding box) - a
+                fixed square left a dead gap under every answer shorter than
+                the longest one. The bounding box still caps how big it can
+                get, so the longest answer scrolls instead of colliding with
+                the ring. */}
             <div className="absolute left-1/2 top-1/2 flex size-[47%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-              <div className="size-full overflow-y-auto rounded-2xl bg-white/[0.08] px-5 py-4 text-center ring-1 ring-[#7B61FF]/30 shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
+              <div className="max-h-full min-h-[110px] w-full overflow-y-auto rounded-2xl bg-white/[0.08] px-5 py-4 text-center ring-1 ring-[#7B61FF]/30 shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
                 {/* Keyed so the content remounts and replays its entrance
                     every time a different topic is pressed. */}
                 <div key={active} className="animate-[faq-pop_220ms_ease-out]">
