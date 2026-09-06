@@ -14,8 +14,16 @@
 // exactly what a circle can hold at a readable size, which is why the node
 // carries the two-word `topic` and the full question lives in the middle with
 // the answer it belongs to.
+//
+// Theme-aware, not a fixed dark stage like ShowcaseSection's device frames -
+// asked and answered explicitly: a panel that never changes with the toggle
+// reads as a dark island dropped on a light page in light mode, and nothing
+// about pressing the toggle actually fixes that (only the page around it
+// goes dark, coincidentally reducing the contrast). Every colour below has a
+// light and a dark side instead.
 
 import { useState } from 'react';
+import { useColorMode } from '@chakra-ui/react';
 
 import { FAQS } from '@/lib/ai/assistant-knowledge';
 import { SectionTitle } from '@/components/landing/SectionTitle';
@@ -37,6 +45,12 @@ const POSITIONS = ANGLES.map((degrees) => {
 
 export function FaqSection() {
   const prefersReducedMotion = usePrefersReducedMotion();
+  // Only the two raw SVG stroke attributes below need this - every other
+  // colour on this page is a Tailwind class and already answers to `dark:`
+  // on its own. An attribute value can't take a CSS variant, so those two
+  // read the mode directly instead.
+  const { colorMode } = useColorMode();
+  const isDark = colorMode === 'dark';
   const [active, setActive] = useState(0);
   const faq = FAQS[active];
 
@@ -53,14 +67,14 @@ export function FaqSection() {
           intrinsic width, so without a definite width here the stage measures
           0, and aspect-square then makes it 0 tall - the whole card collapses. */}
       <Reveal className="w-full">
-        <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-[28px] bg-[#111C4E] p-4 ring-1 ring-white/10 sm:p-6 md:p-8 dark:bg-[#151E4A]">
+        <div className="relative mx-auto w-full max-w-3xl overflow-hidden rounded-[28px] bg-white p-4 ring-1 ring-gray-200 sm:p-6 md:p-8 dark:bg-[#151E4A] dark:ring-white/10">
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-[radial-gradient(circle,rgba(123,97,255,0.22)_0%,rgba(123,97,255,0)_70%)]"
+            className="pointer-events-none absolute -right-24 -top-28 size-72 rounded-full bg-[radial-gradient(circle,rgba(123,97,255,0.16)_0%,rgba(123,97,255,0)_70%)] dark:bg-[radial-gradient(circle,rgba(123,97,255,0.22)_0%,rgba(123,97,255,0)_70%)]"
           />
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute -bottom-32 -left-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_70%)]"
+            className="pointer-events-none absolute -bottom-32 -left-24 size-72 rounded-full bg-[radial-gradient(circle,rgba(80,68,229,0.12)_0%,rgba(80,68,229,0)_70%)] dark:bg-[radial-gradient(circle,rgba(80,68,229,0.18)_0%,rgba(80,68,229,0)_70%)]"
           />
 
           {/* The ring. Hidden below md - ten nodes on a 375px circle is not a
@@ -75,7 +89,15 @@ export function FaqSection() {
                 </linearGradient>
               </defs>
 
-              <circle cx="50" cy="50" r={RADIUS} fill="none" stroke="#ffffff" strokeOpacity="0.13" strokeWidth="0.4" />
+              <circle
+                cx="50"
+                cy="50"
+                r={RADIUS}
+                fill="none"
+                stroke={isDark ? '#ffffff' : '#111C4E'}
+                strokeOpacity={isDark ? '0.13' : '0.12'}
+                strokeWidth="0.4"
+              />
 
               {!prefersReducedMotion && (
                 <g
@@ -115,12 +137,12 @@ export function FaqSection() {
                 get, so the longest answer scrolls instead of colliding with
                 the ring. */}
             <div className="absolute left-1/2 top-1/2 flex size-[47%] -translate-x-1/2 -translate-y-1/2 items-center justify-center">
-              <div className="max-h-full min-h-[110px] w-full overflow-y-auto rounded-2xl bg-white/[0.08] px-5 py-4 text-center ring-1 ring-[#7B61FF]/30 shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
+              <div className="max-h-full min-h-[110px] w-full overflow-y-auto rounded-2xl bg-brand-50 px-5 py-4 text-center ring-1 ring-[#7B61FF]/20 shadow-[0_14px_40px_rgba(10,16,45,0.12)] dark:bg-white/[0.08] dark:ring-[#7B61FF]/30 dark:shadow-[0_14px_40px_rgba(10,16,45,0.55)]">
                 {/* Keyed so the content remounts and replays its entrance
                     every time a different topic is pressed. */}
                 <div key={active} className="animate-[faq-pop_220ms_ease-out]">
-                  <p className="text-[15px] font-semibold leading-snug text-white">{faq.q}</p>
-                  <p className="mt-2 text-[12.5px] leading-relaxed text-white/75">{faq.a}</p>
+                  <p className="text-[15px] font-semibold leading-snug text-gray-900 dark:text-white">{faq.q}</p>
+                  <p className="mt-2 text-[12.5px] leading-relaxed text-gray-600 dark:text-white/75">{faq.a}</p>
                 </div>
               </div>
             </div>
@@ -138,8 +160,8 @@ export function FaqSection() {
                   style={{ left: `${POSITIONS[i].left}%`, top: `${POSITIONS[i].top}%` }}
                   className={`absolute w-[104px] -translate-x-1/2 -translate-y-1/2 rounded-full px-3 py-2 text-center text-xs ring-1 backdrop-blur-sm transition-all duration-200 lg:w-[116px] lg:text-[13px] ${
                     isActive
-                      ? 'bg-white/[0.16] font-semibold text-white shadow-[0_0_28px_rgba(123,97,255,0.45)] ring-[#7B61FF]/70'
-                      : 'bg-white/[0.06] font-medium text-white/70 ring-white/10 hover:bg-white/[0.12] hover:text-white'
+                      ? 'bg-brand-50 font-semibold text-[#111C4E] shadow-[0_0_28px_rgba(123,97,255,0.35)] ring-[#7B61FF]/60 dark:bg-white/[0.16] dark:text-white dark:shadow-[0_0_28px_rgba(123,97,255,0.45)] dark:ring-[#7B61FF]/70'
+                      : 'bg-gray-50 font-medium text-gray-600 ring-gray-200 hover:bg-gray-100 hover:text-gray-900 dark:bg-white/[0.06] dark:text-white/70 dark:ring-white/10 dark:hover:bg-white/[0.12] dark:hover:text-white'
                   }`}
                 >
                   {item.topic}
@@ -159,17 +181,25 @@ export function FaqSection() {
                     onClick={() => setActive(isOpen ? -1 : i)}
                     aria-expanded={isOpen}
                     className={`flex w-full items-center justify-between gap-4 rounded-xl px-4 py-3.5 text-left ring-1 transition-all duration-200 ${
-                      isOpen ? 'bg-white/[0.12] ring-[#7B61FF]/60' : 'bg-white/[0.04] ring-white/10'
+                      isOpen
+                        ? 'bg-brand-50 ring-[#7B61FF]/50 dark:bg-white/[0.12] dark:ring-[#7B61FF]/60'
+                        : 'bg-gray-50 ring-gray-200 dark:bg-white/[0.04] dark:ring-white/10'
                     }`}
                   >
                     <span
-                      className={`text-[15px] ${isOpen ? 'font-semibold text-white' : 'font-medium text-white/85'}`}
+                      className={`text-[15px] ${
+                        isOpen
+                          ? 'font-semibold text-gray-900 dark:text-white'
+                          : 'font-medium text-gray-600 dark:text-white/85'
+                      }`}
                     >
                       {item.q}
                     </span>
                     <span
                       className={`flex size-6 shrink-0 items-center justify-center rounded-full transition-all duration-200 ${
-                        isOpen ? 'rotate-45 bg-[#7B61FF] text-white' : 'bg-white/10 text-white/60'
+                        isOpen
+                          ? 'rotate-45 bg-[#7B61FF] text-white'
+                          : 'bg-gray-100 text-gray-500 dark:bg-white/10 dark:text-white/60'
                       }`}
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} className="size-3.5">
@@ -184,8 +214,8 @@ export function FaqSection() {
                     }`}
                   >
                     <div className="overflow-hidden">
-                      <div className="ml-4 mt-2.5 rounded-xl bg-white/[0.07] px-4 py-3.5 ring-1 ring-[#7B61FF]/25">
-                        <p className="text-sm leading-relaxed text-white/75">{item.a}</p>
+                      <div className="ml-4 mt-2.5 rounded-xl bg-brand-50 px-4 py-3.5 ring-1 ring-[#7B61FF]/20 dark:bg-white/[0.07] dark:ring-[#7B61FF]/25">
+                        <p className="text-sm leading-relaxed text-gray-600 dark:text-white/75">{item.a}</p>
                       </div>
                     </div>
                   </div>
