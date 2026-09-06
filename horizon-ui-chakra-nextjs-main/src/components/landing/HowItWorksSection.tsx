@@ -37,10 +37,11 @@ const STEPS = [
 
 export function HowItWorksSection() {
   return (
-    <section
-      id="how-it-works"
-      className="font-manrope bg-[#F7F8FF] py-[70px] md:py-[100px] dark:bg-gray-900"
-    >
+    // No hardcoded bg - see ComparisonSection.tsx's own note on this exact
+    // mistake: this section inherits the page ground (Chakra body token,
+    // theme/styles.ts) like every other one, instead of forcing its own
+    // close-but-not-quite approximation that cuts a seam against neighbours.
+    <section id="how-it-works" className="font-manrope py-[70px] md:py-[100px]">
       <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
         <Reveal>
           <div className="mb-12 text-center md:mb-[72px]">

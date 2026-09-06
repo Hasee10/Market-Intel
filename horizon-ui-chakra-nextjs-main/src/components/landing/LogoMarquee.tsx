@@ -55,7 +55,12 @@ export function LogoMarquee({
   const track = prefersReducedMotion ? items : [...items, ...items];
 
   return (
-    <div className="font-manrope border-y border-gray-100 bg-white py-10 md:py-14 dark:border-white/10 dark:bg-gray-950">
+    // No hardcoded bg - same fix as ComparisonSection.tsx and
+    // HowItWorksSection.tsx: this strip inherits the page ground instead of
+    // forcing its own white/gray-950, which cut a hard seam against the
+    // sections above and below it. The border-y hairline still marks it out
+    // as its own row without needing a different fill colour to do that.
+    <div className="font-manrope border-y border-gray-100 py-10 md:py-14 dark:border-white/10">
       <div className="mx-auto max-w-[1200px] px-5 md:px-[30px]">
         <Reveal>
           <p className="mb-7 text-center text-xs font-bold uppercase tracking-[0.08em] text-gray-500 dark:text-white/50">
@@ -66,9 +71,11 @@ export function LogoMarquee({
         <div className="relative overflow-hidden">
           {/* Edge fade so tiles dissolve at both ends rather than being cut
               off mid-logo. Two overlays because the gradient's end colour has
-              to match whichever surface is behind it. */}
-          <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,white_0%,transparent_15%,transparent_85%,white_100%)] dark:hidden" />
-          <div className="pointer-events-none absolute inset-0 z-10 hidden bg-[linear-gradient(90deg,#111C44_0%,transparent_15%,transparent_85%,#111C44_100%)] dark:block" />
+              to match whichever surface is behind it - now the page's actual
+              body token (theme/styles.ts: secondaryGray.300 / navy.900), not
+              an approximation, since this strip no longer paints its own bg. */}
+          <div className="pointer-events-none absolute inset-0 z-10 bg-[linear-gradient(90deg,#F4F7FE_0%,transparent_15%,transparent_85%,#F4F7FE_100%)] dark:hidden" />
+          <div className="pointer-events-none absolute inset-0 z-10 hidden bg-[linear-gradient(90deg,#0b1437_0%,transparent_15%,transparent_85%,#0b1437_100%)] dark:block" />
 
           <div
             style={
