@@ -1,6 +1,7 @@
 import { AssistantWidget } from '@/components/landing/AssistantWidget';
 import { CTABanner } from '@/components/landing/CTABanner';
 import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
+import { MarketLoopSection } from '@/components/landing/MarketLoopSection';
 import { LandingFooter } from '@/components/landing/LandingFooter';
 import { LandingHeader } from '@/components/landing/LandingHeader';
 
@@ -19,6 +20,12 @@ export default function HowItWorksPage() {
         <LandingHeader />
         <main className="flex-1">
           <HowItWorksSection />
+          {/* The three steps above are the short answer to "how does this
+              work"; this is the same answer as the cycle it actually is,
+              which is the part that explains why it never finishes. Lives
+              here rather than on the homepage: this is the page whose whole
+              job is that question. */}
+          <MarketLoopSection />
           <CTABanner />
         </main>
         <LandingFooter />

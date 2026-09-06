@@ -128,6 +128,21 @@
   }
 }
 
+/* The revolving arc and orbiting dots on the market loop
+ * (components/landing/MarketLoopSection.tsx). Applied to SVG <g> elements,
+ * which is why each call site also sets transform-box/transform-origin -
+ * without them an SVG child rotates about the viewBox origin, not its own
+ * centre, and the arc swings off the canvas instead of turning in place.
+ *
+ * No reduced-motion rule here on purpose: that component reads the
+ * preference in JS (usePrefersReducedMotion) and does not render the
+ * animated elements at all, rather than rendering them and freezing them. */
+@keyframes loop-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
  * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and
