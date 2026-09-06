@@ -81,6 +81,54 @@ export function FaqSection() {
               readable layout at any font size, so small screens get the list
               underneath instead. */}
           <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] md:block">
+            {/* A circle inscribed in a square stage leaves its four corners
+                empty - visible as dead space in earlier passes of this
+                design. Tucks a quiet illustration into the bottom-left one
+                instead of leaving it bare: someone asking the question this
+                whole section answers. Drawn as flat markup in one silhouette
+                tone (not a stock photo, not full colour) so it reads as
+                background texture, not a second focal point competing with
+                the ring - same posture as every other illustration on this
+                site (ShowcaseSection's device frames, the pre-launch
+                mockups). First in the DOM so it paints behind the ring with
+                no z-index needed, and pointer-events-none so it can never
+                intercept a click meant for a node. */}
+            <svg
+              viewBox="0 0 100 118"
+              className="pointer-events-none absolute -bottom-[1%] -left-[1%] w-[13%] text-[#111C4E]/[0.07] dark:text-white/[0.14]"
+              aria-hidden="true"
+            >
+              {/* Hair, shoulders/top, neck and face - one silhouette fill. */}
+              <path
+                fill="currentColor"
+                d="M30 32 Q28 12 50 10 Q72 12 70 32 L70 34 Q70 26 50 24 Q30 26 30 34 Z
+                   M50 14 Q30 16 30 34 L30 52 Q30 60 38 60 L62 60 Q70 60 70 52 L70 34 Q70 16 50 14 Z
+                   M14 118 Q14 76 50 74 Q86 76 86 118 Z"
+              />
+              {/* Raised forearm, thinking pose - the hand rests near the jaw. */}
+              <path
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="9"
+                strokeLinecap="round"
+                d="M76 92 Q90 82 84 60 Q82 50 72 52"
+              />
+              <circle cx="62" cy="86" r="7" fill="currentColor" />
+              {/* The question, as an accent rather than the silhouette tone -
+                  the one spot of colour this illustration gets. */}
+              <circle cx="84" cy="18" r="13" className="fill-[#7B61FF]/70" />
+              <text
+                x="84"
+                y="23"
+                textAnchor="middle"
+                fontSize="15"
+                fontWeight="700"
+                className="fill-white"
+              >
+                ?
+              </text>
+            </svg>
+
             <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden="true">
               <defs>
                 <linearGradient id="faq-sweep" x1="0" y1="0" x2="1" y2="1">
