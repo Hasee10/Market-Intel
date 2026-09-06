@@ -12,10 +12,14 @@ export default function PricingPage() {
     <>
       <title>Pricing | Ryvl</title>
       <meta name="description" content="Simple, honest pricing for Ryvl - free, paid, and premium tiers." />
-      <LandingHeader />
-      <PricingPageBanner />
-      <PricingSection />
-      <LandingFooter />
+      <div className="flex min-h-dvh flex-col">
+        <LandingHeader />
+        <main className="flex-1">
+          <PricingPageBanner />
+          <PricingSection />
+        </main>
+        <LandingFooter />
+      </div>
       <AssistantWidget />
     </>
   );

@@ -36,20 +36,24 @@ export default async function Home() {
         name="description"
         content="Competitive pricing benchmarks, peer comparisons, and demand signals for online sellers."
       />
-      <AnnouncementBar />
-      <LandingHeader />
-      <LandingHero />
-      <StatsBar />
-      <MarketplaceLogoSlider />
-      <CompanyLogoSlider sellers={showcaseSellers} brands={showcaseBrands} />
-      <FeaturesSection />
-      <HowItWorksSection />
-      <ShowcaseSection />
-      <ComparisonSection />
-      <FaqSection />
-      <ContactSection />
-      <CTABanner />
-      <LandingFooter />
+      <div className="flex min-h-dvh flex-col">
+        <AnnouncementBar />
+        <LandingHeader />
+        <main className="flex-1">
+          <LandingHero />
+          <StatsBar />
+          <MarketplaceLogoSlider />
+          <CompanyLogoSlider sellers={showcaseSellers} brands={showcaseBrands} />
+          <FeaturesSection />
+          <HowItWorksSection />
+          <ShowcaseSection />
+          <ComparisonSection />
+          <FaqSection />
+          <ContactSection />
+          <CTABanner />
+        </main>
+        <LandingFooter />
+      </div>
       <AssistantWidget />
     </>
   );

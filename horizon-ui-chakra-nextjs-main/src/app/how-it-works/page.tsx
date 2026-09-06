@@ -15,10 +15,14 @@ export default function HowItWorksPage() {
         name="description"
         content="From signup to your first insight - how Ryvl tracks the market for you and turns it into action."
       />
-      <LandingHeader />
-      <HowItWorksSection />
-      <CTABanner />
-      <LandingFooter />
+      <div className="flex min-h-dvh flex-col">
+        <LandingHeader />
+        <main className="flex-1">
+          <HowItWorksSection />
+          <CTABanner />
+        </main>
+        <LandingFooter />
+      </div>
       <AssistantWidget />
     </>
   );

@@ -17,13 +17,17 @@ export default function TrustPage() {
         name="description"
         content="Nothing private about a competitor's business is ever shown on Ryvl - here's exactly how that works."
       />
-      <LandingHeader />
-      <TrustSection />
-      {/* After the three privacy guarantees, before the CTA: the claims land
-          first, then sellers saying those claims were what convinced them. */}
-      <TestimonialsSection />
-      <CTABanner />
-      <LandingFooter />
+      <div className="flex min-h-dvh flex-col">
+        <LandingHeader />
+        <main className="flex-1">
+          <TrustSection />
+          {/* After the three privacy guarantees, before the CTA: the claims land
+              first, then sellers saying those claims were what convinced them. */}
+          <TestimonialsSection />
+          <CTABanner />
+        </main>
+        <LandingFooter />
+      </div>
       <AssistantWidget />
     </>
   );
