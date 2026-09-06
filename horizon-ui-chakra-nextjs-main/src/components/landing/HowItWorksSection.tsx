@@ -3,6 +3,7 @@
 import { CountUp } from 'components/reactbits/CountUp';
 import { Reveal } from 'components/reactbits/Reveal';
 import { MARKETPLACE_COUNT } from '@/lib/marketplaces';
+import { AlertsMock, CategoryPickerMock, ScorecardRowsMock } from '@/components/landing/HowItWorksVisual';
 
 // The actual seller journey through the product, not the privacy mechanics
 // (that's TrustSection) - a concrete 3-step process bridges "what is this"
@@ -17,17 +18,20 @@ const STEPS = [
     title: 'Pick your category',
     description:
       'One-time setup after signup - choose the category you sell in (mobiles, fashion, and more as coverage expands). This decides which scraped market data and anonymized peers you get benchmarked against.',
+    visual: <CategoryPickerMock />,
   },
   {
     step: '02',
     title: 'We track the market for you',
     description: `Competitor pricing and stock across ${MARKETPLACE_COUNT} marketplaces refresh automatically, alongside your own store's orders, products, and customers - all in one dashboard.`,
+    visual: <ScorecardRowsMock />,
   },
   {
     step: '03',
     title: 'Act on real signals',
     description:
       'Price alerts when a watched competitor changes, pricing recommendations that respect your margin floor, and at-risk customer lists - not just charts to look at.',
+    visual: <AlertsMock />,
   },
 ];
 
@@ -57,6 +61,13 @@ export function HowItWorksSection() {
           {STEPS.map((item, i) => (
             <Reveal key={item.step} delay={i * 100}>
               <div className="flex flex-col">
+                {/* Fixed-height stage, same reasoning as ShowcaseSection's own
+                    "Fixed-height stage" comment: the three mockups are not
+                    the same height, and letting each column size to its own
+                    content made the row's baselines drift. */}
+                <div className="mb-5 flex h-[132px] items-center rounded-xl bg-white/60 p-3 dark:bg-white/5">
+                  {item.visual}
+                </div>
                 <p className="mb-3 text-5xl font-extrabold leading-none text-[#E4DBFF] tabular-nums dark:text-white/20">
                   <CountUp value={item.step} />
                 </p>
