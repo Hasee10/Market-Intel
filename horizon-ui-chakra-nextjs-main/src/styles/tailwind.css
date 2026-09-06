@@ -143,6 +143,27 @@
   }
 }
 
+/* The FAQ ring's centre container, replayed whenever a different topic is
+ * pressed (FaqSection.tsx keys the content on the active index so it
+ * remounts). Short and small on purpose: the answer has to be readable
+ * immediately, so this is an entrance, not a transition to sit through. */
+@keyframes faq-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-\[faq-pop_220ms_ease-out\] {
+    animation: none;
+  }
+}
+
 /* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
  * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and
