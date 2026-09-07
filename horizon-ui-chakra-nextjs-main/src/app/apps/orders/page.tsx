@@ -6,6 +6,7 @@ import {
   MdAddCircleOutline,
   MdOutlineSearchOff,
   MdUploadFile,
+  MdOutlineDownload,
   MdOutlinePendingActions,
   MdOutlineCheckCircle,
 } from 'react-icons/md';
@@ -20,9 +21,42 @@ import { InsightStrip, type Insight } from '@/components/marketintel/InsightStri
 import { OrdersTable } from '@/components/marketintel/OrdersTable';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { useFetch } from '@/lib/hooks/useApi';
+import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import { IApiResponse } from '@/types/api-response';
 import { OrderDto } from '@/types/order';
+
+const dateStamp = () => new Date().toISOString().slice(0, 10);
+
+// Exports every order currently loaded on the page (all of them - Orders
+// has no server-side filter today, only the client-side pager), not just
+// the visible page. Full id alongside the short display id: the table
+// truncates to 8 characters for screen width, which is fine to read but
+// lossy to export - a seller reconciling against another system needs the
+// real value, not the abbreviation.
+function exportOrdersCsv(orders: OrderDto[]) {
+  const csv = objectsToCsv(
+    orders.map((o) => ({
+      id: o.id,
+      externalOrderId: o.externalOrderId ?? '',
+      customer: o.customerLabel ?? 'Guest',
+      date: o.orderDate.slice(0, 10),
+      amount: o.totalAmount,
+      currency: o.currency,
+      status: o.status ?? '',
+    })),
+    [
+      { key: 'id', label: 'Order ID' },
+      { key: 'externalOrderId', label: 'External order ID' },
+      { key: 'customer', label: 'Customer' },
+      { key: 'date', label: 'Order date' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'currency', label: 'Currency' },
+      { key: 'status', label: 'Status' },
+    ],
+  );
+  triggerCsvDownload(csv, `orders-${dateStamp()}.csv`);
+}
 
 import { EditOrderDrawer } from './components/EditOrderDrawer';
 import { NewOrderDrawer } from './components/NewOrderDrawer';
@@ -149,6 +183,16 @@ export default function OrdersPage() {
         breadcrumbItems={breadcrumbItems}
         actionButton={
           <div className="flex gap-2">
+            {orders.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                leftIcon={<MdOutlineDownload className="size-4" />}
+                onClick={() => exportOrdersCsv(orders)}
+              >
+                Export CSV
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
