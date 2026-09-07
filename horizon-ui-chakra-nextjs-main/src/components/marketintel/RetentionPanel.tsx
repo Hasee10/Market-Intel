@@ -4,7 +4,6 @@ import {
   Badge,
   Button,
   Icon,
-  Skeleton,
   Table,
   Tbody,
   Td,
@@ -20,8 +19,6 @@ import Card from 'components/card/Card';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 
-import { useFetch } from '@/lib/hooks/useApi';
-import { IApiResponse } from '@/types/api-response';
 import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/seller/rfm';
 
 type RetentionData = {
@@ -89,16 +86,15 @@ function downloadCsv(customers: AtRiskCustomer[]) {
   URL.revokeObjectURL(url);
 }
 
-export function RetentionPanel() {
+// Data arrives as props now, fetched server-side by the page - this used to
+// fetch /api/customers/at-risk itself, a second client round trip on top of
+// the Customers page's own /api/customers fetch (see apps/customers/page.tsx
+// for the full rationale). RetentionData is kept as the prop shape rather
+// than three loose props, matching the API response shape 1:1 - a page
+// composing this alongside other panels can still pass through what one
+// fetch already returned.
+export function RetentionPanel({ snapshot, atRiskCustomers, reportingCurrency }: RetentionData) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
-  const { data, loading } = useFetch<IApiResponse<RetentionData>>('/api/customers/at-risk');
-  const snapshot = data?.data?.snapshot ?? null;
-  const atRiskCustomers = data?.data?.atRiskCustomers ?? [];
-  const reportingCurrency = data?.data?.reportingCurrency ?? 'PKR';
-
-  if (loading) {
-    return <Skeleton height="200px" borderRadius="16px" mb="20px" />;
-  }
 
   const stats = [
     { title: 'Retention rate (30d)', value: formatPct(snapshot?.retentionRate ?? null), icon: 'chart-line', color: 'teal' },

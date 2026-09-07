@@ -1,244 +1,56 @@
-'use client';
-
-import { useCallback, useState } from 'react';
-
-import { MdAddCircleOutline, MdGridView, MdOutlineSearchOff, MdUploadFile, MdViewList } from 'react-icons/md';
-
-import { Button } from '@/components/ui/Button';
-import { Card } from '@/components/ui/Card';
-import { Pagination, usePagination } from '@/components/ui/Pagination';
-
-import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
-import { CustomersTable } from '@/components/marketintel/CustomersTable';
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
-import { PageHeader } from '@/components/marketintel/PageHeader';
-import { RetentionPanel } from '@/components/marketintel/RetentionPanel';
-import { useCustomers } from '@/lib/hooks/useApi';
-import { PATH_DASHBOARD } from '@/lib/paths';
-import type { CustomerDto } from '@/types/customer';
+import { getSellerCustomers } from '@/lib/market-intel/seller/customers';
+import {
+  getAtRiskCustomers,
+  getLatestChurnSnapshot,
+  type AtRiskCustomer,
+  type ChurnSnapshot,
+} from '@/lib/market-intel/seller/rfm';
+import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
-import { CustomerCard } from './components/CustomerCard';
-import { EditCustomerDrawer } from './components/EditCustomerDrawer';
-import { NewCustomerDrawer } from './components/NewCustomerDrawer';
+import CustomersView from './CustomersView';
 
-type ViewMode = 'grid' | 'table';
+// Server Component - same move as apps/products/page.tsx. This page used to
+// run TWO independent client fetches (the main list, and a second one
+// nested inside <RetentionPanel />), each paying its own auth round trip;
+// both are now one server-side fetch.
+//
+// getLatestChurnSnapshot/getAtRiskCustomers already fail soft internally
+// (they return null/[] on a query error - a missing snapshot legitimately
+// means "not enough order history yet", the same case as a real error, so
+// that was already the correct behaviour and nothing here changes it).
+// Still isolated with .catch() rather than trusted to never throw: the
+// retention panel and the customer list were two structurally independent
+// fetches before this change, and they should stay independent - a future
+// change to rfm.ts that starts throwing must not be able to take the whole
+// page down just because it now shares a Promise.all with the main list.
+export default async function CustomersPage() {
+  const seller = await getCurrentSeller();
+  if (!seller) {
+    return <ErrorAlert title="Error loading customers" message="Not authenticated" />;
+  }
 
-const breadcrumbItems = [
-  { title: 'Dashboard', href: PATH_DASHBOARD.default },
-  { title: 'Customers', href: '#' },
-];
+  try {
+    const [customers, retentionSnapshot, atRiskCustomers] = await Promise.all([
+      getSellerCustomers(seller.id),
+      getLatestChurnSnapshot(seller.id).catch((): ChurnSnapshot | null => null),
+      getAtRiskCustomers(seller.id, seller.reportingCurrency).catch((): AtRiskCustomer[] => []),
+    ]);
 
-const IMPORT_FIELDS: ImportField[] = [
-  { key: 'externalCustomerId', label: 'Customer ID', required: true },
-  { key: 'email', label: 'Email' },
-  { key: 'ordersCount', label: 'Orders count', type: 'number' },
-  { key: 'totalSpent', label: 'Total spent', type: 'number' },
-  { key: 'currency', label: 'Currency (e.g. PKR)' },
-];
-
-export default function CustomersPage() {
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDto | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
-  const [newOpen, setNewOpen] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-
-  const {
-    data: customersData,
-    loading: customersLoading,
-    error: customersError,
-    refetch: refetchCustomers,
-  } = useCustomers();
-
-  // /api/customers has no limit either - both views below rendered the
-  // seller's whole customer list in one grid or one table. Same fix and
-  // same page size as Products, so switching grid/table keeps your place.
-  const customers = (customersData?.data as CustomerDto[] | undefined) ?? [];
-  const customerPage = usePagination(customers, 12);
-
-  const handleCustomerCreated = useCallback(() => {
-    refetchCustomers();
-  }, [refetchCustomers]);
-
-  const handleCustomerUpdated = useCallback(() => {
-    refetchCustomers();
-  }, [refetchCustomers]);
-
-  const handleEditCustomer = (customer: CustomerDto) => {
-    setSelectedCustomer(customer);
-    setEditOpen(true);
-  };
-
-  const renderContent = () => {
-    if (customersLoading) {
-      return viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div
-              key={`customer-loading-${i}`}
-              className="h-[180px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800"
-            />
-          ))}
-        </div>
-      ) : (
-        <Card>
-          <CustomersTable data={[]} loading onEdit={handleEditCustomer} />
-        </Card>
-      );
-    }
-
-    if (customersError || (customersData && !customersData.succeeded)) {
-      return (
-        <ErrorAlert
-          title="Error loading customers"
-          message={
-            customersData?.errors?.join(', ') || customersError?.message || 'Failed to load customers'
-          }
-        />
-      );
-    }
-
-    if (!customers.length) {
-      return (
-        <Card>
-          <div className="flex flex-col items-center gap-2 py-6 text-center">
-            <MdOutlineSearchOff className="size-7 text-gray-400" aria-hidden="true" />
-            <p className="text-lg font-bold text-gray-900 dark:text-white">No customers found</p>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              You don&apos;t have any customers yet. Create one to get started.
-            </p>
-            <Button
-              className="mt-2"
-              leftIcon={<MdAddCircleOutline className="size-4" />}
-              onClick={() => setNewOpen(true)}
-            >
-              New Customer
-            </Button>
-          </div>
-        </Card>
-      );
-    }
-
-    // Can't share one Pagination placed after both branches: the table
-    // view has a Card wrapper with its own horizontal padding and the grid
-    // view doesn't (the cards themselves are the grid items), so a control
-    // sitting outside both inherits neither's padding and visibly hugs the
-    // bare page edge under the table instead of lining up with it - the same
-    // "pagination is at the very side" bug fixed on Products. Nested inside
-    // whichever container that view actually has.
-    const pagination = (
-      <Pagination
-        page={customerPage.page}
-        pageCount={customerPage.pageCount}
-        onPageChange={customerPage.setPage}
-        rangeStart={customerPage.rangeStart}
-        rangeEnd={customerPage.rangeEnd}
-        total={customerPage.total}
-        label="customers"
+    return (
+      <CustomersView
+        customers={customers}
+        retentionSnapshot={retentionSnapshot}
+        atRiskCustomers={atRiskCustomers}
+        reportingCurrency={seller.reportingCurrency}
       />
     );
-
-    return viewMode === 'grid' ? (
-      <>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3 xl:grid-cols-4">
-          {customerPage.visible.map((customer) => (
-            <CustomerCard key={customer.id} data={customer} onEdit={handleEditCustomer} />
-          ))}
-        </div>
-        {pagination}
-      </>
-    ) : (
-      <Card>
-        {/* Table brings its own overflow-x container, so no wrapper needed. */}
-        <CustomersTable data={customerPage.visible} loading={false} onEdit={handleEditCustomer} />
-        {pagination}
-      </Card>
+  } catch (err) {
+    return (
+      <ErrorAlert
+        title="Error loading customers"
+        message={err instanceof Error ? err.message : 'Failed to fetch customers'}
+      />
     );
-  };
-
-  return (
-    <>
-      <PageHeader
-        title="Customers"
-        breadcrumbItems={breadcrumbItems}
-        actionButton={
-          <div className="flex flex-wrap gap-2">
-            {customers.length > 0 && (
-              // Segmented grid/table switch, matching the same control on
-              // Products rather than two loose buttons.
-              <div className="flex rounded-lg bg-gray-100 p-0.5 dark:bg-gray-800">
-                <button
-                  type="button"
-                  aria-label="Grid view"
-                  aria-pressed={viewMode === 'grid'}
-                  onClick={() => setViewMode('grid')}
-                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
-                    viewMode === 'grid'
-                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  <MdGridView className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Table view"
-                  aria-pressed={viewMode === 'table'}
-                  onClick={() => setViewMode('table')}
-                  className={`flex size-8 items-center justify-center rounded-md transition-colors ${
-                    viewMode === 'table'
-                      ? 'bg-white text-brand-600 shadow-sm dark:bg-gray-900 dark:text-brand-400'
-                      : 'text-gray-500 dark:text-gray-400'
-                  }`}
-                >
-                  <MdViewList className="size-4" />
-                </button>
-              </div>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              leftIcon={<MdUploadFile className="size-4" />}
-              onClick={() => setImportOpen(true)}
-            >
-              Import CSV
-            </Button>
-            <Button
-              size="sm"
-              leftIcon={<MdAddCircleOutline className="size-4" />}
-              onClick={() => setNewOpen(true)}
-            >
-              New Customer
-            </Button>
-          </div>
-        }
-      />
-
-      <RetentionPanel />
-
-      {renderContent()}
-
-      <NewCustomerDrawer
-        isOpen={newOpen}
-        onClose={() => setNewOpen(false)}
-        onCustomerCreated={handleCustomerCreated}
-      />
-
-      <EditCustomerDrawer
-        isOpen={editOpen}
-        onClose={() => setEditOpen(false)}
-        customer={selectedCustomer}
-        onCustomerUpdated={handleCustomerUpdated}
-      />
-
-      <BulkImportDrawer
-        isOpen={importOpen}
-        onClose={() => setImportOpen(false)}
-        title="customers"
-        fields={IMPORT_FIELDS}
-        apiEndpoint="/api/customers/bulk-import"
-        onImported={handleCustomerCreated}
-      />
-    </>
-  );
+  }
 }

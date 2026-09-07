@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { blankToNull, parseJsonBody } from '@/lib/api-validation';
+import { getSellerOrders, mapOrder, ORDER_COLUMNS } from '@/lib/market-intel/seller/orders';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
-import { OrderDto } from '@/types/order';
 
 // The 4 values NewOrderDrawer/EditOrderDrawer's <Select> actually offers -
 // see components/marketintel/OrdersTable.tsx's STATUS_COLORS for the same
@@ -20,22 +20,9 @@ const OrderCreateSchema = z.object({
   status: z.enum(['completed', 'pending', 'cancelled', 'refunded']).nullish(),
 });
 
-function mapOrder(row: any): OrderDto {
-  const customer = Array.isArray(row.seller_customers) ? row.seller_customers[0] : row.seller_customers;
-
-  return {
-    id: row.id,
-    customerId: row.customer_id,
-    customerLabel: customer?.email || customer?.external_customer_id || null,
-    externalOrderId: row.external_order_id,
-    orderDate: row.order_date,
-    totalAmount: Number(row.total_amount),
-    currency: row.currency,
-    status: row.status,
-    createdAt: row.created_at,
-  };
-}
-
+// Thin wrapper - the actual query now lives in lib/market-intel/seller/orders.ts
+// so apps/orders/page.tsx can call it directly server-side. Reconstructs the
+// exact original error JSON on failure.
 export async function GET() {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -45,28 +32,25 @@ export async function GET() {
     );
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from('seller_orders')
-    .select(
-      'id, customer_id, external_order_id, order_date, total_amount, currency, status, created_at, seller_customers(email, external_customer_id)',
-    )
-    .eq('seller_id', seller.id)
-    .order('order_date', { ascending: false });
-
-  if (error) {
+  try {
+    const orders = await getSellerOrders(seller.id);
+    return NextResponse.json({
+      succeeded: true,
+      data: orders,
+      errors: [],
+      message: 'Orders retrieved successfully',
+    });
+  } catch (err) {
     return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to fetch orders' },
+      {
+        succeeded: false,
+        data: null,
+        errors: [err instanceof Error ? err.message : 'Failed to fetch orders'],
+        message: 'Failed to fetch orders',
+      },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({
-    succeeded: true,
-    data: (data ?? []).map(mapOrder),
-    errors: [],
-    message: 'Orders retrieved successfully',
-  });
 }
 
 export async function POST(request: NextRequest) {
@@ -95,9 +79,7 @@ export async function POST(request: NextRequest) {
       currency: body.currency || 'PKR',
       status: body.status || 'completed',
     })
-    .select(
-      'id, customer_id, external_order_id, order_date, total_amount, currency, status, created_at, seller_customers(email, external_customer_id)',
-    )
+    .select(ORDER_COLUMNS)
     .single();
 
   if (error) {

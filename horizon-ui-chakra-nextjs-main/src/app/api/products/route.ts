@@ -4,8 +4,8 @@ import { z } from 'zod';
 import { suggestCategory } from '@/lib/ai/suggest-category';
 import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
+import { getSellerProducts, mapProduct, PRODUCT_COLUMNS } from '@/lib/market-intel/seller/products';
 import { createClient } from '@/lib/supabase/server';
-import { IProduct } from '@/types/products';
 
 // NewProductDrawer always sends sku/categoryId as '' rather than omitting
 // them when left blank - blankToNull() keeps that meaning "not provided"
@@ -24,64 +24,8 @@ const ProductCreateSchema = z.object({
   imageUrl: z.string().optional(),
 });
 
-function mapProduct(row: any): IProduct {
-  const category = Array.isArray(row.seller_categories)
-    ? row.seller_categories[0]
-    : row.seller_categories;
-
-  return {
-    id: row.id,
-    sku: row.sku,
-    title: row.title,
-    categoryId: row.category_id,
-    categoryName: category?.name ?? null,
-    costPrice: row.cost_price,
-    sellPrice: row.sell_price,
-    currency: row.currency,
-    stockQty: row.stock_qty,
-    isActive: row.is_active,
-    imageUrl: row.image_url ?? null,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
-}
-
-const PRODUCT_COLUMNS =
-  'id, sku, title, category_id, cost_price, sell_price, currency, stock_qty, is_active, image_url, created_at, updated_at, seller_categories(name)';
-
-// Fills in a real product photo for rows the seller hasn't given one, by
-// matching the title against the scraped catalogue (market_products already
-// stores an image for tens of thousands of listings across 56 marketplaces).
-//
-// Mutates in place and never throws: an image is decoration, so a failure
-// here must not take down the products list. The UI already falls back to a
-// category tile when imageUrl is null.
-//
-// One RPC call for the whole page - see migration 050 for why, and for the
-// similarity floor that stops a loose match showing the wrong product.
-async function attachScrapedImages(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  products: IProduct[],
-): Promise<void> {
-  const needing = products.filter((p) => !p.imageUrl && p.title);
-  if (needing.length === 0) return;
-
-  try {
-    const { data, error } = await supabase.rpc('market_images_for_titles', {
-      p_titles: needing.map((p) => p.title),
-    });
-    if (error || !data) return;
-
-    for (const row of data as { query_index: number; image_url: string }[]) {
-      const target = needing[row.query_index];
-      if (target) target.imageUrl = row.image_url;
-    }
-  } catch {
-    // Migration 050 not applied yet, or the RPC failed - products still
-    // render, just with category tiles.
-  }
-}
-
+// GET is a thin wrapper - see products.ts's header comment for why the real
+// logic lives there now.
 export async function GET(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -93,35 +37,26 @@ export async function GET(request: NextRequest) {
 
   const categoryId = request.nextUrl.searchParams.get('categoryId');
 
-  const supabase = await createClient();
-  let query = supabase
-    .from('seller_products')
-    .select(PRODUCT_COLUMNS)
-    .eq('seller_id', seller.id)
-    .order('created_at', { ascending: false });
+  try {
+    const products = await getSellerProducts(seller.id, categoryId);
 
-  if (categoryId) {
-    query = query.eq('category_id', categoryId);
-  }
-
-  const { data, error } = await query;
-
-  if (error) {
+    return NextResponse.json({
+      succeeded: true,
+      data: products,
+      errors: [],
+      message: 'Products retrieved successfully',
+    });
+  } catch (err) {
     return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to fetch products' },
+      {
+        succeeded: false,
+        data: null,
+        errors: [err instanceof Error ? err.message : 'Unknown error'],
+        message: 'Failed to fetch products',
+      },
       { status: 500 },
     );
   }
-
-  const products = (data ?? []).map(mapProduct);
-  await attachScrapedImages(supabase, products);
-
-  return NextResponse.json({
-    succeeded: true,
-    data: products,
-    errors: [],
-    message: 'Products retrieved successfully',
-  });
 }
 
 export async function POST(request: NextRequest) {

@@ -1,26 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { getSellerProfile, mapPublicProfile } from '@/lib/market-intel/seller/settings';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { sanitizeDomain } from '@/lib/domain';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
-function mapPublicProfile(row: any) {
-  return {
-    isPublic: row?.is_public ?? false,
-    displayName: row?.display_name ?? '',
-    showPricePosition: row?.show_price_position ?? false,
-    showRating: row?.show_rating ?? false,
-    showCategoryRank: row?.show_category_rank ?? false,
-    // Separate consent scope from isPublic - that one only ever gated peer
-    // (other-seller) visibility. This gates showing on the public marketing
-    // homepage to anonymous visitors, see migration 024.
-    website: row?.website ?? '',
-    showOnMarketingSite: row?.show_on_marketing_site ?? false,
-  };
-}
-
+// Thin wrapper - the actual query now lives in lib/market-intel/seller/settings.ts
+// so apps/settings/page.tsx can call it directly server-side. Reconstructs the
+// exact original error JSON on failure.
 export async function GET() {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -30,34 +19,25 @@ export async function GET() {
     );
   }
 
-  const supabase = await createClient();
-  const { data: publicProfile, error } = await supabase
-    .from('seller_public_profile')
-    .select('is_public, display_name, show_price_position, show_rating, show_category_rank, website, show_on_marketing_site')
-    .eq('seller_id', seller.id)
-    .maybeSingle();
-
-  if (error) {
+  try {
+    const profile = await getSellerProfile(seller);
+    return NextResponse.json({
+      succeeded: true,
+      data: profile,
+      errors: [],
+      message: 'Settings retrieved successfully',
+    });
+  } catch (err) {
     return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to fetch settings' },
+      {
+        succeeded: false,
+        data: null,
+        errors: [err instanceof Error ? err.message : 'Failed to fetch settings'],
+        message: 'Failed to fetch settings',
+      },
       { status: 500 },
     );
   }
-
-  return NextResponse.json({
-    succeeded: true,
-    data: {
-      businessName: seller.businessName,
-      email: seller.email,
-      planTier: seller.planTier,
-      onboardedAt: seller.onboardedAt,
-      reportingCurrency: seller.reportingCurrency,
-      country: seller.country,
-      publicProfile: mapPublicProfile(publicProfile),
-    },
-    errors: [],
-    message: 'Settings retrieved successfully',
-  });
 }
 
 export async function PUT(request: NextRequest) {
