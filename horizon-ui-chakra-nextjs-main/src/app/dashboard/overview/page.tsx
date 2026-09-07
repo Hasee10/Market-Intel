@@ -10,6 +10,8 @@ import {
   getTopProductsByInventoryValue,
 } from '@/lib/market-intel/seller/overview';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
+import type { OrderAnomaly } from '@/lib/market-intel/market/anomalies';
+import type { RevenueForecast } from '@/lib/market-intel/market/forecast';
 
 import OverviewView from './OverviewView';
 
@@ -27,10 +29,10 @@ import OverviewView from './OverviewView';
 // page was fully painted, stacked on top of the client having to download
 // and hydrate before any of them could even start.
 //
-// One request, one getCurrentSeller() call, one Promise.all. The five
-// ecommerce/* route handlers stay in place and now call these same
-// functions, so nothing that hits them directly changes behaviour - see
-// lib/market-intel/seller/overview.ts's header comment.
+// One request, one getCurrentSeller() call, one round of parallel fetches.
+// The five ecommerce/* route handlers stay in place and now call these same
+// functions - see lib/market-intel/seller/overview.ts's header comment for
+// how their error contract is preserved too, not just their success shape.
 export default async function OverviewPage() {
   const seller = await getCurrentSeller();
 
@@ -45,14 +47,54 @@ export default async function OverviewPage() {
   const canSeeAnomalies = hasFeature(seller.planTier, 'anomaly_detection');
   const canSeeForecast = hasFeature(seller.planTier, 'forecasting');
 
-  const [stats, products, orders, categories, revenueTrend, anomalies, forecast] = await Promise.all([
+  // allSettled, not all: the client version fetched each of these as an
+  // independent request, so one failing never took the others down with it
+  // - the failed section just rendered empty (useFetch's data stayed
+  // undefined, and every consumer below already does `?? []`/`?? null`).
+  // A plain Promise.all here would lose that: one rejected call would throw
+  // the whole Server Component, and there is no error.tsx anywhere in this
+  // app to catch it - the visitor would get Next's generic crash page
+  // instead of four working sections and one empty one. allSettled keeps
+  // the original fault isolation.
+  const [statsR, productsR, ordersR, categoriesR, revenueTrendR] = await Promise.allSettled([
     getEcommerceStats(seller.id, seller.reportingCurrency),
     getTopProductsByInventoryValue(seller.id, seller.reportingCurrency),
     getOrderStatusBreakdown(seller.id),
     getCategoryInventoryValue(seller.id),
     getRevenueTrend(seller.id, seller.reportingCurrency),
-    canSeeAnomalies ? detectOwnRevenueAnomalies(seller.id, seller.reportingCurrency) : Promise.resolve([]),
-    canSeeForecast ? getRevenueForecast(seller.id, seller.reportingCurrency) : Promise.resolve(null),
+  ]);
+
+  // Mirrors the original client-side authFailed check exactly: it only
+  // showed the full-page error when ALL FIVE core requests came back
+  // failed, using the first one's message. One or a few failing (a single
+  // flaky query, not an outage) was never treated as fatal - those sections
+  // simply rendered empty, which is what the per-result fallback below
+  // still does for a partial failure.
+  const settled = [statsR, productsR, ordersR, categoriesR, revenueTrendR];
+  if (settled.every((r) => r.status === 'rejected')) {
+    const first = statsR as PromiseRejectedResult;
+    const message = first.reason instanceof Error ? first.reason.message : 'Not authenticated';
+    return <ErrorAlert title="Error loading dashboard" message={message || 'Not authenticated'} />;
+  }
+
+  const stats = statsR.status === 'fulfilled' ? statsR.value : [];
+  const products = productsR.status === 'fulfilled' ? productsR.value : [];
+  const orders = ordersR.status === 'fulfilled' ? ordersR.value : [];
+  const categories = categoriesR.status === 'fulfilled' ? categoriesR.value : [];
+  const revenueTrend = revenueTrendR.status === 'fulfilled' ? revenueTrendR.value : [];
+
+  // These two never participated in the original authFailed check at all -
+  // their routes had no try/catch, so a failure there was already silently
+  // invisible to the page (the client's useFetch caught it into an `error`
+  // state the page never read). .catch() here reproduces that exact
+  // silence, and keeps a throw in either from reaching the Promise above.
+  const [anomalies, forecast] = await Promise.all([
+    canSeeAnomalies
+      ? detectOwnRevenueAnomalies(seller.id, seller.reportingCurrency).catch((): OrderAnomaly[] => [])
+      : Promise.resolve<OrderAnomaly[]>([]),
+    canSeeForecast
+      ? getRevenueForecast(seller.id, seller.reportingCurrency).catch((): RevenueForecast | null => null)
+      : Promise.resolve<RevenueForecast | null>(null),
   ]);
 
   return (

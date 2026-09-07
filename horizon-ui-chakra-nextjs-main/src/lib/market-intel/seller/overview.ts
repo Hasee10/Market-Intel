@@ -19,7 +19,15 @@ import { convertCurrency, getLatestFxRates, type FxRates } from '@/lib/market-in
 // The routes themselves are kept and now call these same functions, so
 // nothing that hits them directly (there is no other caller today, but
 // keeping the contract cheap to keep is cheaper than an audit to remove it)
-// changes behaviour.
+// changes behaviour - including on a query error. Every function here
+// THROWS rather than swallowing (a first pass returned [] on error instead,
+// which silently changed a 500 into a 200-with-empty-data at the route
+// layer, and would have taken the whole Server Component down on any single
+// section's failure with no error.tsx anywhere in the app to catch it - two
+// real regressions, not just a style choice). Each route's try/catch
+// reconstructs its original error response from the thrown message, and
+// page.tsx settles each call independently so one failing section degrades
+// to empty instead of crashing the page - see both files' own comments.
 //
 // Logic is copied verbatim from each route, including two inconsistencies
 // worth flagging rather than silently fixing here: getOrderStatusBreakdown
@@ -83,7 +91,17 @@ export async function getEcommerceStats(sellerId: string, reportingCurrency: str
     getLatestFxRates(),
   ]);
 
-  if (ordersRes.error || customersRes.error || productsRes.error) return [];
+  // Throws rather than swallowing, matching the original route's contract
+  // exactly: a genuine Supabase failure here (not "zero rows", a real query
+  // error) used to come back as a 500 with this same message text. The
+  // route wrapper below catches this and reconstructs that response
+  // byte-for-byte; the Server Component in page.tsx catches it too, so one
+  // failed section degrades to empty rather than crashing the whole page.
+  if (ordersRes.error || customersRes.error || productsRes.error) {
+    throw new Error(
+      ordersRes.error?.message || customersRes.error?.message || productsRes.error?.message || 'Unknown error',
+    );
+  }
 
   const orders = (ordersRes.data ?? []).map((o) => ({
     ...o,
@@ -220,9 +238,10 @@ export async function getTopProductsByInventoryValue(
     getLatestFxRates(),
   ]);
 
-  if (error || !data) return [];
+  // Throws, not swallows - see getEcommerceStats' comment above for why.
+  if (error) throw new Error(error?.message ?? 'Failed to fetch products');
 
-  return data
+  return (data ?? [])
     .map((row) => mapProduct(row, reportingCurrency, fxRates))
     .sort((a, b) => b.inventoryValue - a.inventoryValue);
 }
@@ -233,11 +252,12 @@ export async function getOrderStatusBreakdown(sellerId: string): Promise<OrderSt
   const supabase = await createClient();
   const { data, error } = await supabase.from('seller_orders').select('status, total_amount').eq('seller_id', sellerId);
 
-  if (error || !data) return [];
+  if (error) throw new Error(error.message);
 
-  const totalCount = data.length;
+  const orders = data ?? [];
+  const totalCount = orders.length;
   const grouped = new Map<string, { count: number; value: number }>();
-  for (const order of data) {
+  for (const order of orders) {
     const status = order.status || 'Unknown';
     const entry = grouped.get(status) ?? { count: 0, value: 0 };
     entry.count += 1;
@@ -264,10 +284,10 @@ export async function getCategoryInventoryValue(sellerId: string): Promise<Categ
     .eq('seller_id', sellerId)
     .eq('is_active', true);
 
-  if (error || !data) return [];
+  if (error) throw new Error(error.message);
 
   const grouped = new Map<string, { value: number; products: number }>();
-  for (const row of data) {
+  for (const row of data ?? []) {
     const category = Array.isArray(row.seller_categories) ? row.seller_categories[0] : row.seller_categories;
     const name = (category as { name?: string } | null)?.name ?? 'Uncategorized';
     const value = Number(row.sell_price ?? 0) * (row.stock_qty ?? 0);
@@ -310,7 +330,7 @@ export async function getRevenueTrend(sellerId: string, reportingCurrency: strin
     getLatestFxRates(),
   ]);
 
-  if (error) return [];
+  if (error) throw new Error(error.message);
 
   const byDay = new Map<string, number>();
   for (let i = 0; i < REVENUE_TREND_DAYS; i++) {
