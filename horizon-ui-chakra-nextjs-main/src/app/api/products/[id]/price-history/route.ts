@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerPriceHistory } from '@/lib/market-intel/seller/price-history';
+import { apiError } from '@/lib/api-error';
 
 // Infrastructure for a later-stage seller-vs-competitor price comparison
 // feature (see memory.md, "Flagged: seller-vs-competitor price history has
@@ -34,10 +35,7 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to load product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to load product', 400, 'api/products/[id]/price-history');
   }
 
   if (!sellerProduct) {

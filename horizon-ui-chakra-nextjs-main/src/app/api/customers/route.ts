@@ -5,6 +5,7 @@ import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { getSellerCustomers, mapCustomer, CUSTOMER_COLUMNS } from '@/lib/market-intel/seller/customers';
 import { createClient } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 // Nothing is required here, unchanged from before - a customer can be
 // created from just an externalCustomerId, just an email, or neither
@@ -41,15 +42,7 @@ export async function GET() {
       message: 'Customers retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Unknown error'],
-        message: 'Failed to fetch customers',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch customers', 500, 'api/customers');
   }
 }
 
@@ -81,10 +74,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to create customer' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to create customer', 400, 'api/customers');
   }
 
   return NextResponse.json({

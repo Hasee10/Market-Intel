@@ -6,6 +6,7 @@ import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { getSellerProducts, mapProduct, PRODUCT_COLUMNS } from '@/lib/market-intel/seller/products';
 import { createClient } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 // NewProductDrawer always sends sku/categoryId as '' rather than omitting
 // them when left blank - blankToNull() keeps that meaning "not provided"
@@ -47,15 +48,7 @@ export async function GET(request: NextRequest) {
       message: 'Products retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Unknown error'],
-        message: 'Failed to fetch products',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch products', 500, 'api/products');
   }
 }
 
@@ -116,10 +109,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to create product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to create product', 400, 'api/products');
   }
 
   return NextResponse.json({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller, listSellerDomains } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 // Sets this domain as primary (and unsets any other) - the primary domain
 // is what getPrimaryDomain() uses to decide which category the Market page
@@ -26,10 +27,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     .eq('seller_id', seller.id);
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to set primary domain' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to set primary domain', 400, 'api/domains/[id]');
   }
 
   const domains = await listSellerDomains(seller.id);
@@ -58,10 +56,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { error } = await supabase.from('seller_domains').delete().eq('id', id).eq('seller_id', seller.id);
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to remove domain' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to remove domain', 400, 'api/domains/[id]');
   }
 
   // If the removed domain was primary, promote the next remaining one (if

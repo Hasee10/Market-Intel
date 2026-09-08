@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { markAllNotificationsRead } from '@/lib/notifications/list';
+import { apiError } from '@/lib/api-error';
 
 // Counterpart to [id]/read for clearing the whole feed at once - the
 // Watchlist's "Mark all read". Same response envelope as every other route
@@ -24,14 +25,6 @@ export async function POST() {
       message: 'All notifications marked read',
     });
   } catch (error) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-        message: 'Failed to mark notifications read',
-      },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to mark notifications read', 400, 'api/notifications/read-all');
   }
 }

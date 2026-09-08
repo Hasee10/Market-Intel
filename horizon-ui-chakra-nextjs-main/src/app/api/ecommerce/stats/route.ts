@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { getEcommerceStats } from '@/lib/market-intel/seller/overview';
+import { apiError } from '@/lib/api-error';
 
 // Thin wrapper. The real logic lives in getEcommerceStats so the Overview
 // page's Server Component can call it directly - see overview.ts's header
@@ -29,14 +30,6 @@ export async function GET() {
       message: 'E-commerce stats retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Unknown error'],
-        message: 'Failed to fetch e-commerce stats',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch e-commerce stats', 500, 'api/ecommerce/stats');
   }
 }

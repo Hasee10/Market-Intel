@@ -5,6 +5,7 @@ import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getSellerOrders, mapOrder, ORDER_COLUMNS } from '@/lib/market-intel/seller/orders';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 // The 4 values NewOrderDrawer/EditOrderDrawer's <Select> actually offers -
 // see components/marketintel/OrdersTable.tsx's STATUS_COLORS for the same
@@ -41,15 +42,7 @@ export async function GET() {
       message: 'Orders retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Failed to fetch orders'],
-        message: 'Failed to fetch orders',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch orders', 500, 'api/orders');
   }
 }
 
@@ -83,10 +76,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to create order' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to create order', 400, 'api/orders');
   }
 
   return NextResponse.json({

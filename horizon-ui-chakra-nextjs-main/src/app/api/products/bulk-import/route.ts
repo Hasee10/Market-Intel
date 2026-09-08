@@ -6,6 +6,7 @@ import { getCountryProductConfig } from '@/lib/market-intel/core/countries';
 import { autoAssignDomainsForCategories, getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
+import { apiError } from '@/lib/api-error';
 
 // The extra Groq round-trips for auto-categorization can push a large
 // import past a short serverless default.
@@ -199,10 +200,7 @@ export async function POST(request: NextRequest) {
       .upsert(withSku.map((r) => toRow(r, null)), { onConflict: 'seller_id,sku' });
 
     if (error) {
-      return NextResponse.json(
-        { succeeded: false, data: null, errors: [error.message], message: 'Failed to import products' },
-        { status: 400 },
-      );
+      return apiError(error, 'Failed to import products', 400, 'api/products/bulk-import');
     }
   }
 
@@ -215,10 +213,7 @@ export async function POST(request: NextRequest) {
       );
 
     if (error) {
-      return NextResponse.json(
-        { succeeded: false, data: null, errors: [error.message], message: 'Failed to import products' },
-        { status: 400 },
-      );
+      return apiError(error, 'Failed to import products', 400, 'api/products/bulk-import');
     }
   }
 

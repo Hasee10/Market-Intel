@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { MAX_IMPORT_ROWS } from '@/lib/csv';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 type ImportRow = {
   externalCustomerId?: string;
@@ -66,10 +67,7 @@ export async function POST(request: NextRequest) {
   );
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to import customers' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to import customers', 400, 'api/customers/bulk-import');
   }
 
   return NextResponse.json({

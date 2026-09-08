@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { GroqNotConfiguredError, suggestCategory } from '@/lib/ai/suggest-category';
+import { apiError } from '@/lib/api-error';
 
 export async function POST(request: NextRequest) {
   const seller = await getCurrentSeller();
@@ -52,14 +53,6 @@ export async function POST(request: NextRequest) {
         { status: 503 },
       );
     }
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Unknown error'],
-        message: 'Failed to suggest a category',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to suggest a category', 500, 'api/products/suggest-category');
   }
 }

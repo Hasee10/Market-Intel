@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { CustomerDto } from '@/types/customer';
+import { apiError } from '@/lib/api-error';
 
 function mapCustomer(row: any): CustomerDto {
   return {
@@ -53,10 +54,7 @@ export async function PUT(
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to update customer' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to update customer', 400, 'api/customers/[id]');
   }
 
   return NextResponse.json({
@@ -89,10 +87,7 @@ export async function DELETE(
     .eq('seller_id', seller.id);
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to delete customer' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to delete customer', 400, 'api/customers/[id]');
   }
 
   return NextResponse.json({

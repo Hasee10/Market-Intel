@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { getCategoryInventoryValue } from '@/lib/market-intel/seller/overview';
+import { apiError } from '@/lib/api-error';
 
 // Thin wrapper - see ecommerce/stats/route.ts for why the try/catch is here
 // and not left to the lib function's thrown Error.
@@ -24,14 +25,6 @@ export async function GET() {
       message: 'Category inventory value retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Unknown error'],
-        message: 'Failed to fetch category inventory value',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch category inventory value', 500, 'api/ecommerce/categories');
   }
 }

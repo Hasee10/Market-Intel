@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { sanitizeDomain } from '@/lib/domain';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
+import { apiError } from '@/lib/api-error';
 
 // Thin wrapper - the actual query now lives in lib/market-intel/seller/settings.ts
 // so apps/settings/page.tsx can call it directly server-side. Reconstructs the
@@ -28,15 +29,7 @@ export async function GET() {
       message: 'Settings retrieved successfully',
     });
   } catch (err) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [err instanceof Error ? err.message : 'Failed to fetch settings'],
-        message: 'Failed to fetch settings',
-      },
-      { status: 500 },
-    );
+    return apiError(err, 'Failed to fetch settings', 500, 'api/profile');
   }
 }
 
@@ -59,10 +52,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', seller.id);
 
     if (error) {
-      return NextResponse.json(
-        { succeeded: false, data: null, errors: [error.message], message: 'Failed to update business name' },
-        { status: 400 },
-      );
+      return apiError(error, 'Failed to update business name', 400, 'api/profile');
     }
   }
 
@@ -76,10 +66,7 @@ export async function PUT(request: NextRequest) {
       .eq('id', seller.id);
 
     if (error) {
-      return NextResponse.json(
-        { succeeded: false, data: null, errors: [error.message], message: 'Failed to update reporting currency' },
-        { status: 400 },
-      );
+      return apiError(error, 'Failed to update reporting currency', 400, 'api/profile');
     }
   }
 
@@ -90,10 +77,7 @@ export async function PUT(request: NextRequest) {
     const { error } = await supabase.from('sellers').update({ country }).eq('id', seller.id);
 
     if (error) {
-      return NextResponse.json(
-        { succeeded: false, data: null, errors: [error.message], message: 'Failed to update country' },
-        { status: 400 },
-      );
+      return apiError(error, 'Failed to update country', 400, 'api/profile');
     }
   }
 
@@ -140,10 +124,7 @@ export async function PUT(request: NextRequest) {
     .single();
 
   if (profileError) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [profileError.message], message: 'Failed to update public profile' },
-      { status: 400 },
-    );
+    return apiError(profileError, 'Failed to update public profile', 400, 'api/profile');
   }
 
   return NextResponse.json({

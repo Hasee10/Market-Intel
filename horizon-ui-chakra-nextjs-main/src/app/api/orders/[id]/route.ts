@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { OrderDto } from '@/types/order';
+import { apiError } from '@/lib/api-error';
 
 function mapOrder(row: any): OrderDto {
   const customer = Array.isArray(row.seller_customers) ? row.seller_customers[0] : row.seller_customers;
@@ -51,10 +52,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to update order' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to update order', 400, 'api/orders/[id]');
   }
 
   return NextResponse.json({
@@ -80,10 +78,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
   const { error } = await supabase.from('seller_orders').delete().eq('id', id).eq('seller_id', seller.id);
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to delete order' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to delete order', 400, 'api/orders/[id]');
   }
 
   return NextResponse.json({ succeeded: true, data: null, errors: [], message: 'Order deleted successfully' });

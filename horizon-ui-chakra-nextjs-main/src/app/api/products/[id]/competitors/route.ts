@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { findCompetitorsForProduct } from '@/lib/market-intel/market/product-matching';
+import { apiError } from '@/lib/api-error';
 
 // Free for all sellers for now - intentionally not gated behind the
 // product_matching paid entitlement used by the Market page's "Similar
@@ -32,10 +33,7 @@ export async function GET(
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to load product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to load product', 400, 'api/products/[id]/competitors');
   }
 
   if (!sellerProduct) {

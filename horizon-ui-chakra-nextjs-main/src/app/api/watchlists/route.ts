@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createWatchlist, listWatchlists } from '@/lib/market-intel/seller/watchlists';
+import { apiError } from '@/lib/api-error';
 
 export async function GET() {
   const seller = await getCurrentSeller();
@@ -37,14 +38,6 @@ export async function POST(request: NextRequest) {
     const data = await createWatchlist(seller.id, body.name);
     return NextResponse.json({ succeeded: true, data, errors: [], message: 'Watchlist created successfully' });
   } catch (error) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-        message: 'Failed to create watchlist',
-      },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to create watchlist', 400, 'api/watchlists');
   }
 }

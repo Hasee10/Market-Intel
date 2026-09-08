@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { addWatchlistItem } from '@/lib/market-intel/seller/watchlists';
+import { apiError } from '@/lib/api-error';
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const seller = await getCurrentSeller();
@@ -22,17 +23,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   try {
-    const data = await addWatchlistItem(id, body.marketProductId);
+    const data = await addWatchlistItem(id, body.marketProductId, seller.id);
     return NextResponse.json({ succeeded: true, data, errors: [], message: 'Item added to watchlist' });
   } catch (error) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-        message: 'Failed to add item to watchlist',
-      },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to add item to watchlist', 400, 'api/watchlists/[id]/items');
   }
 }

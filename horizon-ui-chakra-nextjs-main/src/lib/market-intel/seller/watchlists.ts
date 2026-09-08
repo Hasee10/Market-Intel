@@ -87,14 +87,49 @@ export async function createWatchlist(sellerId: string, name: string) {
   return { id: data.id, name: data.name, createdAt: data.created_at, items: [] as WatchlistItem[] };
 }
 
-export async function deleteWatchlist(watchlistId: string) {
+// Every mutation below takes the caller's sellerId and scopes on it.
+//
+// They used to take only the row id, which meant the sole thing standing
+// between one seller and another seller's watchlist was the RLS policy in
+// migration 014. That policy is real and does hold today - this is not a
+// live hole - but it made RLS a single point of failure for tenant
+// isolation: one policy dropped during a migration, or one of these
+// functions later called with an admin client (which bypasses RLS entirely,
+// as the cron jobs already do), and it becomes a cross-tenant delete with
+// nothing else in the way. The app layer should state the same rule the
+// database enforces, not assume it.
+//
+// seller_watchlist_items has no seller_id of its own (see migration 014), so
+// ownership there is established through the parent watchlist.
+
+export async function deleteWatchlist(watchlistId: string, sellerId: string) {
   const supabase = await createClient();
-  const { error } = await supabase.from('seller_watchlists').delete().eq('id', watchlistId);
+
+  // .select() so a delete matching zero rows is distinguishable from a
+  // successful one - without it, deleting someone else's watchlist and
+  // deleting your own both come back as "no error".
+  const { data, error } = await supabase
+    .from('seller_watchlists')
+    .delete()
+    .eq('id', watchlistId)
+    .eq('seller_id', sellerId)
+    .select('id');
+
   if (error) throw new Error(error.message);
+  if (!data?.length) throw new Error('Watchlist not found');
 }
 
-export async function addWatchlistItem(watchlistId: string, marketProductId: string) {
+export async function addWatchlistItem(watchlistId: string, marketProductId: string, sellerId: string) {
   const supabase = await createClient();
+
+  const { data: owned } = await supabase
+    .from('seller_watchlists')
+    .select('id')
+    .eq('id', watchlistId)
+    .eq('seller_id', sellerId)
+    .maybeSingle();
+
+  if (!owned) throw new Error('Watchlist not found');
 
   const { data, error } = await supabase
     .from('seller_watchlist_items')
@@ -107,8 +142,20 @@ export async function addWatchlistItem(watchlistId: string, marketProductId: str
   return mapItem(data);
 }
 
-export async function removeWatchlistItem(itemId: string) {
+export async function removeWatchlistItem(itemId: string, sellerId: string) {
   const supabase = await createClient();
+
+  // !inner turns the join into a filter: the row comes back only when its
+  // parent watchlist belongs to this seller.
+  const { data: owned } = await supabase
+    .from('seller_watchlist_items')
+    .select('id, seller_watchlists!inner(seller_id)')
+    .eq('id', itemId)
+    .eq('seller_watchlists.seller_id', sellerId)
+    .maybeSingle();
+
+  if (!owned) throw new Error('Watchlist item not found');
+
   const { error } = await supabase.from('seller_watchlist_items').delete().eq('id', itemId);
   if (error) throw new Error(error.message);
 }

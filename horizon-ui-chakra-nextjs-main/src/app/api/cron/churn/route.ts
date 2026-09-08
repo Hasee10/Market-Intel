@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { computeChurnSnapshots } from '@/lib/market-intel/jobs/churn-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
+import { apiError } from '@/lib/api-error';
 
 async function run(request: NextRequest) {
   if (!isAuthorizedCronRequest(request)) {
@@ -15,15 +16,7 @@ async function run(request: NextRequest) {
     const result = await computeChurnSnapshots();
     return NextResponse.json({ succeeded: true, data: result, errors: [], message: 'Churn snapshots computed' });
   } catch (error) {
-    return NextResponse.json(
-      {
-        succeeded: false,
-        data: null,
-        errors: [error instanceof Error ? error.message : 'Unknown error'],
-        message: 'Failed to compute churn snapshots',
-      },
-      { status: 500 },
-    );
+    return apiError(error, 'Failed to compute churn snapshots', 500, 'api/cron/churn');
   }
 }
 

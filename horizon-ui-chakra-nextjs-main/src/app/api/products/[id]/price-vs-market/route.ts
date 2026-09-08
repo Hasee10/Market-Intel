@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { getSellerPriceVsMarketTrend } from '@/lib/market-intel/seller/price-history';
+import { apiError } from '@/lib/api-error';
 
 // Same category-resolution shape as [id]/competitors/route.ts, deliberately
 // duplicated rather than shared: this is the one place a product's category
@@ -29,10 +30,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     .maybeSingle();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to load product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to load product', 400, 'api/products/[id]/price-vs-market');
   }
 
   if (!sellerProduct) {

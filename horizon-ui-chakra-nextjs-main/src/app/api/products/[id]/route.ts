@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { IProduct } from '@/types/products';
+import { apiError } from '@/lib/api-error';
 
 function mapProduct(row: any): IProduct {
   const category = Array.isArray(row.seller_categories)
@@ -67,10 +68,7 @@ export async function PUT(
     .single();
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to update product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to update product', 400, 'api/products/[id]');
   }
 
   return NextResponse.json({
@@ -103,10 +101,7 @@ export async function DELETE(
     .eq('seller_id', seller.id);
 
   if (error) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: [error.message], message: 'Failed to delete product' },
-      { status: 400 },
-    );
+    return apiError(error, 'Failed to delete product', 400, 'api/products/[id]');
   }
 
   return NextResponse.json({
