@@ -13,9 +13,7 @@ import {
 import { MdCheck, MdChevronRight } from 'react-icons/md';
 
 import Card from 'components/card/Card';
-import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS, PATH_DASHBOARD } from '@/lib/paths';
-import { IApiResponse } from '@/types/api-response';
 import type { OnboardingStatus } from '@/lib/market-intel/seller/onboarding-status';
 
 // 'hasDomain' isn't a step here anymore - dashboard/apps layout.tsx now
@@ -35,9 +33,12 @@ const STEPS: Array<{ key: keyof OnboardingStatus; label: string; href: string }>
 // established seller; never asks a seller to redo a step already completed
 // (each check is a real query against their own data, not a client-side
 // flag that could get out of sync).
-export function OnboardingChecklist() {
-  const { data } = useFetch<IApiResponse<OnboardingStatus>>('/api/onboarding-status');
-  const status = data?.data;
+// status arrives as a prop from dashboard/overview/page.tsx's server fetch -
+// this used to GET /api/onboarding-status itself on mount, a fifth client
+// round trip on the page whose seven-fetch waterfall was the whole point of
+// 92fba75. Null when the lookup failed, which renders nothing: a checklist
+// is an aid, and a missing one is better than an error on the dashboard.
+export function OnboardingChecklist({ status }: { status: OnboardingStatus | null }) {
   const cardBg = useColorModeValue('white', 'navy.700');
   const doneBg = useColorModeValue('green.50', 'whiteAlpha.100');
   const pendingBorder = useColorModeValue('gray.100', 'whiteAlpha.100');

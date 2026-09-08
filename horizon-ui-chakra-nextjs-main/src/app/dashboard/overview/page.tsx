@@ -13,6 +13,11 @@ import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import type { OrderAnomaly } from '@/lib/market-intel/market/anomalies';
 import type { RevenueForecast } from '@/lib/market-intel/market/forecast';
 
+import {
+  getOnboardingStatus,
+  type OnboardingStatus,
+} from '@/lib/market-intel/seller/onboarding-status';
+
 import OverviewView from './OverviewView';
 
 // Server Component: fetches everything Overview needs in one request, then
@@ -88,13 +93,20 @@ export default async function OverviewPage() {
   // invisible to the page (the client's useFetch caught it into an `error`
   // state the page never read). .catch() here reproduces that exact
   // silence, and keeps a throw in either from reaching the Promise above.
-  const [anomalies, forecast] = await Promise.all([
+  //
+  // onboardingStatus joins them here for the same reason: OnboardingChecklist
+  // was fetching /api/onboarding-status for itself on mount, which was one
+  // more client round trip on the page whose waterfall this file exists to
+  // remove. Same .catch() treatment - a checklist is an aid, and failing to
+  // load one should not disturb the dashboard around it.
+  const [anomalies, forecast, onboardingStatus] = await Promise.all([
     canSeeAnomalies
       ? detectOwnRevenueAnomalies(seller.id, seller.reportingCurrency).catch((): OrderAnomaly[] => [])
       : Promise.resolve<OrderAnomaly[]>([]),
     canSeeForecast
       ? getRevenueForecast(seller.id, seller.reportingCurrency).catch((): RevenueForecast | null => null)
       : Promise.resolve<RevenueForecast | null>(null),
+    getOnboardingStatus(seller.id).catch((): OnboardingStatus | null => null),
   ]);
 
   return (
@@ -107,6 +119,7 @@ export default async function OverviewPage() {
       anomalies={anomalies}
       forecast={forecast}
       reportingCurrency={seller.reportingCurrency}
+      onboardingStatus={onboardingStatus}
     />
   );
 }

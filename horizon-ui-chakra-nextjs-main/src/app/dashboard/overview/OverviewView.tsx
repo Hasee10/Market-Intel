@@ -12,6 +12,7 @@ import BarChart from 'components/charts/BarChart';
 import { DownloadReportButton } from '@/components/marketintel/DownloadReportButton';
 import { InsightBanner } from '@/components/marketintel/InsightBanner';
 import { OnboardingChecklist } from '@/components/marketintel/OnboardingChecklist';
+import type { OnboardingStatus } from '@/lib/market-intel/seller/onboarding-status';
 import { Card } from '@/components/ui/Card';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { SectionHeading } from '@/components/ui/SectionHeading';
@@ -44,6 +45,7 @@ type OverviewViewProps = {
   anomalies: OrderAnomaly[];
   forecast: RevenueForecast | null;
   reportingCurrency: string;
+  onboardingStatus: OnboardingStatus | null;
 };
 
 // Shared empty-state pattern: icon + reason + a single next action, not
@@ -129,6 +131,7 @@ export default function OverviewView({
   anomalies,
   forecast,
   reportingCurrency,
+  onboardingStatus,
 }: OverviewViewProps) {
   const [trendDays, setTrendDays] = useState<number>(30);
   // Only the values ApexCharts still needs survive here. Card borders, table
@@ -396,7 +399,7 @@ export default function OverviewView({
     <div className="font-outfit">
       <PageHeader title="Overview" actionButton={<DownloadReportButton />} />
 
-      <OnboardingChecklist />
+      <OnboardingChecklist status={onboardingStatus} />
 
       <InsightBanner stats={stats} anomaly={recentAnomaly} forecast={forecast} currency={reportingCurrency} />
 
