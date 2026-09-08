@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 import {
   Badge,
@@ -8,7 +9,6 @@ import {
   Flex,
   Icon,
   Select,
-  Skeleton,
   Stack,
   Text,
   useToast,
@@ -17,22 +17,28 @@ import { MdDelete, MdStar, MdStarBorder } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
-import { useFetch } from '@/lib/hooks/useApi';
-import { IApiResponse } from '@/types/api-response';
 import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
 
 type Category = { id: string; slug: string; name: string };
-type DomainsData = { domains: SellerDomainRow[]; categories: Category[] };
 
-export function DomainsManager() {
+// domains/categories arrive as props from apps/settings/page.tsx's server
+// fetch - this used to GET /api/domains itself on mount. The three mutations
+// below are real user actions and stay client-side; router.refresh() re-runs
+// the page and hands this component fresh props, the same substitution made
+// for refetch() everywhere else in this app.
+export function DomainsManager({
+  domains,
+  categories,
+}: {
+  domains: SellerDomainRow[];
+  categories: Category[];
+}) {
   const toast = useToast();
-  const { data, loading, refetch } = useFetch<IApiResponse<DomainsData>>('/api/domains');
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('');
   const [adding, setAdding] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const domains = data?.data?.domains ?? [];
-  const categories = data?.data?.categories ?? [];
   const availableCategories = categories.filter((c) => !domains.some((d) => d.categoryId === c.id));
 
   const handleAdd = async () => {
@@ -47,7 +53,7 @@ export function DomainsManager() {
       const result = await response.json();
       if (!response.ok || !result.succeeded) throw new Error(result.errors?.join(', ') || 'Failed to add domain');
       setSelectedCategory('');
-      refetch();
+      router.refresh();
     } catch (error) {
       toast({ status: 'error', title: error instanceof Error ? error.message : 'Failed to add domain' });
     } finally {
@@ -59,7 +65,7 @@ export function DomainsManager() {
     setBusyId(id);
     try {
       await fetch(`/api/domains/${id}`, { method: 'PATCH' });
-      refetch();
+      router.refresh();
     } finally {
       setBusyId(null);
     }
@@ -69,15 +75,11 @@ export function DomainsManager() {
     setBusyId(id);
     try {
       await fetch(`/api/domains/${id}`, { method: 'DELETE' });
-      refetch();
+      router.refresh();
     } finally {
       setBusyId(null);
     }
   };
-
-  if (loading) {
-    return <Skeleton height="180px" borderRadius="16px" />;
-  }
 
   return (
     <Card>

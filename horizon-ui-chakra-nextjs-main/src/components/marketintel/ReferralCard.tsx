@@ -1,24 +1,22 @@
 'use client';
 
-import { Button, Flex, Input, Skeleton, Text, useClipboard, useToast } from '@chakra-ui/react';
+import { Button, Flex, Input, Text, useClipboard, useToast } from '@chakra-ui/react';
 import { MdContentCopy } from 'react-icons/md';
 
 import Card from 'components/card/Card';
 
-import { useFetch } from '@/lib/hooks/useApi';
-import { IApiResponse } from '@/types/api-response';
 import type { ReferralStats } from '@/lib/market-intel/seller/referrals';
 
-export function ReferralCard() {
+// stats arrive as a prop from apps/settings/page.tsx's server fetch - this
+// used to GET /api/referrals itself on mount. Null when that lookup failed:
+// the page deliberately degrades this one card rather than failing outright,
+// so a seller who can't load referral stats can still change their settings.
+export function ReferralCard({ stats }: { stats: ReferralStats | null }) {
   const toast = useToast();
-  const { data, loading } = useFetch<IApiResponse<ReferralStats>>('/api/referrals');
-  const stats = data?.data;
   const link = stats ? `${typeof window !== 'undefined' ? window.location.origin : ''}/auth/signup?ref=${stats.code}` : '';
   const { onCopy, hasCopied } = useClipboard(link);
 
-  if (loading) {
-    return <Skeleton height="160px" borderRadius="16px" />;
-  }
+  if (!stats) return null;
 
   return (
     <Card>

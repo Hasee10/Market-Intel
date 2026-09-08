@@ -25,6 +25,8 @@ import { PageHeader } from '@/components/marketintel/PageHeader';
 import { ReferralCard } from '@/components/marketintel/ReferralCard';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import type { SellerProfile } from '@/lib/market-intel/seller/settings';
+import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
+import type { ReferralStats } from '@/lib/market-intel/seller/referrals';
 import { SUPPORTED_CURRENCIES } from '@/types/products';
 import { SUPPORTED_COUNTRIES } from '@/lib/market-intel/core/countries';
 
@@ -42,9 +44,17 @@ const breadcrumbItems = [
 
 type SettingsViewProps = {
   profile: SellerProfile;
+  domains: SellerDomainRow[];
+  categories: { id: string; slug: string; name: string }[];
+  referral: ReferralStats | null;
 };
 
-export default function SettingsView({ profile }: SettingsViewProps) {
+export default function SettingsView({
+  profile,
+  domains,
+  categories,
+  referral,
+}: SettingsViewProps) {
   const router = useRouter();
   const toast = useToast();
   const [saving, setSaving] = useState(false);
@@ -280,11 +290,10 @@ export default function SettingsView({ profile }: SettingsViewProps) {
           </Flex>
         </Card>
 
-        {/* DomainsManager/ReferralCard fetch their own data independently of
-            profile - not gated on profile load, they already handle their
-            own loading state. */}
-        <DomainsManager />
-        <ReferralCard />
+        {/* Both used to fetch for themselves; their data now comes from
+            page.tsx's single server pass. */}
+        <DomainsManager domains={domains} categories={categories} />
+        <ReferralCard stats={referral} />
       </Grid>
 
       <Button leftIcon={<MdSave />} variant="brand" onClick={handleSave} isLoading={saving} mt="20px">

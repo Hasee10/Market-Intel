@@ -211,7 +211,13 @@ export type SellerDomainRow = {
 // slug alongside name (widened for the domain switcher / Overview's
 // searchParams-driven domain resolution) - one-line, backward-compatible,
 // every existing caller already just spreads this shape.
-export async function listSellerDomains(sellerId: string): Promise<SellerDomainRow[]> {
+// cache()d for the same reason as getCurrentSeller above: the shell resolves
+// this on every authenticated request (see seller/shell.ts) and the Settings
+// page needs the same list in that same request. Without this that is two
+// identical queries per load.
+export const listSellerDomains = cache(async function listSellerDomains(
+  sellerId: string,
+): Promise<SellerDomainRow[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -232,7 +238,7 @@ export async function listSellerDomains(sellerId: string): Promise<SellerDomainR
       isPrimary: row.is_primary,
     };
   });
-}
+});
 
 // Just the slugs, for callers that need to resolve a market scope per
 // domain (e.g. getMarketScopeForAllDomains) rather than render a list -
