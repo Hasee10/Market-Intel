@@ -8,11 +8,13 @@ import { AppHeader } from 'components/shell/AppHeader';
 import { AppSidebar, AppSidebarMobile } from 'components/shell/AppSidebar';
 import { SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from 'components/shell/sidebarWidth';
 import { SidebarContext } from 'contexts/SidebarContext';
+import type { ShellData } from '@/lib/market-intel/seller/shell';
 import routes from 'routes';
 import { getActiveRoute } from 'utils/navigation';
 
 interface AdminShellProps extends PropsWithChildren {
-  [x: string]: any;
+  /** Resolved server-side by the layout - see lib/market-intel/seller/shell.ts. */
+  shell: ShellData;
 }
 
 const COLLAPSE_STORAGE_KEY = 'market-intel-sidebar-collapsed';
@@ -25,7 +27,7 @@ const COLLAPSE_STORAGE_KEY = 'market-intel-sidebar-collapsed';
 // changed: `routes.tsx`, `SidebarContext`, the localStorage collapse key and
 // the sidebar widths are all the same values as before, so page bodies -
 // still Chakra - render exactly as they did.
-export default function AdminShell({ children }: AdminShellProps) {
+export default function AdminShell({ children, shell }: AdminShellProps) {
   const [toggleSidebar, setToggleSidebar] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const pathname = usePathname();
@@ -51,8 +53,8 @@ export default function AdminShell({ children }: AdminShellProps) {
           set the family itself inherits Chakra's Inter and the dashboard
           quietly renders in two typefaces. */}
       <div className="font-outfit min-h-screen bg-gray-50 dark:bg-gray-950">
-        <AppSidebar routes={routes} />
-        <AppSidebarMobile routes={routes} />
+        <AppSidebar routes={routes} planTier={shell.planTier} />
+        <AppSidebarMobile routes={routes} planTier={shell.planTier} />
 
         {/* Margin (not float) so the header can be sticky within normal flow.
             Only applies at xl, matching AppSidebar's own xl:flex. */}
@@ -60,7 +62,11 @@ export default function AdminShell({ children }: AdminShellProps) {
           style={{ ['--sidebar-w' as string]: `${sidebarWidth}px` }}
           className="transition-[margin] duration-200 ease-out xl:ml-[var(--sidebar-w)]"
         >
-          <AppHeader breadcrumb={getActiveRoute(routes, pathname)} />
+          <AppHeader
+            breadcrumb={getActiveRoute(routes, pathname)}
+            domains={shell.domains}
+            notifications={shell.notifications}
+          />
           {/* Matches TailAdmin's AppLayout content box exactly: centred, capped
               at their 2xl breakpoint, p-4 stepping to p-6.
 

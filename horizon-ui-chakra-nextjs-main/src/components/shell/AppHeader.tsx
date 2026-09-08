@@ -19,6 +19,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { SidebarContext } from 'contexts/SidebarContext';
 import { createClient } from '@/lib/supabase/client';
 import { useSellerSession } from '@/lib/supabase/useSellerSession';
+import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
+import type { Notification } from '@/lib/notifications/list';
 
 import { DomainSwitcher } from './DomainSwitcher';
 import { NotificationsMenu } from './NotificationsMenu';
@@ -26,7 +28,18 @@ import { NotificationsMenu } from './NotificationsMenu';
 const iconButton =
   'flex size-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400 dark:hover:bg-gray-800';
 
-export function AppHeader({ breadcrumb }: { breadcrumb: string }) {
+// domains/notifications arrive as props from the layout's single server-side
+// fetch (lib/market-intel/seller/shell.ts) - the two widgets below used to
+// fetch them for themselves on every navigation.
+export function AppHeader({
+  breadcrumb,
+  domains,
+  notifications,
+}: {
+  breadcrumb: string;
+  domains: SellerDomainRow[];
+  notifications: Notification[];
+}) {
   const router = useRouter();
   const { colorMode, toggleColorMode } = useColorMode();
   const { isCollapsed = false, setIsCollapsed, setToggleSidebar } = useContext(SidebarContext);
@@ -128,7 +141,7 @@ export function AppHeader({ breadcrumb }: { breadcrumb: string }) {
       </div>
 
       <div className="ml-auto flex items-center gap-2.5 md:ml-0">
-        <DomainSwitcher />
+        <DomainSwitcher domains={domains} />
 
         <button
           type="button"
@@ -148,7 +161,7 @@ export function AppHeader({ breadcrumb }: { breadcrumb: string }) {
           )}
         </button>
 
-        <NotificationsMenu buttonClassName={`relative ${iconButton}`} />
+        <NotificationsMenu buttonClassName={`relative ${iconButton}`} notifications={notifications} />
 
         <div className="relative" ref={menuRef}>
           <button

@@ -204,7 +204,7 @@ function NavTree({
   );
 }
 
-export function AppSidebar({ routes }: { routes: IRoute[] }) {
+export function AppSidebar({ routes, planTier }: { routes: IRoute[]; planTier: string }) {
   const pathname = usePathname();
   const { isCollapsed = false } = useContext(SidebarContext);
 
@@ -229,7 +229,7 @@ export function AppSidebar({ routes }: { routes: IRoute[] }) {
         <NavTree routes={routes} pathname={pathname} isCollapsed={isCollapsed} />
       </nav>
 
-      <PlanCard isCollapsed={isCollapsed} />
+      <PlanCard isCollapsed={isCollapsed} planTier={planTier} />
     </aside>
   );
 }
@@ -237,7 +237,7 @@ export function AppSidebar({ routes }: { routes: IRoute[] }) {
 // Mobile/tablet drawer. The desktop sidebar above is xl-only; below that the
 // same nav slides in over the page, driven by SidebarContext.toggleSidebar
 // (set by AppHeader's hamburger).
-export function AppSidebarMobile({ routes }: { routes: IRoute[] }) {
+export function AppSidebarMobile({ routes, planTier }: { routes: IRoute[]; planTier: string }) {
   const pathname = usePathname();
   const { toggleSidebar = false, setToggleSidebar } = useContext(SidebarContext);
 
@@ -281,7 +281,7 @@ export function AppSidebarMobile({ routes }: { routes: IRoute[] }) {
           />
         </nav>
 
-        <PlanCard isCollapsed={false} />
+        <PlanCard isCollapsed={false} planTier={planTier} />
       </aside>
     </>
   );

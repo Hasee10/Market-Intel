@@ -17,17 +17,15 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 
-import { useFetch } from '@/lib/hooks/useApi';
 import type { SellerDomainRow } from '@/lib/market-intel/seller/seller';
-import { IApiResponse } from '@/types/api-response';
 
-type DomainsData = { domains: SellerDomainRow[] };
-
-export function DomainSwitcher() {
+// Domains arrive as a prop from the layout's server-side fetch - this used
+// to GET /api/domains itself on every navigation, since the shell wraps every
+// route. See lib/market-intel/seller/shell.ts.
+export function DomainSwitcher({ domains }: { domains: SellerDomainRow[] }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { data } = useFetch<IApiResponse<DomainsData>>('/api/domains');
 
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -48,7 +46,6 @@ export function DomainSwitcher() {
     };
   }, [open]);
 
-  const domains = data?.data?.domains ?? [];
   // Single-domain sellers (the common case today) see no change at all.
   if (domains.length <= 1) return null;
 

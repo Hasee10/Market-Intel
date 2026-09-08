@@ -12,31 +12,28 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useFetch } from '@/lib/hooks/useApi';
 import { relativeTime, NOTIFICATION_TYPE_DOT } from '@/lib/relative-time';
-import type { IApiResponse } from '@/types/api-response';
-
-type Notification = {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-};
+import type { Notification } from '@/lib/notifications/list';
 
 // Both of these moved to lib/relative-time.ts when the Watchlist's alert
 // feed needed the same formatting and the same per-type colour - one alert
 // must not look like two different things in two places.
 const TYPE_DOT = NOTIFICATION_TYPE_DOT;
 
-export function NotificationsMenu({ buttonClassName }: { buttonClassName: string }) {
-  const { data } = useFetch<IApiResponse<Notification[]>>('/api/notifications');
+// Notifications arrive as a prop from the layout's server-side fetch - this
+// used to GET /api/notifications itself on every navigation, since the shell
+// wraps every route. See lib/market-intel/seller/shell.ts.
+export function NotificationsMenu({
+  buttonClassName,
+  notifications,
+}: {
+  buttonClassName: string;
+  notifications: Notification[];
+}) {
   const [open, setOpen] = useState(false);
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
   const ref = useRef<HTMLDivElement>(null);
 
-  const notifications = data?.data ?? [];
   const unread = notifications.filter((n) => !n.isRead && !readIds.has(n.id));
 
   useEffect(() => {

@@ -1,15 +1,17 @@
 'use client';
 
-// Tailwind rebuild of sidebar/components/PlanBadge.tsx. Same data source
-// (a plain GET to /api/profile via useFetch), same copy, same link target -
-// only the markup changed. The Chakra original stays in place until the old
-// sidebar is deleted, so nothing that still renders it breaks.
+// Tailwind rebuild of sidebar/components/PlanBadge.tsx. Same copy, same link
+// target - only the markup changed. The Chakra original stays in place until
+// the old sidebar is deleted, so nothing that still renders it breaks.
+//
+// planTier arrives as a prop now. This used to GET /api/profile on every
+// navigation to read one field that the layout's Seller object already had
+// on it - a whole round trip (plus its own auth.getUser() hop) for a value
+// already in hand. See lib/market-intel/seller/shell.ts.
 
 import NextLink from 'next/link';
 
-import { useFetch } from '@/lib/hooks/useApi';
 import { PATH_APPS } from '@/lib/paths';
-import type { IApiResponse } from '@/types/api-response';
 
 const TIER_LABEL: Record<string, string> = {
   free: 'Free plan',
@@ -28,9 +30,7 @@ const TIER_PITCH: Record<string, string> = {
   paid: 'Go Premium for forecasting & pricing recommendations.',
 };
 
-export function PlanCard({ isCollapsed }: { isCollapsed: boolean }) {
-  const { data } = useFetch<IApiResponse<{ planTier: string }>>('/api/profile');
-  const planTier = data?.data?.planTier ?? 'free';
+export function PlanCard({ isCollapsed, planTier }: { isCollapsed: boolean; planTier: string }) {
   const label = TIER_LABEL[planTier] ?? TIER_LABEL.free;
   const pitch = TIER_PITCH[planTier];
 
