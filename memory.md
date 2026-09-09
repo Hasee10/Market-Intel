@@ -4127,3 +4127,37 @@ questions — a report probably wants to be an explicit parameter or a
 multi-domain document, not to silently follow whatever the header happened
 to be set to when the button was pressed. `getCompetitorOverlap` also
 still uses plain Jaccard by design (see the IDF entry above).
+
+### Rebased onto the layering restructure — paths in the entry above have moved
+
+The phase-2 entry above was written before `a3a35ed` ("Group lib/market-intel
+into layers, and enforce the boundaries") landed. **Its file references are
+stale in one specific way:** `lib/market-intel/` is now split into `core/`,
+`market/`, `seller/` and `jobs/`. So `resolveSelectedDomain` lives in
+`lib/market-intel/seller/seller.ts`, its test in
+`lib/market-intel/seller/resolve-selected-domain.test.ts`, `entitlements` in
+`core/`, `competitors`/`market-definition`/`product-matching` in `market/`.
+The reasoning in that entry is unchanged; only the paths moved.
+
+**Pulling 46 commits onto one unpushed local commit conflicted in 6 files,
+all the same shape** — every conflict was "origin's new layered import paths
+vs my old flat ones, same file otherwise." Resolution was uniformly *take
+origin's paths, keep my logic*. Nothing was dropped. If this happens again,
+check whether the conflict is purely the restructure before reading it as a
+real semantic clash.
+
+**One conflict was genuinely substantive and worth knowing:**
+`DomainSwitcher` was rewritten upstream to take `domains` as a **prop from
+the layout's server-side fetch** (`lib/market-intel/seller/shell.ts`),
+replacing the `useFetch('/api/domains')` it used to do on every navigation —
+the shell wraps every route, so that was a request per page change. **Their
+version is better and was kept**; only the `DOMAIN_AWARE_PATHS` gating was
+re-applied on top. Do not reintroduce a client fetch here.
+
+**`strictNullChecks` is now on** (`ed8372a`). The rebased phase-2 code passes
+it unchanged, but anything written against the pre-`ed8372a` tree should be
+re-typechecked rather than assumed clean.
+
+A `backup/phase2-c0fa680` branch was left pointing at the pre-rebase commit.
+Safe to delete once the rebased `c5d3d38` (or its pushed descendant) is
+confirmed good.
