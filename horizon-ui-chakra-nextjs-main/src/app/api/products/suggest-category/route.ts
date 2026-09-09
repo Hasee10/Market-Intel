@@ -1,4 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { parseJsonBody } from '@/lib/api-validation';
+
+// The length check below is kept rather than folded into the schema, so its
+// exact wording still reaches the caller. What the schema adds is the type:
+// `(body.title ?? '').trim()` throws if title arrives as a number, which
+// made a wrong-typed field a 500 rather than a 400.
+const SuggestCategorySchema = z.object({
+  title: z.string().optional(),
+});
 
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
@@ -14,8 +25,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  const title: string = (body.title ?? '').trim();
+  const parsed = await parseJsonBody(request, SuggestCategorySchema);
+  if (parsed.error) return parsed.error;
+  const title: string = (parsed.data.title ?? '').trim();
   if (title.length < 2) {
     return NextResponse.json(
       { succeeded: false, data: null, errors: ['A product title is required'], message: 'A product title is required' },
