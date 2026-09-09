@@ -111,9 +111,17 @@ export async function findTopProductMatches(
     let bestScore = 0;
     let bestRelevance = -1;
 
-    candidates.forEach((candidate, candidateIndex) => {
+    // A plain loop rather than forEach: assigning `best` from inside a
+    // callback puts the assignment on the other side of a function boundary,
+    // where TypeScript's control-flow analysis can't follow it. It then still
+    // believes `best` is the `null` it was initialised to, narrows it to
+    // `never` at the `if (best)` below, and every property read off it fails
+    // to compile under strictNullChecks. Same iteration, same early-skip
+    // (`continue` where this used to `return`), just analysable.
+    for (let candidateIndex = 0; candidateIndex < candidates.length; candidateIndex += 1) {
+      const candidate = candidates[candidateIndex];
       const score = jaccard(sellerTokens, candidateTokens[candidateIndex]);
-      if (score < MIN_CONFIDENCE) return;
+      if (score < MIN_CONFIDENCE) continue;
 
       const relevance = idfCosine(sellerTokens, candidateTokens[candidateIndex], idf);
       if (relevance > bestRelevance) {
@@ -121,7 +129,7 @@ export async function findTopProductMatches(
         bestScore = score;
         best = candidate;
       }
-    });
+    }
 
     if (best && bestScore >= MIN_CONFIDENCE) {
       matches.push({

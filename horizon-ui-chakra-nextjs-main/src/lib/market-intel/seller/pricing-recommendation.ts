@@ -210,7 +210,15 @@ export async function getPricingRecommendations(
     } else if (direction === 'decrease') {
       rationale = match?.matchedPrice != null
         ? `Priced above the closest matched competitor listing (${round2(match.matchedPrice)}).`
-        : `Priced above the category P75 (${round2(categoryPricing.p75)}).`;
+        // Non-null by the guard above: this arm only runs when there is no
+        // matched competitor price, and that case already `continue`d unless
+        // both percentiles were present. The compound condition is more than
+        // TypeScript's narrowing can carry this far, so the assertion states
+        // the invariant rather than introducing one - same reason the
+        // competitorHigh line above asserts it too. Restructuring the loop to
+        // make it provable would mean splitting the pricing paths in two,
+        // which is not a change worth making from a typing pass.
+        : `Priced above the category P75 (${round2(categoryPricing.p75 as number)}).`;
     } else {
       rationale = 'Room to raise price while staying inside the competitor band and improving margin.';
     }

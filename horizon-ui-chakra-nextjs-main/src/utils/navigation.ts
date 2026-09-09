@@ -27,7 +27,10 @@ export const getActiveRoute = (routes: IRoute[], pathname: string | null): strin
 
 export const getActiveNavbar = (routes: IRoute[], pathname: string | null): boolean => {
   const route = findCurrentRoute(routes, pathname);
-  return route?.secondary;
+  // IRoute.secondary is optional, and no route currently sets it - so both
+  // "no matching route" and "route without the flag" mean the same thing
+  // here, which is what the declared boolean return already implied.
+  return route?.secondary ?? false;
 };
 
 export const getActiveNavbarText = (routes: IRoute[], pathname: string | null): string | boolean => {

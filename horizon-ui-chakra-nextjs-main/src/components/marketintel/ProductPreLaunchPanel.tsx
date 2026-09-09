@@ -69,7 +69,10 @@ export function ProductPreLaunchPanel({
         setError(data.message || 'Could not check the market for this product.');
         return;
       }
-      setResult(data.data);
+      // IApiResponse.data is optional, so a succeeded response with the field
+      // absent reads as undefined - which is the same "nothing to show" this
+      // panel already renders for null.
+      setResult(data.data ?? null);
     } catch {
       setError('Could not check the market for this product. Please try again.');
     } finally {

@@ -17,7 +17,11 @@ const FALLBACK: Omit<NarrationResult, 'rejected'> = {
   recommendedActions: [],
 };
 
-function growthLine(label: string, m: GrowthMetric, currency?: string): string | null {
+// Returns a string, never null - the `| null` this used to declare was
+// vestigial (the body has no branch that returns it) and only forced callers
+// to handle a case that cannot happen. sourcedLine below genuinely can return
+// null, and keeps it.
+function growthLine(label: string, m: GrowthMetric, currency?: string): string {
   const fmt = (v: number) => (currency ? formatCurrency(v, currency) : v.toFixed(1));
   const pct = m.changePct != null ? ` (${m.changePct >= 0 ? '+' : ''}${m.changePct.toFixed(1)}% vs. prior period)` : '';
   return `${label}: ${fmt(m.current)}${pct}`;
@@ -97,7 +101,14 @@ function buildPrompt(snapshot: ReportSnapshot): string {
     lines.push(`SKUs below the low-stock threshold: ${snapshot.inventoryRisk.lowStockSkuCount}`);
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
-    lines.push(sourcedLine('Price index vs. market median (100 = at median)', snapshot.marketplacePerformance.priceIndex) as string);
+    // Was `as string`. The guard above does make it non-null, but the cast
+    // asserted that rather than showing it - and a null slipping through
+    // would have put the literal text "null" into the model's prompt.
+    const priceIndexLine = sourcedLine(
+      'Price index vs. market median (100 = at median)',
+      snapshot.marketplacePerformance.priceIndex,
+    );
+    if (priceIndexLine) lines.push(priceIndexLine);
   }
   if (snapshot.pricePositioning?.percentile != null) {
     lines.push(`Price percentile within tracked market: ${snapshot.pricePositioning.percentile}th`);
