@@ -23,7 +23,7 @@
     "@types/react-dom": "^18.0.6",
     "apexcharts": "^3.35.2",
     "framer-motion": "^4.1.17",
-    "next": "^15.1.4",
+    "next": "^15.5.25",
     "pdfkit": "^0.19.1",
     "pptxgenjs": "^4.0.1",
     "react": "^19.0.0-rc.1",
@@ -80,6 +80,6 @@
   },
   "overrides": {
     "postcss": "8.5.25",
-    "sharp": "0.35.3"
+    "sharp": "0.35.4"
   }
 }
