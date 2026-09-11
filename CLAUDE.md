@@ -11,7 +11,6 @@ Git root is `D:\Market-Intel`. It holds several packages; only two are live:
 | `scraper/migrations/` | **All SQL migrations live here**, including the app's own tables. Not under the app dir. |
 | `.github/workflows/` | CI, at the **repo root** - not inside the app package. |
 | `tailadmin-react-dashboard/`, `agency.ai-landing-page-master/` | Vendor templates kept for reference. Not built or deployed. |
-| `web/` | Stale, undeployed, weaker auth. Slated for deletion (SECURITY.md #10). Don't build on it. |
 
 Most work happens in `horizon-ui-chakra-nextjs-main/`. Run npm commands from there, not the root.
 
