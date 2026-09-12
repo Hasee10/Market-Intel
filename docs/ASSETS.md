@@ -17,7 +17,7 @@ being listed as one or the other.
 
 ## 0. Official brand palette (source of truth)
 
-From `ryvl-hero-assets/README.txt` (repo root) - this is the actual
+From `assets/brand/README.txt` (repo root) - this is the actual
 approved brand palette, more authoritative than anything inferred from
 the live theme code:
 
@@ -43,12 +43,12 @@ Missed entirely on this document's first pass since it only searched
 inside `horizon-ui-chakra-nextjs-main/` - found on a second, repo-root-wide
 sweep.**
 
-**`ryvl-hero-assets/`** (has its own `README.txt`, read it):
+**`assets/brand/`** (has its own `README.txt`, read it):
 - `ryvl-hero-illustration-original.png` + `-1536/-1200/-768/-480.png` (responsive sizes) - "exact generated artwork"
 - `ryvl-hero-illustration-exact.svg` - the original artwork's exact appearance, but raster-inside-SVG (embeds the PNG) - not editable
 - `ryvl-hero-illustration-vector.svg` + `-vector.png` - **genuine editable vector** (real paths/shapes/groups/filters) - "use this version when editing colors, layout, or individual illustration elements" per the README itself. This is the one that made it into `public/assets/` for live use.
 
-**`Page_Assets/`** (no README, same naming pattern, likely same exact-vs-vector split):
+**`assets/landing-page/`** (no README, same naming pattern, likely same exact-vs-vector split):
 - `ryvl-dashboard-asset(-1200).png/.svg`
 - `ryvl-sign-in-asset(-1200).png/.svg`, `ryvl-signin-asset.png` (inconsistent naming - both `sign-in` and `signin` variants exist)
 - `ryvl-sign-up-asset(-1200).png/.svg`, `ryvl-signup-asset.png/.svg` (same inconsistency)

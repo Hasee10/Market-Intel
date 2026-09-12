@@ -231,9 +231,9 @@
   }
 }
 
-/* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
+/* Design tokens ported from vendor/tailadmin-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
- * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and
+ * onto Ryvl's real approved indigo #4318FF (assets/brand/README.txt, and
  * already hardcoded in RyvlMark.tsx). We keep the shape of TailAdmin's
  * 11-step scale, not its hue. See ASSETS.md for the full colour-drift story.
  */
@@ -273,7 +273,7 @@
   --color-primary: #5044e5;
 
   /* TailAdmin's own brand scale, verbatim from
-   * tailadmin-react-dashboard/src/index.css. The dashboard replicates that
+   * vendor/tailadmin-dashboard/src/index.css. The dashboard replicates that
    * template's colour as well as its layout; the marketing pages use the
    * agency template's --color-primary above. Ryvl's #4318FF is still the
    * logo mark's colour (RyvlMark.tsx) - noted in ASSETS.md as a deliberate

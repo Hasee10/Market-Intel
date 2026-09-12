@@ -13,7 +13,7 @@ Competitors, Products, Orders, etc.) are a separate, later effort - see
 
 ## What was fetched
 
-`tailadmin-react-dashboard/` (repo root, committed in full, `.git`
+`vendor/tailadmin-dashboard/` (repo root, committed in full, `.git`
 stripped) - [TailAdmin React](https://github.com/TailAdmin/free-react-tailwind-admin-dashboard),
 MIT licensed. Confirmed stack: **React 19 + Vite + Tailwind CSS 4 +
 TypeScript + `apexcharts`/`react-apexcharts`** - the same charting library
@@ -71,7 +71,7 @@ ethical-concern reason as the landing template.
 `ASSETS.md` Section 0 already flagged 3 competing brand-color values
 (template's `#5044E5`, real Ryvl brand `#4318FF`, live app's drifted
 `#422AFB`). **This template adds a 4th**: `--color-brand-500: #465FFF`
-(`tailadmin-react-dashboard/src/index.css:50`, a full proper 11-step
+(`vendor/tailadmin-dashboard/src/index.css:50`, a full proper 11-step
 Tailwind scale from `-25` to `-950`, not just one flat value). Since this
 is a real, complete color scale rather than a single hardcoded hex, it may
 be the more practical *scale to structurally reuse* even while swapping

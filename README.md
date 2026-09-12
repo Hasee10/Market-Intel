@@ -25,8 +25,8 @@ Two packages are live. Everything else is reference material.
 | `scraper/migrations/` | **All SQL migrations live here** — including the app's own tables, not just the scraper's. |
 | `.github/workflows/` | CI and all cron triggers. At the **repo root**, not inside the app package. |
 | `docs/` | Everything that isn't code. See [`docs/README.md`](docs/README.md). |
-| `Page_Assets/`, `ryvl-hero-assets/` | Brand and landing-page source assets. See [`docs/ASSETS.md`](docs/ASSETS.md). |
-| `agency.ai-landing-page-master/`, `tailadmin-react-dashboard/` | Vendor UI templates kept as visual reference. **Not built, not deployed, not imported.** |
+| `assets/landing-page/`, `assets/brand/` | Brand and landing-page source assets. See [`docs/ASSETS.md`](docs/ASSETS.md). |
+| `vendor/agency-landing-template/`, `vendor/tailadmin-dashboard/` | Vendor UI templates kept as visual reference. **Not built, not deployed, not imported.** |
 
 The two vendor template directories are the most common source of confusion
 here: they are third-party downloads the live UI was modelled on. Nothing in

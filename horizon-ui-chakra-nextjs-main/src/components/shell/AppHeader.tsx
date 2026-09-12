@@ -1,6 +1,6 @@
 'use client';
 
-// Tailwind header, ported from tailadmin-react-dashboard's AppHeader.
+// Tailwind header, ported from vendor/tailadmin-dashboard's AppHeader.
 //
 // Keeps every capability the Chakra NavbarAdmin/NavbarLinksAdmin pair had -
 // sidebar toggle, active-route breadcrumb, search with Ctrl-K, light/dark

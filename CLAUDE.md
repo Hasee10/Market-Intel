@@ -11,7 +11,7 @@ Git root is `D:\Market-Intel`. It holds several packages; only two are live:
 | `scraper/migrations/` | **All SQL migrations live here**, including the app's own tables. Not under the app dir. |
 | `.github/workflows/` | CI **and all cron triggers**, at the **repo root** - not inside the app package. The only path GitHub reads. |
 | `docs/` | Everything that isn't code. `docs/README.md` indexes it. |
-| `tailadmin-react-dashboard/`, `agency.ai-landing-page-master/` | Vendor templates kept for reference. Not built or deployed, and nothing imports from them. |
+| `vendor/tailadmin-dashboard/`, `vendor/agency-landing-template/` | Vendor templates kept for reference. Not built or deployed, and nothing imports from them. |
 
 Most work happens in `horizon-ui-chakra-nextjs-main/`. Run npm commands from there, not the root.
 

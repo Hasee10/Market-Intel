@@ -87,7 +87,7 @@ silently.
    version, not just "the page exists."
 
 4. **Port real assets from `ASSETS.md`**: the 6 branded illustrations
-   (source vector files are in `ryvl-hero-assets/` and `Page_Assets/` at
+   (source vector files are in `assets/brand/` and `assets/landing-page/` at
    repo root - use those, not the flattened `public/` copies, if the new
    template needs different sizes or any edits), the `RyvlMark.tsx` brand
    SVG (exact path data), Inter + Merriweather fonts, and reconcile the

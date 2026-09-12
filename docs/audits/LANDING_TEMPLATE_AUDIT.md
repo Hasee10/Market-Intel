@@ -1,4 +1,4 @@
-# agency.ai-landing-page-master — Audit & Remap Plan (2026-09-01)
+# vendor/agency-landing-template — Audit & Remap Plan (2026-09-01)
 
 **Documentation only, per instruction. Nothing in this template or the
 rest of the repo was modified while producing this document.** A new
@@ -7,7 +7,7 @@ Claude session will do the actual implementation - read this file,
 
 ## What this template actually is
 
-Confirmed by reading every file in `agency.ai-landing-page-master/src/`:
+Confirmed by reading every file in `vendor/agency-landing-template/src/`:
 **Vite + React 19 + Tailwind CSS 4 + Framer Motion**, a single-page
 **agency/freelancer marketing site** template - Navbar, Hero, TrustedBy
 (logo strip), Services (4 cards), OurWork (portfolio grid), Teams (staff
@@ -121,7 +121,7 @@ rewrite of positioning that's already been decided.
 
 ## What was NOT done, per explicit instruction
 
-Nothing was implemented - no file in `agency.ai-landing-page-master/` or
+Nothing was implemented - no file in `vendor/agency-landing-template/` or
 anywhere else was modified while producing this document. The actual
 port (stripping the must-remove items, writing the remap, deciding the
 open questions flagged above) is deferred to the next session, done

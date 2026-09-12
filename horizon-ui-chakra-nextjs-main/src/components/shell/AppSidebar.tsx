@@ -1,6 +1,6 @@
 'use client';
 
-// Tailwind sidebar, ported from tailadmin-react-dashboard's AppSidebar.
+// Tailwind sidebar, ported from vendor/tailadmin-dashboard's AppSidebar.
 //
 // Deliberately reads the SAME `routes.tsx` and the SAME `SidebarContext` as
 // the Chakra sidebar it replaces, so nav content and collapse state have
