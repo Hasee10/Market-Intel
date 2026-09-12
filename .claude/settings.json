@@ -35,7 +35,7 @@
       "Bash(git push --force:*)",
       "Bash(git reset --hard:*)",
       "Bash(git clean:*)",
-      "Read(./horizon-ui-chakra-nextjs-main/.env.local)",
+      "Read(./app/.env.local)",
       "Read(./CREDENTIALS.txt)"
     ]
   }
