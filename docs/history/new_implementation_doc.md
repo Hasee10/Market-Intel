@@ -6,7 +6,7 @@ It supersedes ad-hoc feature requests as the source of truth for what to build
 next — update it as scope changes rather than tracking decisions only in chat.
 
 Frontend note: the seller dashboard is being rebuilt on the Horizon UI
-(Chakra + Next.js) template (`horizon-ui-chakra-nextjs-main/`), replacing the
+(Chakra + Next.js) template (`app/`), replacing the
 Mantine template (`mantine-analytics-dashboard-dev/`). Dashboard first, then
 landing/marketing pages once the dashboard is 100% wired and verified.
 

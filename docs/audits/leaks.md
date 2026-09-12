@@ -1,10 +1,10 @@
 # Security Audit — Market-Intel (Ryvl)
 
 **Date:** 2026-08-02
-**Scope:** Full repository — `horizon-ui-chakra-nextjs-main/` (the deployed Next.js 15 + Supabase app), `scraper/` (standalone Node/TS scraper), `.github/workflows/` (CI cron triggers), and the legacy `web/` scaffold at the repo root.
+**Scope:** Full repository — `app/` (the deployed Next.js 15 + Supabase app), `scraper/` (standalone Node/TS scraper), `.github/workflows/` (CI cron triggers), and the legacy `web/` scaffold at the repo root.
 **Method:** Manual source review (no dynamic/live testing performed against the deployed instance). Every finding below is backed by an exact file/line reference; nothing here is speculative.
 
-**Scope note on `web/`:** The `web/` directory at the repo root is a single-commit, superseded scaffold. Per `README.md`, its `PORTAL_URL` "still points at the old JobLo Vercel deployment" and it has no `package.json`/`next.config.js`/`tsconfig.json` of its own — it is **not part of the deployed application**. Findings from it are marked `[web/ — legacy, not deployed]` and are lower priority than findings in `horizon-ui-chakra-nextjs-main/`, which is the real, live app.
+**Scope note on `web/`:** The `web/` directory at the repo root is a single-commit, superseded scaffold. Per `README.md`, its `PORTAL_URL` "still points at the old JobLo Vercel deployment" and it has no `package.json`/`next.config.js`/`tsconfig.json` of its own — it is **not part of the deployed application**. Findings from it are marked `[web/ — legacy, not deployed]` and are lower priority than findings in `app/`, which is the real, live app.
 
 ---
 
@@ -30,7 +30,7 @@
 ### [Critical] – Unauthenticated referral endpoint allows free plan-tier escalation (reward fraud)
 
 **Security Lapse:**
-`horizon-ui-chakra-nextjs-main/src/app/api/referrals/record/route.ts` has **no session/authentication check at all**. It accepts a raw `{ referralCode, userId }` JSON body:
+`app/src/app/api/referrals/record/route.ts` has **no session/authentication check at all**. It accepts a raw `{ referralCode, userId }` JSON body:
 
 ```ts
 export async function POST(request: NextRequest) {
@@ -207,7 +207,7 @@ Auth0, Clerk, and Supabase's own hosted password policies all enforce complexity
 ### [Medium] – No HTTP security headers configured
 
 **Security Lapse:**
-`horizon-ui-chakra-nextjs-main/next.config.js` defines no `headers()` function at all:
+`app/next.config.js` defines no `headers()` function at all:
 ```js
 const nextConfig = {
   basePath: process.env.NEXT_PUBLIC_BASE_PATH,
@@ -250,7 +250,7 @@ Vercel's own security-headers guidance, and most production Next.js apps at scal
 ### [Medium] – No dependency lockfile for the main app; version ranges span a known Next.js CVE window
 
 **Security Lapse:**
-`horizon-ui-chakra-nextjs-main/.gitignore` explicitly ignores lockfiles:
+`app/.gitignore` explicitly ignores lockfiles:
 ```
 package-lock.json
 yarn.lock
@@ -407,7 +407,7 @@ Since `market_accounts` is only ever queried today with the service-role key (vi
 
 **Fix:**
 - Delete the `web/` directory (or move it to a clearly-labeled `archive/` location outside the deployable tree) given the README's own note that it's superseded.
-- If any part of its logic is still genuinely needed, migrate it onto the same Supabase Auth + RLS pattern the live app (`horizon-ui-chakra-nextjs-main`) already uses, rather than maintaining a second, parallel, weaker auth system indefinitely.
+- If any part of its logic is still genuinely needed, migrate it onto the same Supabase Auth + RLS pattern the live app (`app`) already uses, rather than maintaining a second, parallel, weaker auth system indefinitely.
 
 **Improvement (Top-competitor approach):**
 Standard hygiene is to delete superseded scaffolding rather than leaving it in the main branch's working tree. If historical reference has value, a git tag or a separate archived branch preserves it without it being live in `main`, where it can be mistaken for current, in-use code by a new contributor or an automated security scanner.
@@ -477,7 +477,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: horizon-ui-chakra-nextjs-main
+        working-directory: app
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v6
@@ -507,7 +507,7 @@ Work through these in order — the first two are the only findings with realist
 - [ ] **2. Guard `BYPASS_AUTH` / `BYPASS_ENTITLEMENTS`** (High) — make both flags refuse to activate when `VERCEL_ENV === 'production'`, and add a deploy-time check that these variables are simply absent from the production environment config. Until Clerk is wired up, treat this as the single highest-blast-radius risk in the app.
 - [ ] **3. Move password complexity enforcement server-side** (High) — set Supabase Auth's project-level password policy to match `src/lib/password.ts`'s rules; the client-side check alone does nothing against direct API calls.
 - [ ] **4. Add HTTP security headers** (Medium) — CSP (start in report-only mode), HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, via `next.config.js`.
-- [ ] **5. Commit a lockfile for `horizon-ui-chakra-nextjs-main`** (Medium) — remove `package-lock.json`/`yarn.lock` from its `.gitignore`, commit the generated lockfile, and pin `next` to a version ≥ 15.2.3 (past CVE-2025-29927). Move off the React 19 RC to a stable release.
+- [ ] **5. Commit a lockfile for `app`** (Medium) — remove `package-lock.json`/`yarn.lock` from its `.gitignore`, commit the generated lockfile, and pin `next` to a version ≥ 15.2.3 (past CVE-2025-29927). Move off the React 19 RC to a stable release.
 - [ ] **6. Cap row counts on bulk-import endpoints** (Medium) — products, customers, and orders bulk-import routes; mirror the chunking pattern `scraper/src/db.ts` already uses.
 - [ ] **7. Move rate limiting to a shared store** (Medium) — Upstash Redis or Vercel KV instead of in-process memory; add CAPTCHA to signup/password-reset.
 - [ ] **8. Swap `Math.random()` for `crypto.randomBytes()`** in referral code generation (Low).

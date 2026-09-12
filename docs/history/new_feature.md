@@ -10,7 +10,7 @@ the platform, each prioritized.
 ### P0 — silent-failure and security-relevant gaps
 
 1. **Rate limiting is effectively fake in production.**
-   `horizon-ui-chakra-nextjs-main/src/lib/rate-limit.ts` is an in-memory Map,
+   `app/src/lib/rate-limit.ts` is an in-memory Map,
    and the code's own comment already admits it: Vercel runs many serverless
    instances that don't share memory, so the limiter resets per cold
    start/instance. Right now it's giving false confidence on `api/assistant`
@@ -25,12 +25,12 @@ the platform, each prioritized.
    list.
 
 3. **No timeout or retry on the Groq AI calls.**
-   `horizon-ui-chakra-nextjs-main/src/lib/ai/groq-client.ts` does a plain
+   `app/src/lib/ai/groq-client.ts` does a plain
    `fetch()` with no `AbortController`. If Groq hangs instead of erroring,
    the request hangs with it. Add a 10-15s timeout + one retry.
 
 4. **`DEMO_ALL_FEATURES_UNLOCKED = true`** in
-   `horizon-ui-chakra-nextjs-main/src/lib/market-intel/entitlements.ts`
+   `app/src/lib/market-intel/entitlements.ts`
    bypasses all 3 tiers / 8 gated features. Fine for now if this is
    intentionally pre-launch, but it's a landmine if forgotten - flagging so
    it's a deliberate decision, not a surprise later.
@@ -74,7 +74,7 @@ infrastructure.
 ### Near-zero new infrastructure - finishing what's half-built
 
 1. **Real email delivery for alerts.** `sendEmailStub` in
-   `horizon-ui-chakra-nextjs-main/src/lib/notifications/notify.ts` is a
+   `app/src/lib/notifications/notify.ts` is a
    deliberate no-op. The entire alert pipeline (price alerts, stock flips,
    anomaly detection) already works end-to-end except the last mile - the
    seller never actually gets notified outside the app. Wiring Resend or
@@ -82,13 +82,13 @@ infrastructure.
    integration that unlocks value from everything already shipped.
 
 2. **Scheduled report digests.** The PDF/PPTX report pipeline
-   (`horizon-ui-chakra-nextjs-main/src/lib/reports/`) already exists and
+   (`app/src/lib/reports/`) already exists and
    works - it's currently click-to-download only. A weekly auto-generated +
    emailed digest needs zero new report logic, just a cron + the email
    integration from #1.
 
 3. **Anomaly-triggered pricing suggestions.**
-   `horizon-ui-chakra-nextjs-main/src/lib/market-intel/pricing-recommendation.ts`
+   `app/src/lib/market-intel/pricing-recommendation.ts`
    is rule-based and separate from the anomaly detectors in `anomalies.ts`.
    Wiring a confirmed competitor-price anomaly to auto-surface a pricing
    suggestion closes the loop from "something changed" to "here's what to do

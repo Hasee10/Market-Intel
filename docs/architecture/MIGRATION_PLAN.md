@@ -24,7 +24,7 @@ require *moving* it, just not *redesigning* it.
 ## The open question that must be answered first: what is "React" here?
 
 The user said "new template is in react so we might have a major
-rehaul." This repo's current app (`horizon-ui-chakra-nextjs-main`) is
+rehaul." This repo's current app (`app`) is
 also React - it's Next.js 15 App Router, which is React underneath. So
 "the new template is in React" most likely means it is **not** Next.js -
 otherwise there'd be nothing notable to flag. Do not assume which,

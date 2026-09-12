@@ -20,7 +20,7 @@ Two packages are live. Everything else is reference material.
 
 | Path | What it is |
 |---|---|
-| **`horizon-ui-chakra-nextjs-main/`** | **The app.** Next.js 15 App Router + Supabase. Own `package.json` and lockfile. Most work happens here. |
+| **`app/`** | **The app.** Next.js 15 App Router + Supabase. Own `package.json` and lockfile. Most work happens here. |
 | **`scraper/`** | Separate npm package. Scrapes marketplaces on a cron, writes with a service-role key. |
 | `scraper/migrations/` | **All SQL migrations live here** — including the app's own tables, not just the scraper's. |
 | `.github/workflows/` | CI and all cron triggers. At the **repo root**, not inside the app package. |
@@ -30,12 +30,12 @@ Two packages are live. Everything else is reference material.
 
 The two vendor template directories are the most common source of confusion
 here: they are third-party downloads the live UI was modelled on. Nothing in
-`horizon-ui-chakra-nextjs-main/` imports from them.
+`app/` imports from them.
 
 ## Getting started
 
 ```bash
-cd horizon-ui-chakra-nextjs-main
+cd app
 npm install
 npm run dev
 ```
@@ -53,7 +53,7 @@ If the build ever starts needing *real* credentials, that is a bug.
 ## The verification bar
 
 Before calling anything done — **all four**, from
-`horizon-ui-chakra-nextjs-main/`:
+`app/`:
 
 ```bash
 npx tsc --noEmit        # typecheck

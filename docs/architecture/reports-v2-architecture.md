@@ -7,7 +7,7 @@ Reference file: [`docs/report-reference/tt-report (8).pptx`](report-reference/tt
 (copied in from the user-supplied path). **Important finding**: this file is
 not an external example — it is the literal demo output of the report
 generator that already exists in this codebase
-(`horizon-ui-chakra-nextjs-main/src/lib/reports/generate-pptx.ts` against
+(`app/src/lib/reports/generate-pptx.ts` against
 `assets/ryvl-report-template.pptx`), generated for a seller named "tt". Its
 bugs are real, currently-shipping bugs, not reference-file artifacts — see
 §1 and the inline callouts below.

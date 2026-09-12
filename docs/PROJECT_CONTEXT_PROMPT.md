@@ -99,7 +99,7 @@ cadence" step gates the actual run to every other day via
 Two independent packages in one repository, sharing **one Supabase Postgres
 project** but no code.
 
-**`horizon-ui-chakra-nextjs-main/`** — the seller-facing web app
+**`app/`** — the seller-facing web app
 - Next.js 15, React 19 RC, TypeScript 4.9
 - Chakra UI 2.6 on the Horizon UI template
 - **framer-motion is pinned at 4.x by Chakra's peer dependency.** Do not

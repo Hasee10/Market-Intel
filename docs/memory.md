@@ -250,7 +250,7 @@ are still scoped-only, not started.
 Pakistan-focused today (scraper coverage, taxonomy, default currency are all
 PKR/Pakistan-shaped — see "Open thread" below, this is about to become
 directly relevant). Two repos in one working directory:
-- `horizon-ui-chakra-nextjs-main/` — Next.js 15 / React 19 RC / Chakra UI
+- `app/` — Next.js 15 / React 19 RC / Chakra UI
   seller-facing app, deployed to Vercel (`market-intel-ashy.vercel.app`).
 - `scraper/` — standalone Node/TS scraper, GitHub Actions cron.
 
@@ -311,7 +311,7 @@ session — see commits `8b95b93` through `1239915`):**
   image violates the "no flattened chart" rule. Verified the reference's
   own data slides are native shapes too; its images are decorative
   cover/divider art only. Restored, moved into the actual deployed app
-  tree (`horizon-ui-chakra-nextjs-main/src/lib/reports/assets/
+  tree (`app/src/lib/reports/assets/
   illustrations/` — the repo-root location wouldn't deploy), wired the
   cover slide only. **Section dividers deliberately not touched** — can't
   visually verify 7 different layouts without a working renderer in this
@@ -472,7 +472,7 @@ Plan Mode (Explore + Plan subagents), plan approved with these decisions:
   as its own fast-follow, not bundled into this change.
 
 **Shipped:**
-1. `horizon-ui-chakra-nextjs-main/src/lib/market-intel/similarity.ts` —
+1. `app/src/lib/market-intel/similarity.ts` —
    new shared module for `tokenize()`/`jaccard()`/`STOPWORDS`/
    `MIN_CONFIDENCE`, extracted out of `competitors.ts` and
    `product-matching.ts` (which each had their own identical copy —
@@ -483,11 +483,11 @@ Plan Mode (Explore + Plan subagents), plan approved with these decisions:
    `findTopProductMatches` (which is untouched — still the Market page's
    batch top-1-per-product feeder). rating/ratingCount/soldCount are
    nullable end-to-end, never coerced to 0.
-3. `horizon-ui-chakra-nextjs-main/src/app/api/products/[id]/competitors/route.ts`
+3. `app/src/app/api/products/[id]/competitors/route.ts`
    — new GET route, resolves the seller's product's category slug (double-
    filters `id` + `seller_id`, same defense-in-depth as the existing
    `[id]/route.ts`), no entitlement gate (see decision above).
-4. `horizon-ui-chakra-nextjs-main/src/app/apps/products/components/CompetitorsDrawer.tsx`
+4. `app/src/app/apps/products/components/CompetitorsDrawer.tsx`
    — new read-only drawer (not folded into EditProductDrawer, which is a
    write form). Renders nulls as em-dash, labels sold_count as a "demand
    proxy" via tooltip, distinguishes Daraz ("other marketplace sellers")
@@ -508,7 +508,7 @@ falls back to category-only/title-ranked (no bracket to apply). Drawer
 copy updated to match: "within 15% of your price - the price range that
 actually competes for the same buyer, regardless of whether the product
 name matches yours." Added
-`horizon-ui-chakra-nextjs-main/src/lib/market-intel/product-matching.test.ts`,
+`app/src/lib/market-intel/product-matching.test.ts`,
 7 smoke tests covering: bracket exclusion despite title match, GPU-case
 inclusion despite no title match, in-bracket ranking by similarity,
 no-price-candidate exclusion, no-sell_price fallback, null passthrough on
@@ -810,7 +810,7 @@ Actions tab) to correlate failures with specific sources.
 ## Fixed (2026-08-28): platform imbalance in Competitors matches
 
 `MAX_COMPETITOR_MATCHES` in
-`horizon-ui-chakra-nextjs-main/src/lib/market-intel/product-matching.ts`
+`app/src/lib/market-intel/product-matching.ts`
 raised **5 → 15**. At 5, a category with one platform's candidate pool
 much denser than another's (e.g. toys-and-baby: ShoppersPK/Naheed ~1319
 active rows vs Daraz ~120) let the dense platform's matches crowd out
@@ -1226,7 +1226,7 @@ automatic on both entry paths. Went through Plan Mode (approved
 a shared AI module.
 
 **What already existed and was reused, not rebuilt:** `suggestCategory()`
-(`horizon-ui-chakra-nextjs-main/src/lib/ai/suggest-category.ts`) — Groq
+(`app/src/lib/ai/suggest-category.ts`) — Groq
 (`llama-3.1-8b-instant`, temp 0, JSON mode via `callGroqJson`)
 classifies one title into one of the 12 slugs, already wired to an
 opt-in "Suggest with AI" button in `NewProductDrawer.tsx`. The gap was
@@ -1560,7 +1560,7 @@ feature is fully shipped, not just locally verified.
 via fresh clone
 
 Not a code bug - flagging because it changes the working directory going
-forward. `horizon-ui-chakra-nextjs-main/src/app/apps/products/` (9 files:
+forward. `app/src/app/apps/products/` (9 files:
 ProductCard, CompetitorsDrawer, EditProductDrawer, NewProductDrawer, the
 categories page + its 3 components, the products page) went missing from
 disk mid-session with no corresponding git changes. Diagnosed as genuine
@@ -1713,7 +1713,7 @@ gitignore them, scope a Python/Node backend question, diagnose why the
 platform is slow) plus a `credentials.txt` with real Groq/Mistral/
 OpenRouter keys.
 
-**Credentials:** saved to `horizon-ui-chakra-nextjs-main/.env.local`
+**Credentials:** saved to `app/.env.local`
 (confirmed gitignored - git doesn't even list it as untracked) +
 `.env.example` (placeholders only). Only `GROQ_API_KEY` is referenced by
 any code (`src/lib/ai/groq-client.ts`) - Mistral/OpenRouter aren't wired
@@ -2181,7 +2181,7 @@ still the right call; see below, nothing new resolved there, just
 re-diagnosed independently and reached the same conclusion.
 
 **1. Anomaly-detection persistence gate (`2ef5e94`).**
-`horizon-ui-chakra-nextjs-main/src/lib/market-intel/anomalies.ts` - both
+`app/src/lib/market-intel/anomalies.ts` - both
 detectors (`detectOwnRevenueAnomalies` z-score, `detectCompetitorPriceAnomalies`
 IQR) previously fired off a single evaluation. Now gated by a new
 `ANOMALY_CONFIRMATION_CYCLES = 2` constant: a flagged day/product must
@@ -2942,7 +2942,7 @@ calling it complete - is reusable any time an audit/inventory document
 needs to be trusted, not just skimmed for plausibility.**
 
 **2. `ASSETS.md` (`c360c90`, then corrected in `721334c`).** First pass
-only searched inside `horizon-ui-chakra-nextjs-main/` and missed two
+only searched inside `app/` and missed two
 repo-root folders entirely - `ryvl-hero-assets/` and `Page_Assets/` -
 which hold the real source design files (higher-res, genuinely editable
 vector SVGs) behind the flattened PNGs the app actually serves.

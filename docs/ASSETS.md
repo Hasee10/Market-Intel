@@ -3,7 +3,7 @@
 Companion to `FEATURES.md`. `FEATURES.md` covers *behavior*; this covers
 everything visual - images, icons, fonts - so none of it gets lost when
 the frontend is rebuilt. Paths inside the app are relative to
-`horizon-ui-chakra-nextjs-main/`; paths at repo root are relative to the
+`app/`; paths at repo root are relative to the
 repo root itself (`E:\Market-Intel-fresh2\`) - noted per section, since
 this document originally missed the repo-root asset folders entirely on
 its first pass and had to be corrected.
@@ -40,7 +40,7 @@ picking whichever one happens to get copied over first.
 several, genuinely editable vector SVGs, not just the pre-optimized
 copies that got placed in `public/assets/` for the live app to serve.
 Missed entirely on this document's first pass since it only searched
-inside `horizon-ui-chakra-nextjs-main/` - found on a second, repo-root-wide
+inside `app/` - found on a second, repo-root-wide
 sweep.**
 
 **`assets/brand/`** (has its own `README.txt`, read it):

@@ -4,7 +4,7 @@
     {
       "name": "ryvl-web",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["--prefix", "horizon-ui-chakra-nextjs-main", "run", "dev"],
+      "runtimeArgs": ["--prefix", "app", "run", "dev"],
       "port": 3000,
       "autoPort": true
     }

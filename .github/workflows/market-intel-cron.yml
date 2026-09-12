@@ -5,7 +5,7 @@ name: Market Intel Cron Jobs
 # to run more often than that (every 6 hours), so both jobs are triggered
 # from GitHub Actions instead of vercel.json, hitting the deployed app's
 # /api/cron/* route handlers over HTTPS. The routes themselves still live in
-# horizon-ui-chakra-nextjs-main and still require the CRON_SECRET bearer
+# app and still require the CRON_SECRET bearer
 # token (see src/lib/supabase/server.ts's isAuthorizedCronRequest) - this
 # workflow is just the trigger, not the job logic.
 on:

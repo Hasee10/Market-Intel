@@ -16,7 +16,7 @@ This is a settled decision, not open for re-litigation — see ROADMAP.md's
 "The decision that drives everything below."
 
 Two repos live in this one working directory:
-- `horizon-ui-chakra-nextjs-main/` — the Next.js 15 / React 19 RC / Chakra UI
+- `app/` — the Next.js 15 / React 19 RC / Chakra UI
   seller-facing app (Horizon UI template as the base).
 - `scraper/` — a standalone Node/TS scraper, cheerio for HTTP sources,
   CloakBrowser/playwright-core for browser sources, run by GitHub Actions
@@ -85,7 +85,7 @@ The Supabase MCP tools in this environment are usually connected to the
 **wrong account** — `list_projects` returns unrelated projects, not this
 one. Don't waste a turn on it before checking. Instead, hit the project's
 REST API directly with the service-role key from
-`horizon-ui-chakra-nextjs-main/.env.local` (never print the key itself —
+`app/.env.local` (never print the key itself —
 read it into a shell var, use it, done):
 
 ```bash

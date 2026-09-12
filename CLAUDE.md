@@ -6,19 +6,19 @@ Git root is `D:\Market-Intel`. It holds several packages; only two are live:
 
 | Path | What it is |
 |---|---|
-| `horizon-ui-chakra-nextjs-main/` | **The app.** Next.js 15 App Router + Supabase. Own `package.json`/lockfile. |
+| `app/` | **The app.** Next.js 15 App Router + Supabase. Own `package.json`/lockfile. |
 | `scraper/` | Separate npm package. Scrapes marketplaces on a cron, writes with a service-role key. |
 | `scraper/migrations/` | **All SQL migrations live here**, including the app's own tables. Not under the app dir. |
 | `.github/workflows/` | CI **and all cron triggers**, at the **repo root** - not inside the app package. The only path GitHub reads. |
 | `docs/` | Everything that isn't code. `docs/README.md` indexes it. |
 | `vendor/tailadmin-dashboard/`, `vendor/agency-landing-template/` | Vendor templates kept for reference. Not built or deployed, and nothing imports from them. |
 
-Most work happens in `horizon-ui-chakra-nextjs-main/`. Run npm commands from there, not the root.
+Most work happens in `app/`. Run npm commands from there, not the root.
 
 ## Commands
 
 ```bash
-cd horizon-ui-chakra-nextjs-main
+cd app
 npx tsc --noEmit        # typecheck
 npm run lint            # next lint (deprecated upstream; one known <img> warning is expected)
 npm run test            # vitest run
