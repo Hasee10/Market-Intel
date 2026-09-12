@@ -9,8 +9,9 @@ Git root is `D:\Market-Intel`. It holds several packages; only two are live:
 | `horizon-ui-chakra-nextjs-main/` | **The app.** Next.js 15 App Router + Supabase. Own `package.json`/lockfile. |
 | `scraper/` | Separate npm package. Scrapes marketplaces on a cron, writes with a service-role key. |
 | `scraper/migrations/` | **All SQL migrations live here**, including the app's own tables. Not under the app dir. |
-| `.github/workflows/` | CI, at the **repo root** - not inside the app package. |
-| `tailadmin-react-dashboard/`, `agency.ai-landing-page-master/` | Vendor templates kept for reference. Not built or deployed. |
+| `.github/workflows/` | CI **and all cron triggers**, at the **repo root** - not inside the app package. The only path GitHub reads. |
+| `docs/` | Everything that isn't code. `docs/README.md` indexes it. |
+| `tailadmin-react-dashboard/`, `agency.ai-landing-page-master/` | Vendor templates kept for reference. Not built or deployed, and nothing imports from them. |
 
 Most work happens in `horizon-ui-chakra-nextjs-main/`. Run npm commands from there, not the root.
 
@@ -64,4 +65,19 @@ No page fetches its own data from the client. After a client mutation, call `rou
 
 ## Context docs
 
-`SECURITY.md` (open findings + required deploy steps), `FEATURES.md`, `ROADMAP.md`, `SCRAPING.md`, `mind.md` (what's live vs. what needs migrations applied manually).
+At the repo root, because they're consulted constantly and cited by name from code comments and migration headers:
+
+- `ROADMAP.md` — **source of truth for what gets built next**
+- `FEATURES.md` — what exists today
+- `SECURITY.md` — open findings + required deploy steps
+- `SCRAPING.md` — scraping compliance policy. Read before adding a source; a robots.txt violation has already shipped once
+
+Under `docs/` (indexed by `docs/README.md`):
+
+- `docs/memory.md` — dated engineering log; **why** the code is the way it is. Check here before "fixing" something that looks odd
+- `docs/mind.md` — what's live vs. what needs migrations applied manually
+- `docs/architecture/MIGRATION_PLAN.md` — the in-progress Chakra→Tailwind migration
+- `docs/audits/leaks.md` — numbered security findings; code cites them as "leaks.md finding #N"
+- `docs/history/` — **superseded. Do not plan against it.**
+
+Two read-only checkers worth knowing: `scraper/migrations/_check_applied.sql` (which migrations are live) and `_check_coverage.sql` (which categories actually have scraped data).

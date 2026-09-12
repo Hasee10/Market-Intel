@@ -1,94 +1,108 @@
-# Market Intel — archived out of JobLo
+# Ryvl — seller market intelligence
 
-This is a snapshot of everything built for Market Intel (Pakistani e-commerce
-price/catalog tracking), extracted out of the `job-portal` repo on 2026-07-27
-so it can become its own product instead of a feature bolted onto JobLo.
+Competitive pricing, competitor tracking and demand signals for Pakistani
+e-commerce sellers. A seller connects their catalog and sees where they sit
+against the market: who undercuts them, on what, and what to do about it.
 
-**Who it's for**: e-commerce sellers, not generic "market analysts" — the
-whole point of scraping priceoye/telemart/shophive/ishopping/goto/
-sapphireonline/OLX was to give sellers competitive pricing/catalog
-intelligence on what else is out there. This should drive framing, copy, and
-feature priority in the eventual standalone build (e.g. price-position
-alerts and competitor tracking matter more than generic market reporting).
-The existing account/role naming (`market_analyst`, `market_accounts`) predates
-this clarification and doesn't reflect it — worth renaming when this becomes
-a real standalone app rather than carrying it forward as-is.
+**This runs.** It is a deployed Next.js 15 app plus a scraper that runs on a
+cron. It is not an archive or a prototype.
 
-**This does not run as-is.** It's an archive of source files, not a scaffolded
-standalone app — see "What's missing to run standalone" below.
+> Previously this file described the repo as a non-running archive extracted
+> out of a job board ("JobLo"). That was true in July 2026 and has been wrong
+> for months. If you are looking for that history it is in
+> [`docs/history/`](docs/history/).
 
-## What's here
+---
 
-- `scraper/` — the entire scraper package, fully self-contained (own
-  `package.json`, own Supabase tables `market_*`/`market_accounts`, own
-  migrations `migrations/001-010`). This part already ran independently of
-  the job-portal app even before the extraction. As of 2026-07-28 it's
-  repointed at the same Supabase project as the seller portal
-  (`mantine-analytics-dashboard-dev`, see "Database" below) and its GitHub
-  Actions workflow is now active at `.github/workflows/market-scraper.yml`
-  (repo root) - the copy in `workflows/market-scraper.yml` below is now stale
-  and only kept as a historical reference.
-- `web/` — **removed** (`git log -- web/` for history). This was the original
-  market-intel prototype extracted from the JobLo job-portal app: its own
-  Next.js pages, API routes, and a separate bcrypt-based `market_accounts`
-  auth system. Never deployed here (no `package.json`), superseded entirely
-  by `horizon-ui-chakra-nextjs-main/`, and carried a weaker auth path
-  (SECURITY.md #10), so it was deleted rather than left to be built on.
-- `workflows/market-scraper.yml`, `workflows/market-alerts-cron.yml` — the
-  original two GitHub Actions workflows. **Only `market-scraper.yml` is
-  active**, and as `.github/workflows/market-scraper.yml` at the repo root
-  (working-directory fixed to `scraper`), not this stale copy.
-  `market-alerts-cron.yml` calls the dead `web/app/api/cron/market-alerts`
-  route (`PORTAL_URL` still points at the old JobLo Vercel deployment, which
-  no longer serves it) and hasn't been activated - `web/` as a whole is still
-  archive-only, see "What's missing to run standalone".
-- `overview.md`, `research.md` — the original product/build planning docs
-  (unedited).
+## Repo layout
 
-## What's missing to run standalone
+Two packages are live. Everything else is reference material.
 
-None of this shares code with JobLo anymore (that link has been fully
-severed on the JobLo side — see below), but it still assumes JobLo's runtime
-scaffolding was there to lean on. To actually deploy this as its own app,
-you'd need to supply:
+| Path | What it is |
+|---|---|
+| **`horizon-ui-chakra-nextjs-main/`** | **The app.** Next.js 15 App Router + Supabase. Own `package.json` and lockfile. Most work happens here. |
+| **`scraper/`** | Separate npm package. Scrapes marketplaces on a cron, writes with a service-role key. |
+| `scraper/migrations/` | **All SQL migrations live here** — including the app's own tables, not just the scraper's. |
+| `.github/workflows/` | CI and all cron triggers. At the **repo root**, not inside the app package. |
+| `docs/` | Everything that isn't code. See [`docs/README.md`](docs/README.md). |
+| `Page_Assets/`, `ryvl-hero-assets/` | Brand and landing-page source assets. See [`docs/ASSETS.md`](docs/ASSETS.md). |
+| `agency.ai-landing-page-master/`, `tailadmin-react-dashboard/` | Vendor UI templates kept as visual reference. **Not built, not deployed, not imported.** |
 
-- A NextAuth (or equivalent) setup — the account/session logic that used to
-  live in JobLo's `auth.ts` (Credentials provider branch for
-  `market_analyst`, JWT/session role wiring) was removed from JobLo, not
-  copied here as a working auth.ts. `web/lib/auth/market-accounts.ts` (the
-  credential verification logic) is here, but the NextAuth config that called
-  it is not.
-- Its own `package.json`, `next.config`, Tailwind/`globals.css`, and shared
-  UI primitives (buttons, layout shell, nav) — this archive only has the
-  feature-specific route/component/lib files, not a scaffolded app around
-  them.
-- Its own Supabase client bootstrap per file (each lib file here defines its
-  own `getAdminClient()` reading `SUPABASE_URL`/`SUPABASE_SERVICE_ROLE_KEY` —
-  no shared client file was pulled in, none was needed).
-- Decisions flagged as still open in `overview.md` (product naming/branding,
-  whether it's a JobLo sub-brand or fully separate identity, its own landing
-  page vs. a chooser flow).
+The two vendor template directories are the most common source of confusion
+here: they are third-party downloads the live UI was modelled on. Nothing in
+`horizon-ui-chakra-nextjs-main/` imports from them.
 
-## Database
+## Getting started
 
-As of 2026-07-28, `scraper/` points at the **market-intel seller-portal
-Supabase project** (the same one `mantine-analytics-dashboard-dev` uses),
-not the old JobLo project — `market_*`/`market_accounts` tables there are
-still isolated purely by naming (no separate schema), same as before. To
-apply the scraper's migrations (001-010) to this project, run
-`scraper/migrations/_pending_apply_to_new_project.sql` once via the Supabase
-SQL Editor, then delete that file. `web/`'s Supabase tables
-(`market_intel_waitlist` etc.) are unaffected and still live on the old
-JobLo project - that archive hasn't been migrated since it doesn't run
-standalone yet anyway.
+```bash
+cd horizon-ui-chakra-nextjs-main
+npm install
+npm run dev
+```
 
-## What changed on the JobLo side
+You need a `.env.local` with Supabase credentials. `next build` needs the two
+public vars present but they do not have to be real:
 
-All of the above was deleted from `bordful-main/`, along with every
-reference to it: the `market_analyst` role branch in `auth.ts` and
-`types/next-auth.d.ts`, the nav/footer links in `config/config.example.ts`,
-the homepage banner render in `app/page.tsx`, the account-menu redirect in
-`AuthNavStatus.tsx`, and the two-tier product chooser in `JoinChooser.tsx`
-(collapsed back to a single-step job-seeker/recruiter/employer chooser, since
-there's only one product left). `bordful-main` type-checks clean with none of
-this present.
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://placeholder.supabase.co \
+NEXT_PUBLIC_SUPABASE_ANON_KEY=placeholder npm run build
+```
+
+If the build ever starts needing *real* credentials, that is a bug.
+
+## The verification bar
+
+Before calling anything done — **all four**, from
+`horizon-ui-chakra-nextjs-main/`:
+
+```bash
+npx tsc --noEmit        # typecheck
+npm run lint            # one known <img> warning is expected
+npm run test            # vitest
+npm run build           # see env vars above
+```
+
+CI runs exactly these. **The build is not optional**: it is the only step
+that catches Server/Client component boundary errors, and it has caught real
+ones here that `tsc`, lint and the full test suite all passed.
+
+## How the app is put together
+
+- **Pages are Server Components.** The established shape across
+  `/dashboard/*` and `/apps/*` is `page.tsx` (async, resolves the seller and
+  fetches) → `SomethingView.tsx` (`'use client'`, pure rendering, takes data
+  as props) → `loading.tsx` (route-level skeleton). No page fetches its own
+  data from the client; after a mutation, call `router.refresh()`.
+- **Data access lives in `src/lib/market-intel/`**, split into `core/`,
+  `market/`, `seller/` and `jobs/`. These functions throw on error; route
+  handlers are thin wrappers that catch and shape the response.
+- **Migrations are applied by hand** via the Supabase SQL Editor. There is no
+  migration tracking table — run
+  [`scraper/migrations/_check_applied.sql`](scraper/migrations/_check_applied.sql)
+  (read-only) to see what is actually live.
+
+`CLAUDE.md` has the fuller conventions and the known gotchas.
+
+## Where to look next
+
+| Question | File |
+|---|---|
+| What are we building next? | [`ROADMAP.md`](ROADMAP.md) — the source of truth |
+| What exists today? | [`FEATURES.md`](FEATURES.md) |
+| What is unfixed or must happen before deploy? | [`SECURITY.md`](SECURITY.md) |
+| Is it legal/polite to scrape this site? | [`SCRAPING.md`](SCRAPING.md) — read before adding a source |
+| Why is the code like this? | [`docs/memory.md`](docs/memory.md) — dated engineering log |
+| Everything else | [`docs/README.md`](docs/README.md) |
+
+## Known state, honestly
+
+- **Data coverage is the binding constraint.** `ROADMAP.md` records 2 of 12
+  seller categories having scraped rows; OLX, the only source for most of the
+  rest, is disabled on a standing IP-level block. That figure predates the
+  Daraz rollout — re-measure with
+  [`scraper/migrations/_check_coverage.sql`](scraper/migrations/_check_coverage.sql)
+  before planning against it.
+- **There is no billing.** Plan tiers exist in `entitlements.ts` but demo mode
+  unlocks everything and no checkout exists.
+- The account naming `market_analyst` / `market_accounts` predates the
+  seller-focused positioning and is due a rename.
