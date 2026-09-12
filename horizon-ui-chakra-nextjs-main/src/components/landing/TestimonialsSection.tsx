@@ -43,7 +43,7 @@ export function TestimonialsSection() {
       <ul className="flex w-full max-w-6xl list-none flex-wrap justify-center gap-6">
         {TESTIMONIALS.map((testimonial, i) => (
           <li key={testimonial.name} className={`w-full ${CARD_WIDTH}`}>
-            <Reveal delay={Math.min(i, 2) * 120} h="100%">
+            <Reveal delay={Math.min(i, 2) * 120} className="h-full">
               <GlowCard className="h-full">
                 {/* flex-col + grow on the quote pins every attribution row to
                     the bottom of its card, so names line up across a row

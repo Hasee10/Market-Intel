@@ -66,7 +66,7 @@ export default function CategoriesView({ categories }: { categories: IProductCat
             </Text>
             <SimpleGrid columns={{ base: 1, sm: 2, lg: 3, xl: 4 }} spacing="20px">
               {populated.map((category, i) => (
-                <Reveal key={category.id} delay={i * 60} h="100%">
+                <Reveal key={category.id} delay={i * 60} className="h-full">
                   <CategoryCard data={category} maxProductCount={maxProductCount} />
                 </Reveal>
               ))}

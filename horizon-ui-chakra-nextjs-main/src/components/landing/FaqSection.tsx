@@ -93,7 +93,15 @@ export function FaqSection() {
                 brief, just with the list on the left instead of the ring
                 until there's room for one. */}
             <div className="relative mx-auto hidden aspect-square w-full max-w-[620px] lg:block">
-              <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden="true">
+              {/* pointer-events-none because this is a full-bleed decorative
+                  layer over the ring's own interactive topics. They currently
+                  work only because they come later in DOM order and paint on
+                  top; that is not something to rely on. */}
+              <svg
+                viewBox="0 0 100 100"
+                className="pointer-events-none absolute inset-0 size-full"
+                aria-hidden="true"
+              >
                 <defs>
                   <linearGradient id="faq-sweep" x1="0" y1="0" x2="1" y2="1">
                     <stop offset="0%" stopColor="#7B61FF" stopOpacity="0" />
@@ -268,7 +276,7 @@ export function FaqSection() {
             <img
               src="/assets/ryvl-faq-illustration.svg"
               alt="A seller reviewing answers to frequently asked questions"
-              className="absolute inset-0 size-full object-contain"
+              className="pointer-events-none absolute inset-0 size-full object-contain"
             />
           </div>
         </div>

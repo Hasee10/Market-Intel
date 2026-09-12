@@ -79,7 +79,7 @@ export function TrustSection() {
                   the stagger, so the section flashed arrows pointing at
                   nothing. In here each link fades in one beat after the node
                   it comes from, and the chain draws itself left to right. */}
-              <Reveal delay={i * 120} h="100%" className="relative flex w-full flex-col items-center">
+              <Reveal delay={i * 120} className="relative flex h-full w-full flex-col items-center">
                 {i > 0 && <Connector />}
 
                 {/* shrink-0 is load-bearing: this is a flex item in a column

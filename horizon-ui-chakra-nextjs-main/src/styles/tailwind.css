@@ -164,6 +164,73 @@
   }
 }
 
+/* Gradient-filled word in the landing headline (components/landing/
+ * LandingHero.tsx). The effect is `bg-clip-text` + `text-transparent`, which
+ * has a nasty failure mode: if the clip never applies, the text keeps
+ * color:transparent and the word disappears entirely rather than falling back
+ * to something readable. That word is the payoff of the headline, so it gets
+ * an explicit floor.
+ *
+ * Unlayered on purpose - Tailwind's utilities live in @layer utilities, so
+ * this beats .text-transparent on the same element without needing
+ * !important. */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .gradient-word {
+    color: #5044e5;
+    background-image: none;
+  }
+}
+
+/* Scroll-triggered entrance (components/reactbits/Reveal.tsx). Ported off
+ * Emotion for the same reason logo-marquee above was, plus one specific to
+ * this component: Reveal used to be a Chakra Box whose pre-animation state
+ * was an Emotion `sx`, so the server HTML shipped a literal
+ * `.css-xxx{opacity:0;}` style tag. The landing hero wraps six stacked blocks
+ * in Reveal, which meant the whole first screen was invisible until React had
+ * mounted, hydrated, and an IntersectionObserver had fired.
+ *
+ * As plain CSS the entrance no longer depends on JavaScript at all: an
+ * `immediate` Reveal renders its animation class server-side and the browser
+ * plays it whether or not hydration ever succeeds. JS is now only responsible
+ * for deciding *when* below-the-fold blocks start, never whether they appear.
+ *
+ * Duration and delay come in as custom properties because they are per-call
+ * (a grid passes index * 60 to stagger); everything else is shared.
+ */
+.reveal-pending {
+  opacity: 0;
+}
+
+.reveal-in {
+  animation: reveal-rise var(--reveal-duration, 550ms) cubic-bezier(0.22, 1, 0.36, 1)
+    var(--reveal-delay, 0ms) both;
+}
+
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion is handled here rather than in JS (the component used to
+ * call Chakra's usePrefersReducedMotion). Doing it in CSS means the
+ * preference is honoured even if the component never hydrates, and it drops
+ * a hook from every Reveal on the page. Both states resolve to plain visible
+ * content - the entrance is decoration, so it is never what makes content
+ * appear. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal-pending,
+  .reveal-in {
+    opacity: 1;
+    animation: none;
+  }
+}
+
 /* Design tokens ported from tailadmin-react-dashboard/src/index.css, with one
  * deliberate change: the brand scale is re-anchored from TailAdmin's #465FFF
  * onto Ryvl's real approved indigo #4318FF (ryvl-hero-assets/README.txt, and

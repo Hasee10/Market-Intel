@@ -35,8 +35,15 @@ export function LandingHero() {
         aria-hidden="true"
         className="pointer-events-none absolute -bottom-56 -left-48 size-[560px] rounded-full bg-[radial-gradient(circle,rgba(216,120,255,0.16)_0%,rgba(216,120,255,0)_65%)] blur-2xl dark:hidden"
       />
+      {/* Every Reveal in the hero is `immediate`. This is the first screen, so
+          none of it should wait on an IntersectionObserver - and more to the
+          point, a plain Reveal ships opacity:0 in the server HTML and only
+          becomes visible once React hydrates, which left the entire hero blank
+          whenever hydration failed. `immediate` renders the animation class
+          server-side so the entrance runs in CSS alone. Below-the-fold
+          sections keep the default observer behaviour. */}
       <div className="relative">
-      <Reveal>
+      <Reveal immediate>
         <span className="relative inline-flex items-center gap-2 rounded-full border border-gray-300 py-1.5 pl-1.5 pr-4 text-xs font-medium text-gray-600 dark:border-gray-700 dark:text-gray-300">
           <span className="rounded-full bg-[#EEF0FF] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-[#3641F5] dark:bg-gray-800 dark:text-[#A594FF]">
             For online sellers
@@ -45,17 +52,17 @@ export function LandingHero() {
         </span>
       </Reveal>
 
-      <Reveal delay={80}>
+      <Reveal immediate delay={80}>
         <h1 className="mx-auto mt-6 max-w-5xl text-4xl font-medium leading-tight tracking-[-0.03em] text-gray-800 sm:text-5xl md:text-6xl xl:text-[76px] xl:leading-[1.05] dark:text-white">
           See your market. Not just your{' '}
-          <span className="bg-gradient-to-r from-[#5044E5] to-[#7592FF] bg-clip-text text-transparent">
+          <span className="gradient-word bg-gradient-to-r from-[#5044E5] to-[#7592FF] bg-clip-text text-transparent">
             store
           </span>
           .
         </h1>
       </Reveal>
 
-      <Reveal delay={160}>
+      <Reveal immediate delay={160}>
         <p className="mx-auto mt-6 max-w-2xl text-sm font-medium text-gray-500 sm:text-lg dark:text-white/75">
           Ryvl tracks competitor pricing across {MARKETPLACE_COUNT} marketplaces, benchmarks you
           against anonymized peers in your category, and tells you when to act &mdash; pricing
@@ -63,7 +70,7 @@ export function LandingHero() {
         </p>
       </Reveal>
 
-      <Reveal delay={240}>
+      <Reveal immediate delay={240}>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
           <NextLink
             href={PATH_AUTH.signup}
@@ -80,7 +87,7 @@ export function LandingHero() {
         </div>
       </Reveal>
 
-      <Reveal delay={300}>
+      <Reveal immediate delay={300}>
         <div className="mt-5 flex flex-col items-center justify-center gap-1.5 sm:flex-row sm:gap-6">
           {TRUST_LINES.map((line) => (
             <span key={line} className="flex items-center gap-1.5 text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -91,7 +98,7 @@ export function LandingHero() {
         </div>
       </Reveal>
 
-      <Reveal delay={380}>
+      <Reveal immediate delay={380}>
         <HeroPreview />
       </Reveal>
       </div>

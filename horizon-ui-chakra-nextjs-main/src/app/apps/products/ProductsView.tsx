@@ -230,7 +230,7 @@ export default function ProductsView({
       <>
         <div className="@container grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-3 @6xl:grid-cols-4 md:gap-6">
           {productPage.visible.map((p, i) => (
-            <Reveal key={p.id} delay={Math.min(i, 12) * 40} h="100%">
+            <Reveal key={p.id} delay={Math.min(i, 12) * 40} className="h-full">
               <ProductCard data={p} onEdit={handleEditProduct} onViewCompetitors={handleViewCompetitors} />
             </Reveal>
           ))}
