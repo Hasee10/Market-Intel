@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { OrderDto } from '@/types/order';
@@ -21,6 +23,20 @@ function mapOrder(row: any): OrderDto {
   };
 }
 
+// Mirrors OrderCreateSchema in ../route.ts. orderDate and totalAmount are
+// optional here where create requires them: the update writes both bare, so
+// omitting one currently leaves that column untouched, and requiring them
+// would reject partial updates that succeed today. Status is still held to
+// the same four values the drawer's <Select> offers.
+const OrderUpdateSchema = z.object({
+  customerId: blankToNull(z.string().trim().min(1)),
+  externalOrderId: blankToNull(z.string().trim().min(1)),
+  orderDate: z.string().trim().min(1, 'orderDate cannot be empty').optional(),
+  totalAmount: z.number({ invalid_type_error: 'totalAmount must be a number' }).optional(),
+  currency: blankToNull(z.string().trim().min(1)),
+  status: z.enum(['completed', 'pending', 'cancelled', 'refunded']).nullish(),
+});
+
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -31,7 +47,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   }
 
   const { id } = await params;
-  const body = await request.json();
+
+  const parsed = await parseJsonBody(request, OrderUpdateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase

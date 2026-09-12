@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { IProduct } from '@/types/products';
 import { apiError } from '@/lib/api-error';
+
+// Mirrors ProductCreateSchema in ../route.ts, with one deliberate
+// difference: title is optional here. The update writes `title: body.title`
+// bare, and an undefined value is dropped during JSON serialisation, so an
+// omitted title currently leaves the column untouched. Requiring it would
+// reject partial updates that succeed today.
+//
+// The nonnegative() bounds do match create, which does tighten this route:
+// a negative cost/sell price or stock count is accepted here today and
+// won't be after this. Create has always rejected those, and update writing
+// data create would refuse is not a distinction worth keeping.
+const ProductUpdateSchema = z.object({
+  title: z.string().trim().min(1, 'title cannot be empty').optional(),
+  sku: blankToNull(z.string().trim().min(1)),
+  categoryId: blankToNull(z.string().trim().min(1)),
+  costPrice: z.number().nonnegative().nullish(),
+  sellPrice: z.number().nonnegative().nullish(),
+  currency: blankToNull(z.string().trim().min(1)),
+  stockQty: z.number().int().nonnegative().nullish(),
+  isActive: z.boolean().optional(),
+  // Not z.string().url(): an empty string is how the UI signals "clear the
+  // image", and url() would reject it. The write path normalises '' to null.
+  imageUrl: z.string().optional(),
+});
 
 function mapProduct(row: any): IProduct {
   const category = Array.isArray(row.seller_categories)
@@ -43,7 +69,11 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const body = await request.json();
+
+  const parsed = await parseJsonBody(request, ProductUpdateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase

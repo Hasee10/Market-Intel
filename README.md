@@ -28,22 +28,12 @@ standalone app — see "What's missing to run standalone" below.
   Actions workflow is now active at `.github/workflows/market-scraper.yml`
   (repo root) - the copy in `workflows/market-scraper.yml` below is now stale
   and only kept as a historical reference.
-- `web/app/intel/` — Next.js pages: landing (`page.tsx`), dashboard, sign-in,
-  sign-up, product detail (`products/[id]/page.tsx`).
-- `web/app/api/market-intel/` — waitlist, signup, watchlist API routes.
-- `web/app/api/cron/market-alerts/` — price-alert cron endpoint.
-- `web/components/market-intel/` — dashboard table, price history chart,
-  watch button, similar-items rail, cross-platform matches, product gallery,
-  waitlist form.
-- `web/components/auth/MarketIntelSignInForm.tsx`,
-  `MarketIntelSignUpForm.tsx` — account forms.
-- `web/components/home/MarketIntelBanner.tsx` — homepage cross-promo banner
-  (was rendered on JobLo's homepage; not relevant if Market Intel has its own
-  homepage instead).
-- `web/lib/market-intel/` — `products.ts` (listing/detail/history/similar/
-  cross-platform-match queries), `watchlist.ts`, `waitlist-actions.ts`.
-- `web/lib/auth/market-accounts.ts` — market analyst account creation/login
-  (bcrypt, own `market_accounts` Supabase table).
+- `web/` — **removed** (`git log -- web/` for history). This was the original
+  market-intel prototype extracted from the JobLo job-portal app: its own
+  Next.js pages, API routes, and a separate bcrypt-based `market_accounts`
+  auth system. Never deployed here (no `package.json`), superseded entirely
+  by `horizon-ui-chakra-nextjs-main/`, and carried a weaker auth path
+  (SECURITY.md #10), so it was deleted rather than left to be built on.
 - `workflows/market-scraper.yml`, `workflows/market-alerts-cron.yml` — the
   original two GitHub Actions workflows. **Only `market-scraper.yml` is
   active**, and as `.github/workflows/market-scraper.yml` at the repo root

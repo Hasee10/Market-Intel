@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { runPriceAlertsJob } from '@/lib/market-intel/jobs/price-alerts-job';
 import { isAuthorizedCronRequest } from '@/lib/supabase/server';
-import { apiError } from '@/lib/api-error';
+import { cronError } from '@/lib/api-error';
 
 async function run(request: NextRequest) {
   if (!isAuthorizedCronRequest(request)) {
@@ -21,7 +21,7 @@ async function run(request: NextRequest) {
       message: 'Price alerts job completed',
     });
   } catch (error) {
-    return apiError(error, 'Failed to run price alerts job', 500, 'api/cron/price-alerts');
+    return cronError(error, 'Failed to run price alerts job', 'api/cron/price-alerts');
   }
 }
 

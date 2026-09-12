@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 
+import { blankToNull, parseJsonBody } from '@/lib/api-validation';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 import { createClient } from '@/lib/supabase/server';
 import { CustomerDto } from '@/types/customer';
@@ -20,6 +22,17 @@ function mapCustomer(row: any): CustomerDto {
   };
 }
 
+// Mirrors CustomerCreateSchema in ../route.ts field for field - every field
+// on that one is already optional, so unlike products/orders there is no
+// requiredness difference between create and update here.
+const CustomerUpdateSchema = z.object({
+  externalCustomerId: blankToNull(z.string().trim().min(1)),
+  email: blankToNull(z.string().trim().email('email must be a valid email address')),
+  ordersCount: z.number().int().nonnegative().nullish(),
+  totalSpent: z.number().nonnegative().nullish(),
+  currency: blankToNull(z.string().trim().min(1)),
+});
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -33,7 +46,11 @@ export async function PUT(
   }
 
   const { id } = await params;
-  const body = await request.json();
+
+  const parsed = await parseJsonBody(request, CustomerUpdateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
+
   const supabase = await createClient();
 
   const { data, error } = await supabase

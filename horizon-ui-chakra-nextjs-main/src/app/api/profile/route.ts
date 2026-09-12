@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { parseJsonBody } from '@/lib/api-validation';
 
 import { getSellerProfile, mapPublicProfile } from '@/lib/market-intel/seller/settings';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
@@ -33,6 +36,34 @@ export async function GET() {
   }
 }
 
+// Every field optional, matching how the handler below already works: it
+// updates only what was sent and leaves the rest alone, so absence has to
+// stay meaningful. The typeof/validity checks in the body are kept too -
+// they encode rules a schema can't (currency and country are checked
+// against the supported lists, website is normalised to a bare domain).
+//
+// What this adds is the shape: publicProfile is now required to be an
+// object when present, and the booleans to be booleans. The handler reads
+// those through `!!`, so a string would previously have been coerced -
+// "false" is truthy, which would have turned a setting on while the caller
+// believed it was turning it off.
+const ProfileUpdateSchema = z.object({
+  businessName: z.string().optional(),
+  reportingCurrency: z.string().optional(),
+  country: z.string().optional(),
+  publicProfile: z
+    .object({
+      isPublic: z.boolean().optional(),
+      displayName: z.string().nullish(),
+      showPricePosition: z.boolean().optional(),
+      showRating: z.boolean().optional(),
+      showCategoryRank: z.boolean().optional(),
+      website: z.string().optional(),
+      showOnMarketingSite: z.boolean().optional(),
+    })
+    .optional(),
+});
+
 export async function PUT(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -42,7 +73,10 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  const parsed = await parseJsonBody(request, ProfileUpdateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
+
   const supabase = await createClient();
 
   if (typeof body.businessName === 'string' && body.businessName.trim()) {
@@ -56,7 +90,10 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const validCurrencyCodes = new Set(SUPPORTED_CURRENCIES.map((c) => c.code));
+  // Set<string>, not the literal union .map() infers: the whole job of this
+  // set is to test an arbitrary caller-supplied string for membership, and
+  // the narrow type makes exactly that call a compile error.
+  const validCurrencyCodes = new Set<string>(SUPPORTED_CURRENCIES.map((c) => c.code));
   let reportingCurrency = seller.reportingCurrency;
   if (typeof body.reportingCurrency === 'string' && validCurrencyCodes.has(body.reportingCurrency)) {
     reportingCurrency = body.reportingCurrency;
@@ -70,7 +107,7 @@ export async function PUT(request: NextRequest) {
     }
   }
 
-  const validCountryCodes = new Set(SUPPORTED_COUNTRIES.map((c) => c.code));
+  const validCountryCodes = new Set<string>(SUPPORTED_COUNTRIES.map((c) => c.code));
   let country = seller.country;
   if (typeof body.country === 'string' && validCountryCodes.has(body.country)) {
     country = body.country;

@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(npm run build)",
+      "Bash(npx vitest run:*)",
+      "Bash(npx next lint)",
+      "Bash(npm ci)",
+      "Bash(npm view:*)",
+      "Bash(npm audit:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git stash list)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(ls:*)",
+      "Bash(node -p:*)",
+      "Bash(wc:*)"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(npm uninstall:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(git reset --hard:*)",
+      "Bash(git clean:*)",
+      "Read(./horizon-ui-chakra-nextjs-main/.env.local)",
+      "Read(./CREDENTIALS.txt)"
+    ]
+  }
+}

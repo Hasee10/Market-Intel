@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
+
+import { parseJsonBody } from '@/lib/api-validation';
 
 import {
   autoAssignDomainsForCategories,
@@ -26,6 +29,10 @@ export async function GET() {
   });
 }
 
+const DomainCreateSchema = z.object({
+  categoryId: z.string().trim().min(1, 'categoryId is required'),
+});
+
 export async function POST(request: NextRequest) {
   const seller = await getCurrentSeller();
   if (!seller) {
@@ -35,13 +42,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
-  if (!body.categoryId) {
-    return NextResponse.json(
-      { succeeded: false, data: null, errors: ['categoryId is required'], message: 'categoryId is required' },
-      { status: 400 },
-    );
-  }
+  const parsed = await parseJsonBody(request, DomainCreateSchema);
+  if (parsed.error) return parsed.error;
+  const body = parsed.data;
 
   // Same free-first/premium-rest rule onboarding's completeOnboarding uses
   // for domains 2-3 - one implementation, not two copies of the plan check.
