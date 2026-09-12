@@ -4161,3 +4161,149 @@ re-typechecked rather than assumed clean.
 A `backup/phase2-c0fa680` branch was left pointing at the pre-rebase commit.
 Safe to delete once the rebased `c5d3d38` (or its pushed descendant) is
 confirmed good.
+
+## 2026-09-12: Landing hero shipped invisible — Reveal no longer needs JS
+
+**Symptom the user reported:** the marketing page rendered but "no button is
+clickable", plus the headline looked missing in a screenshot.
+
+**Two separate problems, and only one is fixed.** Worth keeping them apart,
+because conflating them is what would have produced a blind fix:
+
+1. *Hero invisible* — real, found, fixed (below).
+2. *Buttons dead* — **still unresolved.** Static analysis exhausted it as a
+   CSS/overlay question: no `pointer-events` rule in any CSS file, every
+   absolutely-positioned element in `components/landing` already carries
+   `pointer-events-none`, the only `fixed` elements are the small
+   bottom-right `AssistantWidget` and the sticky header, and `layout.tsx` /
+   `AppWrappers.tsx` are clean. **The cause is not in our component tree.**
+   The counter-evidence that matters: both hero CTAs are `NextLink`, i.e.
+   real `<a href>`, which navigate with JS entirely disabled — so a
+   hydration failure does *not* explain dead buttons; something is
+   physically intercepting the clicks. Leading candidate is an
+   extension-injected overlay, which ties back to the unresolved 2026-08-21
+   React #418 + `eyeo/webext-ad-filtering-solution` thread and its
+   never-run Incognito test. **Next step is `document.elementFromPoint()`
+   at the cursor, not a code change.**
+
+### The invisible hero
+
+`Reveal` set `opacity: 0` until React mounted, hydrated, and an
+IntersectionObserver fired. `LandingHero` wraps **six** stacked blocks in it,
+so the entire first screen was invisible until client JS ran — blank flash on
+a slow connection, permanently blank hero if hydration failed. On the one
+page with a recorded hydration-error history.
+
+**This was confirmed, not inferred.** The regression test was written first
+and run red against the old implementation, and it printed the server HTML
+Emotion was actually producing:
+
+    <style data-emotion="css q7lffx">.css-q7lffx{opacity:0;}</style><div class="css-q7lffx">
+
+That is the whole argument for the change, in one line of output. Reading the
+component only *suggested* it; rendering it proved it.
+
+**Fix:** `Reveal` is now a plain `div` driving keyframes in `tailwind.css`
+(`.reveal-pending` / `.reveal-in`), with an `immediate` prop that skips the
+observer and seeds `useState(immediate)` so the animation class ships in the
+server HTML. Applied to the hero's six blocks. Below-the-fold usage is
+unchanged. Verified in the built artifact: **6 `reveal-in` (hero), 28
+`reveal-pending` (below fold), zero Emotion opacity rules.**
+
+**What the guarantee actually is:** the content *appears without JS*, not that
+it paints at t=0 — the animation still fills backwards through `delay`, so a
+block at delay=380 fades in over its usual beat. The blank-hero failure mode
+is fixed; the stagger is intended. Don't "fix" the stagger later thinking it
+is the same bug.
+
+Reduced motion moved from Chakra's `usePrefersReducedMotion` hook into a
+media query, so the preference is honoured even when the component never
+hydrates. Dropping Chakra also removes runtime CSS-in-JS and a
+client-component boundary per block from a statically prerendered page.
+
+### Two things this surfaced that the plan had not anticipated
+
+- **Four call sites passed Chakra's `h="100%"`** (`ProductsView`,
+  `CategoriesView`, `TestimonialsSection`, `TrustSection`). On a plain `div`
+  that is an invalid DOM attribute and the equal-height card grids collapse
+  **silently** — no error, just wrong layout. Moved to `className="h-full"`,
+  which `ShowcaseSection` already used. `RevealProps` now extends
+  `HTMLAttributes<HTMLDivElement>` so `tsc` catches the next one. **Grep for
+  style props before converting any other Chakra component to a div** — this
+  will recur; the remaining `CountUp`/`ShinyText`/`SpotlightCard` are queued
+  for the same treatment.
+- **vitest was on the classic JSX transform**, so rendering any component
+  failed with "React is not defined". The suite was pure logic before this,
+  so it had never come up. `esbuild: { jsx: 'automatic' }` in
+  `vitest.config.ts` — component tests are now possible here *at all*, which
+  they were not before. `include` is still `src/**/*.test.ts` (not `.tsx`),
+  so use `createElement` or widen it.
+
+Also fixed: a fallback colour for the headline's gradient word
+(`bg-clip-text` + `text-transparent` would make it *vanish* rather than
+degrade if the clip never applied — it is the payoff word of the headline),
+and `pointer-events-none` on two full-bleed `FaqSection` overlays that worked
+only because the interactive elements happened to come later in DOM order.
+
+`d90fd65`. tsc clean, 405/405 tests, build green.
+
+## 2026-09-12: The red CI was already fixed locally — push, don't debug
+
+CI's audit job failed on three advisories (`GHSA-2xp9-vwfh-vxw4`,
+`GHSA-p293-qw3h-jr36`, `GHSA-rgj7-g3m4-5g8c`) — two unauthenticated RCEs in
+Next.js (one CVSS 9.0, Windows-hosted) and one in sharp via libheif.
+
+**They were already patched in `ecdfd5f`, which has never been pushed.** CI
+was running against a stale `origin/main`. Local `audit-ci` passes.
+
+Time went into rediscovering this because the failure was read as new. **When
+CI fails on something that looks unrelated to recent work, check
+`git log origin/main..HEAD` before debugging** — there are 5 unpushed commits
+sitting here and the push step is blocked by the permission classifier every
+single time, so this exact shape will recur.
+
+Unrelated and still true: `audit-ci.jsonc`'s two allowlisted `image-size`
+advisories are correct and permanent (no patched version exists for any
+release; pptxgenjs never actually calls it). A new **moderate** vitest
+advisory (`GHSA-82fw-gwwq-j7x9`) is below the `"high": true` threshold and is
+not failing anything.
+
+## 2026-09-12: Feature-list triage — the constraint is data, not features
+
+A Codex-generated improvement list (17 items across High/Medium/Commercial)
+was brought in for evaluation. Recorded here because the *reasoning* should
+survive, not the list.
+
+**The list had no knowledge of the coverage problem.** It reads as a sound
+product plan for a system with data. `ROADMAP.md` says 2 of 12 categories
+have any scraped rows and OLX — the only source for the other ten — is
+disabled on a standing IP block. Adding features on top of that produces more
+surfaces rendering empty states.
+
+Its own closing line is the key one: *"Paid customer validation should
+determine which ones enter development."* There are zero paying customers and
+no checkout, so taken seriously that sentence defers most of its own list.
+
+**What it got genuinely right, and is worth keeping:**
+
+- **Seller-selected competitor tracking** — the best idea in it, not as a
+  feature but because it *routes around* the coverage gap. A seller
+  nominating rivals gets value in any category regardless of crawl breadth.
+  Scoped in `SELLER_TRACKED_COMPETITORS.md`.
+- **Recommendation accept/reject logging** — cheap, and it is exactly the
+  labelled data the match-strength bands need (the 0.6/0.35 cut points are
+  recorded as guesses in the 2026-09-03 IDF entry).
+- **Prioritized action list** — this is `ROADMAP.md` C3, still unbuilt (no
+  actions surface exists under `/dashboard/`). Two independent analyses
+  landing on the same item is a real signal.
+
+**What it overstates:** several items already partly exist (matching with
+confidence, staleness indicators, multi-category tracking), and the
+Medium/Later tiers (team workflows, Shopify sync, agency accounts, auto
+repricing) are all post-revenue.
+
+**The standing risk worth naming:** this repo builds well-engineered features
+faster than they get verified or used. Right now: 5 unpushed commits, a red
+CI, ~8 UI surfaces that have never been opened in a browser, and 58
+hand-applied migrations with no tracking table. Queue length, not build
+speed, is the problem.
