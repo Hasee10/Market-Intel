@@ -112,10 +112,13 @@ with checks as (
          exists (select 1 from pg_proc where proname='market_single_retailer_platforms')
 
   ---------- (sig) replaces an existing function - check what it ADDED ----------
+  -- The parameter 040 adds is p_price_min (see the migration), not
+  -- p_min_price. This row searched for the wrong name and reported
+  -- MISSING regardless of state - the second such row in this file.
   union all select '040_scorecards_band_filters', 'function (sig)', exists (
     select 1 from pg_proc
     where proname='market_competitor_scorecards'
-      and pg_get_functiondef(oid) ilike '%p_min_price%')
+      and pg_get_functiondef(oid) ilike '%p_price_min%')
   union all select '051_candidate_search_image_url', 'function (sig)', exists (
     select 1 from pg_proc
     where proname='market_top_similar_candidates'
