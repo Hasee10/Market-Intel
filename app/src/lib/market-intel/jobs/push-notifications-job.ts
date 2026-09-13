@@ -79,10 +79,30 @@ export async function runPushNotificationsJob(): Promise<PushJobResult> {
     .limit(MAX_NOTIFICATIONS_PER_RUN);
 
   if (pendingError) {
-    // A missing column is the one failure worth naming precisely - it means
-    // 053 has not been applied, and the generic error would send whoever
-    // sees it reading the job instead of the migration list.
+    // An error naming the column is worth explaining precisely, because the
+    // generic message sends whoever sees it into this file looking for a
+    // bug that isn't here. But there are two different causes, and the
+    // fix for each is different:
+    //
+    // - Postgres itself says the column does not exist (SQLSTATE 42703).
+    //   Migration 053 was never applied. Fails every run.
+    // - PostgREST says it can't find the column in its schema cache
+    //   (PGRST204). The column exists; one API node is still serving a
+    //   schema snapshot from before 053 was applied. Comes and goes per
+    //   node - which is why cron run #362 and 2026-09-13 13:51 failed
+    //   between clean runs. Fix is a cache reload, not a migration.
+    //
+    // This used to rewrite both as "apply migration 053", which was
+    // confidently wrong for the second and cost a real investigation.
     if (/pushed_at/.test(pendingError.message)) {
+      const staleCache = pendingError.code === 'PGRST204' || /schema cache/i.test(pendingError.message);
+      if (staleCache) {
+        throw new Error(
+          "seller_notifications.pushed_at is not in the API's schema cache. The column exists, but an API node is serving a stale schema - " +
+            "run `notify pgrst, 'reload schema';` in the Supabase SQL editor. This is intermittent by nature; the next run may pass on its own. " +
+            '(If migration 053 was genuinely never applied, Postgres reports 42703 instead of this.)',
+        );
+      }
       throw new Error(
         'seller_notifications.pushed_at is missing - apply migration 053 before enabling push delivery.',
       );

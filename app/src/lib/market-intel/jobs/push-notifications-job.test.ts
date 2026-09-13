@@ -17,7 +17,7 @@ let deadTokens = new Set<string>();
 /** Tokens that get a per-message ticket error that is NOT a dead device. */
 let softErrorTokens = new Set<string>();
 /** Forces the pending-notification select to fail, for the migration guard. */
-let selectError: { message: string } | null = null;
+let selectError: { message: string; code?: string } | null = null;
 
 vi.mock('@/lib/supabase/server', () => ({
   createAdminClient: () => ({
@@ -230,6 +230,38 @@ describe('runPushNotificationsJob', () => {
     // Whoever sees this failure should be sent to the migration list, not
     // into the job's source looking for a bug that isn't there.
     selectError = { message: 'column seller_notifications.pushed_at does not exist' };
+
+    await expect(runPushNotificationsJob()).rejects.toThrow(/migration 053/);
+  });
+
+  it('names a stale API schema cache (PGRST204) as the cache, not the migration', async () => {
+    // Same column in the message, different cause: the column exists and
+    // one PostgREST node hasn't reloaded its schema since 053 was applied.
+    // This is what the intermittent cron failures actually were, and the
+    // old message sent us to the migration list for a migration that was
+    // already there.
+    selectError = {
+      code: 'PGRST204',
+      message: "Could not find the 'pushed_at' column of 'seller_notifications' in the schema cache",
+    };
+
+    const err = await runPushNotificationsJob().catch((e: Error) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toMatch(/schema cache/);
+    expect((err as Error).message).toMatch(/reload schema/);
+    expect((err as Error).message).not.toMatch(/apply migration 053/);
+  });
+
+  it('recognises the stale-cache message even when the error code is absent', async () => {
+    selectError = {
+      message: "Could not find the 'pushed_at' column of 'seller_notifications' in the schema cache",
+    };
+
+    await expect(runPushNotificationsJob()).rejects.toThrow(/reload schema/);
+  });
+
+  it('still names the migration for a column Postgres itself says is missing (42703)', async () => {
+    selectError = { code: '42703', message: 'column seller_notifications.pushed_at does not exist' };
 
     await expect(runPushNotificationsJob()).rejects.toThrow(/migration 053/);
   });
