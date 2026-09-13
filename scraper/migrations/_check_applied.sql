@@ -68,9 +68,12 @@ with checks as (
   union all select '019_daraz_seller_fields', 'column', exists (
     select 1 from information_schema.columns
     where table_name='market_products' and column_name='seller_external_id')
-  union all select '024_competitor_website', 'column', exists (
+  -- 024 adds website to seller_public_profile (the marketing showcase),
+  -- not to market_competitors - no migration adds a website column there.
+  -- This row used to check the wrong table and reported MISSING forever.
+  union all select '024_seller_marketing_showcase', 'column', exists (
     select 1 from information_schema.columns
-    where table_name='market_competitors' and column_name='website')
+    where table_name='seller_public_profile' and column_name='website')
   union all select '027_country_and_import_key', 'column', exists (
     select 1 from information_schema.columns
     where table_name='sellers' and column_name='country')
