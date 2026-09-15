@@ -333,8 +333,11 @@ Full detail in `ROADMAP.md` Phase G.
 **The client-facing contract is `docs/MOBILE_API.md`** — auth, envelope,
 pagination, error codes and every endpoint's request/response, written for
 a developer building the mobile app with no other context on this repo. It
-also carries the four planned endpoints (`/market`, `/pricing`,
-`/competitors/moves`, `/categories`) the agreed mobile design requires.
+also carries the seven planned endpoints (`/market`, `/pricing`,
+`/competitors/moves`, `/categories`, `/search`, `/kpis`,
+`/products/{id}/insight`) the agreed mobile design requires, and a
+"Not on mobile" section naming every desktop capability deliberately
+left off the phone.
 
 A separate namespace of 8 endpoints, isolated from the 44 desktop routes and
 sharing none of their handlers, but every one a thin composition over the

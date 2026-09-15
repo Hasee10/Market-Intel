@@ -1,206 +1,191 @@
-# Mobile API guide
+# Ryvl mobile API
 
-The contract between the Ryvl mobile client and the Next.js backend.
+Everything the mobile client needs. You don't need to read anything else in
+this repo.
 
-**Audience:** the developer building the React Native / Expo client. You do
-not need to read the rest of this repo to use this document — everything
-the client needs is here.
-
-**Base URL:** the same deployment that serves the web app.
-All paths below are relative to it, e.g. `https://<host>/api/mobile/pulse`.
-
-**Status legend used throughout:**
-
-- **Live** — deployed and callable today.
-- **Planned** — contract agreed, not yet implemented. Shape may shift
-  slightly during implementation; anything that does will be noted here
-  before it ships.
+**Base URL:** same host as the web app. All paths below are relative to it.
 
 ---
 
-## Contents
+## Quick reference — every endpoint
 
-1. [Design rules](#1-design-rules)
-2. [Authentication](#2-authentication)
-3. [Response envelope](#3-response-envelope)
-4. [Errors](#4-errors)
-5. [Pagination](#5-pagination)
-6. [Entitlements](#6-entitlements)
-7. [Category scoping](#7-category-scoping)
-8. [Endpoint reference — live](#8-endpoint-reference--live)
-9. [Endpoint reference — planned](#9-endpoint-reference--planned)
-10. [Push notifications](#10-push-notifications)
-11. [Screen-to-endpoint map](#11-screen-to-endpoint-map)
-12. [What the mobile API deliberately does not do](#12-what-the-mobile-api-deliberately-does-not-do)
+`L` = live today · `P` = planned (not built yet)
+
+### Home & alerts
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| L | GET | `/api/mobile/pulse` | The whole Overview screen in one call |
+| P | GET | `/api/mobile/kpis` | Revenue, orders, AOV, new customers — the KPI tiles |
+| L | GET | `/api/mobile/alerts` | Alert feed (paginated) |
+| L | POST | `/api/mobile/alerts/read` | Mark alerts read |
+
+### Market
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| P | GET | `/api/mobile/market` | The whole Market screen: price stats, forecast, position bars |
+| P | GET | `/api/mobile/categories` | Categories for the switcher sheet |
+
+### Competitors
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| L | GET | `/api/mobile/competitors` | Who's in this market and how they price |
+| P | GET | `/api/mobile/competitors/moves` | Stock-outs + price anomalies |
+
+### Pricing & products
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| P | GET | `/api/mobile/pricing` | Pricing recommendations |
+| L | GET | `/api/mobile/products` | The seller's own catalogue |
+| L | PATCH | `/api/mobile/products/{id}/price` | Change one price |
+| P | GET | `/api/mobile/products/{id}/insight` | One product vs. the market |
+| L | GET | `/api/mobile/price-check` | "Should I stock this, at what price?" |
+
+### Search
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| P | GET | `/api/mobile/search` | Search scraped market products |
+
+### Device
+
+| | Method | Path | What it gives you |
+|---|---|---|---|
+| L | POST | `/api/mobile/devices` | Register for push |
+| L | DELETE | `/api/mobile/devices` | Unregister on sign-out |
+
+**Totals:** 8 live, 7 planned.
+
+Things the platform has that mobile deliberately won't get are listed in
+[Not on mobile](#not-on-mobile).
 
 ---
 
-## 1. Design rules
+## Start here — 5 minutes
 
-Five rules the whole namespace follows. Knowing them means you can predict
-the shape of an endpoint you have not read yet.
-
-**One screen, one request.** `pulse` returns the entire home screen —
-alerts, counters, stock-outs and freshness — in a single response rather
-than across five endpoints. A seller on a Pakistani mobile connection pays
-a real latency cost per round trip, and a home screen that fans out to five
-requests shows five separate spinners. Follow this when adding endpoints:
-the unit of an endpoint is a screen, not a widget.
-
-**No duplicated business logic.** Every mobile route is a thin composition
-over the same `lib/market-intel/*` functions the desktop pages call. A
-number on the phone must never disagree with the same number on a laptop,
-and the only reliable way to guarantee that is for both to come from one
-function.
-
-**Fewer fields than desktop, on purpose.** `/api/mobile/products` omits
-cost price, SKU and category joins. `/api/mobile/competitors` returns 3 of
-the desktop scorecard's 9 columns. This is curation, not an oversight — the
-full record is one tap away on the desktop, and a 9-column table on a 390px
-screen helps nobody. **Do not ask for fields to be added back without a
-screen that needs them.**
-
-**Reads never trigger work.** No mobile endpoint queues a scrape, starts a
-job, or writes to a queue. Every figure you receive was computed by a cron
-that already ran. Opening the app can never cause load.
-
-**One write, deliberately.** The only mutation on a seller's catalogue is
-`PATCH /api/mobile/products/[id]/price`, and it takes one field. Full
-catalogue editing stays on desktop: an eight-field form half-submitted over
-a dropping mobile connection is a worse outcome than not offering it.
-
----
-
-## 2. Authentication
-
-Every endpoint requires a Supabase session access token as a bearer token:
+**1. Send a bearer token on every request.**
 
 ```
 Authorization: Bearer <supabase_access_token>
 ```
 
-Obtain it client-side from the Supabase JS SDK
-(`supabase.auth.getSession()` → `session.access_token`). It is the same
-token the web app uses — there is no separate mobile credential, no API
-key, and no refresh endpoint on this namespace. Refresh through the
-Supabase SDK as normal.
+Get it from the Supabase JS SDK: `supabase.auth.getSession()` →
+`session.access_token`. Same token the web app uses. No separate mobile
+credential, no API key.
 
-The backend resolves the token to a `sellers` row. A valid Supabase user
-with no `sellers` row is treated as unauthenticated (401), not as an empty
-account.
+**2. Every response looks the same.**
 
-**Missing or invalid token** → `401`:
-
-```json
+```jsonc
 {
-  "succeeded": false,
-  "data": null,
-  "errors": ["Send the Supabase session access token as: Authorization: Bearer <token>"],
-  "message": "Not authenticated"
+  "succeeded": true,
+  "data":      { },      // your payload, or null on failure
+  "errors":    [],       // strings, only on failure
+  "message":   "OK"      // short summary
 }
 ```
 
-**Row-level security.** Every query runs under the caller's own token, so
-Postgres RLS scopes it. Seller-scoped queries *also* carry an explicit
-`seller_id` filter in application code. That redundancy is deliberate —
-one dropped policy should not mean cross-tenant access. Do not treat it as
-a reason to skip either layer if you add an endpoint.
+Branch on the **HTTP status code**, not on `succeeded`. They always agree,
+but the status is available before the body parses.
+
+**3. Example call.**
+
+```bash
+curl https://<host>/api/mobile/pulse \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+**4. That's it.** Pick your screen in the [quick reference](#quick-reference--every-endpoint),
+jump to its section.
 
 ---
 
-## 3. Response envelope
+## Contents
 
-Every response — success or failure, every endpoint — uses one shape:
+- [Quick reference](#quick-reference--every-endpoint)
+- [Start here](#start-here--5-minutes)
+- **Rules that apply everywhere**
+  - [Errors](#errors)
+  - [Pagination](#pagination)
+  - [Plans and paywalls](#plans-and-paywalls)
+  - [Categories](#categories)
+  - [Money and numbers](#money-and-numbers)
+- **Endpoints**
+  - [Home & alerts](#home--alerts)
+  - [Market](#market)
+  - [Competitors](#competitors)
+  - [Pricing & products](#pricing--products)
+  - [Search](#search)
+  - [Device & push](#device--push)
+- [Screen-to-endpoint map](#screen-to-endpoint-map)
+- [Not on mobile](#not-on-mobile)
+- [Decide before building](#decide-before-building)
+- [Where things live](#where-things-live)
 
-```ts
-type MobileResponse<T> = {
-  succeeded: boolean;
-  data: T | null;
-  errors: string[];
-  message: string;
-};
-```
+---
 
-| Field | On success | On failure |
+# Rules that apply everywhere
+
+## Errors
+
+| Status | Means | Do this |
 |---|---|---|
-| `succeeded` | `true` | `false` |
-| `data` | the payload | `null` |
-| `errors` | `[]` | one or more human-readable strings |
-| `message` | `"OK"` or a short confirmation | a short summary |
+| `400` | Bad request — missing param, bad JSON, bad cursor | Fix it. Don't retry unchanged. |
+| `401` | No/expired token, or no seller account | Refresh session, else sign out. |
+| `403` | Plan doesn't include this feature | Show upgrade prompt. |
+| `404` | Doesn't exist, or isn't yours | Treat as not-found. |
+| `500` | Server or database failure | Retry with backoff. |
 
-This matches the rest of the app rather than inventing a leaner
-mobile-only shape. A single response contract across every endpoint is
-worth more to you than the handful of bytes a bespoke one would save.
+**Show `message` to the seller. `errors` is for you, not them** — it's often
+too technical.
 
-**Client guidance:** branch on the HTTP status code, not on `succeeded` —
-they always agree, but the status is available before the body parses.
-Surface `message` in UI; `errors` is developer-facing detail and is often
-too specific to show a seller.
+**Never branch on the text of `message` or `errors`.** They're wording, not
+API. Branch on status codes and structured fields like `emptyReason`.
 
----
+`404` is returned both when a product doesn't exist and when it belongs to
+someone else. Don't try to tell them apart — the API won't.
 
-## 4. Errors
+## Pagination
 
-| Status | Meaning | What the client should do |
-|---|---|---|
-| `400` | Malformed request — bad JSON, missing required param, invalid cursor, out-of-range value | Fix the request. Do not retry unchanged. |
-| `401` | No token, expired token, or no seller record | Refresh the session; if that fails, sign out. |
-| `403` | Authenticated, but the plan tier does not include this feature | Show an upgrade prompt. See [Entitlements](#6-entitlements). |
-| `404` | The resource does not exist, or is not this seller's | Treat as not-found; do not distinguish the two in UI. |
-| `500` | Server or database failure | Retry with backoff. Show a generic failure. |
-
-**On `404` specifically:** `PATCH /products/[id]/price` returns 404 both
-when a product id does not exist and when it belongs to another seller.
-This is intentional — distinguishing them would confirm the existence of
-another seller's product id.
-
-**Never parse `message` or `errors` strings to branch logic.** They are
-wording, not an API. Branch on status codes and on structured fields like
-`emptyReason`.
-
----
-
-## 5. Pagination
-
-List endpoints are **cursor-paginated**, never offset-paginated.
+Lists use a **cursor**, never page numbers.
 
 ```
-GET /api/mobile/alerts?cursor=MjAyNi0wOS0xNVQwODozMDowMFo
+GET /api/mobile/alerts                                   ← first page
+GET /api/mobile/alerts?cursor=MjAyNi0wOS0xNVQwODozMDowMFo ← next page
 ```
 
-Response carries `nextCursor`:
-
-```json
+```jsonc
 { "alerts": [ ... ], "nextCursor": "MjAyNi0wOS0xNFQxMTowMDowMFo" }
 ```
 
-- `nextCursor: null` means you have reached the end. Stop requesting.
-- Pass the value back **unmodified**. It is an opaque base64url token over
-  a timestamp; do not decode, construct, or arithmetic on it.
-- A cursor that does not decode to a valid timestamp returns `400`, not a
-  silent reset to page one. That is deliberate: silently returning the
-  whole list from the beginning reads as a pagination bug.
+- `nextCursor: null` → you're at the end. Stop.
+- Pass the value back **exactly as received**. Don't decode or modify it.
+- A broken cursor returns `400`, not page one.
+- **20 items per page**, every endpoint. One number so you can't get it
+  wrong.
 
-**Page size is 20** on every paginated endpoint
-(`MOBILE_PAGE_SIZE` in `lib/mobile/respond.ts`). One number across the
-whole namespace, because a client that has to remember a different limit
-per endpoint will get one of them wrong.
+> **Why cursors?** The alert feed grows from the top as background jobs
+> write new rows. With page numbers, a new alert arriving between two
+> fetches shifts everything down one and you'd render a duplicate.
 
-**Why cursors.** A phone list appends as you scroll, and the alert feed
-grows from the top as cron jobs write new rows. With offsets, an alert
-arriving between two page fetches shifts every subsequent row down by one
-and the reader sees a duplicate. A `created_at` cursor is stable under
-insertion.
+## Plans and paywalls
 
----
+Tiers, lowest to highest: **`free` → `paid` → `premium`**
 
-## 6. Entitlements
+| Feature | Needs | Endpoints |
+|---|---|---|
+| `competitor_intel` | `paid` | `/competitors`, `/price-check`, `/search` |
+| `pricing_recommendations` | `paid` | `/pricing` |
+| `watchlists` | `paid` | `/products/{id}/insight` |
+| `anomaly_detection` | `premium` | `/competitors/moves` |
+| `forecasting` | `premium` | the `forecast` block inside `/market` |
+| `peer_benchmarks` | `premium` | the peer tiles inside `/pulse` |
 
-Plan tiers, in ascending order: `free` → `paid` → `premium`.
+A blocked call returns `403`:
 
-Feature-gated endpoints return `403` when the seller's tier is too low:
-
-```json
+```jsonc
 {
   "succeeded": false,
   "data": null,
@@ -209,384 +194,258 @@ Feature-gated endpoints return `403` when the seller's tier is too low:
 }
 ```
 
-| Feature key | Minimum tier | Mobile endpoints gated on it |
-|---|---|---|
-| `competitor_intel` | `paid` | `/competitors`, `/price-check` |
-| `pricing_recommendations` | `paid` | `/pricing` *(planned)* |
-| `anomaly_detection` | `premium` | `/competitors/moves` *(planned)* |
-| `peer_benchmarks` | `premium` | *(none yet — see `pulse` stat grid, planned)* |
+> ⚠️ **You will never see a 403 today.** A demo flag unlocks every feature
+> and there's no billing yet. **Build the upgrade path anyway.** When
+> billing ships, these go live with no backend change — and a client that
+> has never handled `403` will break everywhere at once.
 
-**Two things to know:**
+## Categories
 
-1. **Gating mirrors desktop exactly.** A feature reachable from a phone but
-   not a browser would be a paywall hole, not a mobile feature. The check
-   lives in shared plumbing (`requireMobileSeller`), not per handler.
+A seller can sell in several categories ("domains"). One is primary.
 
-2. **Gating is currently inert.** `DEMO_ALL_FEATURES_UNLOCKED = true` in
-   `entitlements.ts` bypasses every check, and no billing provider is
-   wired. **You will never see a 403 today.** Build the upgrade-prompt
-   path anyway — when billing lands, these become live without any backend
-   change, and a client that has never handled 403 will fail all at once.
+Every market endpoint takes an **optional** `?categorySlug=`:
 
----
+1. If you send one, it's used.
+2. If not, the seller's primary category is used.
+3. If neither exists → `400`, telling the seller to pick a category.
 
-## 7. Category scoping
+**Keep the selected category in local state and send it every time.** The
+server does not remember your selection.
 
-A seller can carry several categories ("domains"). One is primary.
+Responses carry both `categorySlug` (the id) and `categoryName` (for
+display). **Never show a slug to a seller.**
 
-**Today:** every market-facing endpoint silently uses the primary domain.
-There is no way to ask for a different one except `price-check`, which
-accepts `?categorySlug=`.
+## Money and numbers
 
-**Planned, required by the mockup's category switcher:** `?categorySlug=`
-becomes a standard optional param on `/competitors`, `/market`,
-`/pricing` and `/competitors/moves`, with the same fallback convention
-`price-check` already uses:
-
-1. If `?categorySlug=` is supplied, use it.
-2. Otherwise fall back to the seller's primary domain.
-3. If neither exists, return `400` with a message telling the seller to
-   set a category — not an empty success.
-
-**Client guidance:** persist the selected category locally and send it on
-every request. Do not rely on the server remembering a selection; it does
-not hold mobile session state.
-
-**Slugs are identifiers, names are for display.** Responses carry both
-(`categorySlug` and `categoryName`). Never render a slug to a seller.
+- **All money is a raw number**, never a formatted string. `1105`, not
+  `"PKR 1,105"`. Format it yourself.
+- **Every response that contains money carries a `currency` field.** Use it.
+- On `/products`, `currency` is **per row** — a catalogue can legitimately
+  mix currencies.
+- **`null` means "not available", not zero.** A `null` median is "we don't
+  have enough data"; a `0` median would be a real price. Render a dash for
+  `null`, never a `0`.
+- Percentages that compare against a baseline are **signed fractions**:
+  `-0.08` = 8% below. Except `pctChange` on anomalies, which is a signed
+  **percentage**: `-5.5` = down 5.5%. (Inconsistent, and we're keeping it —
+  both already ship.)
 
 ---
 
-## 8. Endpoint reference — live
+# Home & alerts
 
-### 8.1 `GET /api/mobile/pulse` — home screen
+## `GET /api/mobile/pulse`
 
-**Status:** Live. **Auth:** required. **Gate:** none. **Params:** none.
+**Live** · no plan gate · no params
 
 The entire Overview screen in one request.
 
 ```jsonc
 {
   "seller": {
-    "businessName": "string",
-    "planTier": "free | paid | premium",
+    "businessName": "Sana's Store",
+    "planTier": "free",
     "currency": "PKR"
   },
-  "domain": {                          // null if no category set
+
+  "domain": {                       // null if the seller has no category
     "categorySlug": "beauty-and-personal-care",
     "categoryName": "Beauty & Personal Care"
   },
-  "counts": {
+
+  "counts": {                       // bind badges straight to these
     "unreadAlerts": 3,
     "competitorStockOuts": 10,
     "lowStockProducts": 2
   },
-  "highlights": [                      // always at least one entry
+
+  "highlights": [                   // always ≥ 1 entry
     {
-      "tone": "good | warning | neutral",
+      "tone": "good",               // good | warning | neutral
       "headline": "10 competitor products are out of stock",
       "detail": "That's demand nobody is filling right now."
     }
   ],
-  "recentAlerts": [                    // max 5, newest first
+
+  "recentAlerts": [                 // max 5, newest first
     {
       "id": "uuid",
-      "type": "string",
-      "title": "string",
-      "message": "string",
+      "type": "price_drop",
+      "title": "Competitor dropped price",
+      "message": "Al-Fatah cut Dior 100ml by 8%.",
       "isRead": false,
       "createdAt": "2026-09-15T08:30:00.000Z"
     }
   ],
+
   "marketData": {
-    "lastScrapedAt": "2026-09-14T11:02:00.000Z",  // null if never scraped
+    "lastScrapedAt": "2026-09-14T11:02:00.000Z",   // null if never scraped
     "platformsTracked": 8
   }
 }
 ```
 
-**Notes for the client:**
+**Client notes**
 
-- `highlights` is ordered by priority — operational and time-sensitive
-  first, informative second. **Render in the order given.** The tone is
-  data so you can colour it without re-deriving the rule; do not
-  re-classify client-side.
-- When `domain` is `null`, `highlights` collapses to a single
-  "Pick a category to start" entry and every market figure is empty.
-  Render the onboarding path, not an empty dashboard.
-- `counts` is flat rather than nested so you can bind badges straight to
-  it.
-- `lastScrapedAt` is the freshest scrape across the seller's platforms.
-  **Show it.** A phone user has less context than someone sitting at a
-  dashboard, so stating the data's age matters more here, not less.
+- `highlights` is **already sorted by priority** — urgent first. Render in
+  the order given. `tone` is data so you can colour it; don't re-classify.
+- `domain: null` → the seller hasn't picked a category. `highlights`
+  collapses to a single "Pick a category to start". Show onboarding, not an
+  empty dashboard.
+- **Always show `lastScrapedAt`.** A phone user has less context than
+  someone at a desktop, so the data's age matters more here, not less.
+
+### Planned addition: the stat tiles
+
+```jsonc
+{
+  "domainStats": {
+    "listingsTracked": 5726,
+    "platformsTracked": 8,
+    "productsPriced": 87,
+    "sellersInDomain": null,    // null = below the privacy floor
+    "peersVisible": 0,
+    "benchmarksTracked": 0,
+    "peerFloor": 3
+  }
+}
+```
+
+**The privacy floor is a hard rule, not a loading state.** Peer numbers
+need at least 3 opted-in sellers before anything is computed. Below that,
+`sellersInDomain` is `null` and the rest are `0`.
+
+> ⚠️ **Design warning.** On first launch these render as `— / 0 / 0`. Three
+> zeros reads as "broken", not "not enough sellers yet". Consider
+> collapsing the three peer tiles into one card that states the rule once.
+> The API supports either layout — this is your call.
 
 ---
 
-### 8.2 `GET /api/mobile/alerts` — alert feed
+## `GET /api/mobile/kpis`
 
-**Status:** Live. **Auth:** required. **Gate:** none.
+**Planned** · no plan gate
 
 | Param | Type | Required | Notes |
 |---|---|---|---|
-| `cursor` | string | no | Opaque. From a previous `nextCursor`. |
+| `period` | `30d` \| `90d` | no | Defaults to `30d` |
+
+The seller's own business KPIs — revenue, orders, average order value, new
+customers — each with a change against the prior period.
+
+```jsonc
+{
+  "currency": "PKR",
+  "period": "30d",
+  "comparedTo": "prior 30 days",
+  "kpis": [
+    {
+      "key": "revenue",              // revenue | orders | aov | new_customers
+      "label": "Revenue",
+      "value": 482300,               // raw number, always
+      "format": "money",             // money | count
+      "diffPct": 12.4,               // null when there's no prior period
+      "direction": "up"              // up | down | flat
+    },
+    {
+      "key": "orders",
+      "label": "Orders",
+      "value": 214,
+      "format": "count",
+      "diffPct": -3.1,
+      "direction": "down"
+    },
+    { "key": "aov",           "label": "Average order value", "value": 2253, "format": "money", "diffPct": 16.0, "direction": "up" },
+    { "key": "new_customers", "label": "New customers",       "value": 38,   "format": "count", "diffPct": null, "direction": "flat" }
+  ]
+}
+```
+
+**Client notes**
+
+- **These are the seller's own sales figures, not market data.** They come
+  from orders the seller imported. A seller who hasn't imported orders gets
+  all zeros — that is correct, not a bug. Show an "import your orders"
+  empty state rather than four zeros.
+- `diffPct: null` means there's no prior period to compare against (a new
+  account). Hide the change indicator; don't render "0%".
+- **`format` tells you how to render `value`**, so you never have to guess
+  whether `2253` is money or a count.
+
+> **Implementation note for the backend:** the desktop equivalent
+> (`getEcommerceStats`) returns **pre-formatted strings** like
+> `"$482,300.00"` with icon and colour names baked in. The mobile route
+> must return raw numbers instead — a phone client can't re-parse a
+> formatted string, can't localise it, and shouldn't inherit desktop's
+> icon vocabulary. Compose from the same source data, don't reuse the
+> return shape.
+
+---
+
+## `GET /api/mobile/alerts`
+
+**Live** · no plan gate
+
+| Param | Type | Required |
+|---|---|---|
+| `cursor` | string | no |
 
 ```jsonc
 {
   "alerts": [
     {
       "id": "uuid",
-      "type": "string",
-      "title": "string",
-      "message": "string",
+      "type": "price_drop",
+      "title": "Competitor dropped price",
+      "message": "Al-Fatah cut Dior 100ml by 8%.",
       "isRead": false,
       "createdAt": "2026-09-15T08:30:00.000Z"
     }
   ],
-  "nextCursor": "base64url-string"     // null when exhausted
+  "nextCursor": "base64url-string"     // null when done
 }
 ```
 
-Newest first. 20 per page. See [Pagination](#5-pagination).
+Newest first, 20 per page. See [Pagination](#pagination).
 
 ---
 
-### 8.3 `POST /api/mobile/alerts/read` — mark alerts read
+## `POST /api/mobile/alerts/read`
 
-**Status:** Live. **Auth:** required. **Gate:** none.
+**Live** · no plan gate
 
-Two mutually exclusive body shapes:
+Two body shapes. Pick one:
 
 ```jsonc
-{ "ids": ["uuid", "uuid"] }   // mark specific alerts — max 100 per call
+{ "ids": ["uuid", "uuid"] }    // specific alerts — max 100 per call
 ```
 ```jsonc
-{ "all": true }               // clear the whole feed
+{ "all": true }                // clear the entire feed
 ```
 
-Success:
-```jsonc
-{ "markedCount": 2 }          // for the ids form
-{ "markedAll": true }         // for the all form
-```
+Returns `{ "markedCount": 2 }` or `{ "markedAll": true }`.
 
-**Why an array:** a swipe-to-clear gesture over several rows costs one
-request instead of one per row, which on a phone connection is the
-difference between instant and visibly laggy.
+**An empty `ids` array returns `400`, not "mark everything."** That's
+deliberate — an empty array is what a buggy client sends by accident, and
+silently wiping the feed isn't a failure mode worth allowing.
 
-**Why `{ all: true }` is a separate flag and not an empty array:** an
-empty array is what a buggy client sends by accident, and having that
-silently clear the entire feed is not a failure mode worth allowing. An
-empty `ids` array returns `400`.
+**Send an array for swipe-to-clear.** One request for five rows instead of
+five requests — on a phone connection that's the difference between instant
+and laggy.
 
 ---
 
-### 8.4 `GET /api/mobile/products` — seller's catalogue
+# Market
 
-**Status:** Live. **Auth:** required. **Gate:** none.
+## `GET /api/mobile/market`
 
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `cursor` | string | no | Opaque. |
-| `q` | string | no | Case-insensitive substring match on title. |
-
-```jsonc
-{
-  "products": [
-    {
-      "id": "uuid",
-      "title": "string",
-      "price": 1999,              // null if unpriced
-      "currency": "PKR",
-      "stockQty": 12,             // null if not tracked
-      "isActive": true,
-      "imageUrl": "https://..."   // null — render a placeholder tile
-    }
-  ],
-  "nextCursor": "base64url-string"
-}
-```
-
-**Notes:**
-
-- `currency` is carried **per row**, not assumed from the seller record. A
-  catalogue can legitimately mix currencies and a client that assumes one
-  will mislabel the others.
-- `q` is a substring match (`ilike`), not full-text search. It is a
-  "find the one I'm holding" box over a seller's own few hundred products,
-  not a search engine.
-- No cost price, SKU or category. See [Design rules](#1-design-rules).
-
----
-
-### 8.5 `PATCH /api/mobile/products/[id]/price` — update one price
-
-**Status:** Live. **Auth:** required. **Gate:** none.
-
-```jsonc
-{ "price": 1999 }     // non-negative number, required
-```
-
-Success (`200`):
-```jsonc
-{ "id": "uuid", "title": "string", "price": 1999, "currency": "PKR" }
-```
-
-Failures: `400` invalid price · `404` not found or not yours · `500` write
-failed.
-
-This is the action the rest of the app builds toward: a seller sees a
-competitor undercut them in the alert feed, opens the product, and changes
-the price without going back to a laptop.
-
-**Implementation note worth knowing:** the update filters on `seller_id` as
-well as relying on RLS, and re-selects the row afterwards, so a write that
-matched nothing returns `404` rather than a cheerful `200` having changed
-nothing.
-
----
-
-### 8.6 `GET /api/mobile/competitors` — competitor snapshot
-
-**Status:** Live. **Auth:** required. **Gate:** `competitor_intel`.
-
-Currently scoped to the primary domain. `?categorySlug=` is
-[planned](#7-category-scoping).
-
-```jsonc
-{
-  "categoryName": "Beauty & Personal Care",   // null if no domain
-  "marketMedianPrice": 1105,                  // null if unscraped
-  "currency": "PKR",
-  "competitors": [                            // max 8, ranked
-    {
-      "name": "Al-Fatah",
-      "platformName": "Al-Fatah",
-      "skuCount": 412,
-      "assortmentShare": 0.18,     // 0–1, share of in-scope SKUs
-      "medianPrice": 980,          // null if unknown
-      "priceIndex": -0.08          // negative = undercuts market median
-    }
-  ],
-  "emptyReason": null              // or "no_category" | "no_named_sellers"
-}
-```
-
-**`priceIndex` is the single most useful number on this screen.** `-0.08`
-means this competitor prices 8% below the market median. Lead with it.
-
-**`emptyReason` is structured on purpose.** "You have not set a category"
-and "this market has no named sellers" are different problems with
-different fixes, and a bare empty list cannot tell them apart. Branch on
-this field, never on `competitors.length === 0` alone.
-
-Desktop's scorecard carries 9 columns (brand count, in-stock rate, sold
-units, ratings, repricing rate, tenure). Those are a laptop view.
-
----
-
-### 8.7 `GET /api/mobile/price-check` — "should I stock this?"
-
-**Status:** Live. **Auth:** required. **Gate:** `competitor_intel`.
-
-The quick action the mobile app exists for. Keyed on a **title string**,
-not a product id, because the seller is standing at a supplier looking at
-something they do not own yet.
-
-| Param | Type | Required | Notes |
-|---|---|---|---|
-| `title` | string | **yes** | Max 200 chars. |
-| `categorySlug` | string | no | Falls back to primary domain. |
-| `intendedPrice` | number | no | Unparseable values are dropped, not rejected. |
-
-```jsonc
-{
-  "query": "Dior Eau Sauvage 100ml",
-  "categorySlug": "beauty-and-personal-care",
-  "categoryName": "Beauty & Personal Care",
-  "currency": "PKR",
-
-  "matchCount": 14,           // scraped listings matching the title
-  "competitorCount": 6,
-  "platformCount": 4,
-
-  "matchedPriceBand": {       // over MATCHED listings — null if nothing matched
-    "min": 18500, "median": 21900, "max": 24000
-  },
-
-  "categoryPricing": { ... },  // wider category context; null if unscraped
-
-  "pricePosition": {           // present only if intendedPrice was supplied
-    "intendedPrice": 20000,
-    "vsMatchedMedian": -0.087,        // signed fraction
-    "cheaperThanCount": 11,
-    "verdict": "below market | at market | above market"
-  },
-
-  "hasEnoughData": true
-}
-```
-
-**`hasEnoughData` is not optional to handle.** A thin market is itself
-worth knowing about, and showing confident-looking numbers computed over
-three listings is how a seller gets burned. When it is `false`, present
-the figures as a hint, not a finding — or withhold them.
-
-`matchedPriceBand` is the band *for this product*, which is what the
-seller is actually deciding against. `categoryPricing` is the wider
-category, for context only. Do not conflate them.
-
-**No scrape is triggered.** This searches what the last scraper run already
-wrote. A product nobody has scraped returns `matchCount: 0`, not a queued
-job.
-
----
-
-### 8.8 `POST` / `DELETE /api/mobile/devices` — push registration
-
-**Status:** Live. **Auth:** required. **Gate:** none.
-**Requires migration 052 applied.**
-
-**Register (`POST`):**
-```jsonc
-{
-  "pushToken": "ExponentPushToken[...]",   // required
-  "platform": "ios" | "android",           // required
-  "appVersion": "1.2.0"                    // optional, truncated to 32 chars
-}
-```
-→ `{ "registered": true }`
-
-**De-register (`DELETE`):**
-```jsonc
-{ "pushToken": "ExponentPushToken[...]" }
-```
-→ `{ "removed": true }`
-
-**Call `POST` on every app launch.** Expo tokens rotate. The write is an
-upsert keyed on the token, so re-registering does not accumulate a row per
-launch.
-
-**Call `DELETE` on sign-out. This is not optional.** Without it, a shared
-or resold handset keeps receiving another seller's alerts until the token
-happens to rotate.
-
----
-
-## 9. Endpoint reference — planned
-
-Four additions, derived directly from the mobile mockup. Each maps to
-existing `lib/market-intel/*` functions — **no new analysis logic is
-required for any of them**, only composition.
-
-### 9.1 `GET /api/mobile/market` — Market tab
-
-**Status:** Planned. **Gate:** none (category pricing is free-tier on
-desktop; the forecast is a `forecasting`-gated feature there and the gate
-should be mirrored — see open question 3).
+**Planned** · `forecast` block needs `forecasting` (`premium`); the rest is free
 
 | Param | Type | Required |
 |---|---|---|
-| `categorySlug` | string | no — falls back to primary domain |
+| `categorySlug` | string | no |
+
+The entire Market screen in one call.
 
 ```jsonc
 {
@@ -594,197 +453,66 @@ should be mirrored — see open question 3).
   "categoryName": "Beauty & Personal Care",
   "currency": "PKR",
 
-  "pricing": {                    // null when the category is unscraped
-    "count": 7572,                // listings behind these figures
+  "pricing": {                    // null when the category has no scraped data
+    "count": 7572,                // listings behind these numbers
     "minPrice": 25,
-    "p25": 640,                   // null below a 15-row sample floor
+    "p25": 640,                   // null below a 15-listing sample floor
     "median": 1105,
-    "p75": 2799,                  // null below the same floor
+    "p75": 2799,                  // same floor
     "maxPrice": 480000,
     "avgPrice": 2403,
     "samplePlatforms": ["Al-Fatah", "Bagallery"]
   },
 
-  "forecast": {                   // null when under 5 trend points
-    "trendDirection": "up | down | flat",
-    "changePerWeek": -77,         // in reporting currency
+  "forecast": {                   // null if premium-gated OR too little history
+    "trendDirection": "down",     // up | down | flat
+    "changePerWeek": -77,
     "points": [
       { "date": "2026-08-16", "value": 1180, "isProjected": false },
       { "date": "2026-09-16", "value": 1102, "isProjected": true }
     ]
   },
 
-  "pricePosition": {              // the seller's own catalogue, bucketed
+  "pricePosition": {              // the seller's own products, bucketed
     "totalProducts": 87,
     "farFromMedianCount": 75,     // the "75 of 87" headline
-    "bands": [                    // always 5, always in this order
-      { "band": "far-above",  "label": "25%+ above",   "count": 49 },
-      { "band": "above",      "label": "5–25% above",  "count": 4  },
-      { "band": "at-market",  "label": "Within 5%",    "count": 3  },
-      { "band": "below",      "label": "5–25% below",  "count": 5  },
-      { "band": "far-below",  "label": "25%+ below",   "count": 26 }
+    "bands": [                    // always 5, always this order
+      { "band": "far-above", "label": "25%+ above",  "count": 49 },
+      { "band": "above",     "label": "5–25% above", "count": 4  },
+      { "band": "at-market", "label": "Within 5%",   "count": 3  },
+      { "band": "below",     "label": "5–25% below", "count": 5  },
+      { "band": "far-below", "label": "25%+ below",  "count": 26 }
     ],
-    "anyPackSizeAdjusted": true   // see caveat below
+    "anyPackSizeAdjusted": true
   }
 }
 ```
 
-**Backed by:** `getCategoryPricing`, `getCategoryPriceForecast`,
-`getPortfolioPricePositions` + `summarisePortfolioBands`.
+**Client notes**
 
-**Client notes:**
+- `p25` / `p75` are `null` below a 15-listing sample floor. A percentile
+  from a handful of rows is a guess wearing a suit. **Render a dash.**
+- `forecast.points` mixes history and projection in one array — split on
+  `isProjected`. Solid line for `false`, dashed for `true`.
+- `forecast: null` → hide the card entirely. Either the seller isn't on
+  `premium`, or there's too little history (under 5 data points) for a
+  trend line to mean anything.
+- Bands arrive worst-first. Render in order.
 
-- `p25`/`p75` are `null` below a 15-observation sample floor. A percentile
-  computed from a handful of rows is a guess dressed up as precision.
-  Render a dash, not a zero.
-- `forecast.points` carries historical and projected points in one array,
-  discriminated by `isProjected`. Draw the historical run solid and the
-  projected run dashed — the mockup already does this correctly.
-- `forecast` is `null` when there is too little history. A trend line
-  through 2–3 points is misleading, not useful. Hide the card.
-- Bands arrive in display order, worst-for-the-seller first. Render in the
-  order given.
-- **`anyPackSizeAdjusted` carries an honest limit.** Only the seller's own
-  price is normalised for pack size; the category median is scraped as-is.
-  In a category with many multipacks this inflates the "far from median"
-  count. When `true`, the UI should say the comparison is approximate
-  rather than present the headline as fact.
+> ⚠️ **`anyPackSizeAdjusted: true` means the comparison is approximate.**
+> The seller's own price is adjusted for pack size; the market median isn't.
+> In a category full of multipacks this inflates the "far from median"
+> count. When `true`, say the comparison is approximate rather than stating
+> the headline as fact.
 
 ---
 
-### 9.2 `GET /api/mobile/pricing` — Pricing tab
+## `GET /api/mobile/categories`
 
-**Status:** Planned. **Gate:** `pricing_recommendations` (`paid`).
+**Planned** · no plan gate · no params
 
-| Param | Type | Required |
-|---|---|---|
-| `categorySlug` | string | no — falls back to primary domain |
-| `cursor` | string | no |
-
-```jsonc
-{
-  "currency": "PKR",
-  "recommendations": [
-    {
-      "productId": "uuid",
-      "productTitle": "Samsung Galaxy A15",
-      "categorySlug": "mobiles-and-electronics",
-      "categoryName": "Mobiles & Electronics",
-      "currentPrice": 65000,
-      "recommendedPrice": 71875,
-      "direction": "increase | decrease | hold",
-      "competitorLow": 68000,
-      "competitorHigh": 75000,
-      "marginConstrained": false,
-      "matchConfidence": 0.72,      // null when no confident title match
-      "duplicateEntries": 1,
-      "rationale": "Room to raise price while staying inside the competitor band."
-    }
-  ],
-  "nextCursor": null
-}
-```
-
-**Backed by:** `getPricingRecommendations`.
-
-**Client notes:**
-
-- **The method is rule-based, not ML, and saying so matters.** The
-  recommendation is the competitor band (±5% off a matched competitor, or
-  the category P25–P75 when there is no confident match), floored at cost
-  × 1.15. The mockup's "Rule-based · Competitor band + your margin floor"
-  subheading is correct and should stay.
-- `rationale` is server-authored, seller-facing prose. **Render it
-  verbatim.** Do not summarise or rewrite it client-side.
-- `marginConstrained: true` means the margin floor sits above the
-  competitor band entirely — the seller cannot be price-competitive here
-  without a thin margin. That is a real signal, not a bug. Surface it.
-- **`categorySlug` on each row is the category that row was judged
-  against — always the product's own, never the one on screen.** This is
-  why the mockup can legitimately show a Home & Kitchen recommendation
-  while the pill says Beauty. If you filter by the selected category
-  client-side, you will hide valid advice. Decide deliberately (see open
-  question 1).
-- `duplicateEntries > 1` means the seller has duplicate catalogue rows for
-  one item. The backend collapses them (keeping the highest cost, so the
-  margin floor clears the dearest copy actually held) but the underlying
-  data problem remains. Worth a quiet note in the UI.
-
----
-
-### 9.3 `GET /api/mobile/competitors/moves` — Competitors tab
-
-**Status:** Planned. **Gate:** `anomaly_detection` (`premium`).
-
-Stock-outs and price anomalies, the two things that *changed*. Distinct
-from `/competitors`, which is the static landscape.
-
-| Param | Type | Required |
-|---|---|---|
-| `categorySlug` | string | no — falls back to primary domain |
-
-```jsonc
-{
-  "categoryName": "Beauty & Personal Care",
-  "currency": "PKR",
-
-  "stockOuts": [
-    {
-      "id": "uuid",
-      "title": "Dior Eau Sauvage Lotion Apres-Rasage 100ml",
-      "platformName": "Al-Fatah",
-      "price": 21900,               // null if unpriced
-      "imageUrl": "https://...",    // null — fall back to a tile
-      "url": "https://...",
-      "lastSeenAt": "2026-09-02T00:00:00.000Z",
-      "duration": {                 // null if history unavailable
-        "days": 13,
-        "confirmed": false          // false = a floor, not a measurement
-      }
-    }
-  ],
-
-  "anomalies": [
-    {
-      "productId": "uuid",
-      "title": "Vcare Natural — Lip Cheek Tint Peach 15ml",
-      "platformName": "Bagallery",
-      "imageUrl": null,
-      "oldPrice": 1125,
-      "newPrice": 1063,
-      "pctChange": -5.5
-    }
-  ]
-}
-```
-
-**Backed by:** `getStockOuts` (+ `computeStockOutDuration`),
-`detectCompetitorPriceAnomalies`.
-
-**Client notes:**
-
-- **`duration.confirmed` changes the wording.** `true` means the days are
-  measured from an observed in-stock moment. `false` means it is a floor —
-  the product has never been seen in stock in our history, so "13 days" is
-  really "at least 13 days". The mockup's "Out 13+d" pill is the correct
-  rendering for `false`; drop the `+` when `confirmed` is `true`.
-- Anomalies use **IQR outlier detection over week-over-week price
-  changes**, not a fixed percentage threshold — so what counts as unusual
-  adapts to how volatile that specific category is. A 5% move in a stable
-  category can outrank a 20% move in electronics during a sale.
-- Anomalies must clear a **two-cycle confirmation gate** before surfacing,
-  so a single bad scrape does not produce an alert. Capped at 50.
-- Anomalies cover the **last 7 days**. Label the section with the window;
-  the mockup already does.
-
----
-
-### 9.4 `GET /api/mobile/categories` — category switcher
-
-**Status:** Planned. **Gate:** none.
-
-Populates the bottom-sheet switcher. Returns only the seller's own
-domains, not the full 12-category taxonomy.
+Fills the category switcher sheet. Returns only the seller's own
+categories, not the full 12-category taxonomy.
 
 ```jsonc
 {
@@ -798,150 +526,542 @@ domains, not the full 12-category taxonomy.
 }
 ```
 
-A seller with one domain gets one row — **hide the switcher rather than
-showing a single-option sheet.**
+**One category → hide the switcher.** Don't show a sheet with a single
+option.
 
 ---
 
-### 9.5 Extension to `pulse` — Overview stat grid
+# Competitors
 
-**Status:** Planned. Adds to the existing response; breaks nothing.
+## `GET /api/mobile/competitors`
+
+**Live** · needs `competitor_intel` (`paid`)
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `categorySlug` | string | no | **Planned** — today it always uses the primary category |
+
+Who's in this market and how they price.
 
 ```jsonc
 {
-  "domainStats": {
-    "listingsTracked": 5726,
-    "platformsTracked": 8,
-    "productsPriced": 87,
-    "sellersInDomain": null,       // null = below the anonymity floor
-    "peersVisible": 0,
-    "benchmarksTracked": 0,
-    "peerFloor": 3
-  }
+  "categoryName": "Beauty & Personal Care",   // null if no category set
+  "marketMedianPrice": 1105,                  // null if unscraped
+  "currency": "PKR",
+
+  "competitors": [                            // max 8, ranked
+    {
+      "name": "Al-Fatah",
+      "platformName": "Al-Fatah",
+      "skuCount": 412,
+      "assortmentShare": 0.18,     // 0–1 — share of all listings in this market
+      "medianPrice": 980,          // null if unknown
+      "priceIndex": -0.08          // negative = they undercut the market
+    }
+  ],
+
+  "emptyReason": null              // null | "no_category" | "no_named_sellers"
 }
 ```
 
-**The anonymity floor is a hard rule, not a loading state.** Peer
-benchmarks require at least 3 opted-in sellers before any peer figure is
-computed; below that, `sellersInDomain` is `null` and the others are `0`.
+**Client notes**
 
-**Design warning, raised for the client developer to resolve:** on first
-launch these render as `— / 0 / 0`. Three zeroed tiles reads as "broken",
-not as "not enough sellers yet". Consider collapsing the three peer tiles
-into one card that states the rule once, and promoting a populated figure
-into the freed space. This is a UI decision, not an API constraint — the
-data supports either.
+- **`priceIndex` is the most useful number here.** `-0.08` = prices 8%
+  below the market median. Lead with it.
+- **Branch on `emptyReason`, never on `competitors.length === 0`.**
+  "You haven't set a category" and "this market has no named sellers" are
+  different problems with different fixes, and an empty list can't tell
+  them apart.
 
----
-
-## 10. Push notifications
-
-**Status:** Live in production.
-
-Delivered via the **Expo push service**, not raw FCM/APNs. Register with
-`POST /api/mobile/devices` ([8.8](#88-post--delete-apimobiledevices--push-registration)).
-
-**Schedule:** a cron fires three times daily at **08:30, 14:30 and 20:30
-PKT**, sending any unpushed seller notification.
-
-**Two caps worth knowing, because they shape what a seller sees:**
-
-- Notifications older than **24 hours** are never pushed. A seller who
-  installs the app does not get a backlog dumped on them.
-- At most **500 notifications per run**.
-
-Dead tokens are detected from the Expo response and pruned automatically —
-you do not need to manage token cleanup beyond calling `DELETE` on
-sign-out.
-
-**The notification payload mirrors the alert record** (`title`, `message`,
-`type`, alert id). Deep-link into the alert feed on tap, and call
-`POST /api/mobile/alerts/read` with that id so the badge count and the
-feed agree.
+Desktop shows 9 columns here (brand count, in-stock rate, sold units,
+ratings, repricing rate, tenure). Those stay on desktop — see
+[Not on mobile](#not-on-mobile).
 
 ---
 
-## 11. Screen-to-endpoint map
+## `GET /api/mobile/competitors/moves`
 
-| Mockup screen | Endpoint(s) | Status |
+**Planned** · needs `anomaly_detection` (`premium`)
+
+| Param | Type | Required |
 |---|---|---|
-| Overview — alert card, freshness, counters | `GET /pulse` | Live |
-| Overview — stat grid (sellers, peers, benchmarks, priced) | `GET /pulse` (extended) | Planned |
-| Market — median, min/P75/average | `GET /market` | Planned |
-| Market — 14-day forecast sparkline | `GET /market` | Planned |
-| Market — price-position bars | `GET /market` | Planned |
-| Competitors — out of stock | `GET /competitors/moves` | Planned |
-| Competitors — price anomalies | `GET /competitors/moves` | Planned |
-| Competitors — who's in this market | `GET /competitors` | Live |
-| Pricing — recommendations | `GET /pricing` | Planned |
-| Top bar — bell / alert feed | `GET /alerts`, `POST /alerts/read` | Live |
-| Category switcher sheet | `GET /categories` | Planned |
-| Product search + price edit | `GET /products`, `PATCH /products/[id]/price` | Live |
-| "Should I stock this?" | `GET /price-check` | Live |
-| Push registration | `POST` / `DELETE /devices` | Live |
+| `categorySlug` | string | no |
 
-**Not in the mockup, already built:** `price-check`, `products`, and the
-price edit. These are the app's most differentiated capability — a seller
-at a supplier checking whether to buy something. Worth a screen.
+What *changed*. Distinct from `/competitors`, which is the static picture.
 
----
+```jsonc
+{
+  "categoryName": "Beauty & Personal Care",
+  "currency": "PKR",
 
-## 12. What the mobile API deliberately does not do
+  "stockOuts": [
+    {
+      "id": "uuid",
+      "title": "Dior Eau Sauvage Lotion Apres-Rasage 100ml",
+      "platformName": "Al-Fatah",
+      "price": 21900,                       // null if unpriced
+      "imageUrl": null,                     // null → render a placeholder tile
+      "url": "https://...",
+      "lastSeenAt": "2026-09-02T00:00:00.000Z",
+      "duration": {                         // null if we have no history
+        "days": 13,
+        "confirmed": false
+      }
+    }
+  ],
 
-State these to anyone who asks for them, rather than treating them as gaps:
+  "anomalies": [
+    {
+      "productId": "uuid",
+      "title": "Vcare Natural — Lip Cheek Tint Peach 15ml",
+      "platformName": "Bagallery",
+      "imageUrl": null,
+      "oldPrice": 1125,
+      "newPrice": 1063,
+      "pctChange": -5.5                     // signed percentage, not a fraction
+    }
+  ]
+}
+```
 
-- **Trigger a scrape.** The scraper is a cron concern. No mobile request
-  queues work of any kind.
-- **Full catalogue CRUD.** One field, one write. See
-  [Design rules](#1-design-rules).
-- **Return the desktop's full scorecard, full product record, or
-  per-product competitor drawer.** Curated down on purpose.
-- **Expose cost price.** It is in the database and used to compute the
-  margin floor, but it is never returned to the phone.
-- **Hold session state.** No server-side "currently selected category".
-  The client sends `categorySlug` on every request.
-- **Loosen a desktop paywall.** Any feature gated on desktop is gated
-  identically here.
+**Client notes**
 
----
+- **`duration.confirmed` changes your wording.**
+  `true` → "Out 13d" (measured from a real in-stock sighting).
+  `false` → "Out 13+d" (we've never seen it in stock, so 13 days is a
+  floor). The mockup's `13+d` is right for `false`.
+- Anomalies cover **the last 7 days**. Label the section with the window.
+- Capped at 50.
 
-## Open questions — decide before building
-
-1. **Does `/pricing` scope to the selected category or return the whole
-   catalogue?** The mockup shows Home & Kitchen recommendations under a
-   Beauty pill, which implies whole-catalogue. If so, the category pill
-   should be hidden on that tab. **This is a UI decision that fixes the
-   API shape** — resolve it first.
-
-2. **Is the price-position headline the right one?** "75 of 87 products
-   sit 25%+ away" flags 86% of the catalogue, and the pack-size caveat
-   inflates it further. Consider leading with the smallest band instead.
-
-3. **Should `/market` gate the forecast on `forecasting` (`premium`)?**
-   Category pricing is free-tier on desktop; the forecast is not. Either
-   split the response so pricing returns and `forecast` comes back `null`
-   for free sellers, or gate the whole endpoint. Splitting is preferred —
-   it keeps the screen useful at every tier.
-
-4. **Is the sparkline informational or ornamental?** `forecast.points`
-   carries real dated values. If the curve stays axis-less, say so and
-   keep the payload small; if not, the client needs date labels.
+> **Why some 5% moves outrank 20% moves.** Anomalies use IQR outlier
+> detection over week-over-week changes, not a fixed threshold — so what
+> counts as "unusual" adapts to how volatile that category actually is. A
+> 5% move in a stable category can be more anomalous than a 20% move in
+> electronics during a sale. A price must also be an outlier across **two**
+> baselines before it surfaces, so one bad scrape can't produce an alert.
 
 ---
 
-## Reference
+# Pricing & products
 
-| Thing | Where |
+## `GET /api/mobile/pricing`
+
+**Planned** · needs `pricing_recommendations` (`paid`)
+
+| Param | Type | Required |
+|---|---|---|
+| `categorySlug` | string | no |
+| `cursor` | string | no |
+
+```jsonc
+{
+  "currency": "PKR",
+  "recommendations": [
+    {
+      "productId": "uuid",
+      "productTitle": "Samsung Galaxy A15",
+      "categorySlug": "mobiles-and-electronics",
+      "categoryName": "Mobiles & Electronics",
+
+      "currentPrice": 65000,
+      "recommendedPrice": 71875,
+      "direction": "increase",         // increase | decrease | hold
+
+      "competitorLow": 68000,
+      "competitorHigh": 75000,
+      "marginConstrained": false,
+      "matchConfidence": 0.72,         // null when no confident title match
+      "duplicateEntries": 1,
+
+      "rationale": "Room to raise price while staying inside the competitor band."
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+**Client notes**
+
+- **Render `rationale` word for word.** It's written for the seller. Don't
+  summarise or rewrite it.
+- **The method is rules, not AI, and saying so builds trust.** The
+  recommendation is the competitor band (±5% off a matched competitor, or
+  the category P25–P75 when there's no match), floored at cost × 1.15. The
+  mockup's "Rule-based · Competitor band + your margin floor" subheading is
+  correct — keep it.
+- `marginConstrained: true` → the margin floor sits above the whole
+  competitor band. The seller can't compete on price here without a thin
+  margin. **That's a real finding, surface it.**
+- `duplicateEntries > 1` → the seller has duplicate rows for one product.
+  The backend merges them (keeping the highest cost, so the margin floor
+  clears the dearest stock actually held), but the data problem is still
+  there. Worth a quiet note.
+
+> ⚠️ **`categorySlug` on each row is the category that row was judged
+> against — always the product's own, never the one on screen.** This is
+> why the mockup can show a Home & Kitchen recommendation under a Beauty
+> pill. If you filter client-side by selected category, you'll hide valid
+> advice. See [Decide before building](#decide-before-building) #1.
+
+---
+
+## `GET /api/mobile/products`
+
+**Live** · no plan gate
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `cursor` | string | no | |
+| `q` | string | no | Case-insensitive substring match on title |
+
+```jsonc
+{
+  "products": [
+    {
+      "id": "uuid",
+      "title": "Samsung Galaxy A15",
+      "price": 65000,              // null if unpriced
+      "currency": "PKR",           // per row — catalogues can mix currencies
+      "stockQty": 12,              // null if not tracked
+      "isActive": true,
+      "imageUrl": null             // null → placeholder tile
+    }
+  ],
+  "nextCursor": "base64url-string"
+}
+```
+
+`q` is a substring match over the seller's own few hundred products — a
+"find the one I'm holding" box, not a search engine. For searching the
+*market*, use [`/api/mobile/search`](#get-apimobilesearch).
+
+No cost price, SKU, or category — deliberately. See
+[Not on mobile](#not-on-mobile).
+
+---
+
+## `PATCH /api/mobile/products/{id}/price`
+
+**Live** · no plan gate
+
+```jsonc
+{ "price": 71875 }     // required, non-negative number
+```
+
+Returns:
+```jsonc
+{ "id": "uuid", "title": "Samsung Galaxy A15", "price": 71875, "currency": "PKR" }
+```
+
+`400` bad price · `404` not found or not yours · `500` write failed.
+
+**This is the action the whole app builds toward:** a seller sees a
+competitor undercut them in the feed, opens the product, changes the price
+— without going back to a laptop.
+
+**One field, on purpose.** An eight-field form half-submitted over a
+dropping mobile connection is worse than not offering it.
+
+---
+
+## `GET /api/mobile/products/{id}/insight`
+
+**Planned** · needs `watchlists` (`paid`)
+
+What a seller sees after tapping one of their own products: how this
+specific product sits against the market.
+
+```jsonc
+{
+  "product": {
+    "id": "uuid",
+    "title": "Samsung Galaxy A15",
+    "price": 65000,
+    "currency": "PKR",
+    "imageUrl": null
+  },
+
+  "vsMarket": {                     // null if we can't match this product
+    "categoryMedian": 68500,
+    "pctVsMedian": -0.051,          // signed fraction: -0.051 = 5.1% below
+    "band": "below",                // far-above | above | at-market | below | far-below
+    "bandLabel": "5–25% below"
+  },
+
+  "closestCompetitors": [           // max 5, best match first
+    {
+      "title": "Samsung Galaxy A15 128GB",
+      "platformName": "Daraz",
+      "price": 68999,
+      "inStock": true,
+      "matchConfidence": 0.81,      // 0–1
+      "url": "https://..."
+    }
+  ],
+
+  "priceHistory": [                 // last 30 days of the seller's own price
+    { "date": "2026-09-01", "price": 65000 }
+  ]
+}
+```
+
+**Client notes**
+
+- **`matchConfidence` bands are not calibrated.** They're based on title
+  similarity with hand-picked cut points. Show matches as "closest we
+  found", never as "the same product". The mockup's dashed empty-state
+  card gets this tone right.
+- `vsMarket: null` → we couldn't place this product. Say so plainly rather
+  than showing a blank comparison.
+
+---
+
+## `GET /api/mobile/price-check`
+
+**Live** · needs `competitor_intel` (`paid`)
+
+**The quick action the app exists for:** the seller is standing at a
+supplier holding something they don't stock yet. "Should I buy this, and
+what would I sell it for?"
+
+Keyed on a **title string**, not a product id — they don't own it yet.
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `title` | string | **yes** | Max 200 characters |
+| `categorySlug` | string | no | Falls back to primary category |
+| `intendedPrice` | number | no | An unparseable value is ignored, not rejected |
+
+```jsonc
+{
+  "query": "Dior Eau Sauvage 100ml",
+  "categorySlug": "beauty-and-personal-care",
+  "categoryName": "Beauty & Personal Care",
+  "currency": "PKR",
+
+  "matchCount": 14,              // scraped listings matching this title
+  "competitorCount": 6,
+  "platformCount": 4,
+
+  "matchedPriceBand": {          // over MATCHED listings — null if nothing matched
+    "min": 18500, "median": 21900, "max": 24000
+  },
+
+  "categoryPricing": { },        // the wider category, for context. null if unscraped
+
+  "pricePosition": {             // present only if you sent intendedPrice
+    "intendedPrice": 20000,
+    "vsMatchedMedian": -0.087,
+    "cheaperThanCount": 11,
+    "verdict": "below market"    // below market | at market | above market
+  },
+
+  "hasEnoughData": true
+}
+```
+
+**Client notes**
+
+- ⚠️ **`hasEnoughData: false` is not optional to handle.** Showing
+  confident-looking numbers computed from three listings is how a seller
+  gets burned. When it's `false`, present the figures as a hint — or don't
+  show them.
+- `matchedPriceBand` is the band **for this product** — that's what the
+  seller is deciding against. `categoryPricing` is background context.
+  Don't mix them up.
+- **Nothing is scraped on demand.** This searches what the last scraper run
+  already wrote. `matchCount: 0` means we have no data, not "please wait".
+
+---
+
+# Search
+
+## `GET /api/mobile/search`
+
+**Planned** · needs `competitor_intel` (`paid`)
+
+Backs the search icon in the top bar. Searches **scraped market products** —
+what competitors are selling — not the seller's own catalogue.
+
+| Param | Type | Required | Notes |
+|---|---|---|---|
+| `q` | string | **yes** | Minimum 2 characters |
+| `categorySlug` | string | no | Narrows to one market. Omit to search everything scraped. |
+| `cursor` | string | no | |
+
+```jsonc
+{
+  "query": "dior",
+  "currency": "PKR",
+  "results": [
+    {
+      "id": "uuid",
+      "title": "Dior Eau Sauvage Lotion Apres-Rasage 100ml",
+      "platformName": "Al-Fatah",
+      "price": 21900,            // null if unpriced
+      "inStock": false,
+      "imageUrl": null,
+      "url": "https://..."
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+**Client notes**
+
+- Under 2 characters returns an **empty list with `succeeded: true`**, not
+  an error. Don't show a failure state — just wait for more typing.
+- **Two searches exist and they're different things.** Make it obvious
+  which one the seller is in:
+  - `/api/mobile/search` → the market (competitors' products)
+  - `/api/mobile/products?q=` → the seller's own catalogue
+- Tapping a result should lead to
+  [`/price-check`](#get-apimobileprice-check) with that title — that's the
+  natural next question ("what would I sell this for?").
+
+---
+
+# Device & push
+
+## `POST` / `DELETE /api/mobile/devices`
+
+**Live** · no plan gate
+
+**Register** (`POST`):
+```jsonc
+{
+  "pushToken": "ExponentPushToken[...]",   // required
+  "platform": "ios",                       // required: ios | android
+  "appVersion": "1.2.0"                    // optional
+}
+```
+→ `{ "registered": true }`
+
+**Unregister** (`DELETE`):
+```jsonc
+{ "pushToken": "ExponentPushToken[...]" }
+```
+→ `{ "removed": true }`
+
+**Call `POST` on every app launch.** Expo tokens rotate. The write is an
+upsert keyed on the token, so repeat calls don't pile up rows.
+
+⚠️ **Call `DELETE` on sign-out. This is not optional.** Without it, a shared
+or resold phone keeps receiving the previous seller's alerts until the
+token happens to rotate.
+
+### How push works
+
+- Delivered through the **Expo push service**, not raw FCM/APNs.
+- Sent **three times a day: 08:30, 14:30, 20:30 PKT.**
+- Notifications older than **24 hours are never sent** — a new install
+  doesn't get a backlog dumped on it.
+- Max **500 per run**.
+- Dead tokens are pruned automatically. You don't manage cleanup beyond
+  the `DELETE` on sign-out.
+
+The payload mirrors an alert (`title`, `message`, `type`, alert id). On
+tap, deep-link into the alert feed and call `POST /alerts/read` with that
+id so the badge and the feed agree.
+
+---
+
+# Screen-to-endpoint map
+
+| Screen / element | Endpoint | |
+|---|---|---|
+| **Overview** — alert card, freshness, counters | `GET /pulse` | L |
+| **Overview** — stat tiles | `GET /pulse` (extended) | P |
+| **Overview** — revenue / orders / AOV KPIs | `GET /kpis` | P |
+| **Market** — median, min/P75/average | `GET /market` | P |
+| **Market** — forecast sparkline | `GET /market` | P |
+| **Market** — price-position bars | `GET /market` | P |
+| **Competitors** — who's in this market | `GET /competitors` | L |
+| **Competitors** — out of stock | `GET /competitors/moves` | P |
+| **Competitors** — price anomalies | `GET /competitors/moves` | P |
+| **Pricing** — recommendations | `GET /pricing` | P |
+| Top bar — category pill | `GET /categories` | P |
+| Top bar — search icon | `GET /search` | P |
+| Top bar — bell + feed | `GET /alerts`, `POST /alerts/read` | L |
+| Product list + price edit | `GET /products`, `PATCH /products/{id}/price` | L |
+| Product detail | `GET /products/{id}/insight` | P |
+| "Should I stock this?" | `GET /price-check` | L |
+| Push setup | `POST` / `DELETE /devices` | L |
+
+**Built, but not in the design yet:** `price-check` and the price edit.
+These are the app's most differentiated capability — a seller at a supplier
+deciding whether to buy something. **Worth giving a screen.**
+
+---
+
+# Not on mobile
+
+The web app has 56 routes. Mobile has 15. These are the deliberate
+omissions — say so when asked, rather than treating them as gaps.
+
+| Not exposed | Why |
+|---|---|
+| Orders & customers CRUD, bulk import | Back-office work. Belongs on a desktop with a spreadsheet open. |
+| Report generation (PDF/PPTX) | Nobody reads a generated PDF on a phone. |
+| Watchlist management | Creating and organising lists is desktop work; the *alerts* they produce come through push. |
+| Revenue forecasting, churn, at-risk customers | Analysis screens. Too dense to compress honestly. |
+| Full competitor scorecard (9 columns) | 9 columns on a 390px screen helps nobody. Mobile gets the 3 that are actionable. |
+| Full product record (cost price, SKU, category) | Cost price is used to compute the margin floor but is **never sent to the phone**. |
+| Market-definition editing | A destructive setting. Changing it re-scopes every number the seller sees. |
+| Marketing-site AI assistant | Public route for the landing page. No seller identity involved. |
+| Anything that triggers a scrape | **No mobile endpoint queues work of any kind.** Opening the app can never cause load. |
+
+**Also, by design:**
+
+- **No server-side session state.** No "currently selected category" on the
+  server — the client sends `categorySlug` every time.
+- **No loosened paywalls.** Anything gated on desktop is gated identically
+  here. A feature reachable from a phone but not a browser would be a hole,
+  not a feature.
+
+---
+
+# Decide before building
+
+Four open questions. **#1 blocks the API shape** — settle it first.
+
+**1. Does `/pricing` show the selected category, or the whole catalogue?**
+Recommendations are judged against each product's *own* category, never the
+one on screen. The mockup shows Home & Kitchen rows under a Beauty pill,
+which implies whole-catalogue. If that's right, **hide the category pill on
+the Pricing tab.** If not, the mock data needs fixing.
+
+**2. Is "75 of 87 products sit 25%+ away" the right headline?**
+That flags 86% of the catalogue, and the pack-size caveat inflates it
+further. It will be red-alert on almost every account, every time.
+Consider leading with the smallest band instead.
+
+**3. Where do the two searches live in the UI?**
+One magnifying glass, two different searches (market vs. own catalogue).
+Decide whether that's a toggle, two entry points, or one combined screen —
+it changes whether `/search` needs to return both shapes.
+
+**4. Is the sparkline informational or decorative?**
+`forecast.points` carries real dated values. If the curve stays axis-less,
+say so and we keep the payload small. If it gets labels, the client needs
+the dates — which it already has.
+
+---
+
+# Where things live
+
+| Thing | Path |
 |---|---|
 | Shared plumbing (envelope, auth, cursors) | `app/src/lib/mobile/respond.ts` |
 | Route handlers | `app/src/app/api/mobile/**` |
-| Business logic the routes compose | `app/src/lib/market-intel/**` |
-| Entitlement tiers | `app/src/lib/market-intel/core/entitlements.ts` |
+| The logic routes compose | `app/src/lib/market-intel/**` |
+| Plan tiers | `app/src/lib/market-intel/core/entitlements.ts` |
 | Push job | `app/src/lib/market-intel/jobs/push-notifications-job.ts` |
 | Cron schedule | `.github/workflows/market-intel-cron.yml` |
 | Device table | `scraper/migrations/052_*.sql` |
-| What exists across the whole product | `FEATURES.md` Part 10 |
-| What gets built next | `ROADMAP.md` Phase G |
+| Whole-product feature list | `FEATURES.md` Part 10 |
+| What's next | `ROADMAP.md` Phase G |
 
-**Known gap:** the eight live routes have **no automated tests**. Only the
-push job is covered. Adding route tests is tracked in `ROADMAP.md` Phase G.
+**Known gap:** the 8 live routes have **no automated tests** — only the push
+job is covered. Tracked in `ROADMAP.md` Phase G.
