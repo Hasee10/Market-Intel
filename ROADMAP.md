@@ -299,10 +299,10 @@ Ordered by value, not by block number.
   real data behind it in every category a seller is likely to pick, not just
   two.
 
-  Not yet checked: Query 5 of `_check_coverage.sql` (scraped nodes with no
-  entry in `market_category_map` — coverage that exists but isn't mapped to
-  a seller category yet, the cheapest possible further win). Worth running
-  before considering this phase fully closed.
+  **Query 5 checked, 2026-09-15: zero rows.** Every `(platform,
+  category_slug)` pair the scraper has ever written already has a
+  `market_category_map` entry — no scraped data is sitting unmapped. Phase D
+  is fully closed; there is no cheap taxonomy win left on the table.
 
 ## Phase E — Restructure the deliverable
 
