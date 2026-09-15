@@ -261,6 +261,65 @@ stats plus two competitor tables; the framework gives it a spine.
 
 Deliberately last. Deferred until the analysis underneath is correct.
 
+## Phase G — Mobile app
+
+**The backend half of this is already built and live**, `e21a21a`
+(2026-09-05) — one commit, ahead of any client work, ahead of this being
+written down here. That is the gap this section closes.
+
+**What exists:**
+
+- **8 endpoints** under `/api/mobile/*`, isolated from the 44 desktop routes:
+  `pulse` (the whole home screen in one request — a phone on a Pakistani
+  mobile connection pays a real latency cost per round trip, so this is one
+  fan-out instead of five spinners), `alerts` + `alerts/read` (cursor-paginated,
+  not offset — the feed grows from the top as crons write, and an offset
+  shows a reader duplicates), `price-check` (the reason the app exists: keyed
+  on a title string rather than a product id, because the seller is standing
+  at a supplier looking at something they don't own yet — "should I stock
+  this, at what price"), `products` (trimmed catalogue, no cost price/SKU),
+  `products/[id]/price` (the one write worth having on a phone — a single
+  field; full catalogue editing stays desktop, since a half-submitted
+  eight-field form over a dropping connection is worse than not offering it),
+  `competitors` (3 of the desktop scorecard's 9 columns — what a seller can
+  act on from a phone), `devices` (push-token registration).
+- **Push notifications, running in production.** `seller_devices`
+  (migration 052) + `seller_notifications.pushed_at` (migration 053) +
+  a delivery job (`push-notifications-job.ts`) via Expo's push service,
+  triggered 3×/day at 08:30/14:30/20:30 PKT
+  (`.github/workflows/market-intel-cron.yml`) — those times chosen as waking
+  hours in Pakistan specifically, not a generic `*/6`. Already had one real
+  production incident (2026-09-13, traced and fixed in `437579e`): a
+  PostgREST schema-cache lag was being misreported as a missing migration.
+- **No business logic duplicated.** Every mobile route is a thin composition
+  over the same `lib/market-intel/*` functions the desktop pages call — the
+  explicit goal being that a number on the phone can never disagree with the
+  same number on a laptop, which is the usual way a companion app goes wrong.
+  Same entitlement gating (`hasFeature`) as desktop, so no feature is
+  reachable from a phone but not a browser.
+- **Scraping stays desktop-only by design.** Every mobile route reads what
+  the cron already wrote; nothing a phone does can queue a scrape. Hold this
+  line — a future "pull to refresh the market" feature request should refresh
+  the *view*, not trigger a scrape.
+
+**What's missing:**
+
+- **The client itself.** No React Native/Expo project exists anywhere in this
+  repo. Everything above is a backend waiting for a frontend.
+- **Route-level tests.** Only the push job has one
+  (`push-notifications-job.test.ts`); the 8 `/api/mobile/*` handlers don't.
+- This section of the roadmap, until now — so the next reader would have had
+  to rediscover all of the above from the commit itself.
+
+**Before building the client, re-verify against this roadmap's own D4/coverage
+finding**: a mobile app's headline feature is `price-check` — "should I stock
+this" — and that answer is only as good as the market data behind it. If a
+category has zero scraped rows (see the coverage note above and
+`scraper/migrations/_check_coverage.sql`), `price-check` there has nothing to
+say. Coverage is a client-app blocker in a way it isn't for the desktop, where
+an empty state is merely disappointing rather than the entire value
+proposition failing silently.
+
 ---
 
 ## Sequencing
@@ -312,6 +371,10 @@ since OLX is off entirely rather than intermittently failing.
 
 ## Open items
 
+- Mobile client — the `/api/mobile/*` backend (Phase G) has had no consumer
+  since 2026-09-05. Until a client exists, the 8 routes and the push job are
+  unverified against a real device beyond whatever manual testing produced
+  the 2026-09-13 incident.
 - Billing provider — no checkout exists; `plan_tier` is set by hand or by
   the referral reward. Needed before Phase B tiers mean anything commercially.
 - Fate of `market_accounts` — the dormant JobLo-era buyer-side account type.

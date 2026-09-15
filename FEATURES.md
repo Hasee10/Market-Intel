@@ -320,3 +320,46 @@ Triggers, all through `createNotification()` (inserts `seller_notifications`, ca
 - **FX rates** - nightly-refreshed multi-currency conversion used throughout
 - **Referrals** - crypto-random codes, 3 joins → auto-upgrade to paid
 - **Public showcase** - opt-in peer visibility (price position/rating/category rank) + separate opt-in marketing-homepage logo showcase
+
+---
+
+## Part 10 — Mobile backend (`src/app/api/mobile/`, `src/lib/mobile/`)
+
+**Added `e21a21a` (2026-09-05), after this document's 2026-09-01 snapshot
+date — the one part of this file not covered by the original two-sweep
+extraction.** No client app exists yet; this is backend built ahead of it.
+Full detail in `ROADMAP.md` Phase G.
+
+A separate namespace of 8 endpoints, isolated from the 44 desktop routes and
+sharing none of their handlers, but every one a thin composition over the
+same `lib/market-intel/*` functions the desktop pages call — so a figure on
+the phone can never disagree with the same figure on the desktop.
+
+| Route | Purpose |
+|---|---|
+| `GET /api/mobile/pulse` | Home screen, one request: alerts, stock-outs, freshness |
+| `GET /api/mobile/alerts` | Cursor-paginated alert feed |
+| `POST /api/mobile/alerts/read` | Mark one/several/all read |
+| `GET /api/mobile/price-check` | "Should I stock this, at what price" — keyed on a title string, not a product id, since the seller doesn't own the item yet |
+| `GET /api/mobile/products` | Trimmed catalogue list (no cost price, no SKU) |
+| `PATCH /api/mobile/products/[id]/price` | The one write worth having on a phone — a single field |
+| `GET /api/mobile/competitors` | 3 of the desktop scorecard's 9 columns |
+| `POST/DELETE /api/mobile/devices` | Push-token register/de-register |
+
+**Shared plumbing**, `lib/mobile/respond.ts`: auth (bearer token →
+`requireMobileSeller`), the `{ succeeded, data, errors, message }` response
+envelope, and cursor pagination helpers — one seam so 8 handlers can't drift
+into 8 different error shapes. Entitlement checks route through the same
+`hasFeature()` desktop uses.
+
+**Push notifications**, live in production: `seller_devices` (migration 052,
+Expo push tokens) + `seller_notifications.pushed_at` (migration 053) +
+`push-notifications-job.ts`, delivered via Expo's push API, triggered 3×/day
+at Pakistan waking hours by `.github/workflows/market-intel-cron.yml`.
+
+**Deliberately not built here**: any scrape trigger. Every route reads what
+the last cron run already wrote; opening the app can never queue scraper
+work.
+
+**Gaps**: no React Native/Expo client exists anywhere in this repo yet; the
+8 routes have no tests (only the push job does).
