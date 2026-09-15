@@ -12,6 +12,7 @@ constantly and referenced by name from code comments and migration headers:
 | File | What it answers | Read it when |
 |---|---|---|
 | [`memory.md`](memory.md) | *Why* the code is the way it is — a dated engineering log of decisions, failed approaches and the reasoning behind them | Before changing something that looks odd. The odd thing is usually load-bearing and the entry explains why |
+| [`MOBILE_API.md`](MOBILE_API.md) | The `/api/mobile/*` contract — auth, envelope, pagination, every live and planned endpoint | Building the mobile client, or adding a mobile route. **Written to be read by a developer with no other context on this repo** |
 | [`SELLER_TRACKED_COMPETITORS.md`](SELLER_TRACKED_COMPETITORS.md) | Scope for letting sellers nominate their own competitors | **Scoping only — nothing built** |
 | [`ASSETS.md`](ASSETS.md) | Where brand/logo/hero source files live and which are authoritative | Touching anything visual |
 | [`mind.md`](mind.md) | What is live vs. what needs migrations applied by hand | Wondering why a built feature does nothing in production |

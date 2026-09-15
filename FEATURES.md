@@ -330,6 +330,12 @@ date — the one part of this file not covered by the original two-sweep
 extraction.** No client app exists yet; this is backend built ahead of it.
 Full detail in `ROADMAP.md` Phase G.
 
+**The client-facing contract is `docs/MOBILE_API.md`** — auth, envelope,
+pagination, error codes and every endpoint's request/response, written for
+a developer building the mobile app with no other context on this repo. It
+also carries the four planned endpoints (`/market`, `/pricing`,
+`/competitors/moves`, `/categories`) the agreed mobile design requires.
+
 A separate namespace of 8 endpoints, isolated from the 44 desktop routes and
 sharing none of their handlers, but every one a thin composition over the
 same `lib/market-intel/*` functions the desktop pages call — so a figure on
