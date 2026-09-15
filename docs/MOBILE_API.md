@@ -1024,13 +1024,21 @@ omissions — say so when asked, rather than treating them as gaps.
 
 # Decide before building
 
-Four open questions. **#1 blocks the API shape** — settle it first.
+Four questions. **#1 is answered** — the backend settles it. #2–#4 are UI
+calls that are still yours.
 
-**1. Does `/pricing` show the selected category, or the whole catalogue?**
-Recommendations are judged against each product's *own* category, never the
-one on screen. The mockup shows Home & Kitchen rows under a Beauty pill,
-which implies whole-catalogue. If that's right, **hide the category pill on
-the Pricing tab.** If not, the mock data needs fixing.
+**1. Does `/pricing` show the selected category, or the whole catalogue?
+→ The whole catalogue. Settled.**
+`getPricingRecommendations` selects **every** active product that has both a
+cost and a sell price, and prices each against **its own** category's band.
+The `categorySlug` argument only scopes the title-matching pass; it does not
+filter the result set. That was a deliberate fix — the function used to judge
+a seller's beds against the beauty P75, and the advice was simply wrong.
+
+So the mockup showing a Home & Kitchen row under a Beauty pill is **correct**.
+Two consequences: **don't filter client-side by the selected category** (you'd
+hide valid advice), and **hide the category pill on the Pricing tab** (it
+implies a filter that isn't applied).
 
 **2. Is "75 of 87 products sit 25%+ away" the right headline?**
 That flags 86% of the catalogue, and the pack-size caveat inflates it

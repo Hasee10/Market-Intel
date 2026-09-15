@@ -1,0 +1,1284 @@
+openapi: 3.0.3
+
+# Ryvl mobile API.
+#
+# Import into Swagger UI or Postman. Set the `bearerAuth` security value to a
+# Supabase session access token (supabase.auth.getSession() -> access_token).
+#
+# Prose contract:  docs/MOBILE_API.md
+# Design record:   docs/MOBILE_API_HANDOFF.md
+#
+# Every operation is tagged `live` or `planned`. `planned` endpoints are
+# specified but not yet implemented - they will 404 today.
+
+info:
+  title: Ryvl mobile API
+  version: '1.0.0'
+  description: |
+    Seller market-intelligence API for the Ryvl mobile client.
+
+    **Auth:** every endpoint requires `Authorization: Bearer <supabase_access_token>`.
+    A valid Supabase user with no seller record is `401`, not an empty `200`.
+
+    **Envelope:** every response — success or failure — is
+    `{ succeeded, data, errors, message }`. Branch on the HTTP status code,
+    not on `succeeded`; they always agree, but the status is available before
+    the body parses.
+
+    **Pagination:** cursors, never page numbers. 20 items per page everywhere.
+    Pass `nextCursor` back verbatim. A malformed cursor is `400`, not page one.
+
+    **Money:** always a raw number, never a formatted string. `null` means
+    "not available", never zero.
+
+    **Plan gating:** `DEMO_ALL_FEATURES_UNLOCKED` is currently true, so no
+    `403` is reachable today. Build the upgrade path anyway.
+
+servers:
+  - url: https://{host}
+    description: Same host as the web app
+    variables:
+      host:
+        default: app.ryvl.com
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Home & alerts
+    description: Overview screen, KPI tiles, alert feed
+  - name: Market
+    description: Category pricing, forecast, price position, category switcher
+  - name: Competitors
+    description: Competitor landscape, stock-outs, price anomalies
+  - name: Pricing & products
+    description: Recommendations, own catalogue, price edits, product insight
+  - name: Search
+    description: Search scraped market products
+  - name: Device
+    description: Push registration
+
+paths:
+
+  # ---------------------------------------------------------------- home ----
+
+  /api/mobile/pulse:
+    get:
+      tags: [Home & alerts]
+      operationId: getPulse
+      summary: The whole Overview screen in one call
+      description: |
+        `live` — no plan gate.
+
+        One request rather than five: a seller on a mobile connection pays real
+        latency per round trip, and a home screen that fans out shows five
+        spinners.
+
+        Triggers no scraping. Reads what the last cron run already wrote.
+
+        `domainStats` is the **planned** extension that backs the stat tiles.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/Pulse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/kpis:
+    get:
+      tags: [Home & alerts]
+      operationId: getKpis
+      summary: Revenue, orders, AOV, new customers
+      description: |
+        `planned` — no plan gate.
+
+        The seller's **own sales figures**, from orders they imported — not
+        market data. A seller who has imported no orders gets zeros; that is
+        correct, not a bug. Show an "import your orders" empty state.
+
+        Returns raw numbers with a `format` discriminator. The desktop
+        equivalent returns pre-formatted strings with icon and colour names
+        baked in; that shape is deliberately not reused here.
+      parameters:
+        - name: period
+          in: query
+          required: false
+          schema: { type: string, enum: ['30d', '90d'], default: '30d' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/KpiResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/alerts:
+    get:
+      tags: [Home & alerts]
+      operationId: listAlerts
+      summary: Alert feed, newest first
+      description: '`live` — no plan gate. 20 per page, cursor-paginated.'
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [alerts, nextCursor]
+                        properties:
+                          alerts:
+                            type: array
+                            items: { $ref: '#/components/schemas/Alert' }
+                          nextCursor: { $ref: '#/components/schemas/NextCursor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/alerts/read:
+    post:
+      tags: [Home & alerts]
+      operationId: markAlertsRead
+      summary: Mark alerts read
+      description: |
+        `live` — no plan gate.
+
+        Send an array for swipe-to-clear: one request for five rows instead of
+        five requests.
+
+        An **empty `ids` array is `400`, not "mark everything"** — an empty
+        array is what a buggy client sends by accident, and silently wiping the
+        feed is not a failure mode worth allowing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  title: Specific alerts
+                  required: [ids]
+                  properties:
+                    ids:
+                      type: array
+                      minItems: 1
+                      maxItems: 100
+                      items: { type: string, format: uuid }
+                - type: object
+                  title: All alerts
+                  required: [all]
+                  properties:
+                    all: { type: boolean, enum: [true] }
+            examples:
+              specific:
+                summary: Mark two alerts read
+                value: { ids: ['3f1c…', '9ab2…'] }
+              all:
+                summary: Clear the feed
+                value: { all: true }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          markedCount: { type: integer, example: 2 }
+                          markedAll: { type: boolean, example: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  # -------------------------------------------------------------- market ----
+
+  /api/mobile/market:
+    get:
+      tags: [Market]
+      operationId: getMarket
+      summary: The whole Market screen — pricing, forecast, price position
+      description: |
+        `planned` — the `forecast` block needs `forecasting` (premium); the
+        rest is ungated.
+
+        `forecast` is `null` when the seller lacks the entitlement **or** when
+        there is too little history (under 5 points) for a trend line to mean
+        anything. Hide the card either way — do not branch on tier.
+      parameters:
+        - $ref: '#/components/parameters/CategorySlug'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/MarketScreen' }
+        '400':
+          description: No category given and the seller has no primary category
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/categories:
+    get:
+      tags: [Market]
+      operationId: listCategories
+      summary: The seller's own categories, for the switcher sheet
+      description: |
+        `planned` — no plan gate.
+
+        Returns only the seller's own categories, not the full 12-category
+        taxonomy. **One category → hide the switcher.**
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [categories]
+                        properties:
+                          categories:
+                            type: array
+                            items: { $ref: '#/components/schemas/Category' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  # --------------------------------------------------------- competitors ----
+
+  /api/mobile/competitors:
+    get:
+      tags: [Competitors]
+      operationId: getCompetitors
+      summary: Who is in this market and how they price
+      description: |
+        `live` — needs `competitor_intel` (paid).
+
+        The static picture. For what *changed*, use `/competitors/moves`.
+
+        **Branch on `emptyReason`, never on `competitors.length === 0`.**
+        "No category set" and "this market has no named sellers" are different
+        problems with different fixes, and an empty list cannot tell them apart.
+
+        Desktop shows 9 columns here. Mobile gets the 3 that are actionable.
+      parameters:
+        - name: categorySlug
+          in: query
+          required: false
+          description: '**Planned.** Today the route always uses the primary category.'
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CompetitorLandscape' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/competitors/moves:
+    get:
+      tags: [Competitors]
+      operationId: getCompetitorMoves
+      summary: Stock-outs and price anomalies
+      description: |
+        `planned` — needs `anomaly_detection` (premium).
+
+        Anomalies use IQR outlier detection over week-over-week changes, not a
+        fixed threshold, so "unusual" adapts to how volatile the category
+        actually is. A price must be an outlier across two baselines before it
+        surfaces, so one bad scrape cannot produce an alert. Window: 7 days.
+        Capped at 50.
+      parameters:
+        - $ref: '#/components/parameters/CategorySlug'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/CompetitorMoves' }
+        '400':
+          description: No category given and the seller has no primary category
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  # ---------------------------------------------------- pricing/products ----
+
+  /api/mobile/pricing:
+    get:
+      tags: [Pricing & products]
+      operationId: getPricingRecommendations
+      summary: Rule-based pricing recommendations
+      description: |
+        `planned` — needs `pricing_recommendations` (paid).
+
+        Rules, not AI — and saying so builds trust. The recommendation is the
+        competitor band (±5% off a matched competitor, or the category P25–P75
+        when there is no confident match), floored at cost × 1.15.
+
+        **Returns the whole active catalogue, not the selected category.** Each
+        row is judged against **its own** category's band, which is why the row
+        carries its own `categorySlug`. `?categorySlug` only scopes the
+        title-matching pass; it does not filter the result set. Do not filter
+        client-side by the selected category — you would hide valid advice.
+      parameters:
+        - $ref: '#/components/parameters/CategorySlug'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [currency, recommendations, nextCursor]
+                        properties:
+                          currency: { $ref: '#/components/schemas/Currency' }
+                          recommendations:
+                            type: array
+                            items: { $ref: '#/components/schemas/PricingRecommendation' }
+                          nextCursor: { $ref: '#/components/schemas/NextCursor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/products:
+    get:
+      tags: [Pricing & products]
+      operationId: listProducts
+      summary: The seller's own catalogue
+      description: |
+        `live` — no plan gate.
+
+        `q` is a substring match over the seller's own few hundred products — a
+        "find the one I am holding" box, not a search engine. To search the
+        *market*, use `/api/mobile/search`.
+
+        No cost price, SKU or category — deliberately.
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - name: q
+          in: query
+          required: false
+          description: Case-insensitive substring match on title
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [products, nextCursor]
+                        properties:
+                          products:
+                            type: array
+                            items: { $ref: '#/components/schemas/SellerProduct' }
+                          nextCursor: { $ref: '#/components/schemas/NextCursor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/products/{id}/price:
+    patch:
+      tags: [Pricing & products]
+      operationId: updateProductPrice
+      summary: Change one product's price
+      description: |
+        `live` — no plan gate.
+
+        The action the whole app builds toward: a seller sees a competitor
+        undercut them in the feed, opens the product, changes the price —
+        without going back to a laptop.
+
+        **One field, on purpose.** An eight-field form half-submitted over a
+        dropping mobile connection is worse than not offering it.
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [price]
+              properties:
+                price: { type: number, minimum: 0, example: 71875 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          id: { type: string, format: uuid }
+                          title: { type: string }
+                          price: { type: number }
+                          currency: { $ref: '#/components/schemas/Currency' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/products/{id}/insight:
+    get:
+      tags: [Pricing & products]
+      operationId: getProductInsight
+      summary: One of the seller's products vs. the market
+      description: |
+        `planned` — needs `watchlists` (paid).
+
+        **`matchConfidence` bands are not calibrated.** They are title
+        similarity with hand-picked cut points. Present matches as "closest we
+        found", never as "the same product".
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ProductInsight' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  /api/mobile/price-check:
+    get:
+      tags: [Pricing & products]
+      operationId: priceCheck
+      summary: 'Should I stock this, and at what price?'
+      description: |
+        `live` — needs `competitor_intel` (paid).
+
+        The quick action the app exists for: the seller is standing at a
+        supplier holding something they do not stock yet. Keyed on a **title
+        string**, not a product id — they do not own it yet.
+
+        **Nothing is scraped on demand.** This searches what the last scraper
+        run already wrote; `matchCount: 0` means we have no data, not "please
+        wait".
+
+        **`hasEnoughData: false` is not optional to handle.** Showing
+        confident-looking numbers computed from three listings is how a seller
+        gets burned.
+      parameters:
+        - name: title
+          in: query
+          required: true
+          schema: { type: string, maxLength: 200 }
+          example: Dior Eau Sauvage 100ml
+        - $ref: '#/components/parameters/CategorySlug'
+        - name: intendedPrice
+          in: query
+          required: false
+          description: An unparseable value is ignored, not rejected.
+          schema: { type: number }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/PriceCheck' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  # -------------------------------------------------------------- search ----
+
+  /api/mobile/search:
+    get:
+      tags: [Search]
+      operationId: searchMarketProducts
+      summary: Search scraped market products
+      description: |
+        `planned` — needs `competitor_intel` (paid).
+
+        Backs the search icon in the top bar. Searches **what competitors are
+        selling**, not the seller's own catalogue — for that use
+        `/api/mobile/products?q=`.
+
+        A query under 2 characters returns an **empty list with
+        `succeeded: true`**, not an error. Do not show a failure state; wait for
+        more typing.
+
+        Tapping a result should lead into `/price-check` with that title.
+
+        `nextCursor` may always be `null` in the first release — the underlying
+        search is currently capped at 20 results with no offset.
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string, minLength: 2 }
+          example: dior
+        - name: categorySlug
+          in: query
+          required: false
+          description: Narrows to one market. Omit to search everything scraped.
+          schema: { type: string }
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        required: [query, results, nextCursor]
+                        properties:
+                          query: { type: string }
+                          currency: { $ref: '#/components/schemas/Currency' }
+                          results:
+                            type: array
+                            items: { $ref: '#/components/schemas/MarketProduct' }
+                          nextCursor: { $ref: '#/components/schemas/NextCursor' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/UpgradeRequired' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+  # -------------------------------------------------------------- device ----
+
+  /api/mobile/devices:
+    post:
+      tags: [Device]
+      operationId: registerDevice
+      summary: Register for push
+      description: |
+        `live` — no plan gate.
+
+        **Call on every app launch.** Expo tokens rotate. The write is an upsert
+        keyed on the token, so repeat calls do not pile up rows.
+
+        Push goes through the **Expo push service**, not raw FCM/APNs. Sent
+        three times a day (08:30 / 14:30 / 20:30 PKT), max 500 per run,
+        nothing older than 24 hours — a new install never gets a backlog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pushToken, platform]
+              properties:
+                pushToken: { type: string, example: 'ExponentPushToken[xxxxx]' }
+                platform: { type: string, enum: [ios, android] }
+                appVersion: { type: string, example: '1.2.0' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          registered: { type: boolean, example: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+    delete:
+      tags: [Device]
+      operationId: unregisterDevice
+      summary: Unregister on sign-out
+      description: |
+        `live` — no plan gate.
+
+        **Not optional.** Without it, a shared or resold phone keeps receiving
+        the previous seller's alerts until the token happens to rotate.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [pushToken]
+              properties:
+                pushToken: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Envelope'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          removed: { type: boolean, example: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '500': { $ref: '#/components/responses/ServerError' }
+
+# =========================================================== components ====
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        Supabase session access token. `supabase.auth.getSession()` →
+        `session.access_token`. Same token the web app uses — no separate
+        mobile credential, no API key.
+
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: |
+        Opaque cursor from the previous response's `nextCursor`. Pass it back
+        exactly as received — do not decode or modify it. A malformed cursor
+        returns `400` rather than silently resetting to page one.
+      schema: { type: string }
+
+    CategorySlug:
+      name: categorySlug
+      in: query
+      required: false
+      description: |
+        Omit to use the seller's primary category. If neither is available the
+        response is `400`, telling the seller to pick a category. The server
+        holds no selection state — send it every time.
+      schema: { type: string }
+      example: beauty-and-personal-care
+
+    ProductId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    BadRequest:
+      description: Missing parameter, bad JSON, or malformed cursor. Do not retry unchanged.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    Unauthorized:
+      description: Missing/expired token, or no seller account. Refresh the session, else sign out.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    UpgradeRequired:
+      description: |
+        The seller's plan does not include this feature. Show an upgrade prompt.
+
+        **Not reachable today** — a demo flag unlocks every feature and billing
+        is not wired. Handle it anyway; when billing ships, these go live with
+        no backend change.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+          example:
+            succeeded: false
+            data: null
+            errors: ['Your plan does not include competitor intel.']
+            message: Upgrade required
+    NotFound:
+      description: |
+        Does not exist, **or** is not yours. The API deliberately does not
+        distinguish the two.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+    ServerError:
+      description: Server or database failure. Retry with backoff.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorEnvelope' }
+
+  schemas:
+
+    # -- envelope ------------------------------------------------------------
+
+    Envelope:
+      type: object
+      required: [succeeded, data, errors, message]
+      properties:
+        succeeded: { type: boolean }
+        data:
+          nullable: true
+          description: The payload, or `null` on failure.
+        errors:
+          type: array
+          items: { type: string }
+          description: |
+            For the developer, not the seller — often too technical. Never
+            branch on this text; it is wording, not API.
+        message:
+          type: string
+          description: Short summary, safe to show the seller.
+
+    ErrorEnvelope:
+      allOf:
+        - $ref: '#/components/schemas/Envelope'
+        - type: object
+          properties:
+            succeeded: { type: boolean, enum: [false] }
+            data: { nullable: true, example: null }
+
+    # -- primitives ----------------------------------------------------------
+
+    Currency:
+      type: string
+      description: ISO currency code. Every response containing money carries one.
+      example: PKR
+
+    Money:
+      type: number
+      nullable: true
+      description: |
+        Raw number, never a formatted string. `null` means "not available" —
+        render a dash, never a `0`.
+      example: 1105
+
+    NextCursor:
+      type: string
+      nullable: true
+      description: '`null` means you are at the end. Stop.'
+      example: MjAyNi0wOS0xNFQxMTowMDowMFo
+
+    SignedFraction:
+      type: number
+      nullable: true
+      description: 'Signed fraction against a baseline: `-0.08` = 8% below.'
+      example: -0.08
+
+    PriceBand:
+      type: string
+      description: Worst-for-seller first. Always these five, always this order.
+      enum: [far-above, above, at-market, below, far-below]
+
+    # -- pulse ---------------------------------------------------------------
+
+    Pulse:
+      type: object
+      required: [seller, domain, counts, highlights, recentAlerts, marketData]
+      properties:
+        seller:
+          type: object
+          properties:
+            businessName: { type: string, example: "Sana's Store" }
+            planTier: { type: string, enum: [free, paid, premium] }
+            currency: { $ref: '#/components/schemas/Currency' }
+        domain:
+          nullable: true
+          description: '`null` → the seller has not picked a category. Show onboarding, not an empty dashboard.'
+          allOf: [{ $ref: '#/components/schemas/DomainRef' }]
+        counts:
+          type: object
+          description: One counter per thing worth a badge. Bind straight to these.
+          properties:
+            unreadAlerts: { type: integer, example: 3 }
+            competitorStockOuts: { type: integer, example: 10 }
+            lowStockProducts: { type: integer, example: 2 }
+        highlights:
+          type: array
+          minItems: 1
+          description: |
+            **Already sorted by priority** — urgent first. Render in the order
+            given. `tone` is data so you can colour it; do not re-classify.
+          items:
+            type: object
+            properties:
+              tone: { type: string, enum: [good, warning, neutral] }
+              headline: { type: string, example: '10 competitor products are out of stock' }
+              detail: { type: string, example: "That's demand nobody is filling right now." }
+        recentAlerts:
+          type: array
+          maxItems: 5
+          items: { $ref: '#/components/schemas/Alert' }
+        marketData:
+          type: object
+          properties:
+            lastScrapedAt:
+              type: string
+              format: date-time
+              nullable: true
+              description: '**Always show this.** A phone user has less context than someone at a desktop, so the data''s age matters more here, not less.'
+            platformsTracked: { type: integer, example: 8 }
+        domainStats:
+          $ref: '#/components/schemas/DomainStats'
+
+    DomainStats:
+      type: object
+      description: |
+        **Planned.** Backs the stat tiles.
+
+        The peer privacy floor is a hard rule, not a loading state: peer figures
+        need at least 3 opted-in sellers before anything is computed. Below
+        that, `sellersInDomain` is `null` and the rest are `0`.
+
+        Design warning: on first launch these render as `— / 0 / 0`, which reads
+        as "broken" rather than "not enough sellers yet". Consider collapsing
+        the three peer tiles into one card that states the rule once.
+      properties:
+        listingsTracked: { type: integer, example: 5726 }
+        platformsTracked: { type: integer, example: 8 }
+        productsPriced: { type: integer, example: 87 }
+        sellersInDomain:
+          type: integer
+          nullable: true
+          description: '`null` = below the privacy floor.'
+        peersVisible: { type: integer, example: 0 }
+        benchmarksTracked: { type: integer, example: 0 }
+        peerFloor: { type: integer, example: 3 }
+
+    DomainRef:
+      type: object
+      description: 'Responses carry both the id and the display name. **Never show a slug to a seller.**'
+      properties:
+        categorySlug: { type: string, example: beauty-and-personal-care }
+        categoryName: { type: string, example: 'Beauty & Personal Care' }
+
+    Category:
+      allOf:
+        - $ref: '#/components/schemas/DomainRef'
+        - type: object
+          properties:
+            isPrimary: { type: boolean }
+
+    Alert:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        type: { type: string, example: price_drop }
+        title: { type: string, example: 'Competitor dropped price' }
+        message: { type: string, example: 'Al-Fatah cut Dior 100ml by 8%.' }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    # -- kpis ----------------------------------------------------------------
+
+    KpiResponse:
+      type: object
+      required: [currency, period, kpis]
+      properties:
+        currency: { $ref: '#/components/schemas/Currency' }
+        period: { type: string, example: 30d }
+        comparedTo: { type: string, example: prior 30 days }
+        kpis:
+          type: array
+          items: { $ref: '#/components/schemas/Kpi' }
+
+    Kpi:
+      type: object
+      properties:
+        key: { type: string, enum: [revenue, orders, aov, new_customers] }
+        label: { type: string, example: Revenue }
+        value:
+          type: number
+          description: Raw number, always.
+          example: 482300
+        format:
+          type: string
+          enum: [money, count]
+          description: 'Tells you how to render `value`, so you never guess whether `2253` is money or a count.'
+        diffPct:
+          type: number
+          nullable: true
+          description: |
+            Signed **percentage** (`12.4` = up 12.4%). `null` means there is no
+            prior period to compare against — hide the indicator, do not render
+            "0%".
+        direction: { type: string, enum: [up, down, flat] }
+
+    # -- market --------------------------------------------------------------
+
+    MarketScreen:
+      type: object
+      properties:
+        categorySlug: { type: string }
+        categoryName: { type: string }
+        currency: { $ref: '#/components/schemas/Currency' }
+        pricing:
+          nullable: true
+          description: '`null` when the category has no scraped data.'
+          allOf: [{ $ref: '#/components/schemas/CategoryPricing' }]
+        forecast:
+          nullable: true
+          description: '`null` if premium-gated **or** under 5 data points. Hide the card either way.'
+          allOf: [{ $ref: '#/components/schemas/Forecast' }]
+        pricePosition: { $ref: '#/components/schemas/PricePosition' }
+
+    CategoryPricing:
+      type: object
+      properties:
+        count: { type: integer, description: Listings behind these numbers., example: 7572 }
+        minPrice: { $ref: '#/components/schemas/Money' }
+        p25:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: '`null` below a 15-listing sample floor. A percentile from a handful of rows is a guess wearing a suit — render a dash.'
+        median: { $ref: '#/components/schemas/Money' }
+        p75:
+          allOf: [{ $ref: '#/components/schemas/Money' }]
+          description: Same 15-listing floor as `p25`.
+        maxPrice: { $ref: '#/components/schemas/Money' }
+        avgPrice: { $ref: '#/components/schemas/Money' }
+        samplePlatforms:
+          type: array
+          items: { type: string }
+          example: [Al-Fatah, Bagallery]
+
+    Forecast:
+      type: object
+      description: 14-day projection from an OLS fit over scraped price history.
+      properties:
+        trendDirection: { type: string, enum: [up, down, flat] }
+        changePerWeek: { type: number, example: -77 }
+        points:
+          type: array
+          description: |
+            History and projection in one array — split on `isProjected`. Solid
+            line for `false`, dashed for `true`.
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              value: { type: number }
+              isProjected: { type: boolean }
+
+    PricePosition:
+      type: object
+      properties:
+        totalProducts: { type: integer, example: 87 }
+        farFromMedianCount: { type: integer, description: The "75 of 87" headline., example: 75 }
+        bands:
+          type: array
+          minItems: 5
+          maxItems: 5
+          description: Always 5, always worst-first. Render in order.
+          items:
+            type: object
+            properties:
+              band: { $ref: '#/components/schemas/PriceBand' }
+              label: { type: string, example: '25%+ above' }
+              count: { type: integer }
+        anyPackSizeAdjusted:
+          type: boolean
+          description: |
+            `true` means the comparison is **approximate**: the seller's own
+            price is adjusted for pack size, the scraped market median is not.
+            In a category full of multipacks this inflates the "far from median"
+            count. When `true`, say the comparison is approximate rather than
+            stating the headline as fact.
+
+    # -- competitors ---------------------------------------------------------
+
+    CompetitorLandscape:
+      type: object
+      properties:
+        categoryName: { type: string, nullable: true }
+        marketMedianPrice: { $ref: '#/components/schemas/Money' }
+        currency: { $ref: '#/components/schemas/Currency' }
+        competitors:
+          type: array
+          maxItems: 8
+          items: { $ref: '#/components/schemas/Competitor' }
+        emptyReason:
+          type: string
+          nullable: true
+          enum: [null, no_category, no_named_sellers]
+          description: '**Branch on this**, not on an empty array.'
+
+    Competitor:
+      type: object
+      properties:
+        name: { type: string, example: Al-Fatah }
+        platformName: { type: string }
+        skuCount: { type: integer, example: 412 }
+        assortmentShare:
+          type: number
+          description: 0–1. Share of all listings in this market.
+          example: 0.18
+        medianPrice: { $ref: '#/components/schemas/Money' }
+        priceIndex:
+          allOf: [{ $ref: '#/components/schemas/SignedFraction' }]
+          description: '**The most useful number here.** `-0.08` = they undercut the market median by 8%. Lead with it.'
+
+    CompetitorMoves:
+      type: object
+      properties:
+        categoryName: { type: string }
+        currency: { $ref: '#/components/schemas/Currency' }
+        stockOuts:
+          type: array
+          items: { $ref: '#/components/schemas/StockOut' }
+        anomalies:
+          type: array
+          maxItems: 50
+          items: { $ref: '#/components/schemas/PriceAnomaly' }
+
+    StockOut:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        platformName: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        imageUrl: { type: string, nullable: true, description: '`null` → render a placeholder tile.' }
+        url: { type: string }
+        lastSeenAt: { type: string, format: date-time }
+        duration:
+          nullable: true
+          description: '`null` if we have no history for this listing.'
+          type: object
+          properties:
+            days: { type: integer, example: 13 }
+            confirmed:
+              type: boolean
+              description: |
+                **Changes your wording.** `true` → "Out 13d" (measured from a
+                real in-stock sighting). `false` → "Out 13+d" — we have never
+                seen it in stock, so the figure is a floor.
+
+    PriceAnomaly:
+      type: object
+      properties:
+        productId: { type: string, format: uuid }
+        title: { type: string }
+        platformName: { type: string }
+        imageUrl: { type: string, nullable: true }
+        oldPrice: { $ref: '#/components/schemas/Money' }
+        newPrice: { $ref: '#/components/schemas/Money' }
+        pctChange:
+          type: number
+          description: |
+            Signed **percentage**, not a fraction: `-5.5` = down 5.5%. This is
+            the one inconsistency with the signed-fraction convention used
+            elsewhere; both already ship and we are keeping them.
+          example: -5.5
+
+    # -- pricing & products --------------------------------------------------
+
+    PricingRecommendation:
+      type: object
+      properties:
+        productId: { type: string, format: uuid }
+        productTitle: { type: string }
+        categorySlug:
+          type: string
+          description: |
+            **The category this row was judged against — always the product's
+            own, never the one on screen.** This is why a Home & Kitchen
+            recommendation can appear under a Beauty pill.
+        categoryName: { type: string }
+        currentPrice: { $ref: '#/components/schemas/Money' }
+        recommendedPrice: { $ref: '#/components/schemas/Money' }
+        direction: { type: string, enum: [increase, decrease, hold] }
+        competitorLow: { $ref: '#/components/schemas/Money' }
+        competitorHigh: { $ref: '#/components/schemas/Money' }
+        marginConstrained:
+          type: boolean
+          description: |
+            `true` → the margin floor sits above the entire competitor band. The
+            seller cannot compete on price here without a thin margin. **A real
+            finding — surface it.**
+        matchConfidence:
+          type: number
+          nullable: true
+          description: '`null` when there was no confident title match; the category P25–P75 was used instead.'
+        duplicateEntries:
+          type: integer
+          description: |
+            `> 1` → the seller has duplicate catalogue rows for this product.
+            The backend merges them, keeping the **highest** cost so the margin
+            floor clears the dearest stock actually held. The data problem
+            remains — worth a quiet note.
+        rationale:
+          type: string
+          description: '**Render word for word.** It is written for the seller. Do not summarise or rewrite it.'
+
+    SellerProduct:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        currency:
+          allOf: [{ $ref: '#/components/schemas/Currency' }]
+          description: '**Per row** — a catalogue can legitimately mix currencies.'
+        stockQty: { type: integer, nullable: true, description: '`null` if not tracked.' }
+        isActive: { type: boolean }
+        imageUrl: { type: string, nullable: true }
+
+    ProductInsight:
+      type: object
+      properties:
+        product: { $ref: '#/components/schemas/SellerProduct' }
+        vsMarket:
+          nullable: true
+          description: '`null` → we could not place this product. Say so plainly rather than showing a blank comparison.'
+          type: object
+          properties:
+            categoryMedian: { $ref: '#/components/schemas/Money' }
+            pctVsMedian: { $ref: '#/components/schemas/SignedFraction' }
+            band: { $ref: '#/components/schemas/PriceBand' }
+            bandLabel: { type: string, example: '5–25% below' }
+        closestCompetitors:
+          type: array
+          maxItems: 5
+          description: Best match first.
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              platformName: { type: string }
+              price: { $ref: '#/components/schemas/Money' }
+              inStock: { type: boolean }
+              matchConfidence:
+                type: number
+                description: '0–1, **not calibrated** — title similarity with hand-picked cut points.'
+              url: { type: string }
+        priceHistory:
+          type: array
+          description: Last 30 days of the seller's own price.
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              price: { type: number }
+
+    PriceCheck:
+      type: object
+      properties:
+        query: { type: string }
+        categorySlug: { type: string }
+        categoryName: { type: string }
+        currency: { $ref: '#/components/schemas/Currency' }
+        matchCount: { type: integer, description: Scraped listings matching this title. }
+        competitorCount: { type: integer }
+        platformCount: { type: integer }
+        matchedPriceBand:
+          nullable: true
+          description: |
+            Over **matched** listings — this is what the seller is deciding
+            against. `null` if nothing matched. Do not confuse it with
+            `categoryPricing`, which is background context.
+          type: object
+          properties:
+            min: { $ref: '#/components/schemas/Money' }
+            median: { $ref: '#/components/schemas/Money' }
+            max: { $ref: '#/components/schemas/Money' }
+        categoryPricing:
+          nullable: true
+          allOf: [{ $ref: '#/components/schemas/CategoryPricing' }]
+        pricePosition:
+          nullable: true
+          description: Present only if you sent `intendedPrice`.
+          type: object
+          properties:
+            intendedPrice: { type: number }
+            vsMatchedMedian: { $ref: '#/components/schemas/SignedFraction' }
+            cheaperThanCount: { type: integer }
+            verdict: { type: string, enum: ['below market', 'at market', 'above market'] }
+        hasEnoughData:
+          type: boolean
+          description: '`false` → present the figures as a hint, or do not show them. Not optional to handle.'
+
+    # -- search --------------------------------------------------------------
+
+    MarketProduct:
+      type: object
+      description: A scraped competitor listing.
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        platformName: { type: string }
+        price: { $ref: '#/components/schemas/Money' }
+        inStock: { type: boolean }
+        imageUrl: { type: string, nullable: true }
+        url: { type: string }
