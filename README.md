@@ -96,12 +96,15 @@ ones here that `tsc`, lint and the full test suite all passed.
 
 ## Known state, honestly
 
-- **Data coverage is the binding constraint.** `ROADMAP.md` records 2 of 12
-  seller categories having scraped rows; OLX, the only source for most of the
-  rest, is disabled on a standing IP-level block. That figure predates the
-  Daraz rollout — re-measure with
+- **Data coverage is no longer the binding constraint.** As of 2026-09-15,
+  all 12 real seller categories have scraped rows (978 to 25,499 products
+  each, all refreshed within a day) — Daraz plus two batches of
+  Shopify/WooCommerce sources closed the gap OLX used to be the only cover
+  for. OLX itself is still disabled. See `ROADMAP.md` Phase D's 2026-09-15
+  update for the full breakdown, and re-run
   [`scraper/migrations/_check_coverage.sql`](scraper/migrations/_check_coverage.sql)
-  before planning against it.
+  before relying on this if it's been a while — coverage moves with every
+  scraper run.
 - **There is no billing.** Plan tiers exist in `entitlements.ts` but demo mode
   unlocks everything and no checkout exists.
 - The account naming `market_analyst` / `market_accounts` predates the

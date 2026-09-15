@@ -35,14 +35,26 @@ strongest labelled signal we will ever get** about who competes with whom.
 Product matching currently bands relevance on cut points that `memory.md`
 admits are guesses (0.6 / 0.35, "uncalibrated"). Nominations are ground truth.
 
-### Check this before building
+### Re-measured 2026-09-15 — the premise above is now stale
 
-The 2-of-12 figure predates the Daraz rollout, which was expected to "close
-most of that gap." **Re-measure current per-category coverage first.** If
-Daraz already covers eight categories, the urgency argument here weakens a
-lot and D4 may be the better investment. One query against
-`market_products` joined to `market_category_map`, grouped by category. Do
-not build on the stale number — including the one quoted above.
+The 2-of-12 figure quoted above was measured 2026-08-03 and this section
+originally asked the next reader to re-measure before building. That's now
+done: `scraper/migrations/_check_coverage.sql` run against the live
+database shows **all 12 real seller categories carry scraped rows** (978 to
+25,499 products each, every one refreshed within a day). Full breakdown in
+`ROADMAP.md` Phase D's 2026-09-15 update.
+
+**This changes the case for tier 1, but doesn't kill it.** "Routes around
+the coverage gap" was the headline justification in the section above, and
+that gap is closed — D4 (more retailers) already did the job this feature
+was proposed as an alternative to. What survives: *precision* (a seller's
+named rivals vs. whatever the crawl happened to pick up) and the labelled
+match-relevance data nominations produce, which nothing else in this
+codebase generates. Both real, neither as urgent as "sellers see nothing."
+
+Before resuming this: re-run the coverage query again if meaningfully more
+time has passed — it moves with every scraper run and this note will itself
+go stale.
 
 ---
 

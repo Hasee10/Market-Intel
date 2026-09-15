@@ -183,8 +183,9 @@ Ordered by value, not by block number.
   *"N listings across M platforms match your definition of X."* It renders an
   honest empty state rather than a blank page, and distinguishes the two
   reasons for emptiness — filters too narrow vs. no scraped source covers this
-  category at all. That distinction is not cosmetic: 10 of 12 seller
-  categories currently have zero coverage (see D4).
+  category at all. That distinction was not cosmetic when this was written:
+  10 of 12 seller categories had zero coverage at the time (see D4). **No
+  longer current — see D4's 2026-09-15 update.**
 - **C3. Strategic implications in-product (Block 7).** A standing Actions
   surface where each item traces back to the finding that produced it. The
   rule-based rationales in `pricing-recommendation.ts` are the pattern to
@@ -220,8 +221,11 @@ Ordered by value, not by block number.
   found one live non-compliance (`sapphireonline` calls a Demandware endpoint
   its own robots.txt disallows) with a verified compliant alternative, and it
   is what constrained Daraz to category paths only.
-- **D4. Retailer coverage** for the 10 of 12 categories currently served by
-  OLX alone. **Urgency raised 2026-08-03:** a live read of the database showed
+- **D4. Retailer coverage** for the 10 of 12 categories then served by OLX
+  alone. **✅ Resolved as of 2026-09-15 — see the update below. The account
+  of the OLX failure is kept as-written for the record; read the update
+  first, since the urgency language here no longer reflects the live
+  database.** **Urgency raised 2026-08-03:** a live read of the database showed
   `market_classified_listings` is *empty* and `scraper_runs` recorded OLX at
   `product_count: 0, error: null` on all three logged runs. Since OLX is the
   only source covering those 10 categories, most of the product has been
@@ -249,6 +253,56 @@ Ordered by value, not by block number.
   is a one-line array edit, reversible the moment D4's real fix (a proxy via
   `SCRAPER_PROXY`, or retailer coverage replacing the need for OLX
   altogether) lands.
+
+  **Update, 2026-09-15 — D4 is resolved, and the OLX gap it describes is
+  gone.** Measured with `scraper/migrations/_check_coverage.sql` against the
+  live database (not the query file's design intent — actually run and the
+  output reviewed): **12 of the 12 real seller categories now carry scraped
+  rows, every one scraped within the last day.**
+
+  | Category | Products | Platforms |
+  |---|---|---|
+  | Fashion & Apparel | 25,499 | 14 |
+  | Home & Kitchen | 19,442 | 15 |
+  | Mobiles & Electronics | 10,315 | 9 |
+  | Beauty & Personal Care | 7,572 | 8 |
+  | Automotive | 7,526 | 6 |
+  | Toys & Baby | 6,669 | 7 |
+  | Books & Stationery | 4,696 | 7 |
+  | Pet Supplies | 3,270 | 5 |
+  | Health & Wellness | 2,749 | 5 |
+  | Coffee & Beverages | 2,655 | 4 |
+  | Sports & Outdoors | 1,949 | 6 |
+  | Grocery & Food | 978 | 2 |
+
+  (A 13th row, `other`, is the taxonomy's catch-all rather than a real
+  category and correctly shows zero — not a gap.)
+
+  This was not OLX being fixed — OLX stayed disabled. The gap closed because
+  of the volume of work this roadmap already records but had never added up
+  in one place: Daraz (D1) plus the Shopify/WooCommerce sources added in two
+  batches (2026-08-29, `shopify-source.ts`/`woocommerce-source.ts`) between
+  them cover what OLX used to be the only source for. **The 2-of-12 figure
+  quoted throughout this document, `README.md`, and
+  `docs/SELLER_TRACKED_COMPETITORS.md` is from 2026-08-03 and is now three
+  weeks stale — treat every instance of it as historical, not current.**
+
+  What this changes: D4 as "add more retailers to fix empty categories" is
+  done. `docs/SELLER_TRACKED_COMPETITORS.md`'s tier 1 is still worth building
+  — it targets *precision* (a seller's actual named rivals) and produces
+  labelled data no crawl can, neither of which this coverage number touches
+  — but its original justification ("routes around the coverage gap") is
+  largely moot, since the gap it was routing around is closed. Re-read that
+  doc's own "Open questions" before resuming that work.
+
+  What this unblocks: the mobile app's `price-check` route (Phase G) now has
+  real data behind it in every category a seller is likely to pick, not just
+  two.
+
+  Not yet checked: Query 5 of `_check_coverage.sql` (scraped nodes with no
+  entry in `market_category_map` — coverage that exists but isn't mapped to
+  a seller category yet, the cheapest possible further win). Worth running
+  before considering this phase fully closed.
 
 ## Phase E — Restructure the deliverable
 
