@@ -168,6 +168,14 @@ export type ProductSearchResult = {
    *  thumbnail the row will get once added, so the two agree. */
   imageUrl: string | null;
   price: number | null;
+  /**
+   * The currency the price was scraped in, NOT the seller's reporting
+   * currency - nothing here is converted. Added for the mobile search
+   * endpoint, which has to render a price next to a number and would
+   * otherwise have to assume one. A cross-border market genuinely mixes
+   * currencies row by row.
+   */
+  currency: string;
   inStock: boolean | null;
   url: string;
 };
@@ -191,7 +199,7 @@ export async function searchMarketProducts(
 
   let builder = supabase
     .from('market_products')
-    .select('id, title, image_url, price, in_stock, url, market_platforms(name)')
+    .select('id, title, image_url, price, currency, in_stock, url, market_platforms(name)')
     .ilike('title', `%${query}%`)
     .eq('is_active', true)
     .limit(20);
@@ -217,6 +225,7 @@ export async function searchMarketProducts(
       platformName: platform?.name ?? null,
       imageUrl: row.image_url ?? null,
       price: row.price,
+      currency: row.currency ?? 'PKR',
       inStock: row.in_stock,
       url: row.url,
     };

@@ -16,6 +16,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, 'src'),
+      // See src/test/server-only-stub.ts. Not a dependency; Next aliases it
+      // at build time and vitest otherwise cannot resolve the import.
+      'server-only': path.resolve(__dirname, 'src/test/server-only-stub.ts'),
     },
   },
 });

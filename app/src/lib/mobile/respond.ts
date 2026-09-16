@@ -3,7 +3,12 @@ import 'server-only';
 import { NextResponse } from 'next/server';
 
 import { hasFeature, type Feature } from '@/lib/market-intel/core/entitlements';
-import { getSellerFromRequest, type Seller } from '@/lib/market-intel/seller/seller';
+import {
+  getSellerFromRequest,
+  resolveSelectedDomain,
+  type Seller,
+  type SellerDomain,
+} from '@/lib/market-intel/seller/seller';
 
 // Shared plumbing for /api/mobile/*.
 //
@@ -80,6 +85,38 @@ export async function requireMobileSeller(
   }
 
   return { seller };
+}
+
+/**
+ * Which category a market-scoped mobile request applies to.
+ *
+ * Delegates to resolveSelectedDomain, the same helper every domain-scoped
+ * desktop page uses, so "the slug is missing, stale, or not mine" has one
+ * answer across both clients rather than two. In particular, a slug
+ * belonging to another seller resolves to null there and falls back to the
+ * primary domain - hand-editing a request can't surface someone else's
+ * market.
+ *
+ * The one thing added here is the failure mode: desktop can render an
+ * onboarding prompt in place of the page, but an API has to answer. A
+ * seller with no category at all gets a 400 that says what to do, rather
+ * than a 200 full of nulls that the client then has to diagnose.
+ */
+export async function requireMobileCategory(
+  sellerId: string,
+  slug: string | null,
+): Promise<{ domain: SellerDomain } | { response: NextResponse }> {
+  const domain = await resolveSelectedDomain(sellerId, slug);
+
+  if (!domain) {
+    return {
+      response: mobileError('No category selected', 400, [
+        'Pass ?categorySlug=, or set a primary category on the account first.',
+      ]),
+    };
+  }
+
+  return { domain };
 }
 
 // Page size for every cursor-paginated mobile list. One number, because a

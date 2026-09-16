@@ -73,12 +73,48 @@ export type EcommerceStat = {
   color: string;
 };
 
-export async function getEcommerceStats(sellerId: string, reportingCurrency: string): Promise<EcommerceStat[]> {
+/**
+ * The raw figures behind the Overview stat tiles, before any formatting.
+ *
+ * Split out of getEcommerceStats because the mobile client needs the
+ * numbers, not the strings. getEcommerceStats formats these into currency
+ * strings with icon and colour names for the desktop StatsGrid, which is
+ * exactly the shape a phone cannot use: it can't re-parse a formatted
+ * amount, can't localise it, and has no business inheriting desktop's icon
+ * vocabulary.
+ *
+ * getEcommerceStats now calls this and formats on top, so the desktop's
+ * output is unchanged - same numbers, same strings, same order.
+ *
+ * periodDays is a parameter here but getEcommerceStats always passes 30,
+ * because its tile titles say "(30d)" in literal text.
+ */
+export type SellerKpiTotals = {
+  periodDays: number;
+  revenue: number;
+  priorRevenue: number;
+  orders: number;
+  priorOrders: number;
+  aov: number;
+  priorAov: number;
+  newCustomers: number;
+  priorNewCustomers: number;
+  activeProducts: number;
+  totalProducts: number;
+  lowStockProducts: number;
+};
+
+export async function getSellerKpiTotals(
+  sellerId: string,
+  reportingCurrency: string,
+  periodDays = 30,
+): Promise<SellerKpiTotals> {
   const supabase = await createClient();
 
   const now = new Date();
-  const periodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const priorStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const dayMs = 24 * 60 * 60 * 1000;
+  const periodStart = new Date(now.getTime() - periodDays * dayMs);
+  const priorStart = new Date(now.getTime() - periodDays * 2 * dayMs);
 
   const [ordersRes, customersRes, productsRes, fxRates] = await Promise.all([
     supabase
@@ -132,6 +168,37 @@ export async function getEcommerceStats(sellerId: string, reportingCurrency: str
   const activeProducts = products.filter((p) => p.is_active).length;
   const lowStock = products.filter((p) => p.is_active && (p.stock_qty ?? 0) < 10).length;
 
+  return {
+    periodDays,
+    revenue: currentRevenue,
+    priorRevenue,
+    orders: currentOrders.length,
+    priorOrders: priorOrders.length,
+    aov: currentAov,
+    priorAov,
+    newCustomers: currentNewCustomers,
+    priorNewCustomers,
+    activeProducts,
+    totalProducts: products.length,
+    lowStockProducts: lowStock,
+  };
+}
+
+export async function getEcommerceStats(sellerId: string, reportingCurrency: string): Promise<EcommerceStat[]> {
+  const {
+    revenue: currentRevenue,
+    priorRevenue,
+    orders: currentOrderCount,
+    priorOrders: priorOrderCount,
+    aov: currentAov,
+    priorAov,
+    newCustomers: currentNewCustomers,
+    priorNewCustomers,
+    activeProducts,
+    totalProducts,
+    lowStockProducts: lowStock,
+  } = await getSellerKpiTotals(sellerId, reportingCurrency, 30);
+
   const formatMoney = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: reportingCurrency, maximumFractionDigits: 2 }).format(
       amount,
@@ -148,8 +215,8 @@ export async function getEcommerceStats(sellerId: string, reportingCurrency: str
     },
     {
       title: 'Orders (30d)',
-      value: currentOrders.length.toLocaleString(),
-      diff: pctDiff(currentOrders.length, priorOrders.length) ?? undefined,
+      value: currentOrderCount.toLocaleString(),
+      diff: pctDiff(currentOrderCount, priorOrderCount) ?? undefined,
       period: 'vs prior 30 days',
       icon: 'shopping-cart',
       color: 'teal',
@@ -174,7 +241,7 @@ export async function getEcommerceStats(sellerId: string, reportingCurrency: str
       title: 'Active Products',
       value: activeProducts.toLocaleString(),
       diff: 0,
-      period: `of ${products.length} total`,
+      period: `of ${totalProducts} total`,
       icon: 'chart-line',
       color: 'violet',
     },

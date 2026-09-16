@@ -51,6 +51,15 @@ export const PRICE_POSITION_BAND_ORDER: PricePositionBand[] = [
 export type PortfolioProduct = {
   sellerProductId: string;
   title: string;
+  /**
+   * The category this row was judged against - carried alongside the name
+   * so a caller can scope the set to one market without re-querying. The
+   * mobile Market screen needs this: its price stats and forecast are for
+   * one category, and mixing in products from another under the same
+   * heading would be the same class of error pricing-recommendation.ts was
+   * fixed for.
+   */
+  categorySlug: string | null;
   categoryName: string | null;
   /** The seller's own price, per item where parsePackSize could tell. */
   price: number;

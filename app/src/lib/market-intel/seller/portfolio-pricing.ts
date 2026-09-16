@@ -109,6 +109,7 @@ export async function getPortfolioPricePositions(
       return {
         sellerProductId: row.id,
         title: row.title,
+        categorySlug: slug,
         categoryName: categoryName ?? null,
         price: perItem ?? rawPrice,
         categoryMedian: pricing.median,

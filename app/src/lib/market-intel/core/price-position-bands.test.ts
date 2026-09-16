@@ -11,6 +11,7 @@ function product(overrides: Partial<PortfolioProduct> = {}): PortfolioProduct {
   return {
     sellerProductId: Math.random().toString(36).slice(2),
     title: 'Product',
+    categorySlug: 'category',
     categoryName: 'Category',
     price: 1000,
     categoryMedian: 1000,
