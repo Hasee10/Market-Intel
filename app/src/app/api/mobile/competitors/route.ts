@@ -1,5 +1,7 @@
+import { NextRequest } from 'next/server';
+
 import { getCompetitorLandscape } from '@/lib/market-intel/market/competitors';
-import { getPrimaryDomain } from '@/lib/market-intel/seller/seller';
+import { resolveSelectedDomain } from '@/lib/market-intel/seller/seller';
 import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
 
 // The competitor snapshot: who is in this market and how they price.
@@ -12,15 +14,25 @@ import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
 
 const MOBILE_COMPETITOR_LIMIT = 8;
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const auth = await requireMobileSeller(request, 'competitor_intel');
   if ('response' in auth) return auth.response;
   const { seller } = auth;
 
-  const domain = await getPrimaryDomain(seller.id);
+  // Honours ?categorySlug now. It used to hard-code the primary domain,
+  // so switching category in the top bar changed every screen except this
+  // one - which reads as stale data rather than as an unsupported param.
+  // resolveSelectedDomain is the same helper the domain-scoped desktop
+  // pages use, so a missing, stale or not-mine slug falls back to the
+  // primary exactly as it does there.
+  const domain = await resolveSelectedDomain(
+    seller.id,
+    request.nextUrl.searchParams.get('categorySlug'),
+  );
 
   if (!domain) {
     return mobileOk({
+      categorySlug: null,
       categoryName: null,
       marketMedianPrice: null,
       currency: seller.reportingCurrency,
@@ -39,6 +51,7 @@ export async function GET(request: Request) {
   );
 
   return mobileOk({
+    categorySlug: domain.categorySlug,
     categoryName: domain.categoryName,
     marketMedianPrice: landscape.marketMedianPrice,
     currency: seller.reportingCurrency,

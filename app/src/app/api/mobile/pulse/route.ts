@@ -1,6 +1,13 @@
+import { NextRequest } from 'next/server';
+
 import { LOW_STOCK_THRESHOLD } from '@/lib/market-intel/jobs/low-stock-job';
+import {
+  getMarketScope,
+  getMarketScopeCoverage,
+} from '@/lib/market-intel/market/market-definition';
 import { getDataFreshness, getStockOuts } from '@/lib/market-intel/market/market-insights';
-import { getPrimaryDomain } from '@/lib/market-intel/seller/seller';
+import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/seller/benchmarks';
+import { resolveSelectedDomain, type SellerDomain } from '@/lib/market-intel/seller/seller';
 import { listNotifications } from '@/lib/notifications/list';
 import { createBearerClient, getBearerToken } from '@/lib/supabase/server';
 import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
@@ -17,20 +24,34 @@ import { mobileOk, requireMobileSeller } from '@/lib/mobile/respond';
 // desktop-side cron concern and stays that way - this reads what the last
 // run already wrote, so opening the app can never queue work.
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const auth = await requireMobileSeller(request);
   if ('response' in auth) return auth.response;
   const { seller } = auth;
 
-  const domain = await getPrimaryDomain(seller.id);
+  // Honours ?categorySlug so the home screen follows the top-bar switcher,
+  // like every other market-scoped screen. It used to hard-code the primary
+  // domain, so switching category changed the Market and Competitors tabs
+  // but left the dashboard behind - which reads as stale data rather than as
+  // an unsupported param. resolveSelectedDomain is the shared helper the
+  // domain-scoped desktop pages use, so a missing, stale or not-mine slug
+  // falls back to the primary exactly as it did before - the no-param
+  // default is unchanged. Not requireMobileCategory: the home screen must
+  // still render with no category at all (domain: null), a 400 would break
+  // the one screen a brand-new seller sees first.
+  const domain = await resolveSelectedDomain(
+    seller.id,
+    request.nextUrl.searchParams.get('categorySlug'),
+  );
 
   // Runs concurrently: none of these depend on each other, and serialising
   // them would make the home screen's latency their sum.
-  const [notifications, stockOuts, freshness, lowStockCount] = await Promise.all([
+  const [notifications, stockOuts, freshness, lowStockCount, domainStats] = await Promise.all([
     listNotifications(seller.id, 10),
     domain ? getStockOuts(domain.categorySlug, 5, seller.reportingCurrency) : [],
     domain ? getDataFreshness(domain.categorySlug) : [],
     countLowStock(request, seller.id),
+    buildDomainStats(request, seller.id, domain),
   ]);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -79,7 +100,91 @@ export async function GET(request: Request) {
       lastScrapedAt,
       platformsTracked: freshness.length,
     },
+    // The stat tiles. Null when the seller has no category yet - the same
+    // signal `domain: null` already carries, repeated here so a client
+    // binding straight to this block doesn't have to look up.
+    domainStats,
   });
+}
+
+/**
+ * Three sellers must have opted in before any peer figure is published.
+ *
+ * Enforced upstream, not here: the benchmark job only writes a row once the
+ * sample clears the floor, so `sellersInDomain` is null because there is no
+ * row, not because this function hid one. Stated in the response anyway -
+ * a client showing a dash needs to be able to explain the dash, and
+ * "not published until 3 sellers opt in" is a different sentence from
+ * "none", which is what the zeros beside it mean.
+ */
+const PEER_FLOOR = 3;
+
+type DomainStats = {
+  listingsTracked: number;
+  platformsTracked: number;
+  productsPriced: number;
+  sellersInDomain: number | null;
+  peersVisible: number;
+  benchmarksTracked: number;
+  peerFloor: number;
+};
+
+/**
+ * The four tiles the desktop Market page shows above the fold, computed
+ * from the same three sources it uses - market_scope_coverage for the
+ * market side, domain_benchmarks and seller_public_profiles_view for the
+ * peer side.
+ *
+ * Folded into /pulse rather than given an endpoint of its own because the
+ * home screen renders them beside the highlights; a second request to fill
+ * four numbers on a screen that has already loaded is the round trip this
+ * endpoint exists to avoid.
+ */
+async function buildDomainStats(
+  request: Request,
+  sellerId: string,
+  domain: SellerDomain | null,
+): Promise<DomainStats | null> {
+  if (!domain) return null;
+
+  const [coverage, benchmarks, peers, productsPriced] = await Promise.all([
+    getMarketScope(domain.categorySlug, sellerId).then(getMarketScopeCoverage),
+    getDomainBenchmarks(domain.categoryId),
+    getDomainPeers(domain.categoryId, sellerId),
+    countPricedProducts(request, sellerId),
+  ]);
+
+  return {
+    // Scraped listings matching the seller's full market definition - price
+    // band, brands and cities included, not just category and platform. The
+    // distinction mattered enough to need migration 041: the unfiltered
+    // count could claim thousands while every figure on the page was
+    // computed over a filtered fraction of them.
+    listingsTracked: coverage.listingCount,
+    platformsTracked: coverage.platformNames.length,
+    productsPriced,
+    // Null, never 0, below the floor. Collapsing the two would be a lie:
+    // "not published yet" and "nobody is here" are different facts.
+    sellersInDomain: benchmarks[0]?.sampleSize ?? null,
+    peersVisible: peers.length,
+    benchmarksTracked: benchmarks.length,
+    peerFloor: PEER_FLOOR,
+  };
+}
+
+/** Counted, not fetched - see countLowStock. */
+async function countPricedProducts(request: Request, sellerId: string): Promise<number> {
+  const token = getBearerToken(request);
+  if (!token) return 0;
+
+  const { count, error } = await createBearerClient(token)
+    .from('seller_products')
+    .select('id', { count: 'exact', head: true })
+    .eq('seller_id', sellerId)
+    .eq('is_active', true)
+    .not('sell_price', 'is', null);
+
+  return error ? 0 : (count ?? 0);
 }
 
 type HighlightTone = 'good' | 'warning' | 'neutral';
