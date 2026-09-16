@@ -1,12 +1,18 @@
 # Mobile API handoff
 
-**For:** the developer building the Ryvl mobile client, and whoever writes
-the mobile routes.
+**For:** the developer building the Ryvl mobile client.
+
+**Status: all 15 endpoints are built, tested and live.** This document was
+written as a design review *before* implementation and has been brought
+current afterwards — where a decision was reconsidered during the build, §6
+says so rather than quietly rewriting history.
+
 **Companion docs:** [`MOBILE_API.md`](MOBILE_API.md) is the full contract —
-every field, every edge case. This file is the *decision record*: what the
-mockup needs, where that data already exists, and what is genuinely new.
-[`openapi-mobile.yaml`](openapi-mobile.yaml) is the machine-readable version —
-import it into Swagger UI or Postman.
+every field, every edge case. [`MOBILE_API_READY.md`](MOBILE_API_READY.md) is
+the practical guide: one runnable `curl` per endpoint. This file is the
+*decision record*: what the mockup needs, where that data already exists, and
+what was genuinely new. [`openapi-mobile.yaml`](openapi-mobile.yaml) is the
+machine-readable version — import it into Swagger UI or Postman.
 
 **Principle this document was written under:**
 > The mobile mockup defines **what** is needed. The existing backend defines
@@ -47,30 +53,31 @@ five requests shows five spinners.
 | Screen | Data needed | Endpoint | Status |
 |---|---|---|---|
 | Overview — alert card, freshness, counters | stock-out count, low stock, unread, last scrape | `GET /api/mobile/pulse` | **Live** |
-| Overview — "N listings across M platforms" | scope coverage | `GET /api/mobile/pulse` *(extended)* | Planned |
-| Overview — 2×2 stat tiles | peers, benchmarks, products priced | `GET /api/mobile/pulse` *(extended)* | Planned |
-| Overview — revenue / orders / AOV tiles | seller's own sales KPIs | `GET /api/mobile/kpis` | Planned |
-| Market — price stats | category pricing | `GET /api/mobile/market` | Planned |
-| Market — forecast sparkline | 14-day OLS projection | same call, `forecast` block | Planned |
-| Market — position bars | portfolio banding | same call, `pricePosition` block | Planned |
+| Overview — "N listings across M platforms" | scope coverage | `GET /api/mobile/pulse` *(extended — shipped)* | **Live** |
+| Overview — 2×2 stat tiles | peers, benchmarks, products priced | `GET /api/mobile/pulse` *(extended — shipped)* | **Live** |
+| Overview — revenue / orders / AOV tiles | seller's own sales KPIs | `GET /api/mobile/kpis` | **Live** |
+| Market — price stats | category pricing | `GET /api/mobile/market` | **Live** |
+| Market — forecast sparkline | 14-day OLS projection | same call, `forecast` block | **Live** |
+| Market — position bars | portfolio banding | same call, `pricePosition` block | **Live** |
 | Competitors — who's in this market | landscape + price index | `GET /api/mobile/competitors` | **Live** |
-| Competitors — out of stock | stock-outs + duration | `GET /api/mobile/competitors/moves` | Planned |
-| Competitors — price anomalies | IQR outliers, 7d | same call, `anomalies` block | Planned |
-| Pricing — recommendation rows | rule-based recommendations | `GET /api/mobile/pricing` | Planned |
-| Top bar — category pill + sheet | seller's domains | `GET /api/mobile/categories` | Planned |
-| Top bar — search | scraped market products | `GET /api/mobile/search` | Planned |
+| Competitors — out of stock | stock-outs + duration | `GET /api/mobile/competitors/moves` | **Live** |
+| Competitors — price anomalies | IQR outliers, 7d | same call, `anomalies` block | **Live** |
+| Pricing — recommendation rows | rule-based recommendations | `GET /api/mobile/pricing` | **Live** |
+| Top bar — category pill + sheet | seller's domains | `GET /api/mobile/categories` | **Live** |
+| Top bar — search | scraped market products | `GET /api/mobile/search` | **Live** |
 | Top bar — bell + feed | alerts, mark read | `GET /api/mobile/alerts`, `POST /api/mobile/alerts/read` | **Live** |
-| Product detail (implied) | product vs. market | `GET /api/mobile/products/{id}/insight` | Planned |
+| Product detail (implied) | product vs. market | `GET /api/mobile/products/{id}/insight` | **Live** |
 | Product list + price edit | catalogue, one-field write | `GET /api/mobile/products`, `PATCH /api/mobile/products/{id}/price` | **Live** |
 | "Should I stock this?" | title-keyed price check | `GET /api/mobile/price-check` | **Live** |
 | Push | device registration | `POST` / `DELETE /api/mobile/devices` | **Live** |
 
-**Totals: 15 endpoints — 8 live, 7 planned.** No endpoint exists that no
-screen consumes.
+**Totals: 15 endpoints, all live.** No endpoint exists that no screen
+consumes. The seven that were planned when this document was first written
+have since been built, tested and verified against the bar in §9.
 
 ---
 
-## 3. Proposed endpoints
+## 3. The endpoints, as shipped
 
 Full request/response bodies are in [`MOBILE_API.md`](MOBILE_API.md) and
 [`openapi-mobile.yaml`](openapi-mobile.yaml). This is the index.
@@ -85,7 +92,7 @@ user with no seller row is `401`, not `200` with empty data.
 
 | Method | Path | Request | Returns | Gate |
 |---|---|---|---|---|
-| GET | `/api/mobile/pulse` | — | seller, domain, counts, highlights, recentAlerts, marketData, *domainStats* | none (peer block: `peer_benchmarks`) |
+| GET | `/api/mobile/pulse` | — | seller, domain, counts, highlights, recentAlerts, marketData, `domainStats` | none — the peer floor is a null count, not a 403 |
 | GET | `/api/mobile/kpis` | `?period=30d\|90d` | `kpis[]` — key, label, raw value, format, diffPct, direction | none |
 | GET | `/api/mobile/alerts` | `?cursor` | `alerts[]`, `nextCursor` | none |
 | POST | `/api/mobile/alerts/read` | `{ids[]}` **or** `{all:true}` | `markedCount` / `markedAll` | none |
@@ -93,12 +100,12 @@ user with no seller row is `401`, not `200` with empty data.
 | GET | `/api/mobile/categories` | — | `categories[]` w/ `isPrimary` | none |
 | GET | `/api/mobile/competitors` | `?categorySlug` | `competitors[]` (max 8), `emptyReason` | `competitor_intel` |
 | GET | `/api/mobile/competitors/moves` | `?categorySlug` | `stockOuts[]`, `anomalies[]` | `anomaly_detection` |
-| GET | `/api/mobile/pricing` | `?categorySlug`, `?cursor` | `recommendations[]` | `pricing_recommendations` |
+| GET | `/api/mobile/pricing` | `?categorySlug`, `?cursor` | `matchScopeCategorySlug`, `totalCount`, `recommendations[]`, `nextCursor` | `pricing_recommendations` |
 | GET | `/api/mobile/products` | `?cursor`, `?q` | `products[]`, `nextCursor` | none |
 | PATCH | `/api/mobile/products/{id}/price` | `{price}` | updated product | none |
 | GET | `/api/mobile/products/{id}/insight` | — | `product`, `vsMarket`, `closestCompetitors[]`, `priceHistory[]` | `watchlists` |
 | GET | `/api/mobile/price-check` | `?title` **(req)**, `?categorySlug`, `?intendedPrice` | bands, counts, `hasEnoughData` | `competitor_intel` |
-| GET | `/api/mobile/search` | `?q` **(req, ≥2 chars)**, `?categorySlug`, `?cursor` | `results[]`, `nextCursor` | `competitor_intel` |
+| GET | `/api/mobile/search` | `?q` (under 2 chars → empty `200`), `?categorySlug` | `results[]`, `nextCursor` (always null) | `competitor_intel` |
 | POST / DELETE | `/api/mobile/devices` | `{pushToken, platform, appVersion?}` | `registered` / `removed` | none |
 
 ---
@@ -111,8 +118,8 @@ Every figure traces to the function the desktop already uses.
 | Endpoint | Existing logic it composes | Verdict |
 |---|---|---|
 | `/pulse` | `listNotifications`, `getStockOuts`, `getDataFreshness`, `getPrimaryDomain` | Pure reuse — **already shipped** |
-| `/pulse` *listings tile* | `getMarketScopeCoverage(scope)` → `listingCount`, `platformNames` | Pure reuse |
-| `/pulse` *peer tiles* | `getDomainPeers`, `getDomainBenchmarks` | Pure reuse — the ≥3-seller anonymity floor holds unchanged |
+| `/pulse` *listings tile* | `getMarketScope` → `getMarketScopeCoverage` → `listingCount`, `platformNames` | Pure reuse |
+| `/pulse` *peer tiles* | `getDomainPeers`, `getDomainBenchmarks` | Pure reuse — the ≥3-seller anonymity floor holds unchanged, expressed as `sellersInDomain: null` rather than `0` |
 | `/alerts`, `/alerts/read` | `listNotifications` + notification writes | Pure reuse — **already shipped** |
 | `/market` *pricing* | `getCategoryPricing(slug, currency)` | Pure reuse — the 15-row P25/P75 sample floor holds |
 | `/market` *forecast* | `getCategoryPriceForecast` (→ `getPriceTrend`) | Pure reuse — 5-point minimum holds |
@@ -124,7 +131,7 @@ Every figure traces to the function the desktop already uses.
 | `/products`, `/products/{id}/price` | `getSellerProducts`, scoped update | Pure reuse — **already shipped** |
 | `/products/{id}/insight` | `findCompetitorsForProduct`, `getCategoryPricing`, `classifyPricePosition`, `getSellerPriceHistory` | Pure reuse, composed |
 | `/price-check` | `getPreLaunchInsight` | Pure reuse — **already shipped** |
-| `/search` | `searchMarketProducts(query, categorySlug?)` | Reuse + one small change (§6) |
+| `/search` | `searchMarketProducts(query, categorySlug?)` | Pure reuse — shipped unpaginated, so §6.2 turned out to need no backend change at all |
 | `/devices` | `seller_devices` upsert (migration 052) | Pure reuse — **already shipped** |
 
 ---
@@ -141,48 +148,73 @@ value for a phone. No recalculation, no different numbers.
 | `/market` | Three separate desktop fetches | One response, three blocks. `forecast: null` when gated or under-sampled — the client hides the card rather than branching on tier |
 | `/competitors/moves` | Stock-outs and anomalies are two desktop widgets | One response. `duration.confirmed:false` is preserved so the client can render `13+d` rather than a false-precision `13d` |
 | `/products/{id}/insight` | No single desktop equivalent | Composes four existing calls into one product-detail payload |
-| `/pricing` | Desktop returns the full list | Cursor-paginate at 20. **Do not filter by selected category** — see §8 #1 |
+| `/pricing` | Desktop returns the full list | Paginate at 20. The cursor is an **offset** behind the standard opaque encoding, not a timestamp — this list is recomputed in full on every call in a fixed order and does not grow from the top the way the feeds do. **Do not filter by selected category** — see §8 #1. `costPrice` is dropped at the boundary |
 
 ---
 
 ## 6. Genuinely new backend work
 
-Short list, deliberately. Two items.
+Short list, deliberately. Two items were identified. **One was done; the
+other turned out not to be needed.**
 
-**6.1 — Split raw computation out of `getEcommerceStats`** *(required for `/kpis`)*
+**6.1 — Split raw computation out of `getEcommerceStats`** *(required for
+`/kpis`)* — **done.**
 
-`seller/overview.ts:76` computes revenue, orders, AOV and new-customer
-counts, then immediately formats them for display. Mobile needs the numbers
-before that step.
+`seller/overview.ts` computed revenue, orders, AOV and new-customer counts,
+then immediately formatted them for display. Mobile needed the numbers before
+that step.
 
-The change: extract the computation into a function returning raw values
-(`{revenue, orders, aov, newCustomers, diffPct}`), and have the existing
-`getEcommerceStats` format on top of it. **Desktop output is byte-identical
-afterwards** — it keeps calling the same exported function, which keeps
-returning the same strings. No desktop behaviour changes. That constraint is
-what makes this safe.
+Shipped as `getSellerKpiTotals(sellerId, currency, periodDays)`, returning
+raw values plus their prior-period counterparts
+(`{revenue, priorRevenue, orders, priorOrders, aov, priorAov, newCustomers,
+priorNewCustomers}`). `getEcommerceStats` now formats on top of it.
+**Desktop output is byte-identical** — it calls the same exported function,
+which returns the same strings. No desktop behaviour changed. That constraint
+is what made this safe, and it is why `/kpis` and the desktop Overview tiles
+can never disagree on a number.
 
-**6.2 — Pagination for `searchMarketProducts`** *(required for `/search?cursor=`)*
+The route derives `diffPct` and `direction` from the raw pairs rather than
+having the lib hand them over, so "what counts as flat" is one decision in
+one place. `diffPct` is `null`, never `0`, when the prior period is empty.
 
-`seller/watchlists.ts:186` hard-codes `limit 20` with no offset. Two options,
-pick one before building:
+**6.2 — Pagination for `searchMarketProducts`** *(considered for
+`/search?cursor=`)* — **not done, deliberately.**
 
-- **Add an offset/keyset parameter** (defaulting to today's behaviour, so the
-  existing desktop watchlist search is unaffected) — then `/search` paginates
-  like every other mobile list.
-- **Ship `/search` unpaginated**, always returning `nextCursor: null` — 20
-  market results is arguably enough for a phone search box that leads into
-  `/price-check`.
+`seller/watchlists.ts` hard-codes `limit 20` with no offset. Two options were
+weighed: add an offset/keyset parameter, or ship `/search` unpaginated. The
+second was taken.
 
-*Recommendation: the second, initially.* It is zero backend change, and the
-contract already allows `nextCursor` to become non-null later without a
-breaking change for the client.
+It is zero backend change, 20 market results is enough for a phone search box
+that leads into `/price-check`, and the contract already allows `nextCursor`
+to become non-null later without breaking a client. `/search` therefore
+returns `nextCursor: null` **always** — the field is present rather than
+omitted precisely so that widening it later is additive.
+
+**Net: exactly one function was added to the backend for the entire mobile
+API.** Everything else composes what desktop already calls.
 
 **Not new work, though it might look like it:** the "N listings across M
 platforms" figure (`getMarketScopeCoverage`), the peer privacy floor
 (`getDomainPeers`), stock-out duration (`computeStockOutDuration`) and the
-category list (`listSellerDomains`) all already exist and return usable
+category list (`listSellerDomains`) all already existed and returned usable
 shapes.
+
+**Two unplanned fixes shipped alongside**, both the same bug: an endpoint
+hard-coded the primary domain and ignored `?categorySlug`, so switching
+category in the top bar left that screen behind — which reads as stale data,
+not as an unsupported param.
+
+- `/api/mobile/competitors` — the static competitor landscape.
+- `/api/mobile/pulse` — the home dashboard itself. Its `counts`,
+  `highlights`, `domainStats`, freshness and `domain` now all re-scope to the
+  selected category. It uses `resolveSelectedDomain` directly rather than
+  `requireMobileCategory`, because the home screen must still render for a
+  seller with no category at all (`domain: null`) — a `400` there would break
+  the first screen a new seller sees.
+
+Both now use `resolveSelectedDomain`, the same helper the domain-scoped
+desktop pages use. Behaviour for a missing or unrecognised slug is unchanged —
+it falls back to the primary, so the no-param default is identical to before.
 
 ---
 
@@ -220,9 +252,11 @@ backlog.
 
 ---
 
-## 8. Open before coding
+## 8. Open questions
 
-**#1 is now answered by the backend. #2–#4 are UI calls.**
+**#1 was answered by the backend and is settled. #2–#4 are UI calls and are
+still open** — they do not block the API, which behaves the same whichever
+way they land.
 
 **1. Does `/pricing` scope to the selected category? — No. Settled.**
 Reading `getPricingRecommendations` (`pricing-recommendation.ts:106`)
@@ -258,14 +292,47 @@ payload small. Labelled → the client already has the dates.
 
 ---
 
-## 9. Verification bar for the implementation
+## 9. Verification bar — what was actually run
 
 Standing project rule, not relaxed for mobile: **typecheck, lint, tests, and
 a real `next build`** — all four, before anything is called done.
 
 The build is the non-optional one: it is the only step that catches
 Server/Client component boundary errors, and it has caught them in this repo
-while tsc, lint and 390 tests all passed.
+while tsc, lint and hundreds of tests all passed.
 
-**Known gap:** the 8 live mobile routes have **no automated tests** — only
-the push job is covered. The 7 new routes should not repeat that.
+All four passed on the shipped implementation:
+
+| Step | Result |
+|---|---|
+| `npx tsc --noEmit` | clean |
+| `npm run lint` | clean, except the one pre-existing `<img>` warning in `ProductThumb.tsx` |
+| `npm run test` | **464 tests across 58 files**, all passing (up from 390) |
+| `next build` | succeeded; the route table lists all 15 `/api/mobile/*` routes as dynamic (`ƒ`) |
+
+**What the new tests pin**, since the value is in the specifics rather than
+the count — 45 tests across the five routes with non-trivial decisions:
+
+- `/kpis` — the `400` on an unsupported period fires *without* calling the
+  lib; `diffPct` is `null` and not `0` when the prior period is empty; money
+  is rounded at the boundary.
+- `/pricing` — rows from other categories **survive** the response (the
+  whole-catalogue contract, asserted rather than assumed); there is no
+  `costPrice` property; a 25-row cursor round-trip returns 20 then 5 with a
+  null second cursor; a bad cursor is a `400`.
+- `/market` — the forecast is **never computed** when the plan doesn't cover
+  it, while the endpoint still returns `200` with free-tier pricing; bands are
+  narrowed to the category on screen.
+- `/search` — `''`, `'d'` and `'  '` all return an empty `200` **without
+  touching the database**.
+- `/products/{id}/insight` — the lookup is scoped by id *and* seller, and
+  someone else's id is a `404`; a "Pack of 3" at 3,000 compares as 1,000.
+
+The `403` cases are asserted by mocking `hasFeature` to return `false`, so
+they test a real gate rather than passing vacuously under
+`DEMO_ALL_FEATURES_UNLOCKED`.
+
+**Remaining gap, stated rather than left implicit:** the 8 mobile routes that
+were already live when this document was written still have **no automated
+tests** — only the push job and the 7 new routes are covered. That is
+pre-existing debt, not something the mobile work introduced, but it is real.

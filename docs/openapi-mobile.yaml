@@ -8,8 +8,9 @@ openapi: 3.0.3
 # Prose contract:  docs/MOBILE_API.md
 # Design record:   docs/MOBILE_API_HANDOFF.md
 #
-# Every operation is tagged `live` or `planned`. `planned` endpoints are
-# specified but not yet implemented - they will 404 today.
+# All 15 operations are live. Operations used to be tagged `live` or
+# `planned`; the seven that were planned have shipped, so the distinction is
+# gone and every path below is callable.
 
 info:
   title: Ryvl mobile API
@@ -27,9 +28,17 @@ info:
 
     **Pagination:** cursors, never page numbers. 20 items per page everywhere.
     Pass `nextCursor` back verbatim. A malformed cursor is `400`, not page one.
+    `/alerts` and `/products` page on a timestamp; `/pricing` encodes an
+    offset. You cannot tell them apart and do not need to — one "call until
+    `nextCursor` is null" loop works for all three.
 
     **Money:** always a raw number, never a formatted string. `null` means
     "not available", never zero.
+
+    **Percentages** that compare against a baseline are signed *fractions*
+    (`-0.08` = 8% below), with exactly two exceptions that are signed
+    *percentages*: `pctChange` on `/competitors/moves` and `diffPct` on
+    `/kpis`. Both predate the convention and both already ship.
 
     **Plan gating:** `DEMO_ALL_FEATURES_UNLOCKED` is currently true, so no
     `403` is reachable today. Build the upgrade path anyway.
@@ -68,7 +77,7 @@ paths:
       operationId: getPulse
       summary: The whole Overview screen in one call
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         One request rather than five: a seller on a mobile connection pays real
         latency per round trip, and a home screen that fans out shows five
@@ -76,7 +85,16 @@ paths:
 
         Triggers no scraping. Reads what the last cron run already wrote.
 
-        `domainStats` is the **planned** extension that backs the stat tiles.
+        `domainStats` backs the four stat tiles and is `null` whenever `domain`
+        is `null`.
+
+        **Honours `?categorySlug`** — this is the endpoint that re-scopes the
+        dashboard when the seller switches category in the top bar. `counts`,
+        `highlights`, `domainStats`, freshness and `domain` all follow it. Omit
+        it for the primary category. The category actually used is echoed back
+        as `domain.categorySlug`.
+      parameters:
+        - $ref: '#/components/parameters/CategorySlug'
       responses:
         '200':
           description: OK
@@ -97,7 +115,7 @@ paths:
       operationId: getKpis
       summary: Revenue, orders, AOV, new customers
       description: |
-        `planned` — no plan gate.
+        No plan gate.
 
         The seller's **own sales figures**, from orders they imported — not
         market data. A seller who has imported no orders gets zeros; that is
@@ -105,11 +123,19 @@ paths:
 
         Returns raw numbers with a `format` discriminator. The desktop
         equivalent returns pre-formatted strings with icon and colour names
-        baked in; that shape is deliberately not reused here.
+        baked in; that shape is deliberately not reused here. Both are computed
+        by the same function, so the phone and the laptop can never disagree on
+        a figure.
       parameters:
         - name: period
           in: query
           required: false
+          description: |
+            Anything outside the enum is a **`400`**, not a silent fall back to
+            30 days — a client asking for a window it will not get, and being
+            told it did, surfaces as wrong numbers rather than as an error.
+            90d is offered because a 30-day window on a low-volume seller is
+            noisy; anything longer belongs on a desktop chart.
           schema: { type: string, enum: ['30d', '90d'], default: '30d' }
       responses:
         '200':
@@ -131,7 +157,7 @@ paths:
       tags: [Home & alerts]
       operationId: listAlerts
       summary: Alert feed, newest first
-      description: '`live` — no plan gate. 20 per page, cursor-paginated.'
+      description: 'No plan gate. 20 per page, cursor-paginated.'
       parameters:
         - $ref: '#/components/parameters/Cursor'
       responses:
@@ -162,7 +188,7 @@ paths:
       operationId: markAlertsRead
       summary: Mark alerts read
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         Send an array for swipe-to-clear: one request for five rows instead of
         five requests.
@@ -224,8 +250,12 @@ paths:
       operationId: getMarket
       summary: The whole Market screen — pricing, forecast, price position
       description: |
-        `planned` — the `forecast` block needs `forecasting` (premium); the
-        rest is ungated.
+        The `forecast` block needs `forecasting` (premium); the rest is
+        ungated. Expressed as a null block rather than a `403` on the whole
+        endpoint, because the price stats underneath it are free-tier and a
+        free seller is entitled to see them. When ungated the forecast is not
+        merely discarded — it is **never computed**, because it runs a
+        regression over a month of scraped history.
 
         `forecast` is `null` when the seller lacks the entitlement **or** when
         there is too little history (under 5 points) for a trend line to mean
@@ -254,7 +284,7 @@ paths:
       operationId: listCategories
       summary: The seller's own categories, for the switcher sheet
       description: |
-        `planned` — no plan gate.
+        No plan gate.
 
         Returns only the seller's own categories, not the full 12-category
         taxonomy. **One category → hide the switcher.**
@@ -286,7 +316,7 @@ paths:
       operationId: getCompetitors
       summary: Who is in this market and how they price
       description: |
-        `live` — needs `competitor_intel` (paid).
+        Needs `competitor_intel` (paid).
 
         The static picture. For what *changed*, use `/competitors/moves`.
 
@@ -299,7 +329,11 @@ paths:
         - name: categorySlug
           in: query
           required: false
-          description: '**Planned.** Today the route always uses the primary category.'
+          description: |
+            Honoured. A missing, stale or not-this-seller's slug falls back to
+            the primary category rather than erroring, and the category
+            actually used is echoed back as `categorySlug` — read that rather
+            than assuming you got the one you sent.
           schema: { type: string }
       responses:
         '200':
@@ -322,7 +356,8 @@ paths:
       operationId: getCompetitorMoves
       summary: Stock-outs and price anomalies
       description: |
-        `planned` — needs `anomaly_detection` (premium).
+        Needs `anomaly_detection` (premium). This is the only endpoint in the
+        mobile API gated on the premium tier.
 
         Anomalies use IQR outlier detection over week-over-week changes, not a
         fixed threshold, so "unusual" adapts to how volatile the category
@@ -356,7 +391,7 @@ paths:
       operationId: getPricingRecommendations
       summary: Rule-based pricing recommendations
       description: |
-        `planned` — needs `pricing_recommendations` (paid).
+        Needs `pricing_recommendations` (paid).
 
         Rules, not AI — and saying so builds trust. The recommendation is the
         competitor band (±5% off a matched competitor, or the category P25–P75
@@ -365,8 +400,21 @@ paths:
         **Returns the whole active catalogue, not the selected category.** Each
         row is judged against **its own** category's band, which is why the row
         carries its own `categorySlug`. `?categorySlug` only scopes the
-        title-matching pass; it does not filter the result set. Do not filter
-        client-side by the selected category — you would hide valid advice.
+        title-matching pass; it does not filter the result set, and is echoed
+        back as `matchScopeCategorySlug` so it cannot be mistaken for one. Do
+        not filter client-side by the selected category — you would hide valid
+        advice.
+
+        **Cost price is not in this response.** It is on the underlying type
+        and is dropped at the boundary: the margin floor is already baked into
+        `recommendedPrice` and named in `rationale`, and cost is the one number
+        a seller would not want readable over someone's shoulder on a bus.
+
+        Pages at 20. Unlike the feeds, the cursor here encodes an **offset** —
+        this list is recomputed in full on every call in a deterministic order
+        (largest price gap first) and does not grow from the top, so an offset
+        is honest. It is still base64url-opaque, so one "call until
+        `nextCursor` is null" loop works across every endpoint.
       parameters:
         - $ref: '#/components/parameters/CategorySlug'
         - $ref: '#/components/parameters/Cursor'
@@ -382,11 +430,22 @@ paths:
                     properties:
                       data:
                         type: object
-                        required: [currency, recommendations, nextCursor]
+                        required: [currency, matchScopeCategorySlug, totalCount, recommendations, nextCursor]
                         properties:
                           currency: { $ref: '#/components/schemas/Currency' }
+                          matchScopeCategorySlug:
+                            type: string
+                            description: |
+                              The category the **matching pass** ran against —
+                              **not** a filter on the rows below. Named
+                              explicitly so a client cannot mistake it for one.
+                          totalCount:
+                            type: integer
+                            description: Recommendations across all pages, not just this one.
+                            example: 64
                           recommendations:
                             type: array
+                            maxItems: 20
                             items: { $ref: '#/components/schemas/PricingRecommendation' }
                           nextCursor: { $ref: '#/components/schemas/NextCursor' }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -400,7 +459,7 @@ paths:
       operationId: listProducts
       summary: The seller's own catalogue
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         `q` is a substring match over the seller's own few hundred products — a
         "find the one I am holding" box, not a search engine. To search the
@@ -442,7 +501,7 @@ paths:
       operationId: updateProductPrice
       summary: Change one product's price
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         The action the whole app builds toward: a seller sees a competitor
         undercut them in the feed, opens the product, changes the price —
@@ -489,7 +548,7 @@ paths:
       operationId: getProductInsight
       summary: One of the seller's products vs. the market
       description: |
-        `planned` — needs `watchlists` (paid).
+        Needs `watchlists` (paid).
 
         **`matchConfidence` bands are not calibrated.** They are title
         similarity with hand-picked cut points. Present matches as "closest we
@@ -518,7 +577,7 @@ paths:
       operationId: priceCheck
       summary: 'Should I stock this, and at what price?'
       description: |
-        `live` — needs `competitor_intel` (paid).
+        Needs `competitor_intel` (paid).
 
         The quick action the app exists for: the seller is standing at a
         supplier holding something they do not stock yet. Keyed on a **title
@@ -567,7 +626,7 @@ paths:
       operationId: searchMarketProducts
       summary: Search scraped market products
       description: |
-        `planned` — needs `competitor_intel` (paid).
+        Needs `competitor_intel` (paid).
 
         Backs the search icon in the top bar. Searches **what competitors are
         selling**, not the seller's own catalogue — for that use
@@ -579,20 +638,33 @@ paths:
 
         Tapping a result should lead into `/price-check` with that title.
 
-        `nextCursor` may always be `null` in the first release — the underlying
-        search is currently capped at 20 results with no offset.
+        `nextCursor` is **always `null`** — the underlying search is capped at
+        20 results with no offset, so there is no second page to hand out. The
+        field is present rather than omitted so that a client which special-
+        cased its absence does not break the day pagination lands; widening it
+        later is additive, and your existing "stop when null" loop keeps
+        working untouched.
+
+        Debounce it — this is called per keystroke.
       parameters:
         - name: q
           in: query
-          required: true
-          schema: { type: string, minLength: 2 }
+          required: false
+          description: |
+            Trimmed before use. Under 2 characters (including absent, empty, or
+            all-whitespace) returns an empty `200` **without touching the
+            database** — the first keystroke is a normal state to pass through,
+            not an error worth a failure card.
+          schema: { type: string }
           example: dior
         - name: categorySlug
           in: query
           required: false
-          description: Narrows to one market. Omit to search everything scraped.
+          description: |
+            Narrows to one market. **Omitting it is the right default** for "I
+            am holding a box at a supplier and do not know which of my markets
+            it belongs to".
           schema: { type: string }
-        - $ref: '#/components/parameters/Cursor'
       responses:
         '200':
           description: OK
@@ -607,13 +679,17 @@ paths:
                         type: object
                         required: [query, results, nextCursor]
                         properties:
-                          query: { type: string }
-                          currency: { $ref: '#/components/schemas/Currency' }
+                          query: { type: string, description: 'Trimmed, echoed back — so a late response cannot be mislabelled against a newer query.' }
                           results:
                             type: array
+                            maxItems: 20
+                            description: 'There is deliberately **no top-level `currency`** — it is per row, and as scraped. See `MarketProduct`.'
                             items: { $ref: '#/components/schemas/MarketProduct' }
-                          nextCursor: { $ref: '#/components/schemas/NextCursor' }
-        '400': { $ref: '#/components/responses/BadRequest' }
+                          nextCursor:
+                            allOf: [{ $ref: '#/components/schemas/NextCursor' }]
+                            description: Always `null` today. See the operation description.
+        # No 400: a too-short query is a 200 with an empty list, and there is
+        # no other parameter this route can reject.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/UpgradeRequired' }
         '500': { $ref: '#/components/responses/ServerError' }
@@ -626,7 +702,7 @@ paths:
       operationId: registerDevice
       summary: Register for push
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         **Call on every app launch.** Expo tokens rotate. The write is an upsert
         keyed on the token, so repeat calls do not pile up rows.
@@ -668,7 +744,7 @@ paths:
       operationId: unregisterDevice
       summary: Unregister on sign-out
       description: |
-        `live` — no plan gate.
+        No plan gate.
 
         **Not optional.** Without it, a shared or resold phone keeps receiving
         the previous seller's alerts until the token happens to rotate.
@@ -729,9 +805,19 @@ components:
       in: query
       required: false
       description: |
-        Omit to use the seller's primary category. If neither is available the
-        response is `400`, telling the seller to pick a category. The server
-        holds no selection state — send it every time.
+        Omit to use the seller's primary category. A stale slug, or one
+        belonging to another seller, also falls back to the primary rather than
+        erroring — hand-editing a request cannot surface someone else's market.
+        The server holds no selection state, so send it every time.
+
+        If neither a valid slug nor a primary category is available the
+        response is `400`, telling the seller to pick a category.
+
+        ⚠️ **`/api/mobile/competitors` is the exception** and answers `200` with
+        `emptyReason: "no_category"` instead of `400`. It predates this shared
+        helper and its empty-state contract is already documented and in use.
+        Handle both: a `400` with this message and an `emptyReason` of
+        `no_category` mean the same thing — send the seller to onboarding.
       schema: { type: string }
       example: beauty-and-personal-care
 
@@ -846,7 +932,7 @@ components:
 
     Pulse:
       type: object
-      required: [seller, domain, counts, highlights, recentAlerts, marketData]
+      required: [seller, domain, counts, highlights, recentAlerts, marketData, domainStats]
       properties:
         seller:
           type: object
@@ -891,16 +977,22 @@ components:
               description: '**Always show this.** A phone user has less context than someone at a desktop, so the data''s age matters more here, not less.'
             platformsTracked: { type: integer, example: 8 }
         domainStats:
-          $ref: '#/components/schemas/DomainStats'
+          nullable: true
+          description: '`null` whenever `domain` is `null` — there is no market to count.'
+          allOf: [{ $ref: '#/components/schemas/DomainStats' }]
 
     DomainStats:
       type: object
       description: |
-        **Planned.** Backs the stat tiles.
+        Backs the stat tiles on the home screen. Folded into `/pulse` rather
+        than given its own endpoint — a second request to fill four tiles
+        beside the highlights is a spinner nobody needed.
 
         The peer privacy floor is a hard rule, not a loading state: peer figures
         need at least 3 opted-in sellers before anything is computed. Below
-        that, `sellersInDomain` is `null` and the rest are `0`.
+        that, `sellersInDomain` is `null` and the rest are `0`. It is expressed
+        as a null count rather than a `403` — there is no entitlement check on
+        this block.
 
         Design warning: on first launch these render as `— / 0 / 0`, which reads
         as "broken" rather than "not enough sellers yet". Consider collapsing
@@ -1061,6 +1153,14 @@ components:
     CompetitorLandscape:
       type: object
       properties:
+        categorySlug:
+          type: string
+          nullable: true
+          description: |
+            The category actually used, echoed back. A missing, stale or
+            not-this-seller's `?categorySlug` falls back to the primary rather
+            than erroring — so read this rather than assuming you got the one
+            you sent. `null` only when the seller has no category at all.
         categoryName: { type: string, nullable: true }
         marketMedianPrice: { $ref: '#/components/schemas/Money' }
         currency: { $ref: '#/components/schemas/Currency' }
@@ -1092,14 +1192,27 @@ components:
     CompetitorMoves:
       type: object
       properties:
+        categorySlug: { type: string, description: The category used, echoed back. }
         categoryName: { type: string }
         currency: { $ref: '#/components/schemas/Currency' }
         stockOuts:
           type: array
+          maxItems: 10
+          description: |
+            Ranked longest-out-first, capped at 10. A seller who wants the full
+            list has the desktop Market page.
           items: { $ref: '#/components/schemas/StockOut' }
         anomalies:
           type: array
           maxItems: 50
+          description: |
+            **Do not re-filter or re-sort by size.** A move qualifies by
+            clearing an IQR fence computed against *that category's own*
+            week-over-week volatility, confirmed against two baselines so a
+            one-off scrape blip is dropped. A flat client-side threshold
+            second-guesses that. The array is then ordered by **absolute**
+            `pctChange`, biggest first — sorting by the signed value would bury
+            every price cut at the bottom.
           items: { $ref: '#/components/schemas/PriceAnomaly' }
 
     StockOut:
@@ -1137,9 +1250,10 @@ components:
         pctChange:
           type: number
           description: |
-            Signed **percentage**, not a fraction: `-5.5` = down 5.5%. This is
-            the one inconsistency with the signed-fraction convention used
-            elsewhere; both already ship and we are keeping them.
+            Signed **percentage**, not a fraction: `-5.5` = down 5.5%. Rounded
+            to 1dp. One of exactly two exceptions to the signed-fraction
+            convention used elsewhere (the other is `diffPct` on `/kpis`); both
+            already ship and we are keeping them.
           example: -5.5
 
     # -- pricing & products --------------------------------------------------
@@ -1155,7 +1269,7 @@ components:
             **The category this row was judged against — always the product's
             own, never the one on screen.** This is why a Home & Kitchen
             recommendation can appear under a Beauty pill.
-        categoryName: { type: string }
+        categoryName: { type: string, nullable: true, description: 'Display name for this row''s own `categorySlug`. `null` if the category has no name on record.' }
         currentPrice: { $ref: '#/components/schemas/Money' }
         recommendedPrice: { $ref: '#/components/schemas/Money' }
         direction: { type: string, enum: [increase, decrease, hold] }
@@ -1197,35 +1311,100 @@ components:
 
     ProductInsight:
       type: object
+      required: [product, vsMarket, closestCompetitors, priceHistory]
       properties:
-        product: { $ref: '#/components/schemas/SellerProduct' }
+        product:
+          type: object
+          description: |
+            The seller's own row. Note this is **not** the `/products` list
+            shape: `stockQty` and `isActive` are not carried here, and the
+            product's category is.
+          properties:
+            id: { type: string, format: uuid }
+            title: { type: string }
+            price:
+              allOf: [{ $ref: '#/components/schemas/Money' }]
+              description: |
+                As stored, in the product's **own** currency — the same pair
+                `/api/mobile/products` returns, so this matches the number in
+                the list the seller just tapped. The market comparison below is
+                computed in the reporting currency and says so separately.
+            currency: { $ref: '#/components/schemas/Currency' }
+            imageUrl: { type: string, nullable: true }
+            categorySlug: { type: string, nullable: true, description: '`null` → unmapped. This is one of the three causes of a null `vsMarket`.' }
+            categoryName: { type: string, nullable: true }
         vsMarket:
           nullable: true
-          description: '`null` → we could not place this product. Say so plainly rather than showing a blank comparison.'
+          description: |
+            `null` → we could not place this product. **Three causes, handled
+            identically:** no category mapped, no price set, or nothing scraped
+            for the category. Say so plainly rather than showing a blank
+            comparison — and when `product.categorySlug` is `null`, say "map
+            this product to a category".
           type: object
           properties:
+            currency:
+              allOf: [{ $ref: '#/components/schemas/Currency' }]
+              description: |
+                The seller's **reporting** currency, which can differ from
+                `product.currency`. Two currency fields because they are
+                genuinely two numbers — do not collapse them.
+            comparedPrice:
+              allOf: [{ $ref: '#/components/schemas/Money' }]
+              description: '`product.price` converted into `currency` and then divided by any pack size the title states. This, not the raw price, is what was compared.'
             categoryMedian: { $ref: '#/components/schemas/Money' }
             pctVsMedian: { $ref: '#/components/schemas/SignedFraction' }
             band: { $ref: '#/components/schemas/PriceBand' }
             bandLabel: { type: string, example: '5–25% below' }
+            perUnit:
+              type: boolean
+              description: |
+                `true` → `comparedPrice` is a per-item figure divided out of a
+                pack ("Lip Tint Pack of 3" at 3,000 compares as 1,000). The
+                category median is **not** normalised the same way, so the
+                comparison is approximate. Say so.
+            sampleSize:
+              type: integer
+              description: |
+                Listings the median stands for. A median over four rows is not
+                the same claim as one over four hundred — temper the wording
+                when this is small.
+              example: 4210
         closestCompetitors:
           type: array
           maxItems: 5
-          description: Best match first.
+          description: |
+            Best match first, and **"closest we found", never "the same
+            product"**. Empty when nothing matched. Desktop's drawer shows 15
+            listings across 10 columns (ratings, sold counts, review snippets,
+            match strength); these are the same rows with the rest dropped at
+            the boundary, not recomputed differently.
           items:
             type: object
             properties:
               title: { type: string }
-              platformName: { type: string }
+              platformName: { type: string, nullable: true }
               price: { $ref: '#/components/schemas/Money' }
-              inStock: { type: boolean }
+              currency: { $ref: '#/components/schemas/Currency' }
+              imageUrl: { type: string, nullable: true }
+              url: { type: string }
               matchConfidence:
                 type: number
-                description: '0–1, **not calibrated** — title similarity with hand-picked cut points.'
-              url: { type: string }
+                description: '0–1, **not calibrated** — title similarity with hand-picked cut points. `0.81` is not "81% likely to be the same product"; do not present it as a probability.'
+              priceDeltaPct:
+                allOf: [{ $ref: '#/components/schemas/SignedFraction' }]
+                description: |
+                  `-0.07` → the seller is 7% cheaper than this listing.
+                  **Precomputed — use it.** It is the whole question this screen
+                  answers, and leaving the arithmetic to the client is how two
+                  clients end up rounding it differently.
         priceHistory:
           type: array
-          description: Last 30 days of the seller's own price.
+          description: |
+            Last 30 days of the **seller's own** price, ascending by date — no
+            market band. Backs a sparkline, not a chart. Points with no price
+            are dropped, so gaps are real. Empty means they have never changed
+            the price; render a flat line or nothing, not an error.
           items:
             type: object
             properties:
@@ -1277,8 +1456,15 @@ components:
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
-        platformName: { type: string }
+        platformName: { type: string, nullable: true }
         price: { $ref: '#/components/schemas/Money' }
+        currency:
+          allOf: [{ $ref: '#/components/schemas/Currency' }]
+          description: |
+            **Per row, and as scraped** — these are *not* converted to the
+            seller's reporting currency. A top-level currency field would be a
+            claim we cannot make about a market carrying more than one. Render
+            the row's own.
         inStock: { type: boolean }
         imageUrl: { type: string, nullable: true }
         url: { type: string }

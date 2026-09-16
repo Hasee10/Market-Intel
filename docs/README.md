@@ -12,8 +12,8 @@ constantly and referenced by name from code comments and migration headers:
 | File | What it answers | Read it when |
 |---|---|---|
 | [`memory.md`](memory.md) | *Why* the code is the way it is — a dated engineering log of decisions, failed approaches and the reasoning behind them | Before changing something that looks odd. The odd thing is usually load-bearing and the entry explains why |
-| [`MOBILE_API.md`](MOBILE_API.md) | The `/api/mobile/*` contract — auth, envelope, pagination, every live and planned endpoint | Building the mobile client, or adding a mobile route. **Written to be read by a developer with no other context on this repo** |
-| [`MOBILE_API_READY.md`](MOBILE_API_READY.md) | **Only the 8 endpoints that work today**, with a runnable `curl` for each | Hand this to the mobile developer on day one. Everything in it can be called right now |
+| [`MOBILE_API.md`](MOBILE_API.md) | The `/api/mobile/*` contract — auth, envelope, pagination, and all 15 endpoints field by field | Building the mobile client, or adding a mobile route. **Written to be read by a developer with no other context on this repo** |
+| [`MOBILE_API_READY.md`](MOBILE_API_READY.md) | The same 15 endpoints as a practical guide: one runnable `curl` and a "what to know" list each | Hand this to the mobile developer on day one. Everything in it can be called right now |
 | [`MOBILE_API_HANDOFF.md`](MOBILE_API_HANDOFF.md) | The *decision record* behind the mobile API — mockup screen → data → endpoint, what reuses existing logic, what needs an adapter, what is genuinely new work, what desktop features are deliberately excluded | Before writing any mobile route. Read it with `MOBILE_API.md`, which is the field-level contract |
 | [`openapi-mobile.yaml`](openapi-mobile.yaml) | The same contract, machine-readable | Importing into Swagger UI or Postman |
 | [`SELLER_TRACKED_COMPETITORS.md`](SELLER_TRACKED_COMPETITORS.md) | Scope for letting sellers nominate their own competitors | **Scoping only — nothing built** |

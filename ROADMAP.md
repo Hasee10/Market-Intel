@@ -323,7 +323,8 @@ written down here. That is the gap this section closes.
 
 **What exists:**
 
-- **8 endpoints** under `/api/mobile/*`, isolated from the 44 desktop routes:
+- **15 endpoints** under `/api/mobile/*`, isolated from the 44 desktop routes.
+  The first 8 shipped in `e21a21a`:
   `pulse` (the whole home screen in one request — a phone on a Pakistani
   mobile connection pays a real latency cost per round trip, so this is one
   fan-out instead of five spinners), `alerts` + `alerts/read` (cursor-paginated,
@@ -337,6 +338,23 @@ written down here. That is the gap this section closes.
   eight-field form over a dropping connection is worse than not offering it),
   `competitors` (3 of the desktop scorecard's 9 columns — what a seller can
   act on from a phone), `devices` (push-token registration).
+- **7 more added 2026-09-15**, after the mobile mockup was reviewed screen by
+  screen so nothing was built that no screen consumes: `categories` (the
+  switcher — the seller's own markets, not the full taxonomy), `kpis` (raw
+  numbers with a `format` discriminator, because desktop's equivalent returns
+  pre-formatted currency strings a phone cannot re-parse or localise),
+  `market` (three desktop widgets in one response; the forecast block is a
+  null when ungated rather than a 403, since the price stats under it are
+  free-tier), `competitors/moves` (stock-outs + IQR price anomalies — what
+  *changed*, as against `competitors`, which is who is there),
+  `pricing` (the recommendation list, paginated, with cost price dropped at
+  the boundary), `products/[id]/insight` (one product against its category —
+  the screen the price write is launched from), `search` (scraped competitor
+  listings, distinct from `products?q=`, which searches the seller's own
+  catalogue).
+- **One function added to the backend for all fifteen**: `getSellerKpiTotals`,
+  splitting raw KPI computation out of `getEcommerceStats`'s display
+  formatting. Desktop output is byte-identical afterwards.
 - **Push notifications, running in production.** `seller_devices`
   (migration 052) + `seller_notifications.pushed_at` (migration 053) +
   a delivery job (`push-notifications-job.ts`) via Expo's push service,
@@ -426,9 +444,10 @@ since OLX is off entirely rather than intermittently failing.
 ## Open items
 
 - Mobile client — the `/api/mobile/*` backend (Phase G) has had no consumer
-  since 2026-09-05. Until a client exists, the 8 routes and the push job are
+  since 2026-09-05. Until a client exists, the 15 routes and the push job are
   unverified against a real device beyond whatever manual testing produced
-  the 2026-09-13 incident.
+  the 2026-09-13 incident. The 7 routes added 2026-09-15 have unit tests; the
+  original 8 still do not.
 - Billing provider — no checkout exists; `plan_tier` is set by hand or by
   the referral reward. Needed before Phase B tiers mean anything commercially.
 - Fate of `market_accounts` — the dormant JobLo-era buyer-side account type.

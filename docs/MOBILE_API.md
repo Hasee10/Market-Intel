@@ -9,14 +9,15 @@ this repo.
 
 ## Quick reference — every endpoint
 
-`L` = live today · `P` = planned (not built yet)
+Every endpoint below is **live**. There are no planned-but-unbuilt
+endpoints left in this document.
 
 ### Home & alerts
 
 | | Method | Path | What it gives you |
 |---|---|---|---|
 | L | GET | `/api/mobile/pulse` | The whole Overview screen in one call |
-| P | GET | `/api/mobile/kpis` | Revenue, orders, AOV, new customers — the KPI tiles |
+| L | GET | `/api/mobile/kpis` | Revenue, orders, AOV, new customers — the KPI tiles |
 | L | GET | `/api/mobile/alerts` | Alert feed (paginated) |
 | L | POST | `/api/mobile/alerts/read` | Mark alerts read |
 
@@ -24,31 +25,31 @@ this repo.
 
 | | Method | Path | What it gives you |
 |---|---|---|---|
-| P | GET | `/api/mobile/market` | The whole Market screen: price stats, forecast, position bars |
-| P | GET | `/api/mobile/categories` | Categories for the switcher sheet |
+| L | GET | `/api/mobile/market` | The whole Market screen: price stats, forecast, position bars |
+| L | GET | `/api/mobile/categories` | Categories for the switcher sheet |
 
 ### Competitors
 
 | | Method | Path | What it gives you |
 |---|---|---|---|
 | L | GET | `/api/mobile/competitors` | Who's in this market and how they price |
-| P | GET | `/api/mobile/competitors/moves` | Stock-outs + price anomalies |
+| L | GET | `/api/mobile/competitors/moves` | Stock-outs + price anomalies |
 
 ### Pricing & products
 
 | | Method | Path | What it gives you |
 |---|---|---|---|
-| P | GET | `/api/mobile/pricing` | Pricing recommendations |
+| L | GET | `/api/mobile/pricing` | Pricing recommendations |
 | L | GET | `/api/mobile/products` | The seller's own catalogue |
 | L | PATCH | `/api/mobile/products/{id}/price` | Change one price |
-| P | GET | `/api/mobile/products/{id}/insight` | One product vs. the market |
+| L | GET | `/api/mobile/products/{id}/insight` | One product vs. the market |
 | L | GET | `/api/mobile/price-check` | "Should I stock this, at what price?" |
 
 ### Search
 
 | | Method | Path | What it gives you |
 |---|---|---|---|
-| P | GET | `/api/mobile/search` | Search scraped market products |
+| L | GET | `/api/mobile/search` | Search scraped market products |
 
 ### Device
 
@@ -57,7 +58,7 @@ this repo.
 | L | POST | `/api/mobile/devices` | Register for push |
 | L | DELETE | `/api/mobile/devices` | Unregister on sign-out |
 
-**Totals:** 8 live, 7 planned.
+**Totals:** 15 endpoints, all live.
 
 Things the platform has that mobile deliberately won't get are listed in
 [Not on mobile](#not-on-mobile).
@@ -147,6 +148,15 @@ API. Branch on status codes and structured fields like `emptyReason`.
 `404` is returned both when a product doesn't exist and when it belongs to
 someone else. Don't try to tell them apart — the API won't.
 
+**"No category selected" arrives two different ways.** `/market`,
+`/competitors/moves` and `/pricing` return a `400` when the seller has no
+category and didn't send one. `/competitors` answers `200` with
+`emptyReason: "no_category"` instead — it predates the shared
+`requireMobileCategory` helper, and its empty-state contract was already
+documented and in client use, so it wasn't changed underneath anyone. Handle
+both; they mean the same thing. `/pulse` says it up front with
+`domain: null`.
+
 ## Pagination
 
 Lists use a **cursor**, never page numbers.
@@ -226,9 +236,13 @@ display). **Never show a slug to a seller.**
   have enough data"; a `0` median would be a real price. Render a dash for
   `null`, never a `0`.
 - Percentages that compare against a baseline are **signed fractions**:
-  `-0.08` = 8% below. Except `pctChange` on anomalies, which is a signed
-  **percentage**: `-5.5` = down 5.5%. (Inconsistent, and we're keeping it —
-  both already ship.)
+  `-0.08` = 8% below. That covers `priceIndex`, `pctVsMedian`,
+  `priceDeltaPct`, `assortmentShare` and `vsMatchedMedian`.
+- **Exactly two fields break that rule** and are signed **percentages**:
+  `pctChange` on `/competitors/moves` (`-5.5` = down 5.5%) and `diffPct` on
+  `/kpis` (`12.4` = up 12.4%). Inconsistent, and we're keeping it — both
+  already ship, and changing them under a client that already handles them
+  would be the worse failure. Assume fractions everywhere else.
 
 ---
 
@@ -236,9 +250,20 @@ display). **Never show a slug to a seller.**
 
 ## `GET /api/mobile/pulse`
 
-**Live** · no plan gate · no params
+**Live** · no plan gate
 
 The entire Overview screen in one request.
+
+| Param | Required | Notes |
+|---|---|---|
+| `categorySlug` | no | Which market the dashboard reflects. Falls back to the primary category |
+
+**This is the endpoint that re-scopes the dashboard when the seller switches
+category.** Send the `categorySlug` from the top-bar switcher and `counts`,
+`highlights`, `domainStats`, `marketData` freshness and `domain` all follow
+it. Omit it for the primary category. A stale or not-this-seller's slug falls
+back to primary rather than erroring; read the echoed `domain.categorySlug`
+to label the screen.
 
 ```jsonc
 {
@@ -248,7 +273,7 @@ The entire Overview screen in one request.
     "currency": "PKR"
   },
 
-  "domain": {                       // null if the seller has no category
+  "domain": {                       // the category this response is scoped to; null if none set
     "categorySlug": "beauty-and-personal-care",
     "categoryName": "Beauty & Personal Care"
   },
@@ -295,7 +320,7 @@ The entire Overview screen in one request.
 - **Always show `lastScrapedAt`.** A phone user has less context than
   someone at a desktop, so the data's age matters more here, not less.
 
-### Planned addition: the stat tiles
+### The stat tiles
 
 ```jsonc
 {
@@ -324,11 +349,11 @@ need at least 3 opted-in sellers before anything is computed. Below that,
 
 ## `GET /api/mobile/kpis`
 
-**Planned** · no plan gate
+**Live** · no plan gate
 
 | Param | Type | Required | Notes |
 |---|---|---|---|
-| `period` | `30d` \| `90d` | no | Defaults to `30d` |
+| `period` | `30d` \| `90d` | no | Defaults to `30d`. Anything else is a `400` |
 
 The seller's own business KPIs — revenue, orders, average order value, new
 customers — each with a change against the prior period.
@@ -372,13 +397,16 @@ customers — each with a change against the prior period.
 - **`format` tells you how to render `value`**, so you never have to guess
   whether `2253` is money or a count.
 
-> **Implementation note for the backend:** the desktop equivalent
-> (`getEcommerceStats`) returns **pre-formatted strings** like
-> `"$482,300.00"` with icon and colour names baked in. The mobile route
-> must return raw numbers instead — a phone client can't re-parse a
-> formatted string, can't localise it, and shouldn't inherit desktop's
-> icon vocabulary. Compose from the same source data, don't reuse the
-> return shape.
+- **An unsupported `period` is a `400`, not a silent fallback to `30d`.**
+  A client that asks for a window it won't get, and is told it did, shows
+  wrong numbers instead of an error anyone can report.
+
+> **Where the numbers come from.** Desktop's `getEcommerceStats` returns
+> pre-formatted strings like `"$482,300.00"` with icon and colour names
+> baked in — unusable on a phone. The raw computation was split out into
+> `getSellerKpiTotals`, and both clients now format on top of it. Same
+> source figures, different presentation layer, so the two can never
+> disagree on the number itself.
 
 ---
 
@@ -439,7 +467,7 @@ and laggy.
 
 ## `GET /api/mobile/market`
 
-**Planned** · `forecast` block needs `forecasting` (`premium`); the rest is free
+**Live** · `forecast` block needs `forecasting` (`premium`); the rest is free
 
 | Param | Type | Required |
 |---|---|---|
@@ -498,6 +526,12 @@ The entire Market screen in one call.
   `premium`, or there's too little history (under 5 data points) for a
   trend line to mean anything.
 - Bands arrive worst-first. Render in order.
+- **`pricePosition` covers this category only.** The underlying computation
+  runs over the seller's whole catalogue; it is narrowed here, because
+  everything else in this response is about one category and a product
+  judged against a different median would make the headline meaningless.
+  `totalProducts` is therefore the count *in this category*, not the
+  catalogue size.
 
 > ⚠️ **`anyPackSizeAdjusted: true` means the comparison is approximate.**
 > The seller's own price is adjusted for pack size; the market median isn't.
@@ -509,7 +543,7 @@ The entire Market screen in one call.
 
 ## `GET /api/mobile/categories`
 
-**Planned** · no plan gate · no params
+**Live** · no plan gate · no params
 
 Fills the category switcher sheet. Returns only the seller's own
 categories, not the full 12-category taxonomy.
@@ -539,7 +573,7 @@ option.
 
 | Param | Type | Required | Notes |
 |---|---|---|---|
-| `categorySlug` | string | no | **Planned** — today it always uses the primary category |
+| `categorySlug` | string | no | Falls back to the primary category |
 
 Who's in this market and how they price.
 
@@ -568,6 +602,9 @@ Who's in this market and how they price.
 
 - **`priceIndex` is the most useful number here.** `-0.08` = prices 8%
   below the market median. Lead with it.
+- `categorySlug` is echoed back so you can tell which market the numbers
+  describe — a stale or not-yours slug silently falls back to the primary,
+  and this is how you notice.
 - **Branch on `emptyReason`, never on `competitors.length === 0`.**
   "You haven't set a category" and "this market has no named sellers" are
   different problems with different fixes, and an empty list can't tell
@@ -581,7 +618,7 @@ ratings, repricing rate, tenure). Those stay on desktop — see
 
 ## `GET /api/mobile/competitors/moves`
 
-**Planned** · needs `anomaly_detection` (`premium`)
+**Live** · needs `anomaly_detection` (`premium`)
 
 | Param | Type | Required |
 |---|---|---|
@@ -591,10 +628,11 @@ What *changed*. Distinct from `/competitors`, which is the static picture.
 
 ```jsonc
 {
+  "categorySlug": "beauty-and-personal-care",
   "categoryName": "Beauty & Personal Care",
   "currency": "PKR",
 
-  "stockOuts": [
+  "stockOuts": [                          // max 10, longest out first
     {
       "id": "uuid",
       "title": "Dior Eau Sauvage Lotion Apres-Rasage 100ml",
@@ -631,7 +669,11 @@ What *changed*. Distinct from `/competitors`, which is the static picture.
   `false` → "Out 13+d" (we've never seen it in stock, so 13 days is a
   floor). The mockup's `13+d` is right for `false`.
 - Anomalies cover **the last 7 days**. Label the section with the window.
-- Capped at 50.
+- Anomalies are capped at 50; stock-outs at 10. Both are already ranked
+  (anomalies by how unusual, stock-outs by how long they've been out), so
+  the caps take the top of a ranking rather than an arbitrary slice.
+  **Don't re-sort anomalies by raw percentage** — that undoes the ranking
+  described below.
 
 > **Why some 5% moves outrank 20% moves.** Anomalies use IQR outlier
 > detection over week-over-week changes, not a fixed threshold — so what
@@ -646,7 +688,7 @@ What *changed*. Distinct from `/competitors`, which is the static picture.
 
 ## `GET /api/mobile/pricing`
 
-**Planned** · needs `pricing_recommendations` (`paid`)
+**Live** · needs `pricing_recommendations` (`paid`)
 
 | Param | Type | Required |
 |---|---|---|
@@ -656,6 +698,8 @@ What *changed*. Distinct from `/competitors`, which is the static picture.
 ```jsonc
 {
   "currency": "PKR",
+  "matchScopeCategorySlug": "beauty-and-personal-care",  // NOT a filter — see below
+  "totalCount": 87,                // rows in the whole set, not on this page
   "recommendations": [
     {
       "productId": "uuid",
@@ -697,11 +741,25 @@ What *changed*. Distinct from `/competitors`, which is the static picture.
   clears the dearest stock actually held), but the data problem is still
   there. Worth a quiet note.
 
+- **`cursor` here is an offset, not a timestamp.** Every other paginated
+  endpoint pages on a timestamp because its feed grows from the top as
+  crons write. This list doesn't: it is recomputed in full from the
+  seller's own catalogue each call, in a fixed order (largest price gap
+  first). Still opaque — pass `nextCursor` back untouched. An unreadable
+  cursor is a `400`, not a silent restart at page one.
+- **No cost price is returned.** It's the one number a seller wouldn't want
+  read over their shoulder on a bus, and nothing here needs it — the margin
+  floor is already inside `recommendedPrice` and named in `rationale`.
+
 > ⚠️ **`categorySlug` on each row is the category that row was judged
-> against — always the product's own, never the one on screen.** This is
-> why the mockup can show a Home & Kitchen recommendation under a Beauty
-> pill. If you filter client-side by selected category, you'll hide valid
-> advice. See [Decide before building](#decide-before-building) #1.
+> against — always the product's own, never the one on screen.** The
+> `categorySlug` you *send* becomes `matchScopeCategorySlug` in the
+> response: it scopes the competitor title-matching pass and **nothing
+> else**. Every product in the catalogue still comes back, each priced
+> against its own category's band. This is why the mockup can show a Home &
+> Kitchen recommendation under a Beauty pill. If you filter client-side by
+> selected category, you'll hide valid advice. See
+> [Decide before building](#decide-before-building) #1.
 
 ---
 
@@ -766,7 +824,7 @@ dropping mobile connection is worse than not offering it.
 
 ## `GET /api/mobile/products/{id}/insight`
 
-**Planned** · needs `watchlists` (`paid`)
+**Live** · needs `watchlists` (`paid`)
 
 What a seller sees after tapping one of their own products: how this
 specific product sits against the market.
@@ -776,16 +834,22 @@ specific product sits against the market.
   "product": {
     "id": "uuid",
     "title": "Samsung Galaxy A15",
-    "price": 65000,
+    "price": 65000,                 // as stored, in the product's own currency
     "currency": "PKR",
-    "imageUrl": null
+    "imageUrl": null,
+    "categorySlug": "mobiles-and-electronics",   // null if unmapped
+    "categoryName": "Mobiles & Electronics"
   },
 
-  "vsMarket": {                     // null if we can't match this product
+  "vsMarket": {                     // null if we can't place this product
+    "currency": "PKR",              // reporting currency — not product.currency
+    "comparedPrice": 65000,         // converted, and per-item where we could tell
     "categoryMedian": 68500,
     "pctVsMedian": -0.051,          // signed fraction: -0.051 = 5.1% below
     "band": "below",                // far-above | above | at-market | below | far-below
-    "bandLabel": "5–25% below"
+    "bandLabel": "5–25% below",
+    "perUnit": false,               // true = comparedPrice was pack-adjusted
+    "sampleSize": 7572              // listings behind categoryMedian
   },
 
   "closestCompetitors": [           // max 5, best match first
@@ -793,8 +857,10 @@ specific product sits against the market.
       "title": "Samsung Galaxy A15 128GB",
       "platformName": "Daraz",
       "price": 68999,
-      "inStock": true,
+      "currency": "PKR",
+      "imageUrl": null,
       "matchConfidence": 0.81,      // 0–1
+      "priceDeltaPct": -0.058,      // signed: seller is 5.8% cheaper than this
       "url": "https://..."
     }
   ],
@@ -812,7 +878,24 @@ specific product sits against the market.
   found", never as "the same product". The mockup's dashed empty-state
   card gets this tone right.
 - `vsMarket: null` → we couldn't place this product. Say so plainly rather
-  than showing a blank comparison.
+  than showing a blank comparison. It happens for three reasons, all
+  normal: the product has no category mapped, it has no price set, or the
+  category has nothing scraped yet. A `200` with nulls, never an error —
+  and `product` and `priceHistory` are still populated, so the screen has
+  something to render. When `product.categorySlug` is `null`, the fix is
+  the seller's: map the product to a category.
+- **`priceDeltaPct` is precomputed.** It is the whole question the screen
+  answers, and leaving the arithmetic to the client is how two clients end
+  up rounding it differently.
+- **`perUnit: true` means the comparison is approximate.** Only the
+  seller's side is pack-normalised; the category median is scraped as-is.
+  Same caveat as `/market`'s `anyPackSizeAdjusted`.
+- `priceHistory` is the **seller's own** price, ascending by date, last 30
+  days, points with no price dropped. No market band — the aligned
+  price-vs-market series needs a wide chart and stays on desktop. This
+  backs a sparkline.
+- A product id that isn't this seller's is a `404`, never a `200` with an
+  empty body.
 
 ---
 
@@ -878,40 +961,49 @@ Keyed on a **title string**, not a product id — they don't own it yet.
 
 ## `GET /api/mobile/search`
 
-**Planned** · needs `competitor_intel` (`paid`)
+**Live** · needs `competitor_intel` (`paid`)
 
 Backs the search icon in the top bar. Searches **scraped market products** —
 what competitors are selling — not the seller's own catalogue.
 
 | Param | Type | Required | Notes |
 |---|---|---|---|
-| `q` | string | **yes** | Minimum 2 characters |
+| `q` | string | **yes** | Minimum 2 characters. Trimmed before the check |
 | `categorySlug` | string | no | Narrows to one market. Omit to search everything scraped. |
-| `cursor` | string | no | |
 
 ```jsonc
 {
   "query": "dior",
-  "currency": "PKR",
   "results": [
     {
       "id": "uuid",
       "title": "Dior Eau Sauvage Lotion Apres-Rasage 100ml",
       "platformName": "Al-Fatah",
       "price": 21900,            // null if unpriced
+      "currency": "PKR",         // per row, AS SCRAPED — see below
       "inStock": false,
       "imageUrl": null,
       "url": "https://..."
     }
   ],
-  "nextCursor": null
+  "nextCursor": null             // always null today — see below
 }
 ```
 
 **Client notes**
 
 - Under 2 characters returns an **empty list with `succeeded: true`**, not
-  an error. Don't show a failure state — just wait for more typing.
+  an error, and never touches the database. Don't show a failure state —
+  just wait for more typing. `message` says what the floor is.
+- ⚠️ **`currency` is per row and is the scraped currency — prices here are
+  NOT converted to the seller's reporting currency.** That's why there is
+  no top-level `currency` field: one would be a claim we can't make about a
+  market carrying more than one. Render each row in its own.
+- **`nextCursor` is always `null` today.** The underlying search caps at 20
+  results with no offset, so there is no second page to hand out. The field
+  is present rather than omitted so your "keep calling until `nextCursor`
+  is null" loop works here unchanged — and so the day pagination lands,
+  null simply becomes a cursor and nothing on your side breaks.
 - **Two searches exist and they're different things.** Make it obvious
   which one the seller is in:
   - `/api/mobile/search` → the market (competitors' products)
@@ -972,20 +1064,20 @@ id so the badge and the feed agree.
 | Screen / element | Endpoint | |
 |---|---|---|
 | **Overview** — alert card, freshness, counters | `GET /pulse` | L |
-| **Overview** — stat tiles | `GET /pulse` (extended) | P |
-| **Overview** — revenue / orders / AOV KPIs | `GET /kpis` | P |
-| **Market** — median, min/P75/average | `GET /market` | P |
-| **Market** — forecast sparkline | `GET /market` | P |
-| **Market** — price-position bars | `GET /market` | P |
+| **Overview** — stat tiles | `GET /pulse` (`domainStats`) | L |
+| **Overview** — revenue / orders / AOV KPIs | `GET /kpis` | L |
+| **Market** — median, min/P75/average | `GET /market` | L |
+| **Market** — forecast sparkline | `GET /market` | L |
+| **Market** — price-position bars | `GET /market` | L |
 | **Competitors** — who's in this market | `GET /competitors` | L |
-| **Competitors** — out of stock | `GET /competitors/moves` | P |
-| **Competitors** — price anomalies | `GET /competitors/moves` | P |
-| **Pricing** — recommendations | `GET /pricing` | P |
-| Top bar — category pill | `GET /categories` | P |
-| Top bar — search icon | `GET /search` | P |
+| **Competitors** — out of stock | `GET /competitors/moves` | L |
+| **Competitors** — price anomalies | `GET /competitors/moves` | L |
+| **Pricing** — recommendations | `GET /pricing` | L |
+| Top bar — category pill | `GET /categories` | L |
+| Top bar — search icon | `GET /search` | L |
 | Top bar — bell + feed | `GET /alerts`, `POST /alerts/read` | L |
 | Product list + price edit | `GET /products`, `PATCH /products/{id}/price` | L |
-| Product detail | `GET /products/{id}/insight` | P |
+| Product detail | `GET /products/{id}/insight` | L |
 | "Should I stock this?" | `GET /price-check` | L |
 | Push setup | `POST` / `DELETE /devices` | L |
 
@@ -1071,5 +1163,9 @@ the dates — which it already has.
 | Whole-product feature list | `FEATURES.md` Part 10 |
 | What's next | `ROADMAP.md` Phase G |
 
-**Known gap:** the 8 live routes have **no automated tests** — only the push
-job is covered. Tracked in `ROADMAP.md` Phase G.
+**Known gap:** the 8 routes that shipped first (`pulse`, `alerts`,
+`alerts/read`, `competitors`, `products`, `products/{id}/price`,
+`price-check`, `devices`) have **no automated tests** — only the push job
+does. The 7 added later (`categories`, `kpis`, `market`,
+`competitors/moves`, `pricing`, `products/{id}/insight`, `search`) carry 45
+tests between them. Tracked in `ROADMAP.md` Phase G.

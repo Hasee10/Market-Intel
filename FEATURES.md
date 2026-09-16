@@ -327,39 +327,58 @@ Triggers, all through `createNotification()` (inserts `seller_notifications`, ca
 
 **Added `e21a21a` (2026-09-05), after this document's 2026-09-01 snapshot
 date — the one part of this file not covered by the original two-sweep
-extraction.** No client app exists yet; this is backend built ahead of it.
-Full detail in `ROADMAP.md` Phase G.
+extraction.** Expanded from 8 endpoints to 15 on 2026-09-15, after the mobile
+mockup was reviewed screen by screen. No client app exists yet; this is
+backend built ahead of it. Full detail in `ROADMAP.md` Phase G.
 
-**The client-facing contract is `docs/MOBILE_API.md`** — auth, envelope,
-pagination, error codes and every endpoint's request/response, written for
-a developer building the mobile app with no other context on this repo. It
-also carries the seven planned endpoints (`/market`, `/pricing`,
-`/competitors/moves`, `/categories`, `/search`, `/kpis`,
-`/products/{id}/insight`) the agreed mobile design requires, and a
-"Not on mobile" section naming every desktop capability deliberately
-left off the phone.
+**Four documents carry this**, all under `docs/`:
 
-A separate namespace of 8 endpoints, isolated from the 44 desktop routes and
-sharing none of their handlers, but every one a thin composition over the
+- `MOBILE_API.md` — the client-facing contract. Auth, envelope, pagination,
+  error codes and every endpoint's request/response, written for a developer
+  with no other context on this repo. Includes a "Not on mobile" section
+  naming every desktop capability deliberately left off the phone.
+- `MOBILE_API_READY.md` — the practical guide: one runnable `curl` and a
+  "what to know" list per endpoint.
+- `MOBILE_API_HANDOFF.md` — the decision record. Mockup → data → endpoint,
+  which existing function each route composes, and what was genuinely new.
+- `openapi-mobile.yaml` — machine-readable, imports into Swagger UI/Postman.
+
+A separate namespace of **15 endpoints**, isolated from the 44 desktop routes
+and sharing none of their handlers, but every one a thin composition over the
 same `lib/market-intel/*` functions the desktop pages call — so a figure on
 the phone can never disagree with the same figure on the desktop.
 
 | Route | Purpose |
 |---|---|
-| `GET /api/mobile/pulse` | Home screen, one request: alerts, stock-outs, freshness |
+| `GET /api/mobile/pulse` | Home screen, one request: alerts, stock-outs, freshness, domain stat tiles |
+| `GET /api/mobile/kpis` | Revenue / orders / AOV / new customers vs. the prior period |
 | `GET /api/mobile/alerts` | Cursor-paginated alert feed |
 | `POST /api/mobile/alerts/read` | Mark one/several/all read |
+| `GET /api/mobile/categories` | The seller's own markets, for the switcher sheet |
+| `GET /api/mobile/market` | Category price stats + forecast + price-position bands, one call |
+| `GET /api/mobile/competitors` | 3 of the desktop scorecard's 9 columns |
+| `GET /api/mobile/competitors/moves` | Stock-outs + IQR price anomalies — what *changed* |
+| `GET /api/mobile/pricing` | Rule-based recommendations, paginated, cost price withheld |
 | `GET /api/mobile/price-check` | "Should I stock this, at what price" — keyed on a title string, not a product id, since the seller doesn't own the item yet |
 | `GET /api/mobile/products` | Trimmed catalogue list (no cost price, no SKU) |
+| `GET /api/mobile/products/[id]/insight` | One product placed against its category, 5 closest competitors, 30-day own-price history |
 | `PATCH /api/mobile/products/[id]/price` | The one write worth having on a phone — a single field |
-| `GET /api/mobile/competitors` | 3 of the desktop scorecard's 9 columns |
+| `GET /api/mobile/search` | Search scraped *competitor* listings (distinct from `/products?q=`) |
 | `POST/DELETE /api/mobile/devices` | Push-token register/de-register |
 
 **Shared plumbing**, `lib/mobile/respond.ts`: auth (bearer token →
-`requireMobileSeller`), the `{ succeeded, data, errors, message }` response
-envelope, and cursor pagination helpers — one seam so 8 handlers can't drift
-into 8 different error shapes. Entitlement checks route through the same
-`hasFeature()` desktop uses.
+`requireMobileSeller`), category resolution (`requireMobileCategory`, which
+delegates to the same `resolveSelectedDomain` the desktop pages use), the
+`{ succeeded, data, errors, message }` response envelope, and cursor
+pagination helpers — one seam so 15 handlers can't drift into 15 different
+error shapes. Entitlement checks route through the same `hasFeature()`
+desktop uses; no mobile route loosens a desktop gate.
+
+**One backend function was added for the whole mobile API**:
+`getSellerKpiTotals` in `seller/overview.ts`, splitting the raw KPI
+computation out from the display formatting `getEcommerceStats` does.
+Desktop output is byte-identical afterwards. Everything else composes what
+already existed.
 
 **Push notifications**, live in production: `seller_devices` (migration 052,
 Expo push tokens) + `seller_notifications.pushed_at` (migration 053) +
@@ -370,5 +389,6 @@ at Pakistan waking hours by `.github/workflows/market-intel-cron.yml`.
 the last cron run already wrote; opening the app can never queue scraper
 work.
 
-**Gaps**: no React Native/Expo client exists anywhere in this repo yet; the
-8 routes have no tests (only the push job does).
+**Gaps**: no React Native/Expo client exists anywhere in this repo yet. The
+7 routes added in the second wave have tests (45 of them); the 8 original
+routes still don't, only the push job — pre-existing debt, not new.
