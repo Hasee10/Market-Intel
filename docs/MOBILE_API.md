@@ -545,8 +545,21 @@ The entire Market screen in one call.
 
 **Live** · no plan gate · no params
 
-Fills the category switcher sheet. Returns only the seller's own
-categories, not the full 12-category taxonomy.
+Fills the category switcher sheet. Returns the **markets the seller
+tracks** (`seller_domains`) - not the categories their products are in,
+and not the full 12-category taxonomy.
+
+These are different things. A seller can have products in twenty
+categories and track zero markets. A tracked market is created only by
+finishing onboarding on the web, adding one on the web Settings page, or
+bulk CSV import (which auto-assigns the first one; further ones need the
+Premium `multi_domain` plan). Adding products one at a time never creates
+one.
+
+**An empty list is a correct answer, not an error.** It means the account
+has not picked a market yet. On a test account created outside the web
+app's onboarding flow, expect exactly this until someone opens the web
+app as that user once and completes onboarding.
 
 ```jsonc
 {
