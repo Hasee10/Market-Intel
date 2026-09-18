@@ -13,9 +13,11 @@ import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImpo
 import { CustomersTable } from '@/components/marketintel/CustomersTable';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { RetentionPanel } from '@/components/marketintel/RetentionPanel';
+import { CohortRetentionTable } from '@/components/marketintel/CohortRetentionTable';
 import { PATH_DASHBOARD } from '@/lib/paths';
 import type { CustomerDto } from '@/types/customer';
 import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/seller/rfm';
+import type { CohortRow, RepeatStats } from '@/lib/market-intel/seller/repeat';
 
 import { CustomerCard } from './components/CustomerCard';
 import { EditCustomerDrawer } from './components/EditCustomerDrawer';
@@ -48,6 +50,8 @@ type CustomersViewProps = {
   retentionSnapshot: ChurnSnapshot | null;
   atRiskCustomers: AtRiskCustomer[];
   reportingCurrency: string;
+  repeatStats: RepeatStats | null;
+  cohorts: CohortRow[];
 };
 
 export default function CustomersView({
@@ -55,6 +59,8 @@ export default function CustomersView({
   retentionSnapshot,
   atRiskCustomers,
   reportingCurrency,
+  repeatStats,
+  cohorts,
 }: CustomersViewProps) {
   const router = useRouter();
 
@@ -202,7 +208,10 @@ export default function CustomersView({
         snapshot={retentionSnapshot}
         atRiskCustomers={atRiskCustomers}
         reportingCurrency={reportingCurrency}
+        repeatStats={repeatStats}
       />
+
+      <CohortRetentionTable rows={cohorts} />
 
       {renderContent()}
 

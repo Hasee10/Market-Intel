@@ -20,11 +20,15 @@ import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 
 import type { AtRiskCustomer, ChurnSnapshot } from '@/lib/market-intel/seller/rfm';
+import type { RepeatStats } from '@/lib/market-intel/seller/repeat';
 
 type RetentionData = {
   snapshot: ChurnSnapshot | null;
   atRiskCustomers: AtRiskCustomer[];
   reportingCurrency: string;
+  /** Windowed repeat figures (lib/market-intel/seller/repeat.ts). Null when
+   *  that query failed; the two extra tiles are simply not shown. */
+  repeatStats: RepeatStats | null;
 };
 
 function formatPct(value: number | null) {
@@ -93,21 +97,46 @@ function downloadCsv(customers: AtRiskCustomer[]) {
 // than three loose props, matching the API response shape 1:1 - a page
 // composing this alongside other panels can still pass through what one
 // fetch already returned.
-export function RetentionPanel({ snapshot, atRiskCustomers, reportingCurrency }: RetentionData) {
+export function RetentionPanel({ snapshot, atRiskCustomers, reportingCurrency, repeatStats }: RetentionData) {
   const textColor = useColorModeValue('secondaryGray.900', 'white');
 
+  // The first four are the nightly snapshot, as before. The last two are
+  // windowed and answer "customer repeat orders" the way the product notes
+  // mean it - this month, not lifetime - and carry their calculation.
   const stats = [
     { title: 'Retention rate (30d)', value: formatPct(snapshot?.retentionRate ?? null), icon: 'chart-line', color: 'teal' },
     { title: 'Churn rate (30d)', value: formatPct(snapshot?.churnRate ?? null), icon: 'shopping-cart-off', color: 'red' },
     { title: 'Repeat purchase rate', value: formatPct(snapshot?.repeatPurchaseRate ?? null), icon: 'shopping-cart', color: 'blue' },
     { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null, reportingCurrency), icon: 'currency-dollar', color: 'violet' },
+    ...(repeatStats
+      ? [
+          {
+            title: 'Returning buyers',
+            value: `${repeatStats.repeatShare}%`,
+            diff: repeatStats.change.repeatShare ?? undefined,
+            period: `${repeatStats.repeatCustomers} of ${repeatStats.customersOrdered} customers · last ${repeatStats.periodDays} days`,
+            icon: 'users',
+            color: 'teal',
+            help: `Of the customers who ordered in the last ${repeatStats.periodDays} days, the share whose first order was before that window. Guest orders (no customer) are not counted either way. The change compares with the ${repeatStats.periodDays} days before.`,
+          },
+          {
+            title: 'Revenue from returning buyers',
+            value: `${repeatStats.repeatRevenueShare}%`,
+            diff: repeatStats.change.repeatRevenueShare ?? undefined,
+            period: `${formatCurrency(repeatStats.repeatRevenue, reportingCurrency)} of ${formatCurrency(repeatStats.revenue, reportingCurrency)}`,
+            icon: 'currency-dollar',
+            color: 'blue',
+            help: `Order totals from returning customers in the last ${repeatStats.periodDays} days, over all order totals in that window, converted to ${reportingCurrency}.`,
+          },
+        ]
+      : []),
   ];
 
   return (
     <>
       <InsightStrip insight={computeRetentionInsight(snapshot, atRiskCustomers)} />
 
-      <StatsGrid data={stats} columns={4} />
+      <StatsGrid data={stats} columns={repeatStats ? 3 : 4} />
 
       <Card mb="20px">
         <Icon as={MdDownload} display="none" />

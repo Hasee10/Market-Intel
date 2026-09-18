@@ -1,6 +1,12 @@
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { getSellerCustomers } from '@/lib/market-intel/seller/customers';
 import {
+  getCohortRetention,
+  getRepeatStats,
+  type CohortRow,
+  type RepeatStats,
+} from '@/lib/market-intel/seller/repeat';
+import {
   getAtRiskCustomers,
   getLatestChurnSnapshot,
   type AtRiskCustomer,
@@ -31,10 +37,15 @@ export default async function CustomersPage() {
   }
 
   try {
-    const [customers, retentionSnapshot, atRiskCustomers] = await Promise.all([
+    // repeatStats and cohorts join the same fail-soft group as the
+    // retention snapshot: each is one panel, and one panel failing to load
+    // must not take the customer list with it.
+    const [customers, retentionSnapshot, atRiskCustomers, repeatStats, cohorts] = await Promise.all([
       getSellerCustomers(seller.id),
       getLatestChurnSnapshot(seller.id).catch((): ChurnSnapshot | null => null),
       getAtRiskCustomers(seller.id, seller.reportingCurrency).catch((): AtRiskCustomer[] => []),
+      getRepeatStats(seller.id, seller.reportingCurrency).catch((): RepeatStats | null => null),
+      getCohortRetention(seller.id).catch((): CohortRow[] => []),
     ]);
 
     return (
@@ -43,6 +54,8 @@ export default async function CustomersPage() {
         retentionSnapshot={retentionSnapshot}
         atRiskCustomers={atRiskCustomers}
         reportingCurrency={seller.reportingCurrency}
+        repeatStats={repeatStats}
+        cohorts={cohorts}
       />
     );
   } catch (err) {

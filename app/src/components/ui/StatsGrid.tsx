@@ -26,6 +26,7 @@ import {
 
 import CountUp from 'components/reactbits/CountUp';
 import Reveal from 'components/reactbits/Reveal';
+import { MetricHelp } from '@/components/ui/MetricHelp';
 
 export type StatItem = {
   title: string;
@@ -36,6 +37,13 @@ export type StatItem = {
   icon?: string;
   /** Colour key from the same route - falls back to a neutral chip. */
   color?: string;
+  /** "How we calculate this" - one or two plain sentences. Renders a help
+   *  control beside the title when present. */
+  help?: string;
+  /** For metrics where a rise is bad (return rate, cancellations): flips
+   *  the badge colour so an increase reads red and a decrease green. The
+   *  arrow still points the true direction. */
+  invertTrend?: boolean;
 };
 
 const ICON_MAP: Record<string, IconType> = {
@@ -114,10 +122,10 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
         const chipClass = (item.color && CHIP[item.color]) || CHIP_FALLBACK;
         // TailAdmin's Badge: tinted pill, not coloured text. Tone still
         // follows the sign of diff - a decline must never read as growth.
-        const badgeClass =
-          diff < 0
-            ? 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500'
-            : 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500';
+        const isBad = item.invertTrend ? diff > 0 : diff < 0;
+        const badgeClass = isBad
+          ? 'bg-error-50 text-error-600 dark:bg-error-500/15 dark:text-error-500'
+          : 'bg-success-50 text-success-600 dark:bg-success-500/15 dark:text-success-500';
 
         return (
           <Reveal key={item.title} delay={index * 60}>
@@ -131,7 +139,10 @@ export function StatsGrid({ data, loading, columns = 4 }: StatsGridProps) {
 
               <div className="mt-5 flex items-end justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="text-sm text-gray-500 dark:text-gray-400">{item.title}</span>
+                  <span className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                    {item.title}
+                    {item.help && <MetricHelp label={`How ${item.title} is calculated`}>{item.help}</MetricHelp>}
+                  </span>
                   <h4 className="mt-2 text-title-sm font-bold text-gray-800 tabular-nums dark:text-white/90">
                     <CountUp value={item.value} />
                   </h4>

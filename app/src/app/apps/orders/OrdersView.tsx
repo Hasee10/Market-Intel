@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Pagination, usePagination } from '@/components/ui/Pagination';
+import { StatsGrid, type StatItem } from '@/components/ui/StatsGrid';
 
 import { BulkImportDrawer, ImportField } from '@/components/marketintel/BulkImportDrawer';
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
@@ -22,6 +23,7 @@ import { OrdersTable } from '@/components/marketintel/OrdersTable';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { objectsToCsv, triggerCsvDownload } from '@/lib/csv';
 import { PATH_DASHBOARD } from '@/lib/paths';
+import type { ReturnStats } from '@/lib/market-intel/seller/returns';
 import { OrderDto } from '@/types/order';
 
 import { EditOrderDrawer } from './components/EditOrderDrawer';
@@ -105,9 +107,55 @@ const IMPORT_FIELDS: ImportField[] = [
 
 type OrdersViewProps = {
   orders: OrderDto[];
+  /** Null when the stats query failed; the strip is simply not shown. */
+  returnStats: ReturnStats | null;
 };
 
-export default function OrdersView({ orders }: OrdersViewProps) {
+// The three figures the "Return / Refund" note asks for, in the same tile
+// shape as Overview. Every one carries its calculation, because a return
+// rate is a number sellers act on and argue about. invertTrend on all
+// three: StatsGrid colours a rise green by default, which is right for
+// revenue and wrong here - a return rate going up is the bad direction.
+function buildReturnStats(stats: ReturnStats): StatItem[] {
+  const money = (v: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: stats.currency, maximumFractionDigits: 0 }).format(v);
+  const window = `Last ${stats.periodDays} days`;
+
+  return [
+    {
+      title: 'Return rate',
+      invertTrend: true,
+      value: `${stats.returnRate}%`,
+      diff: stats.change.returnRate ?? undefined,
+      period: `${stats.refunded} of ${stats.orders} orders · ${window}`,
+      icon: 'shopping-cart-off',
+      color: 'red',
+      help: `Refunded orders divided by all orders placed in the last ${stats.periodDays} days. An order counts as refunded when its status is set to "refunded". The change compares with the ${stats.periodDays} days before that.`,
+    },
+    {
+      title: 'Refund value',
+      invertTrend: true,
+      value: money(stats.refundValue),
+      diff: stats.change.refundValue ?? undefined,
+      period: window,
+      icon: 'currency-dollar',
+      color: 'orange',
+      help: `The order totals of every refunded order in the last ${stats.periodDays} days, converted to ${stats.currency}. A refund is the whole order - partial refunds are not recorded separately.`,
+    },
+    {
+      title: 'Cancel rate',
+      invertTrend: true,
+      value: `${stats.cancelRate}%`,
+      diff: stats.change.cancelRate ?? undefined,
+      period: `${stats.cancelled} of ${stats.orders} orders · ${window}`,
+      icon: 'receipt',
+      color: 'pink',
+      help: `Cancelled orders divided by all orders in the last ${stats.periodDays} days. Kept separate from returns: a cancelled order never shipped, a refunded one did.`,
+    },
+  ];
+}
+
+export default function OrdersView({ orders, returnStats }: OrdersViewProps) {
   const router = useRouter();
 
   const [selectedOrder, setSelectedOrder] = useState<OrderDto | null>(null);
@@ -207,6 +255,10 @@ export default function OrdersView({ orders }: OrdersViewProps) {
       />
 
       {orders.length > 0 && <InsightStrip insight={computeOrdersInsight(orders)} />}
+
+      {returnStats && orders.length > 0 && (
+        <StatsGrid data={buildReturnStats(returnStats)} columns={3} />
+      )}
 
       {renderContent()}
 

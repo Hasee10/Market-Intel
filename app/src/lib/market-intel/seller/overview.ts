@@ -55,7 +55,9 @@ const CATEGORY_PALETTE = ['blue', 'teal', 'violet', 'pink', 'orange', 'yellow', 
 
 const MIN_BASELINE = 0.01;
 
-function pctDiff(current: number, previous: number): number | null {
+// Exported: returns.ts and repeat.ts compute the same prior-period change
+// and must agree with the Overview cards on what "no baseline" means.
+export function pctDiff(current: number, previous: number): number | null {
   if (Math.abs(previous) < MIN_BASELINE) return current === 0 ? 0 : null;
   return Number((((current - previous) / previous) * 100).toFixed(1));
 }
