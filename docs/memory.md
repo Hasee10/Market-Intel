@@ -4307,3 +4307,48 @@ faster than they get verified or used. Right now: 5 unpushed commits, a red
 CI, ~8 UI surfaces that have never been opened in a browser, and 58
 hand-applied migrations with no tracking table. Queue length, not build
 speed, is the problem.
+
+## 2026-09-18: The product-notes metrics, Phases 1-4 — proxies named as proxies
+
+A handwritten list from the product side: market share, search volume,
+historical placement, returns/refunds, customer repeat orders, the same
+product across sites ("best traffic gateway"), and orders/revenue. Built
+in four phases against the data that actually exists, with one rule
+throughout: **when the literal metric is not observable, ship the honest
+proxy and say so in the UI, never a number that looks like the real thing.**
+
+- **Returns / repeat (Phase 1)** — `seller/returns.ts`, `seller/repeat.ts`,
+  migration 059 (`seller_cohort_retention`). Order-level only, by decision
+  ("Option A"): there is no line-item table, so no per-SKU returns and no
+  partial refunds. Refunds and cancellations are kept apart because a
+  cancellation never shipped. A window with no orders shows a dash, not
+  "0% · 0 of 0" — the first real screenshot looked like broken data.
+- **Page rank (Phase 2)** — migration 060 adds `market_price_history.rank`,
+  assigned in the scraper's `saveProducts` from array order per category
+  (`assignRanks`). Zero source-module changes, verified by a real run:
+  59,362/59,362 rows ranked, no duplicate positions. The placement chart
+  says "recorded from 18 Sep 2026" because before that the column is null.
+- **Placement (Phase 2)** — `market/placement.ts`. A platform is only
+  *ranked* when there is a sales or reviews signal (`isRankable`); the first
+  render scored a platform 100 on availability alone, which is not demand.
+  Price is shown, never scored. Charts use per-series datetime points, not
+  a shared category axis, because sources scrape on different cadences and
+  the union-of-dates version drew a fake gap every other day.
+- **Share and demand (Phase 3)** — `market/market-share.ts` is a *listing*
+  share (the seller's catalogue beside everything scraped in scope) and the
+  card says so, with the denominator. Named-competitor ranking follows the
+  `competitor_intel` gate. `market/demand-index.ts` + migration 061 is the
+  stand-in for "search volume", which no marketplace here publishes: a
+  category percentile on sold count / reviews / page position, weights
+  rescaled to the signals present, dash when there is no match.
+- **Reports (Phase 4)** — the same three figures added to the snapshot as
+  *optional* fields (`returns`, `listingShare`, `repeatBuyers`) so persisted
+  snapshots from before today still validate and render. Return rate is
+  colour-inverted in both renderers ("up" is bad). All three go into the
+  narration prompt and its numeric-grounding list, so the model can quote
+  them without tripping the check.
+
+**Parked on purpose, not forgotten:** the matcher upgrade waits for about a
+week of rank data (compare from ~25 Sep); mobile parity for these metrics
+waits for a dedicated test seller account so the endpoints can be called
+for real before Saad gets them; rate limiting waits for Upstash credentials.
