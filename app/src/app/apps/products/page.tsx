@@ -1,5 +1,6 @@
 import { ErrorAlert } from '@/components/marketintel/ErrorAlert';
 import { getSellerProducts } from '@/lib/market-intel/seller/products';
+import { getDemandIndexes, type DemandIndex } from '@/lib/market-intel/market/demand-index';
 import { getCurrentSeller } from '@/lib/market-intel/seller/seller';
 
 import ProductsView from './ProductsView';
@@ -36,7 +37,14 @@ export default async function ProductsPage({
   }
 
   try {
-    const products = await getSellerProducts(seller.id, categoryFilterId);
+    // Demand index alongside the list, failing soft: it depends on a
+    // confirmed match per product and on migration 061 being applied, and
+    // neither should be able to stop the catalogue from rendering.
+    const [rawProducts, demand] = await Promise.all([
+      getSellerProducts(seller.id, categoryFilterId),
+      getDemandIndexes(seller.id).catch((): Map<string, DemandIndex> => new Map()),
+    ]);
+    const products = rawProducts.map((p) => ({ ...p, demandIndex: demand.get(p.id) ?? null }));
 
     // categoryName arrives as a query param from the Categories page's own
     // click-through, which already knows the name at click time - it is

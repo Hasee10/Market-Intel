@@ -27,7 +27,29 @@ const LOW_STOCK_THRESHOLD = 10;
 const rowAction =
   'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-brand-600 dark:text-gray-400 dark:hover:bg-gray-800';
 
+// Demand index (lib/market-intel/market/demand-index.ts) - a percentile
+// within the product's category, not a count. Shown as a column only when
+// at least one row carries it: a seller with no confirmed matches, or a
+// deployment where migration 061 isn't applied yet, sees the table exactly
+// as it was. A product with no index gets a dash, never a zero - zero is a
+// real (bad) score, and "no matched listing to measure" is not that.
+function demandTone(index: number): string {
+  if (index >= 70) return 'success';
+  if (index >= 40) return 'warning';
+  return 'neutral';
+}
+
+function demandTitle(d: NonNullable<IProduct['demandIndex']>): string {
+  const parts = [
+    d.soldPct != null ? `Sold: top ${Math.round((1 - d.soldPct) * 100)}% (${d.soldCount ?? '?'} sold)` : 'Sold: not reported on this platform',
+    d.reviewsPct != null ? `Reviews: top ${Math.round((1 - d.reviewsPct) * 100)}% (${d.ratingCount ?? '?'} reviews)` : 'Reviews: not reported',
+    d.rankPct != null ? `Page position: top ${Math.round((1 - d.rankPct) * 100)}% (#${d.latestRank})` : 'Page position: not observed yet',
+  ];
+  return `${parts.join(' · ')} · among ${d.categoryListings.toLocaleString()} listings in the category`;
+}
+
 export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: ProductsTableProps) {
+  const showDemand = data.some((p) => p.demandIndex != null);
   return (
     <Table minWidth={760}>
       <THead>
@@ -36,6 +58,11 @@ export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: Prod
         <TH>Category</TH>
         <TH numeric>Sell price</TH>
         <TH numeric>Stock</TH>
+        {showDemand && (
+          <TH numeric title="0-100: where this product's matched listing sits in its category on sold count, reviews and page position. Hover a value for the breakdown.">
+            Demand
+          </TH>
+        )}
         <TH>Status</TH>
         <TH />
       </THead>
@@ -43,7 +70,7 @@ export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: Prod
         {loading
           ? Array.from({ length: 5 }).map((_, i) => (
               <TR key={`row-loading-${i}`}>
-                <TD colSpan={7}>
+                <TD colSpan={showDemand ? 8 : 7}>
                   <span className="block h-5 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
                 </TD>
               </TR>
@@ -73,6 +100,17 @@ export function ProductsTable({ data, loading, onEdit, onViewCompetitors }: Prod
                     {product.stockQty ?? 0}
                     {isLowStock && ' ⚠'}
                   </TD>
+                  {showDemand && (
+                    <TD numeric>
+                      {product.demandIndex ? (
+                        <span title={demandTitle(product.demandIndex)}>
+                          <Pill tone={demandTone(product.demandIndex.index)}>{product.demandIndex.index}</Pill>
+                        </span>
+                      ) : (
+                        <span className="text-gray-400" title="No matched listing in the market to measure against">—</span>
+                      )}
+                    </TD>
+                  )}
                   <TD>
                     <Pill tone={product.isActive ? 'success' : 'neutral'}>
                       {product.isActive ? 'Active' : 'Inactive'}

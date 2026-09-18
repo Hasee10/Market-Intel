@@ -115,6 +115,8 @@ with checks as (
          exists (select 1 from pg_proc where proname='market_single_retailer_platforms')
   union all select '059_seller_cohort_retention', 'function',
          exists (select 1 from pg_proc where proname='seller_cohort_retention')
+  union all select '061_market_demand_percentiles', 'function',
+         exists (select 1 from pg_proc where proname='market_demand_percentiles')
 
   ---------- (sig) replaces an existing function - check what it ADDED ----------
   -- The parameter 040 adds is p_price_min (see the migration), not

@@ -1,5 +1,6 @@
 import { detectCompetitorPriceAnomalies } from '@/lib/market-intel/market/anomalies';
 import { getDomainBenchmarks, getDomainPeers } from '@/lib/market-intel/seller/benchmarks';
+import { getMarketShare, type MarketShare } from '@/lib/market-intel/market/market-share';
 import { getCategoryPricing } from '@/lib/market-intel/market/category-pricing';
 import { getMarketScopeSummary } from '@/lib/market-intel/market/market-definition';
 import { hasFeature } from '@/lib/market-intel/core/entitlements';
@@ -39,6 +40,7 @@ export default async function MarketPage({
     pricingRecommendations: hasFeature(planTier, 'pricing_recommendations'),
     forecasting: hasFeature(planTier, 'forecasting'),
     anomalyDetection: hasFeature(planTier, 'anomaly_detection'),
+    competitorIntel: hasFeature(planTier, 'competitor_intel'),
   };
 
   const reportingCurrency = seller?.reportingCurrency ?? 'PKR';
@@ -64,6 +66,7 @@ export default async function MarketPage({
     pricingRecommendations,
     priceForecast,
     priceAnomalies,
+    marketShare,
   ] = await Promise.all([
     domain && entitlements.peerBenchmarks ? getDomainBenchmarks(domain.categoryId) : [],
     domain && seller && entitlements.peerBenchmarks ? getDomainPeers(domain.categoryId, seller.id) : [],
@@ -83,6 +86,18 @@ export default async function MarketPage({
     domain && entitlements.anomalyDetection
       ? detectCompetitorPriceAnomalies(domain.categorySlug, reportingCurrency)
       : [],
+    // Listing share is free-tier; the named-competitor ranking inside it
+    // follows the competitor_intel gate. Fails soft: one card, not the page.
+    domain && seller
+      ? getMarketShare(
+          seller.id,
+          domain.categoryId,
+          domain.categorySlug,
+          domain.categoryName,
+          reportingCurrency,
+          entitlements.competitorIntel,
+        ).catch((): MarketShare | null => null)
+      : null,
   ]);
 
   return (
@@ -101,6 +116,7 @@ export default async function MarketPage({
       pricingRecommendations={pricingRecommendations}
       priceForecast={priceForecast}
       priceAnomalies={priceAnomalies}
+      marketShare={marketShare}
       entitlements={entitlements}
     />
   );

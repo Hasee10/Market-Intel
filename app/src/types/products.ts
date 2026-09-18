@@ -16,6 +16,13 @@ export interface IProduct {
   currency: string;
   stockQty: number | null;
   isActive: boolean;
+  /**
+   * Demand index 0-100 (lib/market-intel/market/demand-index.ts) - where the
+   * product's best-matched listing sits within its category on sold count,
+   * reviews and page position. Absent when the product has no confirmed
+   * match, or when the caller didn't compute it.
+   */
+  demandIndex?: import('@/lib/market-intel/market/demand-index').DemandIndex | null;
   /** Optional seller-supplied image URL. Null falls back to the category tile. */
   imageUrl: string | null;
   createdAt: string;

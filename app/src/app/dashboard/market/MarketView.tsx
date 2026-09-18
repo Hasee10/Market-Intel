@@ -22,6 +22,8 @@ import { PortfolioPriceBandsPanel } from '@/components/marketintel/PortfolioPric
 
 import { InsightStrip, type Insight } from '@/components/marketintel/InsightStrip';
 import { MarketScopeBanner } from '@/components/marketintel/MarketScopeBanner';
+import { MarketShareCard } from '@/components/marketintel/MarketShareCard';
+import type { MarketShare } from '@/lib/market-intel/market/market-share';
 import { PageHeader } from '@/components/marketintel/PageHeader';
 import { StatsGrid } from '@/components/marketintel/StatsGrid';
 import { UpgradeGate } from '@/components/marketintel/UpgradeGate';
@@ -89,6 +91,7 @@ type MarketViewProps = {
   pricingRecommendations: PricingRecommendation[];
   priceForecast: PriceForecast | null;
   priceAnomalies: CompetitorPriceAnomaly[];
+  marketShare: MarketShare | null;
   entitlements: {
     peerBenchmarks: boolean;
     productMatching: boolean;
@@ -113,6 +116,7 @@ export default function MarketView({
   pricingRecommendations,
   priceForecast,
   priceAnomalies,
+  marketShare,
   entitlements,
 }: MarketViewProps) {
   const sellersInDomain = benchmarks[0]?.sampleSize ?? null;
@@ -273,6 +277,8 @@ export default function MarketView({
       )}
 
       <StatsGrid data={domainStats} columns={4} />
+
+      {marketShare && <MarketShareCard share={marketShare} />}
 
       <UpgradeGate hasAccess={entitlements.peerBenchmarks} requiredPlanLabel="Premium" featureName="Domain benchmarks">
         <Card className="mb-5" title="Domain benchmarks">
