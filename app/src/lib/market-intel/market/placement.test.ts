@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 
-import { scorePlatforms } from './placement';
+import { isRankable, scorePlatforms } from './placement';
 
 // scorePlatforms is pure and is where every decision about the score lives,
 // so it is tested directly rather than through the database. The cases
@@ -93,5 +93,19 @@ describe('scorePlatforms', () => {
 
     expect(signalsUsed).toEqual([]);
     expect(scored.every((p) => p.score === 0)).toBe(true);
+  });
+});
+
+describe('isRankable', () => {
+  it('refuses to rank on availability and rating alone', () => {
+    // The case from the first real render: every platform reported only
+    // stock status, and one came out as a confident 100.
+    expect(isRankable(['availability'])).toBe(false);
+    expect(isRankable(['rating', 'availability'])).toBe(false);
+  });
+
+  it('ranks once any platform reports sold counts or reviews', () => {
+    expect(isRankable(['reviews', 'availability'])).toBe(true);
+    expect(isRankable(['sales'])).toBe(true);
   });
 });

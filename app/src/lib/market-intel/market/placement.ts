@@ -87,6 +87,16 @@ export type ProductPlacement = {
   bestPlatform: string | null;
   /** Signals that were actually available and therefore scored. */
   signalsUsed: Signal[];
+  /**
+   * False when neither sold count nor review count is reported on any
+   * platform. Rating and availability alone are not demand - a listing can
+   * be in stock and well-rated and sell nothing - so without a demand
+   * signal there is no honest ranking, and bestPlatform is null. The
+   * scores are still returned for the breakdown, but the client should not
+   * present one platform as leading. This came out of the first real
+   * render: a platform showed 100 built from availability alone.
+   */
+  rankable: boolean;
   historyDays: number;
   /** Points across all platforms that carry a rank - 0 until the first scrape after migration 060. */
   rankedPoints: number;
@@ -130,6 +140,13 @@ function one<T>(v: T | T[] | null | undefined): T | null {
 function share(value: number | null, max: number): number | null {
   if (value == null || max <= 0) return null;
   return Math.min(value / max, 1);
+}
+
+// Sold count and review count are evidence of demand. Rating and
+// availability are not - a listing can be in stock and well-rated and sell
+// nothing - so a platform set with neither demand signal is not ranked.
+export function isRankable(signalsUsed: Signal[]): boolean {
+  return signalsUsed.includes('sales') || signalsUsed.includes('reviews');
 }
 
 export function scorePlatforms(
@@ -277,6 +294,7 @@ export async function getProductPlacement(
   });
 
   const { scored, signalsUsed } = scorePlatforms(unscored);
+  const rankable = isRankable(signalsUsed);
 
   const caveats = [
     'The score is a demand proxy from platform-reported sold counts, reviews, rating and availability - not measured traffic, which no marketplace here publishes.',
@@ -288,7 +306,9 @@ export async function getProductPlacement(
   } else {
     caveats.push('Page position is comparable on one platform over time, not between platforms - each has its own page size and default sort.');
   }
-  if (signalsUsed.length < 4) {
+  if (!rankable) {
+    caveats.push('No platform reports sold counts or reviews for this listing, so the platforms are not ranked - stock and rating alone are not evidence of demand.');
+  } else if (signalsUsed.length < 4) {
     const missing = (Object.keys(WEIGHTS) as Signal[]).filter((s) => !signalsUsed.includes(s));
     caveats.push(`No platform reports ${missing.join(' or ')} for this product, so the score is built from the rest.`);
   }
@@ -299,8 +319,9 @@ export async function getProductPlacement(
     sellerPrice,
     currency: reportingCurrency,
     platforms: scored,
-    bestPlatform: scored[0]?.platformName ?? null,
+    bestPlatform: rankable ? scored[0]?.platformName ?? null : null,
     signalsUsed,
+    rankable,
     historyDays: HISTORY_DAYS,
     rankedPoints,
     caveats,
