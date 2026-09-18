@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { checkCrossSite } from '@/lib/csrf';
+
 const PROTECTED_PREFIXES = ['/dashboard', '/apps', '/onboarding'];
 const AUTH_PREFIX = '/auth';
 
@@ -22,11 +24,32 @@ const SUPABASE_AUTH_COOKIE = /^sb-.+-auth-token(\.\d+)?$/;
 // handlers, where RLS is enforced - requireSeller() in lib/market-intel/
 // seller.ts is the guard every protected layout actually depends on.
 export default function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Cross-site check on cookie-authenticated API mutations - leaks.md
+  // finding #11. Runs before anything else so a forged request never
+  // reaches a handler. See lib/csrf.ts for the rule and its exemptions;
+  // in short: Bearer-authenticated requests (mobile, cron) are untouched.
+  if (pathname.startsWith('/api/')) {
+    const verdict = checkCrossSite(request);
+    if (verdict.blocked) {
+      return NextResponse.json(
+        {
+          succeeded: false,
+          data: null,
+          errors: ['Cross-site request refused'],
+          message: 'Cross-site request refused',
+        },
+        { status: 403 },
+      );
+    }
+    return NextResponse.next();
+  }
+
   const hasSession = request.cookies
     .getAll()
     .some((cookie) => SUPABASE_AUTH_COOKIE.test(cookie.name));
 
-  const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
   const isAuthRoute = pathname.startsWith(AUTH_PREFIX);
 
