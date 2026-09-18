@@ -105,26 +105,11 @@ not by code.
 
 ## Still open
 
-| # | Severity | Finding | Note |
-|---|---|---|---|
-| 7 | Medium | In-memory rate limiter ineffective on serverless; no rate limiting on auth endpoints | Needs a shared store (Upstash/Redis) or Supabase Auth's built-in limits. |
-| — | Medium | No rate limiting on `/api/assistant` (new Groq-backed landing-page chatbot, added 2026-08-04) | Server-only key, capped history, fails soft — but any anonymous visitor can call it repeatedly with no per-IP/session cap. Cost exposure is unbounded even though each call is cheap. Same fix as #7 would cover it. |
-| 11 | Info | No explicit CSRF verification on state-changing JSON APIs | Partially mitigated: routes require a bearer/cookie session and JSON content-type. Worth verifying deliberately. |
+Open findings are tracked in a **private repository** —
+[Hasee10/Market-Intel-security](https://github.com/Hasee10/Market-Intel-security)
+— since this repo became public on 2026-09-18. A public list of unfixed
+weaknesses in a live app is a map; the deploy steps and fixed findings
+above are safe to keep here, the open ones are not.
 
-### Deliberately not done yet
-
-**Content-Security-Policy.** Chakra/Emotion inject styles at runtime and
-would require `'unsafe-inline'` for `style-src`, which would make the policy
-weak enough to give false assurance while still risking breakage. It needs a
-nonce-based setup done properly rather than being bolted onto the header
-block. Tracked as its own item.
-
----
-
-## Note on `CREDENTIALS.txt`
-
-The repo-root `CREDENTIALS.txt` holds live Supabase service-role and Groq
-keys. It **is** in `.gitignore` and is **not** tracked by git — verified, it
-has not leaked into history. It remains plaintext on disk. Rotating these
-keys and moving them to a secret manager is worth doing before the team
-grows beyond one person.
+When one is fixed, its row moves to the *Fixed* table above with the commit
+that closed it.

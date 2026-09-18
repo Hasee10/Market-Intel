@@ -38,7 +38,7 @@ before acting.
 
 | File | What it is |
 |---|---|
-| [`leaks.md`](audits/leaks.md) | Security audit findings, numbered. Code comments cite these as "leaks.md finding #N" |
+| `leaks.md` (private) | The numbered security audit. Moved to the private [Market-Intel-security](https://github.com/Hasee10/Market-Intel-security) repo when this one went public on 2026-09-18. Code comments still cite it as "leaks.md finding #N" |
 | [`LANDING_TEMPLATE_AUDIT.md`](audits/LANDING_TEMPLATE_AUDIT.md) | Landing page vs. the agency.ai template it was modelled on |
 | [`OVERVIEW_TEMPLATE_AUDIT.md`](audits/OVERVIEW_TEMPLATE_AUDIT.md) | Overview page vs. the TailAdmin template |
 

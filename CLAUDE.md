@@ -69,7 +69,7 @@ At the repo root, because they're consulted constantly and cited by name from co
 
 - `ROADMAP.md` — **source of truth for what gets built next**
 - `FEATURES.md` — what exists today
-- `SECURITY.md` — open findings + required deploy steps
+- `SECURITY.md` — required deploy steps + *fixed* findings. Open findings are in the private repo (see below), never here
 - `SCRAPING.md` — scraping compliance policy. Read before adding a source; a robots.txt violation has already shipped once
 
 Under `docs/` (indexed by `docs/README.md`):
@@ -77,7 +77,7 @@ Under `docs/` (indexed by `docs/README.md`):
 - `docs/memory.md` — dated engineering log; **why** the code is the way it is. Check here before "fixing" something that looks odd
 - `docs/mind.md` — what's live vs. what needs migrations applied manually
 - `docs/architecture/MIGRATION_PLAN.md` — the in-progress Chakra→Tailwind migration
-- `docs/audits/leaks.md` — numbered security findings; code cites them as "leaks.md finding #N"
+- `leaks.md` — numbered security findings; code cites them as "leaks.md finding #N". **Lives in the private repo `Hasee10/Market-Intel-security`**, not here — this repo is public. Same for the open items of `SECURITY.md`
 - `docs/history/` — **superseded. Do not plan against it.**
 
 Two read-only checkers worth knowing: `scraper/migrations/_check_applied.sql` (which migrations are live) and `_check_coverage.sql` (which categories actually have scraped data).
