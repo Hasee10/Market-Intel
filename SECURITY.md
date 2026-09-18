@@ -54,7 +54,9 @@ Referral signups depend on 018's trigger (the HTTP endpoint that used to
 record them was deleted). This fails safe if not applied (no referral, no
 reward, no vulnerability), but is no longer a live concern — 018 is applied.
 
-### 2. Set the Supabase Auth password policy (required)
+### 2. Set the Supabase Auth password policy (required) — **done 2026-09-18**
+
+> Set in Authentication → Sign In / Providers → Email: minimum length 8, lowercase + uppercase + digits + symbols. Verified needed the same day: a six-digit numeric password had been accepted before this was set.
 
 Cannot be fixed in application code. The signup page calls
 `supabase.auth.signUp()` directly from the browser, so an attacker can
