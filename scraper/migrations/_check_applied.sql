@@ -86,6 +86,9 @@ with checks as (
   union all select '053_notification_push_delivery', 'column', exists (
     select 1 from information_schema.columns
     where table_name='seller_notifications' and column_name='pushed_at')
+  union all select '060_price_history_rank', 'column', exists (
+    select 1 from information_schema.columns
+    where table_name='market_price_history' and column_name='rank')
 
   ---------- schema objects: functions ----------
   union all select '021_market_convert_currency', 'function',

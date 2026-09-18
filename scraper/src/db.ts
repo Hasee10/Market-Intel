@@ -65,8 +65,34 @@ export async function saveScrapeRunSummary(
 }
 
 /**
+ * Position of each product on its category page, keyed by external_id.
+ *
+ * Every source walks category pages in order and pushes products in that
+ * order (verified across all 17 sources on 2026-09-18: none sorts, none
+ * fetches pages in parallel), so array index within a category IS the
+ * page position. Counted per category because one source's array carries
+ * several categories back to back. Exported for testing; pure.
+ *
+ * `products` must already be deduped by external_id - a product listed in
+ * two categories keeps the position from the first one seen, which is also
+ * the category_slug saveProducts stores for it.
+ */
+export function assignRanks(products: RawProduct[]): Map<string, number> {
+  const ranks = new Map<string, number>();
+  const counters = new Map<string, number>();
+  for (const p of products) {
+    const key = p.categorySlug ?? '';
+    const next = (counters.get(key) ?? 0) + 1;
+    counters.set(key, next);
+    ranks.set(p.externalId, next);
+  }
+  return ranks;
+}
+
+/**
  * Upserts products into market_products (by platform_id + external_id) and
- * appends one row per product into market_price_history.
+ * appends one row per product into market_price_history, each carrying the
+ * product's position on its category page (migration 060).
  */
 export async function saveProducts(platformSlug: string, products: RawProduct[]): Promise<void> {
   requireDatabase();
@@ -84,6 +110,7 @@ export async function saveProducts(platformSlug: string, products: RawProduct[])
   }
   const deduped = [...dedupedByKey.values()];
   const categorySlugs = [...new Set(deduped.map((p) => p.categorySlug).filter((c): c is string => Boolean(c)))];
+  const ranks = assignRanks(deduped);
 
   for (const batch of chunk(deduped, UPSERT_BATCH_SIZE)) {
     const now = new Date().toISOString();
@@ -120,12 +147,22 @@ export async function saveProducts(platformSlug: string, products: RawProduct[])
       throw new Error(`market_products upsert failed: ${res.status} ${await res.text()}`);
     }
 
-    const saved = (await res.json()) as Array<{ id: string; price: number | null; compare_at_price: number | null; in_stock: boolean | null }>;
+    const saved = (await res.json()) as Array<{
+      id: string;
+      external_id: string;
+      price: number | null;
+      compare_at_price: number | null;
+      in_stock: boolean | null;
+    }>;
+    // Rank is looked up by external_id, never by array position: PostgREST
+    // returns the upserted representation, and nothing guarantees it comes
+    // back in the order the batch was sent.
     const historyRows = saved.map((row) => ({
       product_id: row.id,
       price: row.price,
       compare_at_price: row.compare_at_price,
       in_stock: row.in_stock,
+      rank: ranks.get(row.external_id) ?? null,
       recorded_at: now,
     }));
 

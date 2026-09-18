@@ -91,7 +91,16 @@ export function PlacementPanel({ sellerProductId, currency, className = '' }: Pr
       };
     });
     const stockByDate = data.platforms.map((p) => new Map(p.history.map((h) => [h.date, h.inStock])));
-    return { dates, series, stockByDate };
+    const rankByDate = data.platforms.map((p) => new Map(p.history.map((h) => [h.date, h.rank])));
+    // Rank only from the first ranked observation onward, so the chart
+    // starts where capture started instead of drawing a flat null run.
+    const rankDates = dates.filter((d) => rankByDate.some((m) => m.get(d) != null));
+    const rankSeries = data.platforms.map((p, i) => ({
+      name: p.platformName,
+      type: 'line' as const,
+      data: rankDates.map((d) => rankByDate[i].get(d) ?? null),
+    }));
+    return { dates, series, stockByDate, rankByDate, rankDates, rankSeries };
   }, [data]);
 
   if (loading) {
@@ -223,11 +232,50 @@ export function PlacementPanel({ sellerProductId, currency, className = '' }: Pr
                             const price = s.data[dataPointIndex];
                             if (price == null) return '';
                             const inStock = chart.stockByDate[i].get(date);
-                            return `<div class="text-xs text-gray-700 dark:text-gray-200">${s.name}: <span class="font-semibold">${money(price, currency)}</span>${inStock === false ? ' <span class="text-error-500">out of stock</span>' : ''}</div>`;
+                            const rank = chart.rankByDate[i].get(date);
+                            return `<div class="text-xs text-gray-700 dark:text-gray-200">${s.name}: <span class="font-semibold">${money(price, currency)}</span>${rank != null ? ` <span class="text-gray-400">#${rank} on page</span>` : ''}${inStock === false ? ' <span class="text-error-500">out of stock</span>' : ''}</div>`;
                           })
                           .join('');
                         return `<div class="rounded-xl border border-gray-200 bg-white p-2.5 shadow-lg dark:border-gray-700 dark:bg-gray-900" style="font-family:inherit;"><div class="mb-1 text-[11px] text-gray-400 dark:text-gray-500">${date}</div>${rows}</div>`;
                       },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {chart && data.rankedPoints > 0 && chart.rankDates.length >= 2 && (
+            <div className="mt-4">
+              <p className="mb-1 text-xs font-medium text-gray-500 dark:text-gray-400">
+                Position on the category page · lower is better · recorded from 2026-09-18
+              </p>
+              <div className="h-[160px]">
+                <LineChart
+                  chartData={chart.rankSeries}
+                  chartOptions={{
+                    chart: { toolbar: { show: false }, animations: { enabled: false } },
+                    xaxis: {
+                      categories: chart.rankDates,
+                      labels: { style: { colors: '#98A2B3', fontSize: '10px' }, rotate: 0 },
+                      tickAmount: 6,
+                    },
+                    // Reversed so #1 sits at the top: a line climbing means
+                    // the listing is climbing the page.
+                    yaxis: {
+                      reversed: true,
+                      min: 1,
+                      forceNiceScale: true,
+                      labels: { style: { colors: '#98A2B3', fontSize: '10px' }, formatter: (v: number) => `#${Math.round(v)}` },
+                    },
+                    dataLabels: { enabled: false },
+                    markers: { size: 3 },
+                    stroke: { curve: 'stepline', width: 2 },
+                    colors: SERIES_COLORS,
+                    legend: { show: true, fontSize: '11px', labels: { colors: '#6B7280' }, markers: { size: 5 } },
+                    tooltip: {
+                      shared: true,
+                      y: { formatter: (v: number) => (v == null ? '—' : `#${v} on page`) },
                     },
                   }}
                 />

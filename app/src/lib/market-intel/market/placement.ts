@@ -12,8 +12,9 @@ import { createClient } from '@/lib/supabase/server';
 // chart → our product placement". Both are built entirely on data that
 // already exists - seller_product_competitor_matches (028) links the
 // seller's product to matched market listings, and market_price_history
-// (001) has every price and stock observation for each of them. Nothing in
-// the scraper changes.
+// (001) has every price and stock observation for each of them. The one
+// scraper change in this area is migration 060 + db.ts, which adds page
+// position to each observation; this module only reads it.
 //
 // On "traffic". The scraper does not see traffic and no marketplace here
 // publishes it, so the score is a DEMAND proxy from what is captured:
@@ -23,10 +24,15 @@ import { createClient } from '@/lib/supabase/server';
 // for margin and bad for competitiveness, and that is the seller's call,
 // so it is shown beside the score as a fact.
 //
-// On "placement". The chart is price and stock over time. Position on the
-// category page is not scraped today; when it is (a scraper change, scoped
-// separately), it joins this series. The response says so rather than
-// leaving a gap the client has to explain.
+// On "placement". The chart is price, stock and - from migration 060
+// onward - position on the category page, per observation. Rank is null
+// on every row recorded before 060 was applied, so a product's history
+// shows price back 90 days and rank only from the day capture started; the
+// response says how many points carry a rank so the client can label that
+// honestly rather than draw a line that starts mid-chart for no visible
+// reason. Rank is comparable within one platform over time, not across
+// platforms (different page sizes and sort defaults), which is why the
+// chart draws one line per platform.
 //
 // Score weights sum to 100 and every component is returned, so the client
 // can show why a platform leads. A signal that no platform has for this
@@ -40,7 +46,13 @@ export const AVAILABILITY_WINDOW_DAYS = 30;
 const WEIGHTS = { sales: 40, reviews: 30, rating: 15, availability: 15 } as const;
 type Signal = keyof typeof WEIGHTS;
 
-export type PlacementPoint = { date: string; price: number | null; inStock: boolean };
+export type PlacementPoint = {
+  date: string;
+  price: number | null;
+  inStock: boolean;
+  /** 1-based position on the category page. Null before migration 060. */
+  rank: number | null;
+};
 
 export type PlatformPlacement = {
   platformName: string;
@@ -76,6 +88,8 @@ export type ProductPlacement = {
   /** Signals that were actually available and therefore scored. */
   signalsUsed: Signal[];
   historyDays: number;
+  /** Points across all platforms that carry a rank - 0 until the first scrape after migration 060. */
+  rankedPoints: number;
   /** Stated once, for the client to show: what this is and is not. */
   caveats: string[];
 };
@@ -98,7 +112,13 @@ type MatchRow = {
   } | null;
 };
 
-type HistoryRow = { product_id: string; price: number | string | null; in_stock: boolean; recorded_at: string };
+type HistoryRow = {
+  product_id: string;
+  price: number | string | null;
+  in_stock: boolean;
+  rank: number | null;
+  recorded_at: string;
+};
 
 function one<T>(v: T | T[] | null | undefined): T | null {
   if (v == null) return null;
@@ -210,7 +230,7 @@ export async function getProductPlacement(
   if (listingIds.length > 0) {
     const histRes = await supabase
       .from('market_price_history')
-      .select('product_id, price, in_stock, recorded_at')
+      .select('product_id, price, in_stock, rank, recorded_at')
       .in('product_id', listingIds)
       .gte('recorded_at', since)
       .order('recorded_at', { ascending: true });
@@ -251,6 +271,7 @@ export async function getProductPlacement(
         date: h.recorded_at.slice(0, 10),
         price: h.price != null ? convertCurrency(Number(h.price), mp.currency, reportingCurrency, fxRates) : null,
         inStock: h.in_stock,
+        rank: h.rank,
       })),
     };
   });
@@ -260,8 +281,13 @@ export async function getProductPlacement(
   const caveats = [
     'The score is a demand proxy from platform-reported sold counts, reviews, rating and availability - not measured traffic, which no marketplace here publishes.',
     'Price is shown but not scored: a higher price on one platform is good for margin and bad for competitiveness, and that trade-off is yours.',
-    'Position on the category page is not captured yet, so the history is price and stock only.',
   ];
+  const rankedPoints = scored.reduce((n, p) => n + p.history.filter((h) => h.rank != null).length, 0);
+  if (rankedPoints === 0) {
+    caveats.push('Position on the category page is recorded from 2026-09-18 onward; this product has no ranked observations yet.');
+  } else {
+    caveats.push('Page position is comparable on one platform over time, not between platforms - each has its own page size and default sort.');
+  }
   if (signalsUsed.length < 4) {
     const missing = (Object.keys(WEIGHTS) as Signal[]).filter((s) => !signalsUsed.includes(s));
     caveats.push(`No platform reports ${missing.join(' or ')} for this product, so the score is built from the rest.`);
@@ -276,6 +302,7 @@ export async function getProductPlacement(
     bestPlatform: scored[0]?.platformName ?? null,
     signalsUsed,
     historyDays: HISTORY_DAYS,
+    rankedPoints,
     caveats,
   };
 }
