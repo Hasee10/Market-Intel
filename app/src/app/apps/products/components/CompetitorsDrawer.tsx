@@ -10,6 +10,7 @@ import { ProductThumb } from '@/components/ui/ProductThumb';
 import { PricePositionStrip } from '@/components/marketintel/PricePositionStrip';
 import { CompetitorQualityPanel } from '@/components/marketintel/CompetitorQualityPanel';
 import { PriceVsMarketChart } from '@/components/marketintel/PriceVsMarketChart';
+import { PlacementPanel } from '@/components/marketintel/PlacementPanel';
 import { IProduct } from '@/types/products';
 import { IApiResponse } from '@/types/api-response';
 
@@ -229,6 +230,18 @@ export function CompetitorsDrawer({ isOpen, onClose, product, reportingCurrency 
           which is a wall of identical boxes, not information. */}
       {product && (
         <PriceVsMarketChart
+          className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
+          sellerProductId={product.id}
+          currency={reportingCurrency}
+        />
+      )}
+
+      {/* Where the product is listed across platforms, which one shows the
+          most demand, and each listing's price history - the "same product
+          on multiple websites" and "historical placement" items from the
+          product notes. Own fetch, same as the chart above. */}
+      {product && (
+        <PlacementPanel
           className="mb-6 rounded-xl border border-gray-200 p-4 dark:border-gray-800"
           sellerProductId={product.id}
           currency={reportingCurrency}
