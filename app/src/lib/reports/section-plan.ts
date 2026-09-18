@@ -372,6 +372,9 @@ function dividerStatsFor(kinds: SectionKind[], snapshot: ReportSnapshot): { labe
     add('Price index', snapshot.marketplacePerformance.priceIndex.value.toFixed(0));
     add('Platforms tracked', String(snapshot.marketplacePerformance.scope.platformNames.length));
   }
+  if (kinds.includes('market_position') && snapshot.marketplacePerformance?.listingShare) {
+    add('Listing share', `${snapshot.marketplacePerformance.listingShare.value.value.toFixed(1)}%`);
+  }
   if (kinds.includes('competitor_tracking') && snapshot.competitorBenchmarks) {
     add('Competitors tracked', String(snapshot.competitorBenchmarks.scorecards.length));
     // Distinct platforms among the tracked competitors, not a second copy of

@@ -47,6 +47,20 @@ export interface RevenueSection {
   orders: GrowthMetric;
   avgOrderValue: GrowthMetric;
   weeklySeries: { label: string; value: number }[] | null;
+  /**
+   * Return / refund figures over the same period (product notes 2026-09-18;
+   * same definitions as lib/market-intel/seller/returns.ts). Optional so
+   * snapshots persisted before this field existed still validate and
+   * render. Rates are percents; refundValue is in the reporting currency.
+   * For these three, "up" is the bad direction - renderers invert the colour.
+   */
+  returns?: {
+    returnRate: GrowthMetric;
+    cancelRate: GrowthMetric;
+    refundValue: GrowthMetric;
+    refundedOrders: number;
+    cancelledOrders: number;
+  } | null;
 }
 
 export type ContributionBasis = 'revenue' | 'inventory_value';
@@ -63,6 +77,17 @@ export interface MarketplacePerformanceSection {
   scope: { categorySlugs: string[]; platformNames: string[] };
   priceIndex: Sourced<number> | null; // seller median / market median * 100, null if either side is missing
   perPlatform: { platformName: string; skuOverlap: number; medianPriceGap: number | null }[];
+  /**
+   * Estimated share of the market by LISTINGS (not revenue or sales) - see
+   * lib/market-intel/market/market-share.ts for exactly what it is and is
+   * not. Optional: older snapshots lack it.
+   */
+  listingShare?: {
+    value: Sourced<number>; // percent
+    sellerListings: number;
+    marketListings: number;
+    platformsInScope: number;
+  } | null;
 }
 
 export interface CompetitorScorecardRow {
@@ -99,6 +124,18 @@ export interface CustomerHealthSection {
   avgClv: Sourced<number> | null;
   atRiskCount: number | null;
   atRiskCohorts: { label: string; count: number; recoveryTargetPct: number | null }[];
+  /**
+   * Windowed repeat-buyer figures for the report period, distinct from the
+   * lifetime repeatPurchaseRate above (lib/market-intel/seller/repeat.ts).
+   * Optional: older snapshots lack it. Shares are percents.
+   */
+  repeatBuyers?: {
+    periodDays: number;
+    customersOrdered: number;
+    repeatCustomers: number;
+    repeatShare: GrowthMetric;
+    repeatRevenueShare: GrowthMetric;
+  } | null;
 }
 
 export type MarketSignalKind = 'demand_rising' | 'supply_void' | 'price_war' | 'new_entrant';

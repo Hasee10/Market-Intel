@@ -27,6 +27,13 @@ const richSnapshot: ReportSnapshot = baseSnapshot({
     orders: { current: 120, previous: 100, changePct: 20, changeAbs: 20, direction: 'up' },
     avgOrderValue: { current: 4166, previous: 4000, changePct: 4.16, changeAbs: 166, direction: 'up' },
     weeklySeries: [1, 2, 3, 4, 5, 6].map((i) => ({ label: `Wk ${i}`, value: i * 1000 })),
+    returns: {
+      returnRate: { current: 4.2, previous: 3.0, changePct: 40, changeAbs: 1.2, direction: 'up' },
+      cancelRate: { current: 1.7, previous: 2.0, changePct: -15, changeAbs: -0.3, direction: 'down' },
+      refundValue: { current: 21000, previous: 12000, changePct: 75, changeAbs: 9000, direction: 'up' },
+      refundedOrders: 5,
+      cancelledOrders: 2,
+    },
   },
   productPerformance: {
     activeProductCount: 20,
@@ -41,6 +48,12 @@ const richSnapshot: ReportSnapshot = baseSnapshot({
     scope: { categorySlugs: ['mobiles-and-electronics'], platformNames: ['Daraz', 'Telemart'] },
     priceIndex: { value: 104, source: 'public_marketplace', asOf: '2026-08-04' },
     perPlatform: [],
+    listingShare: {
+      value: { value: 1.4, source: 'public_marketplace', asOf: '2026-08-04' },
+      sellerListings: 20,
+      marketListings: 1412,
+      platformsInScope: 2,
+    },
   },
   pricePositioning: {
     yourMedianPrice: { value: 25000, source: 'seller_private', asOf: '2026-08-04' },
@@ -71,6 +84,13 @@ const richSnapshot: ReportSnapshot = baseSnapshot({
     avgClv: { value: 8200, source: 'seller_private', asOf: '2026-08-04' },
     atRiskCount: 12,
     atRiskCohorts: [{ label: 'At-risk customers', count: 12, recoveryTargetPct: null }],
+    repeatBuyers: {
+      periodDays: 30,
+      customersOrdered: 80,
+      repeatCustomers: 28,
+      repeatShare: { current: 35, previous: 30, changePct: 16.7, changeAbs: 5, direction: 'up' },
+      repeatRevenueShare: { current: 41, previous: 38, changePct: 7.9, changeAbs: 3, direction: 'up' },
+    },
   },
   marketSignals: [
     {

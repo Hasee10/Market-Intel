@@ -271,6 +271,8 @@ revenue/products → marketplace/pricing → competitor benchmarks → customer 
 
 Sections are dynamically included/omitted based on real data availability (`section-plan.ts`) - never padded. Candidate sections: cover, TOC (≥5 sections), executive snapshot, market position, pricing intelligence, competitor tracking (paginated, truncation note not "(continued)" slides), SKU performance (paginated), portfolio contribution (≥2 categories), inventory risk (only if low-stock exists), customer health, recommendations, roadmap (≥2 recommendations), methodology, appendix (internal mode). TOC always shows every candidate marked included/omitted/not-enough-data.
 
+**Product-notes metrics in reports** (2026-09-18, Phase 4): the same three figures the dashboard added are in both renderers, as optional snapshot fields so older persisted snapshots still validate and render. `RevenueSection.returns` (return rate, cancel rate, refund value over the report period with prior-period change; "up" coloured red) - a Return rate KPI on the executive snapshot. `MarketplacePerformanceSection.listingShare` - a "Share of listings" KPI on Market Position and a divider stat, always the un-named variant. `CustomerHealthSection.repeatBuyers` (windowed returning-buyer share and revenue share) - two KPIs on Customer Health. All three feed the AI narration prompt and its numeric-grounding check.
+
 **Not yet built**: a client-safe export/approval flow - `report_reviews`/`report_exports` tables exist with no route/UI calling them yet. Self-view downloads always use `mode: 'internal'`.
 
 ---

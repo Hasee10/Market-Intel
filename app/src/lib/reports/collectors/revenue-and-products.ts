@@ -46,12 +46,12 @@ export async function collectRevenueAndProducts(
   const [ordersRes, previousOrdersRes, productsRes] = await Promise.all([
     supabase
       .from('seller_orders')
-      .select('total_amount, currency, order_date')
+      .select('total_amount, currency, order_date, status')
       .eq('seller_id', seller.id)
       .gte('order_date', periodStart),
     supabase
       .from('seller_orders')
-      .select('total_amount, currency')
+      .select('total_amount, currency, status')
       .eq('seller_id', seller.id)
       .gte('order_date', previousPeriodStart)
       .lt('order_date', periodStart),
@@ -67,6 +67,7 @@ export async function collectRevenueAndProducts(
   }));
   const previousOrders = (previousOrdersRes.data ?? []).map((o) => ({
     amount: convertCurrency(Number(o.total_amount), o.currency, reportingCurrency, fxRates),
+    status: o.status as string | null,
   }));
   const products = (productsRes.data ?? []).map((p) => ({
     ...p,
@@ -91,6 +92,7 @@ export async function collectRevenueAndProducts(
             previousOrderCount > 0 ? previousRevenueTotal / previousOrderCount : null,
           ),
           weeklySeries: orderCount >= 2 ? buildWeeklySeries(orders, periodStart) : null,
+          returns: buildReturns(orders, previousOrders),
         };
 
   const activeProducts = products.filter((p) => p.is_active);
@@ -148,6 +150,41 @@ export async function collectRevenueAndProducts(
         };
 
   return { revenue, productPerformance, inventoryRisk, medianSellPrice };
+}
+
+// Return / refund block for the revenue section. Same definitions as
+// getReturnStats (seller/returns.ts) so the report and the Orders page never
+// disagree: a refund is status 'refunded', a cancellation is 'cancelled',
+// rates are over ALL orders in the window, refund value is whole-order
+// totals (no partial refunds are modelled). Reported whenever the period has
+// orders - a 0% return rate on real orders is a fact worth stating; with no
+// orders it is null, not zero.
+export function buildReturns(
+  orders: { amount: number; status: string | null }[],
+  previousOrders: { amount: number; status: string | null }[],
+): RevenueSection['returns'] {
+  if (orders.length === 0) return null;
+  const summarise = (rows: { amount: number; status: string | null }[]) => {
+    const refunded = rows.filter((o) => o.status === 'refunded');
+    const cancelled = rows.filter((o) => o.status === 'cancelled');
+    const rate = (n: number) => (rows.length === 0 ? 0 : (n / rows.length) * 100);
+    return {
+      refunded: refunded.length,
+      cancelled: cancelled.length,
+      returnRate: rate(refunded.length),
+      cancelRate: rate(cancelled.length),
+      refundValue: refunded.reduce((sum, o) => sum + o.amount, 0),
+    };
+  };
+  const current = summarise(orders);
+  const prior = previousOrders.length > 0 ? summarise(previousOrders) : null;
+  return {
+    returnRate: buildGrowthMetric(current.returnRate, prior ? prior.returnRate : null),
+    cancelRate: buildGrowthMetric(current.cancelRate, prior ? prior.cancelRate : null),
+    refundValue: buildGrowthMetric(current.refundValue, prior ? prior.refundValue : null),
+    refundedOrders: current.refunded,
+    cancelledOrders: current.cancelled,
+  };
 }
 
 function buildWeeklySeries(

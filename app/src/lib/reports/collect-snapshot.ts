@@ -35,9 +35,16 @@ export async function collectSnapshot(seller: Seller, options: CollectSnapshotOp
   );
 
   const [{ marketplacePerformance, pricePositioning }, competitorBenchmarks, customerHealth] = await Promise.all([
-    collectMarketplaceAndPricing(domain?.categorySlug ?? null, medianSellPrice, reportingCurrency, fxRates, asOf),
+    collectMarketplaceAndPricing(
+      domain?.categorySlug ?? null,
+      medianSellPrice,
+      reportingCurrency,
+      fxRates,
+      asOf,
+      domain ? { sellerId: seller.id, categoryId: domain.categoryId, categoryName: domain.categoryName } : null,
+    ),
     collectCompetitorBenchmarks(domain?.categorySlug ?? null, reportingCurrency, seller.id, asOf, fxRates),
-    collectCustomerHealth(seller.id, reportingCurrency, asOf, fxRates),
+    collectCustomerHealth(seller.id, reportingCurrency, asOf, fxRates, lookbackDays),
   ]);
 
   const marketSignals = runMarketSignalRules(

@@ -1,6 +1,7 @@
 'server-only';
 
 import type { FxRates } from '@/lib/market-intel/fx';
+import { getRepeatStats } from '@/lib/market-intel/seller/repeat';
 import { getLatestChurnSnapshot, getAtRiskCustomers } from '@/lib/market-intel/seller/rfm';
 import { buildGrowthMetric } from '../metrics/growth';
 import type { CustomerHealthSection } from '../schema';
@@ -13,13 +14,34 @@ export async function collectCustomerHealth(
   reportingCurrency: string,
   asOf: string,
   fxRates: FxRates,
+  periodDays = 30,
 ): Promise<CustomerHealthSection | null> {
-  const [churn, atRisk] = await Promise.all([
+  const [churn, atRisk, repeat] = await Promise.all([
     getLatestChurnSnapshot(sellerId),
     getAtRiskCustomers(sellerId, reportingCurrency, fxRates),
+    // Windowed repeat buyers over the report period (product notes
+    // 2026-09-18). Fail-soft: the churn snapshot and at-risk list are the
+    // section's backbone and must not disappear because this read failed.
+    getRepeatStats(sellerId, reportingCurrency, periodDays).catch(() => null),
   ]);
 
-  if (!churn && atRisk.length === 0) return null;
+  // Only meaningful when someone actually ordered in the window - a share
+  // of zero customers is not a 0% repeat rate.
+  const repeatBuyers: CustomerHealthSection['repeatBuyers'] =
+    repeat && repeat.customersOrdered > 0
+      ? {
+          periodDays: repeat.periodDays,
+          customersOrdered: repeat.customersOrdered,
+          repeatCustomers: repeat.repeatCustomers,
+          repeatShare: buildGrowthMetric(repeat.repeatShare, repeat.prior.customersOrdered > 0 ? repeat.prior.repeatShare : null),
+          repeatRevenueShare: buildGrowthMetric(
+            repeat.repeatRevenueShare,
+            repeat.prior.customersOrdered > 0 ? repeat.prior.repeatRevenueShare : null,
+          ),
+        }
+      : null;
+
+  if (!churn && atRisk.length === 0 && !repeatBuyers) return null;
 
   const atRiskCohorts =
     atRisk.length > 0
@@ -45,5 +67,6 @@ export async function collectCustomerHealth(
     // gated separately on length > 0, not on this field.
     atRiskCount: atRisk.length,
     atRiskCohorts,
+    repeatBuyers,
   };
 }

@@ -637,6 +637,13 @@ function renderExecutiveSnapshot(doc: PDFKit.PDFDocument, snapshot: ReportSnapsh
   if (snapshot.revenue) {
     cards.push({ ...growthKpi('Revenue', snapshot.revenue.revenue, (v) => formatCurrency(v, currency)), sparkline: snapshot.revenue.weeklySeries?.map((p) => p.value) ?? null });
     cards.push(growthKpi('Orders', snapshot.revenue.orders, (v) => String(Math.round(v))));
+    if (snapshot.revenue.returns) {
+      // Up is bad for a return rate - swap the colour, keep the text.
+      const r = snapshot.revenue.returns.returnRate;
+      const card = growthKpi('Return rate', r, (v) => formatPercent(v, 1));
+      card.deltaColor = r.direction === 'up' ? COLORS.negative : r.direction === 'down' ? COLORS.positive : COLORS.grayLight;
+      cards.push(card);
+    }
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
     cards.push({ label: 'Price index', value: snapshot.marketplacePerformance.priceIndex.value.toFixed(0), delta: '100 = at market median' });
@@ -698,6 +705,13 @@ function renderMarketPosition(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot,
   if (mp.priceIndex) cards.push({ label: 'Price index vs. market', value: mp.priceIndex.value.toFixed(0), delta: '100 = at market median' });
   if (percentile != null) {
     cards.push({ label: 'Your percentile', value: `${percentile}${ordinalSuffix(percentile)}`, delta: 'Of the tracked price range' });
+  }
+  if (mp.listingShare) {
+    cards.push({
+      label: 'Share of listings',
+      value: formatPercent(mp.listingShare.value.value, 1),
+      delta: `${mp.listingShare.sellerListings} of yours beside ${mp.listingShare.marketListings.toLocaleString()} tracked`,
+    });
   }
   cards.push({ label: 'Platforms in scope', value: String(mp.scope.platformNames.length) });
   kpiRow(doc, cards, MARGIN, CONTENT_TOP, CONTENT_W);
@@ -1125,6 +1139,10 @@ function renderCustomerHealth(doc: PDFKit.PDFDocument, snapshot: ReportSnapshot,
   if (ch.retentionRate) cards.push({ label: 'Retention rate', value: formatPercent(ch.retentionRate.current, 1) });
   if (ch.repeatPurchaseRate != null) cards.push({ label: 'Repeat purchase rate', value: formatPercent(ch.repeatPurchaseRate, 1) });
   if (ch.avgClv) cards.push({ label: 'Avg. customer LTV', value: formatCurrency(ch.avgClv.value, snapshot.workspace.reportingCurrency) });
+  if (ch.repeatBuyers) {
+    cards.push(growthKpi('Returning buyers', ch.repeatBuyers.repeatShare, (v) => formatPercent(v, 1)));
+    cards.push(growthKpi('Revenue from returning', ch.repeatBuyers.repeatRevenueShare, (v) => formatPercent(v, 1)));
+  }
   if (cards.length > 0) kpiRow(doc, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 
   if (ch.atRiskCohorts.length > 0) {

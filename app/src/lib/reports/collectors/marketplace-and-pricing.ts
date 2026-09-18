@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import type { FxRates } from '@/lib/market-intel/fx';
 import { getCategoryPricing } from '@/lib/market-intel/market/category-pricing';
 import { getMarketScope } from '@/lib/market-intel/market/market-definition';
+import { getMarketShare } from '@/lib/market-intel/market/market-share';
 import { safeRatio } from '../metrics/growth';
 import type { MarketplacePerformanceSection, PricePositioningSection } from '../schema';
 
@@ -15,12 +16,20 @@ export interface MarketplaceAndPricingResult {
   categorySlug: string | null;
 }
 
+/** Who the listing share is for. Optional so callers without a seller (tests) skip it. */
+export interface ListingShareSubject {
+  sellerId: string;
+  categoryId: string;
+  categoryName: string;
+}
+
 export async function collectMarketplaceAndPricing(
   categorySlug: string | null,
   medianSellPrice: number | null,
   targetCurrency: string,
   fxRates: FxRates,
   asOf: string,
+  shareSubject: ListingShareSubject | null = null,
 ): Promise<MarketplaceAndPricingResult> {
   if (!categorySlug) {
     return { marketplacePerformance: null, pricePositioning: null, categorySlug: null };
@@ -31,9 +40,22 @@ export async function collectMarketplaceAndPricing(
     return { marketplacePerformance: null, pricePositioning: null, categorySlug };
   }
 
-  const [categoryPricing, trend] = await Promise.all([
+  const [categoryPricing, trend, share] = await Promise.all([
     getCategoryPricing(categorySlug, targetCurrency),
     fetchPriceTrend(scope.categorySlugs, scope.activePlatformIds, targetCurrency, fxRates),
+    // Listing share (product notes 2026-09-18). Fail-soft, and always the
+    // un-named variant: a report never lists competitor names here, the
+    // competitor_tracking section owns that under its own entitlement.
+    shareSubject
+      ? getMarketShare(
+          shareSubject.sellerId,
+          shareSubject.categoryId,
+          categorySlug,
+          shareSubject.categoryName,
+          targetCurrency,
+          false,
+        ).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   if (!categoryPricing) {
@@ -53,6 +75,14 @@ export async function collectMarketplaceAndPricing(
     // without seller identity is directional at best, so it's left empty
     // rather than fabricated from the aggregate stats alone.
     perPlatform: [],
+    listingShare: share
+      ? {
+          value: { value: share.listingShare, source: 'public_marketplace', asOf },
+          sellerListings: share.sellerListings,
+          marketListings: share.marketListings,
+          platformsInScope: share.platformsInScope,
+        }
+      : null,
   };
 
   // Only build a recommended band when p25/p75 exist - migration 026 moved

@@ -1,7 +1,7 @@
 'server-only';
 
 import pptxgen from 'pptxgenjs';
-import type { ReportSnapshot } from '../../schema';
+import type { GrowthMetric, ReportSnapshot } from '../../schema';
 import { buildSectionPlan, appendixEntries, type PlannedSection, type SectionPlan, ROWS_PER_TABLE_PAGE } from '../../section-plan';
 import { coverIllustrationPath, ILLUSTRATION_ASPECT_RATIO } from '../../assets/illustrations';
 import { COLORS, FONT_FAMILY, formatCurrency, formatDate, formatMetricName, formatPercent } from '../../design-tokens';
@@ -415,6 +415,9 @@ function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, pa
       sparkline: snapshot.revenue.weeklySeries?.map((p) => p.value) ?? null,
     });
     cards.push(kpiCardFromGrowth('Orders', snapshot.revenue.orders, (v) => String(Math.round(v))));
+    if (snapshot.revenue.returns) {
+      cards.push(invertedKpiCard('Return rate', snapshot.revenue.returns.returnRate, (v) => formatPercent(v, 1)));
+    }
   }
   if (snapshot.marketplacePerformance?.priceIndex) {
     cards.push({
@@ -492,6 +495,17 @@ function buildExecutiveSnapshotSlide(pptx: pptxgen, snapshot: ReportSnapshot, pa
   addFooter(slide, sourceLine(snapshot), snapshot.metadata.mode);
 }
 
+// A KPI where going UP is the bad news (return rate, cancel rate, refund
+// value). kpiCardFromGrowth colours "up" green; this flips the direction so
+// the colour tells the truth while the text still says what happened.
+function invertedKpiCard(label: string, m: GrowthMetric, formatValue: (v: number) => string): KpiCardSpec {
+  const card = kpiCardFromGrowth(label, m, formatValue);
+  return {
+    ...card,
+    deltaDirection: m.direction === 'up' ? 'down' : m.direction === 'down' ? 'up' : m.direction,
+  };
+}
+
 /** "82" -> "nd", "3" -> "rd", "11" -> "th", etc. */
 function ordinalSuffix(n: number): string {
   const mod100 = n % 100;
@@ -536,6 +550,13 @@ function buildMarketPositionSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageL
       label: 'Your percentile',
       valueText: `${percentile}${ordinalSuffix(percentile)}`,
       deltaText: 'Of the tracked price range',
+    });
+  }
+  if (mp.listingShare) {
+    cards.push({
+      label: 'Share of listings',
+      valueText: formatPercent(mp.listingShare.value.value, 1),
+      deltaText: `${mp.listingShare.sellerListings} of yours beside ${mp.listingShare.marketListings.toLocaleString()} tracked`,
     });
   }
   cards.push({ label: 'Platforms in scope', valueText: String(mp.scope.platformNames.length) });
@@ -1151,6 +1172,10 @@ function buildCustomerHealthSlide(pptx: pptxgen, snapshot: ReportSnapshot, pageL
       label: 'Avg. customer LTV',
       valueText: formatCurrency(ch.avgClv.value, snapshot.workspace.reportingCurrency),
     });
+  }
+  if (ch.repeatBuyers) {
+    cards.push(kpiCardFromGrowth('Returning buyers', ch.repeatBuyers.repeatShare, (v) => formatPercent(v, 1)));
+    cards.push(kpiCardFromGrowth('Revenue from returning', ch.repeatBuyers.repeatRevenueShare, (v) => formatPercent(v, 1)));
   }
   if (cards.length > 0) addKpiCardRow(slide, pptx, cards, MARGIN, CONTENT_TOP, CONTENT_W);
 

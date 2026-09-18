@@ -51,12 +51,24 @@ function collectNumericGround(snapshot: ReportSnapshot): number[] {
   pushGrowth(snapshot.revenue?.revenue);
   pushGrowth(snapshot.revenue?.orders);
   pushGrowth(snapshot.revenue?.avgOrderValue);
+  pushGrowth(snapshot.revenue?.returns?.returnRate);
+  pushGrowth(snapshot.revenue?.returns?.cancelRate);
+  pushGrowth(snapshot.revenue?.returns?.refundValue);
+  push(snapshot.revenue?.returns?.refundedOrders);
+  push(snapshot.revenue?.returns?.cancelledOrders);
   push(snapshot.productPerformance?.activeProductCount);
   push(snapshot.inventoryRisk?.lowStockSkuCount);
   push(snapshot.marketplacePerformance?.priceIndex?.value);
+  push(snapshot.marketplacePerformance?.listingShare?.value.value);
+  push(snapshot.marketplacePerformance?.listingShare?.sellerListings);
+  push(snapshot.marketplacePerformance?.listingShare?.marketListings);
   push(snapshot.pricePositioning?.percentile);
   push(snapshot.customerHealth?.repeatPurchaseRate);
   push(snapshot.customerHealth?.atRiskCount);
+  pushGrowth(snapshot.customerHealth?.repeatBuyers?.repeatShare);
+  pushGrowth(snapshot.customerHealth?.repeatBuyers?.repeatRevenueShare);
+  push(snapshot.customerHealth?.repeatBuyers?.customersOrdered);
+  push(snapshot.customerHealth?.repeatBuyers?.repeatCustomers);
   for (const row of snapshot.competitorBenchmarks?.scorecards ?? []) {
     push(row.medianPrice.value);
     push(row.inStockRate);
@@ -93,6 +105,15 @@ function buildPrompt(snapshot: ReportSnapshot): string {
   if (snapshot.revenue) {
     lines.push(growthLine('Revenue', snapshot.revenue.revenue, currency));
     lines.push(growthLine('Orders', snapshot.revenue.orders, currency));
+    const ret = snapshot.revenue.returns;
+    if (ret) {
+      lines.push(
+        `Return rate (refunded orders / all orders, lower is better): ${ret.returnRate.current.toFixed(1)}%` +
+          (ret.returnRate.previous != null ? ` (prior period ${ret.returnRate.previous.toFixed(1)}%)` : ''),
+      );
+      lines.push(`Cancel rate (lower is better): ${ret.cancelRate.current.toFixed(1)}%`);
+      lines.push(`Refund value: ${formatCurrency(ret.refundValue.current, currency)} across ${ret.refundedOrders} refunded orders`);
+    }
   }
   if (snapshot.productPerformance) {
     lines.push(`Active products: ${snapshot.productPerformance.activeProductCount}`);
@@ -110,6 +131,12 @@ function buildPrompt(snapshot: ReportSnapshot): string {
     );
     if (priceIndexLine) lines.push(priceIndexLine);
   }
+  if (snapshot.marketplacePerformance?.listingShare) {
+    const ls = snapshot.marketplacePerformance.listingShare;
+    lines.push(
+      `Estimated market share by listings (not revenue): ${ls.value.value.toFixed(1)}% - ${ls.sellerListings} of the seller's listings beside ${ls.marketListings} scraped listings across ${ls.platformsInScope} platforms`,
+    );
+  }
   if (snapshot.pricePositioning?.percentile != null) {
     lines.push(`Price percentile within tracked market: ${snapshot.pricePositioning.percentile}th`);
   }
@@ -118,6 +145,14 @@ function buildPrompt(snapshot: ReportSnapshot): string {
       lines.push(`Repeat purchase rate: ${snapshot.customerHealth.repeatPurchaseRate}%`);
     }
     lines.push(`At-risk customers: ${snapshot.customerHealth.atRiskCount ?? 0}`);
+    const rb = snapshot.customerHealth.repeatBuyers;
+    if (rb) {
+      lines.push(
+        `Returning buyers this period: ${rb.repeatShare.current.toFixed(1)}% of ${rb.customersOrdered} customers who ordered had bought before` +
+          (rb.repeatShare.previous != null ? ` (prior period ${rb.repeatShare.previous.toFixed(1)}%)` : ''),
+      );
+      lines.push(`Revenue from returning buyers: ${rb.repeatRevenueShare.current.toFixed(1)}% of period revenue`);
+    }
   }
   for (const row of snapshot.competitorBenchmarks?.scorecards.slice(0, 5) ?? []) {
     lines.push(
