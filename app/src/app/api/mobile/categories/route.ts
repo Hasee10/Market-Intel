@@ -33,5 +33,13 @@ export async function GET(request: Request) {
       categoryName: d.categoryName,
       isPrimary: d.isPrimary,
     })),
+    // Same shape /competitors uses. An empty list here is a correct answer
+    // - the seller has not picked a market yet - but it was read as a
+    // broken endpoint the first time a client hit it on a test account
+    // with plenty of products and no onboarding. The code names the
+    // cause so the client can show "choose a market" rather than "no
+    // data". A seller_domains row comes only from web onboarding, the web
+    // Settings page, or bulk import; never from adding products.
+    emptyReason: domains.length === 0 ? 'no_tracked_markets' : null,
   });
 }

@@ -569,7 +569,8 @@ app as that user once and completes onboarding.
       "categoryName": "Beauty & Personal Care",
       "isPrimary": true
     }
-  ]
+  ],
+  "emptyReason": null   // "no_tracked_markets" when categories is [] - see above
 }
 ```
 

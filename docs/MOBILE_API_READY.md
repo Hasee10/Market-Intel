@@ -588,7 +588,8 @@ curl https://<host>/api/mobile/categories -H "Authorization: Bearer $TOKEN"
   "categories": [
     { "categorySlug": "beauty-and-personal-care", "categoryName": "Beauty & Personal Care", "isPrimary": true },
     { "categorySlug": "home-and-kitchen",         "categoryName": "Home & Kitchen",          "isPrimary": false }
-  ]
+  ],
+  "emptyReason": null          // "no_tracked_markets" when categories is []
 }
 ```
 
@@ -602,8 +603,17 @@ curl https://<host>/api/mobile/categories -H "Authorization: Bearer $TOKEN"
   the `isPrimary: true` row on first launch.
 - **Cache this for the session.** It changes only when the seller edits their
   market definition, which happens on desktop.
-- An empty array means onboarding isn't finished. Same state as
-  `domain: null` on `/pulse`.
+- **An empty array is a correct answer, not an error**, and comes with
+  `emptyReason: "no_tracked_markets"`. It means the seller has not picked a
+  market yet - same state as `domain: null` on `/pulse`. Show "choose a
+  market on the web app", not "no data".
+- **"Categories" here means tracked markets, not product categories.** An
+  account can have products in twenty categories and track zero markets.
+  A tracked market is created only by finishing onboarding on the web,
+  adding one on the web Settings page, or bulk CSV import. Adding products
+  one at a time never creates one. A test account made outside the web
+  app's onboarding will return `[]` until someone opens the web app as that
+  user once.
 - The `categorySlug` is the only category identifier in the whole mobile API.
   Every endpoint that takes a category takes this string.
 

@@ -286,8 +286,10 @@ paths:
       description: |
         No plan gate.
 
-        Returns only the seller's own categories, not the full 12-category
-        taxonomy. **One category → hide the switcher.**
+        Returns the markets the seller tracks (`seller_domains`) - not the
+        categories their products are in, and not the full 12-category
+        taxonomy. **One category → hide the switcher.** Empty → the seller
+        has not picked a market; `emptyReason` says so.
       responses:
         '200':
           description: OK
@@ -300,11 +302,20 @@ paths:
                     properties:
                       data:
                         type: object
-                        required: [categories]
+                        required: [categories, emptyReason]
                         properties:
                           categories:
                             type: array
                             items: { $ref: '#/components/schemas/Category' }
+                          emptyReason:
+                            type: string
+                            nullable: true
+                            enum: [no_tracked_markets]
+                            description: |
+                              Set only when `categories` is empty. The seller
+                              has not picked a market yet (tracked markets are
+                              `seller_domains`, not product categories). Same
+                              state as `domain: null` on /pulse. Not an error.
         '401': { $ref: '#/components/responses/Unauthorized' }
         '500': { $ref: '#/components/responses/ServerError' }
 
