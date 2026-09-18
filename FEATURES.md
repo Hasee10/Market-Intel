@@ -101,6 +101,7 @@ Category-wide market intelligence.
 - Competitor price anomalies table *(Premium)*: Product, Platform, Was, Now, Change % badge
 - Peers in your domain table *(Premium)*: Seller, Shares rating/price/category-rank
 - Bottom explainer cards: "Opt in to be visible to peers", "Where this data comes from"
+- **Your share of this market** (2026-09-18, `MarketShareCard`, `lib/market-intel/market/market-share.ts`): listing share = seller's active listings in the category ÷ (that + every active scraped listing in scope), with the denominator and platform count stated in the card. Named-competitor ranking and top-5 list follow the `competitor_intel` gate; free tier sees the share and a count of named sellers. Not a revenue or sales share, and says so.
 
 ### 3. Competitors (`/dashboard/market/competitors`)
 Named-competitor scorecards, gated *(Paid)*.
@@ -132,6 +133,8 @@ Product catalog CRUD with competitor comparison.
 - New/Edit Product drawers: Title, Sell price+Currency, Cost price, Stock qty, SKU, Category select with **AI suggest** button + background debounced auto-suggest; Edit adds Active switch + Delete
 - Competitors drawer: matched listings table (Listing link, Platform, Price, Rating, Sold, expandable Reviews)
 - Bulk Import CSV drawer
+- **Demand column** (2026-09-18, `lib/market-intel/market/demand-index.ts`, migration 061 `market_demand_percentiles`): 0-100 percentile of the product's best-matched listing within its category on sold count (45), reviews (35), page position (20); weights rescale per product to the signals present. Column appears only when a row carries it; a product with no match shows a dash, never a zero. Breakdown on hover.
+- **Placement panel** in the Competitors drawer (`PlacementPanel`, `lib/market-intel/market/placement.ts`, `GET /api/products/[id]/placement`): one row per platform the product is matched on - price, stock, rating, reviews, sold, 30-day availability - plus a demand score (sold 40 / reviews 30 / rating 15 / availability 15) and the top platform named. **Not ranked unless a platform reports sold counts or reviews** (`isRankable`). 90-day price chart per platform on a datetime axis, and a page-position chart from migration 060 onward. Price is shown beside the score, deliberately not inside it.
 
 ### 7. Categories (`/apps/products/categories`)
 Browse categories, jump to filtered product list.
@@ -143,6 +146,7 @@ Browse categories, jump to filtered product list.
 Order-record CRUD.
 - Header + **Import CSV**, **New Order**
 - `InsightStrip`: pending-order count → calm fallback with resolved count
+- **Return / refund strip** (added 2026-09-18, `lib/market-intel/seller/returns.ts`): Return rate, Refund value, Cancel rate over 30 days with prior-period change; refunds and cancellations kept separate (a cancellation never shipped). `invertTrend` so a rise reads red. Each tile carries a `MetricHelp` "how we calculate this". Order-level only - no line items, so no per-SKU returns; no partial refunds. Hidden when there are no orders or the query fails.
 - Table: Order, Customer, Date, Amount, Status badge (completed/pending/cancelled/refunded), Edit
 - New/Edit Order drawers: Customer select (or Guest), External order ID, Date, Total+Currency, Status select; Edit adds Delete
 - Bulk Import CSV drawer
@@ -154,6 +158,8 @@ Customer-record CRUD + retention/churn analytics.
 - `CustomerCard` grid tiles / `CustomersTable` alternative
 - New/Edit Customer drawers: Email (validated), External ID, Orders count, Total spent+Currency; Edit adds Delete
 - Bulk Import CSV drawer
+- **Windowed repeat figures** (2026-09-18, `lib/market-intel/seller/repeat.ts`) on `RetentionPanel`: Returning buyers % (customers ordering this window whose first order predates it) and Revenue from returning buyers; guests counted in revenue, never as repeat or new. Prior-period change on both.
+- **Cohort retention grid** (`CohortRetentionTable`, migration 059 `seller_cohort_retention`): acquisition month × months since, cell = share still ordering; shaded by value; empty state explains what fills it.
 
 ### 10. Settings (`/apps/settings`)
 Business profile, currency/country, privacy, showcase, domains, referrals.
@@ -320,6 +326,9 @@ Triggers, all through `createNotification()` (inserts `seller_notifications`, ca
 - **FX rates** - nightly-refreshed multi-currency conversion used throughout
 - **Referrals** - crypto-random codes, 3 joins → auto-upgrade to paid
 - **Public showcase** - opt-in peer visibility (price position/rating/category rank) + separate opt-in marketing-homepage logo showcase
+- **Returns / repeat / cohorts** (2026-09-18) - `returns.ts`, `repeat.ts`, migration 059; windowed, prior-period change, order-level only
+- **Placement & demand proxy** (2026-09-18) - `placement.ts` (per-platform demand score, ranked only with a real demand signal; price/stock/rank history), `demand-index.ts` + migration 061 (category percentile per product), `market-share.ts` (listing share)
+- **Page rank capture** (2026-09-18) - migration 060 adds `market_price_history.rank`, assigned in the scraper's `saveProducts` from array order per category (`assignRanks`); no source module changed. Null before 060.
 
 ---
 
