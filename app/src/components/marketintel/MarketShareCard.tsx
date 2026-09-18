@@ -40,7 +40,9 @@ export function MarketShareCard({ share }: Props) {
               #{share.sellerRankAmongNamed}
               <span className="text-base font-medium text-gray-400"> of {share.namedCompetitorCount + 1}</span>
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">by catalogue size, among named sellers</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              by catalogue size, among {share.namedCompetitorCount} named sellers
+            </p>
           </div>
         )}
       </div>

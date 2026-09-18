@@ -121,6 +121,21 @@ function buildReturnStats(stats: ReturnStats): StatItem[] {
     new Intl.NumberFormat('en-US', { style: 'currency', currency: stats.currency, maximumFractionDigits: 0 }).format(v);
   const window = `Last ${stats.periodDays} days`;
 
+  // A window with no orders is a quiet month, not a 0% return rate. Three
+  // tiles reading "0% · 0 of 0" looked like broken data on the first real
+  // render; a dash and a plain reason is what a seller should see.
+  if (stats.orders === 0) {
+    const quiet = `No orders in the last ${stats.periodDays} days`;
+    return [
+      { title: 'Return rate', value: '—', period: quiet, icon: 'shopping-cart-off', color: 'red', invertTrend: true,
+        help: `Refunded orders divided by all orders placed in the last ${stats.periodDays} days. Needs at least one order in the window to compute.` },
+      { title: 'Refund value', value: '—', period: quiet, icon: 'currency-dollar', color: 'orange', invertTrend: true,
+        help: `The order totals of every refunded order in the last ${stats.periodDays} days, converted to ${stats.currency}.` },
+      { title: 'Cancel rate', value: '—', period: quiet, icon: 'receipt', color: 'pink', invertTrend: true,
+        help: `Cancelled orders divided by all orders in the last ${stats.periodDays} days. Needs at least one order in the window to compute.` },
+    ];
+  }
+
   return [
     {
       title: 'Return rate',

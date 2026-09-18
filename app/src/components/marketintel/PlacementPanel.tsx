@@ -250,6 +250,7 @@ export function PlacementPanel({ sellerProductId, currency, className = '' }: Pr
                         const point = w.config.series[seriesIndex]?.data?.[dataPointIndex];
                         if (!point) return '';
                         const date = new Date(point.x).toISOString().slice(0, 10);
+                        const shown = new Date(point.x).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                         const rows = data.platforms
                           .map((p, i) => {
                             const h = chart.obs[i].get(date);
@@ -257,7 +258,7 @@ export function PlacementPanel({ sellerProductId, currency, className = '' }: Pr
                             return `<div class="text-xs text-gray-700 dark:text-gray-200">${p.platformName}: <span class="font-semibold">${money(h.price, currency)}</span>${h.rank != null ? ` <span class="text-gray-400">#${h.rank} on page</span>` : ''}${!h.inStock ? ' <span class="text-error-500">out of stock</span>' : ''}</div>`;
                           })
                           .join('');
-                        return `<div class="rounded-xl border border-gray-200 bg-white p-2.5 shadow-lg dark:border-gray-700 dark:bg-gray-900" style="font-family:inherit;"><div class="mb-1 text-[11px] text-gray-400 dark:text-gray-500">${date}</div>${rows}</div>`;
+                        return `<div class="rounded-xl border border-gray-200 bg-white p-2.5 shadow-lg dark:border-gray-700 dark:bg-gray-900" style="font-family:inherit;"><div class="mb-1 text-[11px] text-gray-400 dark:text-gray-500">${shown}</div>${rows}</div>`;
                       },
                     },
                   }}

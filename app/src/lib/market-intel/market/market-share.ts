@@ -120,6 +120,12 @@ export async function getMarketShare(
   if (!includeNamed && namedCompetitorCount > 0) {
     caveats.push(`${namedCompetitorCount} named competitors are in this market. Their names and your rank among them are part of the Paid plan.`);
   }
+  if (includeNamed && namedCompetitorCount > 0) {
+    const platforms = Array.from(new Set(scorecards.map((c) => c.platformName)));
+    caveats.push(
+      `"Named sellers" are the ${namedCompetitorCount} sellers ${platforms.join(' and ')} attributes listings to in this category - a small part of the ${marketListings.toLocaleString()} listings. Single-retailer sites count as one seller each and are not ranked here, which is why a small catalogue can rank high.`,
+    );
+  }
   if (includeNamed && namedCompetitorCount === 0) {
     caveats.push('No platform in your scope attributes listings to a named seller, so there is no competitor ranking here.');
   }

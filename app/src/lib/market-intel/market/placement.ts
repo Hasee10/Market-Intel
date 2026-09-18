@@ -296,10 +296,15 @@ export async function getProductPlacement(
   const { scored, signalsUsed } = scorePlatforms(unscored);
   const rankable = isRankable(signalsUsed);
 
-  const caveats = [
-    'The score is a demand proxy from platform-reported sold counts, reviews, rating and availability - not measured traffic, which no marketplace here publishes.',
-    'Price is shown but not scored: a higher price on one platform is good for margin and bad for competitiveness, and that trade-off is yours.',
-  ];
+  // The two score caveats only make sense when a score is shown. On an
+  // unranked product they contradicted the "not enough demand data" line
+  // directly above them.
+  const caveats = rankable
+    ? [
+        'The score is a demand proxy from platform-reported sold counts, reviews, rating and availability - not measured traffic, which no marketplace here publishes.',
+        'Price is shown but not scored: a higher price on one platform is good for margin and bad for competitiveness, and that trade-off is yours.',
+      ]
+    : [];
   const rankedPoints = scored.reduce((n, p) => n + p.history.filter((h) => h.rank != null).length, 0);
   if (rankedPoints === 0) {
     caveats.push('Position on the category page is recorded from 2026-09-18 onward; this product has no ranked observations yet.');

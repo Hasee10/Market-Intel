@@ -108,7 +108,17 @@ export function RetentionPanel({ snapshot, atRiskCustomers, reportingCurrency, r
     { title: 'Churn rate (30d)', value: formatPct(snapshot?.churnRate ?? null), icon: 'shopping-cart-off', color: 'red' },
     { title: 'Repeat purchase rate', value: formatPct(snapshot?.repeatPurchaseRate ?? null), icon: 'shopping-cart', color: 'blue' },
     { title: 'Avg. customer value', value: formatCurrency(snapshot?.avgClv ?? null, reportingCurrency), icon: 'currency-dollar', color: 'violet' },
-    ...(repeatStats
+    // Same rule as the Orders strip: a window with no orders shows a dash
+    // and says so, not "0% · 0 of 0 customers".
+    ...(repeatStats && repeatStats.customersOrdered === 0 && repeatStats.guestOrders === 0
+      ? [
+          { title: 'Returning buyers', value: '—', period: `No orders in the last ${repeatStats.periodDays} days`, icon: 'users', color: 'teal',
+            help: `Of the customers who ordered in the last ${repeatStats.periodDays} days, the share whose first order was before that window. Needs at least one order in the window.` },
+          { title: 'Revenue from returning buyers', value: '—', period: `No orders in the last ${repeatStats.periodDays} days`, icon: 'currency-dollar', color: 'blue',
+            help: `Order totals from returning customers in the last ${repeatStats.periodDays} days, over all order totals in that window.` },
+        ]
+      : []),
+    ...(repeatStats && (repeatStats.customersOrdered > 0 || repeatStats.guestOrders > 0)
       ? [
           {
             title: 'Returning buyers',
