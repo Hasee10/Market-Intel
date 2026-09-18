@@ -34,12 +34,17 @@ export async function GET(request: Request) {
       isPrimary: d.isPrimary,
     })),
     // Same shape /competitors uses. An empty list here is a correct answer
-    // - the seller has not picked a market yet - but it was read as a
-    // broken endpoint the first time a client hit it on a test account
-    // with plenty of products and no onboarding. The code names the
-    // cause so the client can show "choose a market" rather than "no
-    // data". A seller_domains row comes only from web onboarding, the web
-    // Settings page, or bulk import; never from adding products.
+    // when the seller has not picked a market yet; the code names that so
+    // the client can show "choose a market" rather than "no data". A
+    // seller_domains row comes only from web onboarding, the web Settings
+    // page, or bulk import; never from adding products.
+    //
+    // History worth keeping: the first real mobile call to this route got
+    // [] on an account that did have a market. That was not this case - it
+    // was createClient() opening a cookie session on a cookie-less request,
+    // so RLS saw no user and filtered everything (fixed in supabase/
+    // server.ts). If this ever reads empty for an account that has a
+    // domain on the web, suspect the client, not the data.
     emptyReason: domains.length === 0 ? 'no_tracked_markets' : null,
   });
 }

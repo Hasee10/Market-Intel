@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'crypto';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
@@ -105,13 +105,45 @@ export function createPublicClient() {
   );
 }
 
+// headers() is only available inside a request. Outside one it throws;
+// createClient() must keep behaving exactly as before in that case, so
+// this reads it as "no headers" rather than letting the throw escape.
+async function headersOrNull(): Promise<Request> {
+  try {
+    const h = await headers();
+    return new Request('http://local', { headers: h });
+  } catch {
+    return new Request('http://local');
+  }
+}
+
 // Server Components/Actions/Route Handlers client. Reads/writes the auth
 // cookie via Next's cookies() so RLS policies (auth.uid()) see the right
 // user. The set() calls are wrapped in try/catch because Server Components
 // can't write cookies - only Server Actions and Route Handlers can. When
 // called from a Server Component this silently no-ops and relies on
 // middleware.ts to keep the session cookie fresh instead.
+//
+// Bearer-aware. A mobile request carries its session as
+// `Authorization: Bearer <token>` and no cookie at all. Before this check,
+// every lib function that opened this client from a mobile route ran with
+// no user: auth.uid() was null, every seller-scoped RLS policy filtered
+// every row, and the function returned [] with no error - which the first
+// real mobile client reported as "the API returns an empty list" on an
+// account with plenty of data. The four original mobile routes that query
+// directly already used createBearerClient(); the ones built on shared lib
+// functions did not, because the lib functions choose the client
+// themselves. Resolving it here, once, is what makes those functions
+// safe to share between the web and the phone at all.
+//
+// Only a Bearer scheme triggers it, and only on the request path where
+// headers() is available. The cron workflow also sends a Bearer header
+// (CRON_SECRET), but cron jobs run on createAdminClient() and never reach
+// this function - verified at the time of writing; see the jobs' imports.
 export async function createClient() {
+  const bearer = getBearerToken(await headersOrNull());
+  if (bearer) return createBearerClient(bearer);
+
   const cookieStore = await cookies();
 
   return createServerClient(
