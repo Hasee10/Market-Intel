@@ -58,7 +58,7 @@ No page fetches its own data from the client. After a client mutation, call `rou
 
 ## Gotchas
 
-- **`'server-only';` as a bare string is a no-op.** The package isn't installed. Most lib files use it as a marker; it enforces nothing. `import 'server-only'` (real form) breaks vitest.
+- **`'server-only';` as a bare string is a no-op.** The package isn't installed. Most lib files use it as a marker; it enforces nothing. The real form, `import 'server-only'`, does enforce (Next fails the build if the module reaches a Client Component) and works under vitest via the alias in `vitest.config.ts` → `src/test/server-only-stub.ts`. Prefer the real form in new server-only files.
 - **`strictNullChecks` is on.** Turned on deliberately; don't turn it off to make an error go away.
 - **Ownership is checked in app code, not just RLS.** RLS policies exist and hold, but seller-scoped queries state the rule too — one dropped policy shouldn't mean cross-tenant access.
 - **Windows/Git Bash:** paths written to `/tmp` in a Bash call are not visible to Python invoked from the same shell. Use the session scratchpad dir instead.
