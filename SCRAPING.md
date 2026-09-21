@@ -77,6 +77,7 @@ are what the source-by-source table below is checked against.
 | **goto** | **Unknown.** `robots.txt` is unfetchable — the site's TLS certificate is expired, which is also why `goto.ts` needs `ignoreHTTPSErrors`. | Unverified. Re-check when their cert is fixed. |
 | **sapphireonline** | Disallows the exact endpoint we call. | **Non-compliant.** See above. |
 | **olx** | Disallows `/api/`, `/post/`, `/profile/`, `/chat/`, and a long list of filter query params. We read `/<category>` with `?page=N`, none of which are disallowed. | OK. |
+| **shopperspk** | Re-verified 2026-09-21 after the site left WooCommerce. Now disallows `/api/` **and `/*?*` (any query string)**. We read `/category/<path>/` and `/category/<path>/page/N/` only — path-form pagination, never `?page=`, and never the JSON API behind the site's infinite scroll. | OK, with those two constraints. |
 
 ### Daraz specifically
 

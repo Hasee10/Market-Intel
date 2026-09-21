@@ -4352,3 +4352,35 @@ proxy and say so in the UI, never a number that looks like the real thing.**
 week of rank data (compare from ~25 Sep); mobile parity for these metrics
 waits for a dedicated test seller account so the endpoints can be called
 for real before Saad gets them; rate limiting waits for Upstash credentials.
+
+## 2026-09-21: Two scraper failures that looked like one
+
+The 20 Sep run finished green with nine sources at zero. They were two
+different problems, and reading the log by status code told them apart.
+
+**Eight Shopify sources, 429, all inside 08:53-09:03 UTC.** Shopify's shared
+edge throttled the runner IP for about ten minutes; every Shopify store
+before and after that window was fine (habitt pulled 20,309). Our retry
+made it worse: a 429 with no `Retry-After` fell through to full jitter,
+`random(0, cap)`, which retried 0.1s later. Four attempts in ten seconds,
+breaker open in thirty, source abandoned - eight times in a row inside the
+throttle. Fix (`f966953`): a 429 without `Retry-After` now waits at least
+20s/40s/80s, and `pipeline.ts` gives any breaker-tripped source one more
+attempt after every other source has run. The 67-minute run outlasts any
+throttle we have seen.
+
+**shopperspk, 403 on every request since at least 18 Sep.** Not a block.
+The site left WooCommerce for a custom ERP storefront; `/wp-json/*` is a
+dead path that returns an error page from any IP. `shopperspk.ts` now
+parses the server-rendered `/category/<path>/` grid with path-form
+pagination. Two things the new robots.txt forbids that the old one did not:
+`/api/` (there is a JSON API behind the infinite scroll - do not use it)
+and `/*?*` (never `?page=`). Category config became `slug=path` so
+migration 023's category map and existing rows keep their keys; product
+ids changed with the platform, so the first run retires the old rows and
+inserts the new ones. Listing cards carry no stock marker, so `inStock` is
+now unknown for this source rather than assumed.
+
+Neither failure deactivated anything: `markStaleProducts` only touches
+categories that returned products, which is exactly why a source that
+returns nothing is safe.

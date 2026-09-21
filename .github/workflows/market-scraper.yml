@@ -124,7 +124,16 @@ jobs:
           MEGA_CATEGORIES: laptops,mobiles,desktopcomputers,smartwatches,airconditioners,ledtv,refrigerators,microwaveovens
           NAHEED_CATEGORIES: phones-tablets,health-beauty,kids-babies,home-lifestyle,groceries-pets,tv-home-appliances,books,men-s-fashion
           VMART_COLLECTIONS: apple-phones,apple-macbooks-pakistan,audio-pakistan,gaming-mouse-pakistan,gaming-keyboards-pakistan,gaming-headsets-pakistan,accessories-pakistan
-          SHOPPERSPK_CATEGORIES: home-decor,jars-containers,serving-dishes-in-pakistan,water-bottles-in-pakistan,wall-clocks-in-pakistan,mugs-in-pakistan,air-fryers,baby
+          #
+          # SHOPPERSPK_CATEGORIES (rewritten 2026-09-21): the site left
+          # WooCommerce for a custom storefront with nested category paths.
+          # Each entry is `<our slug>=<site path>`; the slug side is what
+          # market_category_map (migration 023) and every existing row are
+          # keyed on and must not change, the path side is where the new
+          # site keeps that category. Every path was fetched live on
+          # 2026-09-21 and returned product cards. See sources/shopperspk.ts
+          # for the robots.txt rules that constrain how these are read.
+          SHOPPERSPK_CATEGORIES: home-decor=house-hold/home-decor,jars-containers=kitchen/storage/jars-containers,serving-dishes-in-pakistan=kitchen/serveware/serving-dishes/serving-dishes-in-pakistan,water-bottles-in-pakistan=kitchen/serveware/drinkware/water-bottles-in-pakistan,wall-clocks-in-pakistan=house-hold/wall-clocks-in-pakistan,mugs-in-pakistan=kitchen/serveware/cups-mugs/mugs-in-pakistan,air-fryers=kitchen/kitchen-appliances/air-fryers,baby=baby
           #
           # Added 2026-08-29: 5 new Shopify storefronts (see sources/shopify-
           # source.ts), filling beauty/home/toys/fashion gaps. Every handle
