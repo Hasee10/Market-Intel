@@ -1,6 +1,7 @@
 import { refreshCompetitors, saveClassifiedListings, saveProducts, saveScrapeRunSummary } from './db.js';
 import { dedupeProducts } from './dedupe.js';
 import { BROWSER_SOURCES, CLASSIFIED_SOURCES, HTTP_SOURCES } from './sources/index.js';
+import { isCircuitOpen, resetCircuitBreaker } from './sources/polite.js';
 import type { ClassifiedSourceFn, ClassifiedSourceResult, SourceFn, SourceResult } from './types.js';
 
 interface SourceRunSummary {
@@ -52,9 +53,29 @@ async function safeRunClassified(source: ClassifiedSourceFn): Promise<SourceRunS
 export async function run(): Promise<void> {
   const summaries: SourceRunSummary[] = [];
 
+  // Sources whose circuit breaker tripped, kept for one more attempt below.
+  const trippedSources: { index: number; source: SourceFn }[] = [];
   for (const source of HTTP_SOURCES) {
-    summaries.push(await safeRun(source));
+    const summary = await safeRun(source);
+    if (isCircuitOpen(summary.platformSlug)) trippedSources.push({ index: summaries.length, source });
+    summaries.push(summary);
   }
+
+  // Second pass for anything the breaker abandoned. The 2026-09-20 run lost
+  // eight Shopify sources to a ten-minute IP throttle at Shopify's edge; the
+  // run itself took over an hour, so by the time the last source finished
+  // the throttle was long gone. One more attempt, same code path, and the
+  // summary row is replaced so telemetry shows what the run actually got.
+  // Only sources that tripped the breaker qualify - a source that simply
+  // returned nothing, or failed for a non-transient reason, is not retried.
+  if (trippedSources.length > 0) {
+    console.warn(`[pipeline] retrying ${trippedSources.length} source(s) whose circuit breaker tripped: ${trippedSources.map((t) => summaries[t.index].platformSlug).join(', ')}`);
+    for (const { index, source } of trippedSources) {
+      resetCircuitBreaker(summaries[index].platformSlug);
+      summaries[index] = await safeRun(source);
+    }
+  }
+
   for (const source of BROWSER_SOURCES) {
     summaries.push(await safeRun(source));
   }

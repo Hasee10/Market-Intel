@@ -46,11 +46,24 @@ const RETRY_ATTEMPTS = 3;
 const BASE_BACKOFF_MS = 5_000;
 const MAX_BACKOFF_MS = 60_000;
 const MAX_RETRY_AFTER_MS = 120_000; // don't let a hostile/broken Retry-After value stall a run indefinitely
+// Floor for a 429 that arrives without Retry-After. Full jitter is right for
+// a flaky 5xx but wrong for a rate limiter: random(0, cap) produced retries
+// 0.1s apart in the 2026-09-20 run, so four attempts were spent in ten
+// seconds, the circuit opened after thirty, and eight Shopify sources were
+// abandoned inside the ten minutes the throttle actually lasted. A rate
+// limit is a request to slow down; the wait has to be long enough to count.
+const MIN_429_BACKOFF_MS = 20_000;
 
 /** Full jitter (AWS's recommended strategy): random(0, min(max, base * 2^attempt)) - spreads retries out instead of every failed request waking up in lockstep. */
 function exponentialBackoffWithJitter(attempt: number): number {
   const cap = Math.min(MAX_BACKOFF_MS, BASE_BACKOFF_MS * 2 ** attempt);
   return Math.random() * cap;
+}
+
+/** 20s, 40s, 80s - never less, jittered upward by up to half again so retries still don't line up. */
+function rateLimitBackoff(attempt: number): number {
+  const floor = Math.min(MAX_RETRY_AFTER_MS, MIN_429_BACKOFF_MS * 2 ** attempt);
+  return floor + Math.random() * floor * 0.5;
 }
 
 /**
@@ -111,6 +124,11 @@ export function resetCircuitBreaker(platformKey: string): void {
   consecutiveFailuresByPlatform.delete(platformKey);
 }
 
+/** True once this platform has tripped the breaker this run - the pipeline uses it to give the source one more go at the end. */
+export function isCircuitOpen(platformKey: string): boolean {
+  return (consecutiveFailuresByPlatform.get(platformKey) ?? 0) >= CIRCUIT_BREAKER_THRESHOLD;
+}
+
 /**
  * Fetch with bounded retries on transient failures (429/5xx/network error),
  * exponential backoff with jitter, and Retry-After header respect when the
@@ -165,7 +183,7 @@ export async function politeFetch(
       }
 
       const retryAfterMs = res.status === 429 ? parseRetryAfterMs(res.headers.get('retry-after')) : null;
-      const backoff = retryAfterMs ?? exponentialBackoffWithJitter(attempt);
+      const backoff = retryAfterMs ?? (res.status === 429 ? rateLimitBackoff(attempt) : exponentialBackoffWithJitter(attempt));
       console.warn(
         `[${label}] ${lastError}, retrying in ${(backoff / 1000).toFixed(1)}s (attempt ${attempt + 2})${retryAfterMs != null ? ' [Retry-After]' : ''}`,
       );
